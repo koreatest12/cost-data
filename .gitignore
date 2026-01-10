@@ -1,8 +1,12 @@
-# --- Elm Specific ---
-# Elm 패키지 및 빌드 아티팩트
+# --- 1. Elm 핵심 빌드 파일 (AI 분석 불필요/제외 권장) ---
+# 이 폴더들은 컴파일 결과물이므로 Copilot이 읽을 필요가 없습니다.
+# 이를 제외해야 Copilot이 작성하신 '소스 코드'에 더 집중합니다.
 elm-stuff/
-# Elm REPL 임시 파일
 repl-temp-*
+
+
+# --- 2. 의존성 모듈 (AI 분석 불필요) ---
+# 라이브러리 파일이 너무 많으면 Copilot의 문맥(Context) 공간을 차지합니다.
 
 
 # Server manager config files
@@ -21,34 +25,26 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-=======
+
 # --- Node.js & Dependencies ---
 # Elm 툴링(elm-format, elm-live 등)을 npm으로 설치하는 경우 필요
-node_modules/
-npm-debug.log
-yarn-error.log
-pnpm-debug.log
 
-# --- Build Outputs ---
-# 일반적인 빌드 결과물 디렉토리
+node_modules/
+
+# --- 3. 시스템 및 에디터 임시 파일 ---
 dist/
 build/
-
-# --- IDE & Editors (Copilot 사용 환경) ---
-# VS Code 설정 (개인 설정 파일 제외)
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-*.code-workspace
-
-# JetBrains (IntelliJ, WebStorm)
-.idea/
-
-# Vim/Emacs 임시 파일
+.DS_Store
+Thumbs.db
 *.swp
 *~
+
+
+# --- 4. 에디터 설정 (개인 설정만 제외) ---
+# 협업 및 AI 설정을 위해 .vscode 폴더 자체는 막지 않지만,
+# 로컬 전용 설정 파일만 제외합니다.
+.vscode/settings.json
+.vscode/tasks.json
 
 # --- OS Specific ---
 # Mac
@@ -57,4 +53,5 @@ build/
 # Windows
 Thumbs.db
 ehthumbs.db
+
 
