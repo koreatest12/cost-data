@@ -1,0 +1,13 @@
+# Server Management System - Python Requirements
+# This project uses only Python standard library
+# Python 3.6 or higher is required
+
+# No external dependencies required
+# All functionality uses built-in modules:
+# - json (for configuration storage)
+# - os (for file operations)
+# - datetime (for timestamps)
+# - typing (for type hints)
+# - argparse (for CLI interface)
+# - unittest (for testing)
+# - tempfile (for testing)
