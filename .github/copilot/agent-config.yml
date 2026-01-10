@@ -1,0 +1,82 @@
+name: cost-data-agent
+version: 1.0.0
+description: GitHub Copilot agent with complete firewall and Windows support
+
+# Agent configuration - no skipping
+settings:
+  skip_firewall: false
+  skip_windows: false
+  run_all_checks: true
+  
+# Environment configurations
+environments:
+  - name: windows
+    enabled: true
+    skip: false
+    firewall:
+      enabled: true
+      skip: false
+      rules:
+        - name: Allow HTTP
+          protocol: TCP
+          port: 80
+          direction: inbound
+          action: allow
+        - name: Allow HTTPS
+          protocol: TCP
+          port: 443
+          direction: inbound
+          action: allow
+        - name: Allow SSH
+          protocol: TCP
+          port: 22
+          direction: inbound
+          action: allow
+    settings:
+      enforce_all: true
+      
+  - name: linux
+    enabled: true
+    skip: false
+    firewall:
+      enabled: true
+      skip: false
+      rules:
+        - name: Allow HTTP
+          protocol: TCP
+          port: 80
+          direction: inbound
+          action: allow
+        - name: Allow HTTPS
+          protocol: TCP
+          port: 443
+          direction: inbound
+          action: allow
+        - name: Allow SSH
+          protocol: TCP
+          port: 22
+          direction: inbound
+          action: allow
+    settings:
+      enforce_all: true
+
+# Execution settings
+execution:
+  skip_on_error: false
+  fail_fast: false
+  retry_on_failure: true
+  max_retries: 3
+  
+# Security settings
+security:
+  firewall_check: true
+  windows_defender_check: true
+  skip_security_scans: false
+  
+# Agent capabilities
+capabilities:
+  - firewall_management
+  - windows_configuration
+  - linux_configuration
+  - network_security
+  - system_monitoring
