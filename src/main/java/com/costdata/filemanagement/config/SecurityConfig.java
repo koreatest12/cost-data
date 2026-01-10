@@ -21,6 +21,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            // CSRF disabled: This is a stateless REST API using HTTP Basic Authentication.
+            // CSRF protection is not needed as there are no sessions or cookies.
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/files/**").hasAnyRole("USER", "ADMIN")
