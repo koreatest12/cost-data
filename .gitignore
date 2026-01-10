@@ -1,3 +1,41 @@
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Elm (keep existing)
+elm-stuff
+repl-temp-*
+
+# Application
+uploads/
+
 # --- 1. Elm 핵심 빌드 파일 (AI 분석 불필요/제외 권장) ---
 # 이 폴더들은 컴파일 결과물이므로 Copilot이 읽을 필요가 없습니다.
 # 이를 제외해야 Copilot이 작성하신 '소스 코드'에 더 집중합니다.
@@ -53,5 +91,6 @@ Thumbs.db
 # Windows
 Thumbs.db
 ehthumbs.db
+
 
 
