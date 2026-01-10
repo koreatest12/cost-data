@@ -6,10 +6,15 @@ on:
     branches: [ main, master, develop ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   agent-windows:
     name: Run Agent on Windows
     runs-on: windows-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -89,6 +94,8 @@ jobs:
   agent-linux:
     name: Run Agent on Linux
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -161,6 +168,8 @@ jobs:
     name: Validate Agent Configuration
     runs-on: ubuntu-latest
     needs: [agent-windows, agent-linux]
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
