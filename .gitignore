@@ -4,6 +4,24 @@ elm-stuff/
 # Elm REPL 임시 파일
 repl-temp-*
 
+
+# Server manager config files
+server_config.json
+demo_config.json
+*.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+=======
 # --- Node.js & Dependencies ---
 # Elm 툴링(elm-format, elm-live 등)을 npm으로 설치하는 경우 필요
 node_modules/
@@ -39,3 +57,4 @@ build/
 # Windows
 Thumbs.db
 ehthumbs.db
+
