@@ -1,7 +1,9 @@
-# elm-package generated files
-elm-stuff
-# elm-repl generated files
+# --- Elm Specific ---
+# Elm 패키지 및 빌드 아티팩트
+elm-stuff/
+# Elm REPL 임시 파일
 repl-temp-*
+
 
 # Server manager config files
 server_config.json
@@ -19,3 +21,40 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+=======
+# --- Node.js & Dependencies ---
+# Elm 툴링(elm-format, elm-live 등)을 npm으로 설치하는 경우 필요
+node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# --- Build Outputs ---
+# 일반적인 빌드 결과물 디렉토리
+dist/
+build/
+
+# --- IDE & Editors (Copilot 사용 환경) ---
+# VS Code 설정 (개인 설정 파일 제외)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains (IntelliJ, WebStorm)
+.idea/
+
+# Vim/Emacs 임시 파일
+*.swp
+*~
+
+# --- OS Specific ---
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
