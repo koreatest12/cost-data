@@ -1,0 +1,39 @@
+name: Daily Security News Briefing
+
+on:
+  schedule:
+    # 한국 시간 아침 8시 실행 (UTC 기준 23:00)
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 수동 실행 버튼 활성화
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write # 이슈 생성을 위한 권한 부여
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install feedparser
+
+      - name: Run Security News Script
+        run: python security_news.py
+
+      - name: Create Issue with Report
+        uses: peter-evans/create-issue-from-file@v4
+        with:
+          title: "🛡️ ${{ steps.date.outputs.date }} 일일 보안 뉴스 브리핑"
+          content-filepath: ./daily_security_report.md
+          labels: |
+            security-news
+            automated
