@@ -1,42 +1,57 @@
-name: AI Powered Security News
+name: AI Security News Briefing (Massive Update)
 
 on:
   schedule:
-    - cron: '0 23 * * *' # 매일 아침 8시 (KST)
-  workflow_dispatch:
+    - cron: '0 23 * * *' # 매일 아침 8시 (한국시간)
+  workflow_dispatch: # 수동 실행 버튼
 
 jobs:
-  ai-analysis:
-    name: 🤖 AI Security Analyst
+  security-briefing:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
 
     steps:
+      # 1. 소스 코드 내려받기
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
+      # 2. 파이썬 3.11 환경 구성 (최신 버전)
       - name: 🐍 Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          cache: 'pip' # 설치 속도 향상
 
-      - name: 📦 Install AI & Network Tools
+      # 3. 🔥 [핵심] 대량 모듈 강제 설치 (여기가 해결책입니다)
+      - name: 📦 Install Massive Dependencies
         run: |
-          pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip install --upgrade pip
+          
+          # 봇 차단 우회, AI 검색, HTML 파싱을 위한 모든 모듈 대량 설치
+          pip install feedparser requests beautifulsoup4 lxml duckduckgo-search fake-useragent
 
-      - name: 🚀 Run AI Analysis Engine
-        run: python security_news.py
+      # 4. 스크립트 실행 (오류 발생 시에도 로그 출력)
+      - name: 🚀 Run AI Security Agent
+        run: |
+          python security_news.py
 
-      # (옵션) 이슈로도 남기고 싶다면 유지, 화면만 보고 싶다면 삭제 가능
-      - name: 📝 Save to GitHub Issue
+      # 5. 실행 결과(화면)에 리포트 출력
+      - name: 📊 Summary Report
+        if: always()
+        run: |
+          if [ -f daily_security_report.md ]; then
+            cat daily_security_report.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # 6. (선택 사항) GitHub Issue 생성
+      - name: 📝 Create Issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "🤖 AI Security Report - ${{ steps.date.outputs.date }}"
+          title: "🛡️ AI Security Briefing - ${{ steps.date.outputs.date }}"
           content-filepath: ./daily_security_report.md
           labels: |
-            ai-report
             security
+            ai-report
+            automated
