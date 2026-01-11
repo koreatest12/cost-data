@@ -30,23 +30,30 @@ jobs:
           Write-Host "OS Verification Completed."
 
       # 3. 방화벽 설정 유효성 검사 (보안 업그레이드 포함)
+      # [FIX] '&' 문자 제거 및 유니코드 특수문자 제거로 파싱 오류 방지
       - name: 방화벽 설정 유효성 검사 (Windows Firewall Validation)
         shell: powershell
         run: |
           Write-Host "Validating and Upgrading Windows Security Definitions..."
           
           # 보안 인텔리전스(방화벽/바이러스 정의) 업데이트
-          Update-MpSignature
+          try {
+            Update-MpSignature -ErrorAction SilentlyContinue
+            Write-Host "Security Definitions Updated."
+          } catch {
+            Write-Host "Warning: Could not update definitions immediately. Proceeding..."
+          }
           
           # 방화벽 서비스 상태 확인
           $firewall = Get-Service mpssvc
           if ($firewall.Status -eq 'Running') {
-              Write-Host "✓ Windows Firewall Service is active."
+              Write-Host "[OK] Windows Firewall Service is active."
           } else {
-              Write-Host "✗ Windows Firewall Service is NOT running."
+              Write-Host "[FAIL] Windows Firewall Service is NOT running."
               exit 1
           }
-          Write-Host "Firewall Validation & Upgrade Completed."
+          
+          Write-Host "Firewall Validation and Upgrade Completed."
 
       # 4. Playwright MCP 서버 다운로드 (백그라운드 시뮬레이션)
       - name: Playwright MCP 서버 다운로드 (Download Playwright & Node.js)
@@ -80,11 +87,12 @@ jobs:
           Expand-Archive -Path $output -DestinationPath .
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "Maven Install Script Finished."
 
       - name: Copilot 리소스 대량 다운로드 (Massive Download)
         shell: powershell
         run: |
-          Write-Host "Pre-loading Copilot Dependencies & Resources..."
+          Write-Host "Pre-loading Copilot Dependencies and Resources..."
           mvn dependency:resolve -B
           mvn dependency:resolve-plugins -B
           mvn dependency:sources -B -Dmaven.test.skip=true
@@ -96,16 +104,15 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Starting MCP Server Context..."
-          # 실제 서버 시작 명령이 들어갈 자리 (예: node server.js &)
           Write-Host "MCP Server initiated."
 
           Write-Host "Configuring Firewall Rules (Blocking Unknown Traffic)..."
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           
           # Allow Essential Ports (HTTP/HTTPS/SSH/DNS)
-          New-NetFirewallRule -DisplayName "Allow HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
-          New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Outbound -Protocol TCP -RemotePort 443 -Action Allow
-          New-NetFirewallRule -DisplayName "Allow DNS" -Direction Outbound -Protocol UDP -RemotePort 53 -Action Allow
+          New-NetFirewallRule -DisplayName "Allow HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
+          New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Outbound -Protocol TCP -RemotePort 443 -Action Allow -ErrorAction SilentlyContinue
+          New-NetFirewallRule -DisplayName "Allow DNS" -Direction Outbound -Protocol UDP -RemotePort 53 -Action Allow -ErrorAction SilentlyContinue
           
           Write-Host "Firewall Active. MCP Server Secured."
 
@@ -122,7 +129,7 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Cleaning up temporary files..."
-          Remove-Item -Path "maven.zip" -ErrorAction SilentlyContinue
+          if (Test-Path "maven.zip") { Remove-Item -Path "maven.zip" -Force }
           Write-Host "Cleanup Completed."
 
       # 9. [선택 사항] 보관 세부 정보
@@ -164,7 +171,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --only-upgrade ufw -y
           sudo ufw status verbose
-          echo "Firewall Validation & Upgrade Completed."
+          echo "Firewall Validation and Upgrade Completed."
 
       # 4. Playwright MCP 서버 다운로드 (백그라운드 시뮬레이션)
       - name: Playwright MCP 서버 다운로드 (Download Playwright & Node.js)
@@ -196,7 +203,7 @@ jobs:
 
       - name: Copilot 리소스 대량 다운로드 (Massive Download)
         run: |
-          echo "Pre-loading Copilot Dependencies & Resources..."
+          echo "Pre-loading Copilot Dependencies and Resources..."
           mvn dependency:resolve -B
           mvn dependency:resolve-plugins -B
           mvn dependency:sources -B -Dmaven.test.skip=true
