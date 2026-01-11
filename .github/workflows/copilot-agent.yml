@@ -15,19 +15,19 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Configure Windows Firewall
         shell: powershell
         run: |
           Write-Host "Configuring Windows Firewall - No Skip"
-          
+
           # Enable Windows Firewall for all profiles
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
-          
+
           # Add firewall rules for HTTP
           New-NetFirewallRule -DisplayName "Allow HTTP Inbound" `
             -Direction Inbound `
@@ -35,7 +35,7 @@ jobs:
             -LocalPort 80 `
             -Action Allow `
             -ErrorAction SilentlyContinue
-          
+
           # Add firewall rules for HTTPS
           New-NetFirewallRule -DisplayName "Allow HTTPS Inbound" `
             -Direction Inbound `
@@ -43,7 +43,7 @@ jobs:
             -LocalPort 443 `
             -Action Allow `
             -ErrorAction SilentlyContinue
-          
+
           # Add firewall rules for SSH
           New-NetFirewallRule -DisplayName "Allow SSH Inbound" `
             -Direction Inbound `
@@ -51,35 +51,39 @@ jobs:
             -LocalPort 22 `
             -Action Allow `
             -ErrorAction SilentlyContinue
-          
+
           Write-Host "Firewall rules configured successfully"
-          
+
       - name: Verify Windows Firewall Status
         shell: powershell
         run: |
           Write-Host "Verifying Windows Firewall Status"
           Get-NetFirewallProfile | Select-Object Name, Enabled
-          
+
           Write-Host "Checking configured rules"
-          Get-NetFirewallRule -DisplayName "Allow HTTP*" | Select-Object DisplayName, Enabled, Direction
-          Get-NetFirewallRule -DisplayName "Allow HTTPS*" | Select-Object DisplayName, Enabled, Direction
-          Get-NetFirewallRule -DisplayName "Allow SSH*" | Select-Object DisplayName, Enabled, Direction
-          
+          Get-NetFirewallRule -DisplayName "Allow HTTP*" | `
+            Select-Object DisplayName, Enabled, Direction
+          Get-NetFirewallRule -DisplayName "Allow HTTPS*" | `
+            Select-Object DisplayName, Enabled, Direction
+          Get-NetFirewallRule -DisplayName "Allow SSH*" | `
+            Select-Object DisplayName, Enabled, Direction
+
       - name: Run Windows-specific checks
         shell: powershell
         run: |
           Write-Host "Running Windows-specific checks - No Skip"
-          
+
           # Check Windows Defender status
           Write-Host "Windows Defender Status:"
-          Get-MpComputerStatus | Select-Object AntivirusEnabled, RealTimeProtectionEnabled
-          
+          Get-MpComputerStatus | `
+            Select-Object AntivirusEnabled, RealTimeProtectionEnabled
+
           # Check system information
           Write-Host "System Information:"
           Get-ComputerInfo | Select-Object WindowsVersion, OsArchitecture
-          
+
           Write-Host "All Windows checks completed successfully"
-          
+
       - name: Agent execution summary
         shell: powershell
         run: |
@@ -96,64 +100,67 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Configure Linux Firewall (UFW)
         run: |
           echo "Configuring Linux Firewall (UFW) - No Skip"
-          
+
           # Install UFW if not present
           sudo apt-get update
           sudo apt-get install -y ufw
-          
+
           # Enable UFW
           sudo ufw --force enable
-          
+
           # Configure firewall rules
           sudo ufw allow 80/tcp comment 'Allow HTTP'
           sudo ufw allow 443/tcp comment 'Allow HTTPS'
           sudo ufw allow 22/tcp comment 'Allow SSH'
-          
+
           echo "Firewall rules configured successfully"
-          
+
       - name: Verify Linux Firewall Status
         run: |
           echo "Verifying Linux Firewall Status"
           sudo ufw status verbose
-          
+
       - name: Configure iptables rules
         run: |
           echo "Configuring iptables rules - No Skip"
-          
+
           # Show current rules
           echo "Current iptables rules:"
           sudo iptables -L -n -v
-          
+
           # Ensure basic rules are in place
-          sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT -m comment --comment "Allow HTTP"
-          sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment "Allow HTTPS"
-          sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT -m comment --comment "Allow SSH"
-          
+          sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT \
+            -m comment --comment "Allow HTTP"
+          sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT \
+            -m comment --comment "Allow HTTPS"
+          sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT \
+            -m comment --comment "Allow SSH"
+
           echo "iptables rules configured successfully"
-          
+
       - name: Run Linux-specific checks
         run: |
           echo "Running Linux-specific checks - No Skip"
-          
+
           # Check system information
           echo "System Information:"
           uname -a
           lsb_release -a || cat /etc/os-release
-          
+
           # Check network configuration
           echo "Network Configuration:"
           ip addr show
-          
+
           echo "All Linux checks completed successfully"
-          
+
       - name: Agent execution summary
         run: |
           echo "================================"
@@ -170,22 +177,24 @@ jobs:
     needs: [agent-windows, agent-linux]
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Validate agent configuration
         run: |
           echo "Validating agent configuration file"
-          
+
           if [ -f ".github/copilot/agent-config.yml" ]; then
             echo "✓ Agent configuration file found"
             cat .github/copilot/agent-config.yml
-            
+
             # Check skip settings
-            if grep -q "skip_firewall: false" .github/copilot/agent-config.yml && \
-               grep -q "skip_windows: false" .github/copilot/agent-config.yml; then
+            if grep -q "skip_firewall: false" \
+                 .github/copilot/agent-config.yml && \
+               grep -q "skip_windows: false" \
+                 .github/copilot/agent-config.yml; then
               echo "✓ Skip settings are correctly configured (no skipping)"
             else
               echo "✗ Skip settings not found or incorrect"
@@ -195,7 +204,7 @@ jobs:
             echo "✗ Agent configuration file not found"
             exit 1
           fi
-          
+
       - name: Final validation summary
         run: |
           echo "================================"
@@ -207,4 +216,5 @@ jobs:
           echo "Windows Config: NO SKIP"
           echo "All checks: COMPLETED"
           echo "================================"
-          echo "✓ Agent is configured to run completely without skipping any components"
+          echo "✓ Agent is configured to run completely without" \
+               "skipping any components"
