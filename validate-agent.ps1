@@ -2,6 +2,9 @@
 # Validates that the agent is configured to run without skipping components
 # and includes enhanced features
 
+# Configuration
+$AgentVersion = "2.0.0"
+
 Write-Host "================================"
 Write-Host "Agent Configuration Validator v2.0"
 Write-Host "================================"
@@ -24,8 +27,8 @@ $configContent = Get-Content ".github/copilot/agent-config.yml" -Raw -ErrorActio
 
 # Check version
 Write-Host "Checking agent version..."
-if ($configContent -match "version:\s*2\.0\.0") {
-    Write-Host "✓ Agent version 2.0.0 confirmed" -ForegroundColor Green
+if ($configContent -match "version:\s*$AgentVersion") {
+    Write-Host "✓ Agent version $AgentVersion confirmed" -ForegroundColor Green
 } else {
     Write-Host "⚠ Agent version mismatch or not found" -ForegroundColor Yellow
     $Warnings++
@@ -138,7 +141,7 @@ if ($Errors -eq 0) {
     Write-Host "✓ Agent v2.0 is configured to run completely without skipping" -ForegroundColor Green
     Write-Host ""
     Write-Host "Configuration Summary:"
-    Write-Host "  - Version: 2.0.0"
+    Write-Host "  - Version: $AgentVersion"
     Write-Host "  - Firewall: NO SKIP ✓"
     Write-Host "  - Windows: NO SKIP ✓"
     Write-Host "  - All checks: ENABLED ✓"

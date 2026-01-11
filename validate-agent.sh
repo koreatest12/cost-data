@@ -3,6 +3,9 @@
 # Validates that the agent is configured to run without skipping components
 # and includes enhanced features
 
+# Configuration
+AGENT_VERSION="2.0.0"
+
 echo "================================"
 echo "Agent Configuration Validator v2.0"
 echo "================================"
@@ -22,8 +25,8 @@ fi
 
 # Check version
 echo "Checking agent version..."
-if grep -q "version: 2.0.0" .github/copilot/agent-config.yml; then
-    echo "✓ Agent version 2.0.0 confirmed"
+if grep -q "version: $AGENT_VERSION" .github/copilot/agent-config.yml; then
+    echo "✓ Agent version $AGENT_VERSION confirmed"
 else
     echo "⚠ Agent version mismatch or not found"
     WARNINGS=$((WARNINGS + 1))
@@ -136,7 +139,7 @@ if [ $ERRORS -eq 0 ]; then
     echo "✓ Agent v2.0 is configured to run completely without skipping"
     echo ""
     echo "Configuration Summary:"
-    echo "  - Version: 2.0.0"
+    echo "  - Version: $AGENT_VERSION"
     echo "  - Firewall: NO SKIP ✓"
     echo "  - Windows: NO SKIP ✓"
     echo "  - All checks: ENABLED ✓"

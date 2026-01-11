@@ -87,10 +87,17 @@ jobs:
           
           # Collect performance metrics
           Write-Host "Performance Metrics:"
-          Get-Counter '\Processor(_Total)\% Processor Time' -MaxSamples 3 | Select-Object -ExpandProperty CounterSamples | Measure-Object -Property CookedValue -Average | Select-Object @{Name="CPU_Usage";Expression={"{0:N2}%" -f $_.Average}}
           
+          # Get CPU usage
+          $cpuSamples = Get-Counter '\Processor(_Total)\% Processor Time' -MaxSamples 3
+          $cpuAverage = ($cpuSamples.CounterSamples | Measure-Object -Property CookedValue -Average).Average
+          Write-Host ("CPU Usage: {0:N2}%" -f $cpuAverage)
+          
+          # Get memory usage
           $mem = Get-CimInstance Win32_OperatingSystem
-          $memUsage = [math]::Round((($mem.TotalVisibleMemorySize - $mem.FreePhysicalMemory) / $mem.TotalVisibleMemorySize) * 100, 2)
+          $totalMem = $mem.TotalVisibleMemorySize
+          $freeMem = $mem.FreePhysicalMemory
+          $memUsage = [math]::Round((($totalMem - $freeMem) / $totalMem) * 100, 2)
           Write-Host "Memory Usage: $memUsage%"
           
           # Check disk usage
