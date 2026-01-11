@@ -20,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # [Security] Previous Request: Firewall & Security Upgrade
+      # [Security] Firewall & Security Upgrade
       - name: Upgrade Firewall & Security Definitions
         shell: powershell
         run: |
@@ -28,26 +28,48 @@ jobs:
           Update-MpSignature
           Write-Host "Windows Firewall & Security Definitions Upgraded"
 
-      # [NEW] Massive Cache Restore Strategy
+      # [Cache] Restore Maven Cache
       - name: Restore Maven Cache
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
-          # pom.xml 해시를 기반으로 캐시 키 생성 (의존성 변경 시에만 새 캐시 생성)
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # [NEW] Java 17 & Explicit Maven Server Installation
-      - name: Setup Java 17 & Maven 3.9.6 Server
+      # [Setup] Java 17 (Maven version option removed to fix warning)
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          maven-version: '3.9.6' # Maven 서버 명시적 설치
-          cache: 'maven' # setup-java 내장 캐싱 기능 활성화
+          cache: 'maven'
 
-      # [NEW] Bulk Download for Offline Support (Massive)
+      # [NEW] Explicit Install of Maven 3.9.6 (Fix for missing input)
+      - name: Install Maven 3.9.6 Manually
+        shell: powershell
+        run: |
+          Write-Host "Downloading Maven 3.9.6..."
+          $url = "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.zip"
+          $output = "maven.zip"
+          Invoke-WebRequest -Uri $url -OutFile $output
+          
+          Write-Host "Extracting Maven..."
+          Expand-Archive -Path $output -DestinationPath .
+          
+          $mavenHome = "$(Get-Location)\apache-maven-3.9.6"
+          $mavenBin = "$mavenHome\bin"
+          
+          Write-Host "Adding Maven to PATH: $mavenBin"
+          echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          
+          Write-Host "Maven 3.9.6 Installation Completed"
+
+      - name: Check Maven Version
+        shell: powershell
+        run: mvn -version
+
+      # [Massive] Bulk Download
       - name: Massive Download of Maven Dependencies
         shell: powershell
         run: |
@@ -56,17 +78,16 @@ jobs:
           # 1. Resolve Project Dependencies
           mvn dependency:resolve -B
           
-          # 2. Resolve All Plugins (Critical for offline builds)
+          # 2. Resolve All Plugins
           mvn dependency:resolve-plugins -B
           
-          # 3. Download Sources and Javadocs (For complete cache population)
-          # 방화벽 차단 후에도 디버깅이 용이하도록 소스와 문서까지 모두 다운로드
-          mvn dependency:sources dependency:javadoc -B -Dmaven.test.skip=true
+          # 3. Download Sources (Removed invalid 'javadoc' goal)
+          mvn dependency:sources -B -Dmaven.test.skip=true
           
-          # 4. Go Offline check (Final verification)
+          # 4. Go Offline check
           mvn dependency:go-offline -B
           
-          Write-Host "Massive Download Completed. Local Repository is fully populated."
+          Write-Host "Massive Download Completed."
 
       - name: Configure Windows Firewall
         shell: powershell
@@ -83,14 +104,10 @@ jobs:
           New-NetFirewallRule -DisplayName "Allow SSH Outbound" -Direction Outbound -Protocol TCP -RemotePort 22 -Action Allow -ErrorAction SilentlyContinue
           New-NetFirewallRule -DisplayName "Allow DNS Outbound" -Direction Outbound -Protocol UDP -RemotePort 53 -Action Allow -ErrorAction SilentlyContinue
 
-          Write-Host "Firewall rules configured"
-
       - name: Verify build works after firewall configuration
         shell: powershell
         run: |
-          Write-Host "Verifying Maven build works with firewall enabled..."
           mvn clean verify -B -q
-          Write-Host "Build verification successful"
 
       - name: Agent execution summary
         shell: powershell
@@ -98,10 +115,9 @@ jobs:
           Write-Host "================================"
           Write-Host "Agent Execution Summary (Windows)"
           Write-Host "================================"
-          Write-Host "Maven Server: 3.9.6 INSTALLED"
-          Write-Host "Massive Cache: GENERATED & RESTORED"
-          Write-Host "Bulk Downloads: COMPLETED"
+          Write-Host "Maven Version: 3.9.6 (Manually Installed)"
           Write-Host "Firewall: ACTIVE"
+          Write-Host "Warning Fix: Valid Inputs Only"
           Write-Host "================================"
 
   agent-linux:
@@ -113,13 +129,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # [Security] Previous Request: Firewall Upgrade
+      # [Security] Firewall Upgrade
       - name: Upgrade Firewall Software (UFW)
         run: |
           echo "Upgrading UFW package..."
           sudo apt-get update && sudo apt-get install --only-upgrade ufw -y
 
-      # [NEW] Massive Cache Restore Strategy
+      # [Cache] Restore Maven Cache
       - name: Restore Maven Cache
         uses: actions/cache@v4
         with:
@@ -128,16 +144,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # [NEW] Java 17 & Explicit Maven Server Installation
-      - name: Setup Java 17 & Maven 3.9.6 Server
+      # [Setup] Java 17 (Maven version option removed)
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          maven-version: '3.9.6' # Maven 서버 명시적 설치
           cache: 'maven'
 
-      # [NEW] Bulk Download for Offline Support (Massive)
+      # [NEW] Explicit Install of Maven 3.9.6
+      - name: Install Maven 3.9.6 Manually
+        run: |
+          echo "Downloading Maven 3.9.6..."
+          wget -q https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
+          
+          echo "Extracting Maven..."
+          tar -xzf apache-maven-3.9.6-bin.tar.gz
+          
+          echo "Adding Maven to PATH..."
+          echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
+          
+          echo "Maven 3.9.6 Installation Completed"
+
+      - name: Check Maven Version
+        run: mvn -version
+
+      # [Massive] Bulk Download
       - name: Massive Download of Maven Dependencies
         run: |
           echo "Starting Massive Maven Resource Download..."
@@ -148,14 +180,13 @@ jobs:
           # 2. Resolve All Plugins
           mvn dependency:resolve-plugins -B
           
-          # 3. Download Sources and Javadocs
-          # 소스/문서까지 포함하여 캐시 용량을 키우고 오프라인 안정성 확보
-          mvn dependency:sources dependency:javadoc -B -Dmaven.test.skip=true
+          # 3. Download Sources
+          mvn dependency:sources -B -Dmaven.test.skip=true
           
           # 4. Go Offline check
           mvn dependency:go-offline -B
           
-          echo "Massive Download Completed. Local Repository is fully populated."
+          echo "Massive Download Completed."
 
       - name: Configure Linux Firewall (UFW)
         run: |
@@ -171,11 +202,9 @@ jobs:
           sudo ufw allow out 53 comment 'Allow DNS'
           
           sudo ufw reload
-          echo "Firewall configured"
 
       - name: Verify build works after firewall configuration
         run: |
-          echo "Verifying Maven build works with firewall enabled..."
           mvn clean verify -B -q
 
       - name: Agent execution summary
@@ -183,10 +212,9 @@ jobs:
           echo "================================"
           echo "Agent Execution Summary (Linux)"
           echo "================================"
-          echo "Maven Server: 3.9.6 INSTALLED"
-          echo "Massive Cache: GENERATED & RESTORED"
-          echo "Bulk Downloads: COMPLETED"
+          echo "Maven Version: 3.9.6 (Manually Installed)"
           echo "Firewall: ACTIVE"
+          echo "Warning Fix: Valid Inputs Only"
           echo "================================"
 
   agent-validation:
@@ -204,6 +232,6 @@ jobs:
           echo "Complete Agent Validation Summary"
           echo "================================"
           echo "Agents: Windows & Linux PASSED"
-          echo "Java/Maven: Massive Setup & Caching ENABLED"
-          echo "Firewall: Upgrade & Config VERIFIED"
+          echo "Maven Install: MANUAL (v3.9.6)"
+          echo "Warnings: FIXED"
           echo "================================"
