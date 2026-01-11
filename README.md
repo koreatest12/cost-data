@@ -153,29 +153,34 @@ mvn test
 
 # cost-data
 
-## GitHub Copilot Agent with Complete Firewall and Windows Support
+## GitHub Copilot Agent v2.0 - Enhanced Edition
 
-This repository contains a fully configured GitHub Copilot agent that runs **without skipping any components**, including firewall and Windows-specific configurations.
+This repository contains an **advanced GitHub Copilot agent (v2.0)** with enhanced security monitoring, performance optimization, and automated remediation capabilities - running **without skipping any components**.
 
-### ✨ Key Features
+### ✨ Key Features v2.0
 
 - ✅ **No-Skip Configuration**: All components run without being skipped
-- 🔥 **Complete Firewall Support**: Configures both Windows Firewall and Linux UFW/iptables
-- 🪟 **Full Windows Support**: Windows-specific checks and configurations
-- 🐧 **Linux Support**: Complete Linux environment support
-- 🔒 **Security Focused**: All security checks enabled
+- 🔥 **Enhanced Firewall Support**: Advanced rules with logging and rate limiting
+- 🛡️ **Advanced Security**: Intrusion detection, vulnerability scanning, compliance checks
+- 📊 **Performance Monitoring**: Real-time CPU, memory, disk metrics
+- 🔧 **Auto-Remediation**: Automated response to common issues
+- 📝 **Comprehensive Logging**: Detailed audit trails and security event logging
+- 💾 **Backup & Recovery**: Automated encrypted backups
+- 🪟 **Full Windows Support**: Enhanced Windows-specific checks
+- 🐧 **Full Linux Support**: Enhanced Linux environment support
+- 🔒 **Security Focused**: All security checks enabled with compliance validation
 
 ### 📁 Repository Structure
 
 ```
 .github/
 ├── copilot/
-│   └── agent-config.yml          # Main agent configuration (skip_firewall: false, skip_windows: false)
+│   └── agent-config.yml          # Enhanced agent configuration v2.0
 └── workflows/
-    └── copilot-agent.yml         # GitHub Actions workflow for agent execution
-AGENT_GUIDE.md                    # Detailed guide for the agent
-validate-agent.sh                 # Linux/Mac validation script
-validate-agent.ps1                # Windows PowerShell validation script
+    └── copilot-agent.yml         # Enhanced GitHub Actions workflow v2.0
+AGENT_GUIDE.md                    # Comprehensive guide with v2.0 features
+validate-agent.sh                 # Enhanced Linux/Mac validation script
+validate-agent.ps1                # Enhanced Windows PowerShell validation script
 ```
 
 ### 🚀 Quick Start
@@ -192,45 +197,67 @@ validate-agent.ps1                # Windows PowerShell validation script
 .\validate-agent.ps1
 ```
 
-#### View Agent Configuration
+#### View Enhanced Agent Configuration
 
-The agent configuration ensures nothing is skipped:
+The agent v2.0 configuration includes advanced features:
 ```yaml
+version: 2.0.0
 settings:
-  skip_firewall: false    # Firewall always runs
-  skip_windows: false     # Windows checks always run
-  run_all_checks: true    # All checks enabled
+  skip_firewall: false              # Firewall always runs
+  skip_windows: false               # Windows checks always run
+  run_all_checks: true              # All checks enabled
+  enable_monitoring: true           # Real-time monitoring
+  enable_logging: true              # Comprehensive logging
+  enable_auto_remediation: true     # Automated fixes
 ```
 
 ### 📖 Documentation
 
 See [AGENT_GUIDE.md](AGENT_GUIDE.md) for detailed information about:
-- Agent configuration
-- Firewall rules
+- Agent v2.0 configuration and new features
+- Enhanced firewall rules with logging
+- Advanced security features
+- Monitoring and performance metrics
+- Auto-remediation capabilities
 - Platform support
 - Troubleshooting
 
-### 🔍 What Gets Executed
+### 🔍 What Gets Executed (v2.0 Enhanced)
 
 #### Windows Environment
-1. Windows Firewall configuration (HTTP, HTTPS, SSH ports)
-2. Windows Firewall status verification
-3. Windows Defender status checks
-4. System information validation
+1. Windows Firewall configuration with enhanced logging (HTTP, HTTPS, SSH)
+2. SSH rate limiting (max 10 concurrent connections)
+3. Windows Firewall status verification
+4. Windows Defender status checks
+5. System information validation
+6. **NEW**: Performance metrics collection (CPU, Memory, Disk)
+7. **NEW**: Security metrics collection (Firewall profiles, Rules count)
+8. **NEW**: Windows Update status verification
+9. **NEW**: Log artifact upload
 
 #### Linux Environment
-1. UFW firewall configuration (HTTP, HTTPS, SSH ports)
-2. iptables rules setup
-3. Firewall status verification
-4. System and network configuration checks
+1. UFW firewall configuration with logging (HTTP, HTTPS, SSH)
+2. SSH rate limiting to prevent brute force attacks
+3. iptables rules setup with detailed logging
+4. Firewall status verification
+5. System and network configuration checks
+6. **NEW**: Performance metrics collection (CPU, Memory, Disk)
+7. **NEW**: Security metrics collection (UFW status, failed logins)
+8. **NEW**: Service status checks
+9. **NEW**: Listening ports analysis
+10. **NEW**: Log artifact upload
 
 ### ✅ Verification
 
-The agent includes automatic validation to ensure:
-- ✅ All firewall configurations are applied
+The agent v2.0 includes comprehensive validation to ensure:
+- ✅ All firewall configurations are applied with logging
 - ✅ No components are skipped
 - ✅ Security checks are performed
-- ✅ Both Windows and Linux environments are supported
+- ✅ Performance metrics are collected
+- ✅ Security metrics are collected
+- ✅ Auto-remediation is configured
+- ✅ Both Windows and Linux environments are fully supported
+- ✅ Logs are uploaded as artifacts for review
 
 ### 🎯 Usage
 
@@ -239,12 +266,20 @@ The agent automatically runs on:
 - Pull requests to main/master/develop branches
 - Manual workflow dispatch
 
-### 📊 Status
+### 📊 Status - v2.0 Enhanced
 
 All configurations are set to run completely without skipping:
+- **Version**: 2.0.0 ✅
 - **Firewall**: NO SKIP ✅
 - **Windows**: NO SKIP ✅
 - **All Checks**: ENABLED ✅
+- **Monitoring**: ENABLED ✅
+- **Logging**: ENABLED ✅
+- **Auto-Remediation**: ENABLED ✅
+- **Security Features**: ENABLED ✅
+  - Intrusion Detection ✅
+  - Vulnerability Scanning ✅
+  - Compliance Checks ✅
 =======
 # Server Management System (서버 관리 시스템)
 
