@@ -164,6 +164,8 @@ This repository contains a fully configured GitHub Copilot agent that runs **wit
 - 🪟 **Full Windows Support**: Windows-specific checks and configurations
 - 🐧 **Linux Support**: Complete Linux environment support
 - 🔒 **Security Focused**: All security checks enabled
+- 🚀 **Actions Setup Steps**: Dependencies downloaded before firewall is enabled
+- 🌐 **Firewall Allowlist**: Essential URLs for Maven, PyPI, and GitHub allowed
 
 ### 📁 Repository Structure
 
@@ -194,12 +196,19 @@ validate-agent.ps1                # Windows PowerShell validation script
 
 #### View Agent Configuration
 
-The agent configuration ensures nothing is skipped:
+The agent configuration ensures nothing is skipped and includes a firewall allowlist:
 ```yaml
 settings:
   skip_firewall: false    # Firewall always runs
   skip_windows: false     # Windows checks always run
   run_all_checks: true    # All checks enabled
+
+firewall_allowlist:
+  # Essential URLs for builds
+  - github.com
+  - repo.maven.apache.org
+  - pypi.org
+  # ...and more
 ```
 
 ### 📖 Documentation
@@ -213,16 +222,22 @@ See [AGENT_GUIDE.md](AGENT_GUIDE.md) for detailed information about:
 ### 🔍 What Gets Executed
 
 #### Windows Environment
-1. Windows Firewall configuration (HTTP, HTTPS, SSH ports)
-2. Windows Firewall status verification
-3. Windows Defender status checks
-4. System information validation
+1. Setup Java 17 and Python (before firewall)
+2. Pre-download Maven dependencies (before firewall)
+3. Windows Firewall configuration (HTTP, HTTPS, SSH, DNS ports - inbound and outbound)
+4. Windows Firewall status verification
+5. Windows Defender status checks
+6. System information validation
+7. Build verification after firewall enabled
 
 #### Linux Environment
-1. UFW firewall configuration (HTTP, HTTPS, SSH ports)
-2. iptables rules setup
-3. Firewall status verification
-4. System and network configuration checks
+1. Setup Java 17 and Python (before firewall)
+2. Pre-download Maven dependencies (before firewall)
+3. UFW firewall configuration (HTTP, HTTPS, SSH, DNS ports)
+4. iptables rules setup (inbound and outbound)
+5. Firewall status verification
+6. System and network configuration checks
+7. Build verification after firewall enabled
 
 ### ✅ Verification
 

@@ -7,6 +7,32 @@ settings:
   skip_firewall: false
   skip_windows: false
   run_all_checks: true
+
+# Firewall allowlist - essential URLs/hosts for builds and dependencies
+firewall_allowlist:
+  # GitHub domains
+  - github.com
+  - api.github.com
+  - raw.githubusercontent.com
+  - objects.githubusercontent.com
+  
+  # Maven Central and repositories
+  - repo.maven.apache.org
+  - repo1.maven.org
+  - central.maven.org
+  - repo.spring.io
+  
+  # Python Package Index
+  - pypi.org
+  - files.pythonhosted.org
+  
+  # DNS servers (always needed)
+  - 8.8.8.8
+  - 8.8.4.4
+  
+  # Common CDN and download hosts
+  - downloads.apache.org
+  - registry.npmjs.org
   
 # Environment configurations
 environments:

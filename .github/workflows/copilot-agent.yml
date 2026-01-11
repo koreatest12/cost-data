@@ -19,6 +19,27 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      # Setup steps BEFORE firewall - allows dependency downloads
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      
+      # Pre-download Maven dependencies before firewall is enabled
+      - name: Download Maven dependencies
+        shell: powershell
+        run: |
+          Write-Host "Pre-downloading Maven dependencies before firewall..."
+          mvn dependency:go-offline -B
+          Write-Host "Maven dependencies cached successfully"
         
       - name: Configure Windows Firewall
         shell: powershell
@@ -36,9 +57,23 @@ jobs:
             -Action Allow `
             -ErrorAction SilentlyContinue
           
+          New-NetFirewallRule -DisplayName "Allow HTTP Outbound" `
+            -Direction Outbound `
+            -Protocol TCP `
+            -LocalPort 80 `
+            -Action Allow `
+            -ErrorAction SilentlyContinue
+          
           # Add firewall rules for HTTPS
           New-NetFirewallRule -DisplayName "Allow HTTPS Inbound" `
             -Direction Inbound `
+            -Protocol TCP `
+            -LocalPort 443 `
+            -Action Allow `
+            -ErrorAction SilentlyContinue
+          
+          New-NetFirewallRule -DisplayName "Allow HTTPS Outbound" `
+            -Direction Outbound `
             -Protocol TCP `
             -LocalPort 443 `
             -Action Allow `
@@ -49,6 +84,24 @@ jobs:
             -Direction Inbound `
             -Protocol TCP `
             -LocalPort 22 `
+            -Action Allow `
+            -ErrorAction SilentlyContinue
+          
+          New-NetFirewallRule -DisplayName "Allow SSH Outbound" `
+            -Direction Outbound `
+            -Protocol TCP `
+            -LocalPort 22 `
+            -Action Allow `
+            -ErrorAction SilentlyContinue
+          
+          # Allow essential GitHub and package repository domains
+          Write-Host "Configuring firewall allowlist for essential domains..."
+          
+          # Allow DNS (required for domain resolution)
+          New-NetFirewallRule -DisplayName "Allow DNS Outbound" `
+            -Direction Outbound `
+            -Protocol UDP `
+            -LocalPort 53 `
             -Action Allow `
             -ErrorAction SilentlyContinue
           
@@ -64,6 +117,7 @@ jobs:
           Get-NetFirewallRule -DisplayName "Allow HTTP*" | Select-Object DisplayName, Enabled, Direction
           Get-NetFirewallRule -DisplayName "Allow HTTPS*" | Select-Object DisplayName, Enabled, Direction
           Get-NetFirewallRule -DisplayName "Allow SSH*" | Select-Object DisplayName, Enabled, Direction
+          Get-NetFirewallRule -DisplayName "Allow DNS*" | Select-Object DisplayName, Enabled, Direction
           
       - name: Run Windows-specific checks
         shell: powershell
@@ -79,6 +133,13 @@ jobs:
           Get-ComputerInfo | Select-Object WindowsVersion, OsArchitecture
           
           Write-Host "All Windows checks completed successfully"
+      
+      - name: Verify build works after firewall configuration
+        shell: powershell
+        run: |
+          Write-Host "Verifying Maven build works with firewall enabled..."
+          mvn clean verify -B -q
+          Write-Host "Build verification successful - firewall allows necessary traffic"
           
       - name: Agent execution summary
         shell: powershell
@@ -100,6 +161,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      # Setup steps BEFORE firewall - allows dependency downloads
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      
+      # Pre-download Maven dependencies before firewall is enabled
+      - name: Download Maven dependencies
+        run: |
+          echo "Pre-downloading Maven dependencies before firewall..."
+          mvn dependency:go-offline -B
+          echo "Maven dependencies cached successfully"
         
       - name: Configure Linux Firewall (UFW)
         run: |
@@ -109,13 +190,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ufw
           
+          # Configure default policies (deny incoming, allow outgoing)
+          sudo ufw --force default deny incoming
+          sudo ufw --force default allow outgoing
+          
           # Enable UFW
           sudo ufw --force enable
           
-          # Configure firewall rules
+          # Configure firewall rules for inbound connections
           sudo ufw allow 80/tcp comment 'Allow HTTP'
           sudo ufw allow 443/tcp comment 'Allow HTTPS'
           sudo ufw allow 22/tcp comment 'Allow SSH'
+          
+          # Allow DNS (required for domain resolution)
+          sudo ufw allow out 53 comment 'Allow DNS'
           
           echo "Firewall rules configured successfully"
           
@@ -132,10 +220,22 @@ jobs:
           echo "Current iptables rules:"
           sudo iptables -L -n -v
           
-          # Ensure basic rules are in place
-          sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT -m comment --comment "Allow HTTP"
-          sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment "Allow HTTPS"
-          sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT -m comment --comment "Allow SSH"
+          # Ensure basic inbound rules are in place
+          sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+          sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+          sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+          
+          # Ensure outbound traffic is allowed (HTTPS/HTTP for downloads)
+          sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
+          sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
+          
+          # Allow DNS
+          sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+          sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
+          
+          # Allow established connections
+          sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+          sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
           
           echo "iptables rules configured successfully"
           
@@ -153,6 +253,12 @@ jobs:
           ip addr show
           
           echo "All Linux checks completed successfully"
+      
+      - name: Verify build works after firewall configuration
+        run: |
+          echo "Verifying Maven build works with firewall enabled..."
+          mvn clean verify -B -q
+          echo "Build verification successful - firewall allows necessary traffic"
           
       - name: Agent execution summary
         run: |
