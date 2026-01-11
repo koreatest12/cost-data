@@ -147,12 +147,12 @@ After the firewall is configured, a verification step ensures that builds still 
 - name: Verify build works after firewall configuration
   run: |
     echo "Verifying Maven build works with firewall enabled..."
-    mvn clean verify -B -q
+    mvn verify -B -q
     echo "Build verification successful - firewall allows necessary traffic"
 ```
 
 This step:
-- Runs a full Maven build with tests
+- Runs a Maven build with tests (without clean to use cached dependencies)
 - Uses cached dependencies (downloaded before firewall)
 - Verifies that the firewall doesn't block necessary operations
 - Fails the workflow if the build doesn't work

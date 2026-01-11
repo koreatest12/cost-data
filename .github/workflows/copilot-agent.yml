@@ -138,7 +138,7 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Verifying Maven build works with firewall enabled..."
-          mvn clean verify -B -q
+          mvn verify -B -q
           Write-Host "Build verification successful - firewall allows necessary traffic"
 
       - name: Agent execution summary
@@ -257,7 +257,7 @@ jobs:
       - name: Verify build works after firewall configuration
         run: |
           echo "Verifying Maven build works with firewall enabled..."
-          mvn clean verify -B -q
+          mvn verify -B -q
           echo "Build verification successful - firewall allows necessary traffic"
 
       - name: Agent execution summary
