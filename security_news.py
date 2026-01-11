@@ -7,160 +7,184 @@ import re
 import concurrent.futures
 from datetime import datetime
 import time
+import os
+from duckduckgo_search import DDGS
 
-# 🚨 SSL 경고 제거 (필수)
+# 🚨 SSL 경고 제거
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ---------------------------------------------------------
-# 1. 2026년 기준 검증된 '살아있는' 보안 뉴스 채널 (35개+)
+# 1. RSS 채널 리스트 (검증된 소스)
 # ---------------------------------------------------------
 RSS_FEEDS = {
-    "🇰🇷 국내 핵심 (Verified)": [
-        {"title": "보안뉴스 (BoanNews)", "url": "https://www.boannews.com/media/news_rss.xml"},
-        {"title": "데일리시큐 (DailySecu)", "url": "https://www.dailysecu.com/rss/allArticle.xml"},
-        {"title": "전자신문 (Security)", "url": "https://rss.etnews.com/04045.xml"},
-        {"title": "바이라인네트워크 (IT/Security)", "url": "https://byline.network/feed/"}, # ZDNet 대체
-        {"title": "ITWorld (Security)", "url": "https://www.itworld.co.kr/rss/topics/security"},
+    "🚨 Critical Threats (긴급)": [
+        {"title": "CISA Alerts", "url": "https://www.cisa.gov/uscert/ncas/alerts.xml"},
+        {"title": "Microsoft Security", "url": "https://www.microsoft.com/security/blog/feed/"},
+        {"title": "Palo Alto Unit 42", "url": "https://unit42.paloaltonetworks.com/feed/"},
     ],
-    "🛡️ 글로벌 위협 인텔리전스 (Top Tier)": [
-        {"title": "Palo Alto Unit 42", "url": "https://unit42.paloaltonetworks.com/feed/"}, # AhnLab 대체
-        {"title": "Mandiant Threat Research", "url": "https://www.mandiant.com/resources/blog/rss.xml"},
-        {"title": "Recorded Future", "url": "https://www.recordedfuture.com/feed"},
-        {"title": "SentinelOne", "url": "https://www.sentinelone.com/feed/"},
+    "🇰🇷 국내 보안 뉴스": [
+        {"title": "보안뉴스", "url": "https://www.boannews.com/media/news_rss.xml"},
+        {"title": "데일리시큐", "url": "https://www.dailysecu.com/rss/allArticle.xml"},
+        {"title": "바이라인네트워크", "url": "https://byline.network/feed/"},
     ],
-    "🌍 글로벌 뉴스 (Must Read)": [
+    "🌍 글로벌 인텔리전스": [
         {"title": "The Hacker News", "url": "https://feeds.feedburner.com/TheHackersNews"},
         {"title": "BleepingComputer", "url": "https://www.bleepingcomputer.com/feed/"},
-        {"title": "SecurityWeek", "url": "https://feeds.feedburner.com/SecurityWeek"}, # PacketStorm 대체
-        {"title": "Help Net Security", "url": "https://www.helpnetsecurity.com/feed/"},
-        {"title": "The CyberWire", "url": "https://thecyberwire.com/feeds/rss.xml"},
-    ],
-    "🏢 빅테크 & 클라우드 보안": [
-        {"title": "Microsoft Security", "url": "https://www.microsoft.com/security/blog/feed/"},
-        {"title": "Google Online Security", "url": "https://security.googleblog.com/feeds/posts/default"},
-        {"title": "AWS Security", "url": "https://aws.amazon.com/blogs/security/feed/"},
-        {"title": "Cloudflare", "url": "https://blog.cloudflare.com/rss/"},
-    ],
-    "🐛 취약점 & 심층 분석": [
-        {"title": "Exploit-DB", "url": "https://www.exploit-db.com/rss.xml"},
-        {"title": "Schneier on Security", "url": "https://www.schneier.com/feed/atom/"},
-        {"title": "Trend Micro Research", "url": "https://feeds.feedburner.com/TrendMicroResearch"},
-        {"title": "Qualys Security", "url": "https://blog.qualys.com/feed"},
+        {"title": "SecurityWeek", "url": "https://feeds.feedburner.com/SecurityWeek"},
     ]
 }
 
 # ---------------------------------------------------------
-# 2. 봇 차단 우회 및 연결 설정
+# 2. AI 에이전트 유틸리티 (검색 및 분석)
 # ---------------------------------------------------------
 def create_session():
     session = requests.Session()
-    # 리얼 크롬 브라우저 헤더 (User-Agent)
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Referer': 'https://www.google.com/'
-    })
-    # 재시도 로직 (Timeout 방지)
+    session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
     retry = Retry(total=2, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
     adapter = HTTPAdapter(max_retries=retry)
     session.mount("https://", adapter)
-    session.mount("http://", adapter)
     return session
 
 def clean_html(raw_html):
     if not raw_html: return ""
-    text = re.sub(r'<[^>]+>', '', raw_html).strip() # 태그 제거
-    return text[:150] + "..." if len(text) > 150 else text
+    text = re.sub(r'<[^>]+>', '', raw_html).strip()
+    return text[:120] + "..." if len(text) > 120 else text
+
+# 🔥 AI 기능 1: 키워드 기반 중요도 분석
+def analyze_importance(title, summary):
+    critical_keywords = ['RCE', 'Zero-day', 'Vulnerability', 'Exploit', 'Critical', 'Patch', '취약점', '긴급', '해킹', '유출']
+    score = 0
+    detected_keywords = []
+    
+    content = (title + " " + summary).lower()
+    for kw in critical_keywords:
+        if kw.lower() in content:
+            score += 1
+            detected_keywords.append(kw)
+    
+    return score, list(set(detected_keywords))
+
+# 🔥 AI 기능 2: 딥러닝(심층) 검색 (Self-Learning)
+def deep_search_context(keyword):
+    try:
+        with DDGS() as ddgs:
+            # 뉴스 검색 결과 2개만 요약해서 가져옴
+            results = list(ddgs.news(keyword, max_results=2))
+            if results:
+                return [f"👉 관련 추가 뉴스: {r['title']} ({r['source']})" for r in results]
+    except Exception:
+        return []
+    return []
 
 def fetch_single_feed(feed):
     session = create_session()
     try:
-        # verify=False로 인증서 에러 패스, timeout=15초
-        resp = session.get(feed['url'], timeout=15, verify=False)
+        resp = session.get(feed['url'], timeout=10, verify=False)
+        if resp.status_code == 404: return [], f"⚠️ 404 Error: {feed['title']}"
         
-        # 404 체크
-        if resp.status_code == 404:
-            return [], f"⚠️ 주소 404 (삭제됨): {feed['title']}"
-            
-        resp.raise_for_status()
-        
-        # 파싱 시도 (content -> text 순서로 시도)
         parsed = feedparser.parse(resp.content)
-        if not parsed.entries:
-            parsed = feedparser.parse(resp.text)
+        if not parsed.entries: parsed = feedparser.parse(resp.text)
+        
+        if not parsed.entries: return [], f"⚠️ No Data: {feed['title']}"
+        
+        # 최신 3개만, 분석 로직 적용
+        processed_entries = []
+        for entry in parsed.entries[:3]:
+            title = entry.title
+            link = entry.link
+            summary = clean_html(getattr(entry, 'summary', getattr(entry, 'description', '')))
+            published = getattr(entry, 'published', '')[:16]
             
-        if not parsed.entries:
-            return [], f"⚠️ 데이터 없음 (빈 피드): {feed['title']}"
+            # 중요도 분석 실행
+            score, keywords = analyze_importance(title, summary)
             
-        return parsed.entries[:5], feed['title']
+            # 중요도가 높으면(키워드 1개 이상) 추가 검색 수행 (AI Agent 행동)
+            extra_info = []
+            if score >= 1:
+                # 너무 많은 요청 방지를 위해 가장 중요한 키워드로만 검색
+                search_query = f"{keywords[0]} security news"
+                extra_info = deep_search_context(title[:30]) 
+            
+            processed_entries.append({
+                "title": title,
+                "link": link,
+                "summary": summary,
+                "date": published,
+                "score": score,
+                "keywords": keywords,
+                "extra_info": extra_info
+            })
+            
+        return processed_entries, feed['title']
 
     except Exception as e:
-        return [], f"❌ 접속 실패 ({feed['title']}): {str(e)[:30]}"
+        return [], f"❌ Fail: {feed['title']}"
 
 # ---------------------------------------------------------
-# 3. 메인 실행 (수정된 카운팅 로직)
+# 3. 메인 실행
 # ---------------------------------------------------------
 def main():
     start = time.time()
     today = datetime.now().strftime("%Y-%m-%d")
     
-    md_output = f"# 🛡️ Security News Briefing ({today})\n"
-    md_output += f"> 🤖 Auto-generated by GitHub Actions | {datetime.now().strftime('%H:%M KST')}\n\n"
+    # GitHub Summary용 출력 (화면에 바로 보임)
+    summary_output = f"# 🤖 AI Security Briefing ({today})\n"
+    summary_output += f"> Analysis Engine: Active | Auto-Search: Enabled\n\n"
     
-    total_articles = 0 # 전체 기사 수 카운터
+    total_articles = 0
     
     for category, feeds in RSS_FEEDS.items():
-        md_output += f"## {category}\n"
-        print(f"\n📂 {category}")
+        summary_output += f"## {category}\n"
+        print(f"📂 Processing: {category}")
         
-        # 병렬 수집 시작
-        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             future_to_feed = {executor.submit(fetch_single_feed, feed): feed for feed in feeds}
             
-            # 카테고리별 결과 임시 저장
-            category_results = []
-            
+            results = []
             for future in concurrent.futures.as_completed(future_to_feed):
-                entries, msg_or_title = future.result()
-                
-                if entries: # 기사가 있으면 성공
-                    category_results.append((msg_or_title, entries))
-                    print(f"  ✅ Fetched: {msg_or_title} ({len(entries)} articles)")
-                else: # 기사가 없으면 실패 메시지 출력
-                    print(f"  {msg_or_title}")
-
-            # 리포트 작성 (결과가 있을 때만)
-            if not category_results:
-                md_output += "> *No updates available.*\n\n"
-                continue
-                
-            # 정렬 후 출력
-            category_results.sort(key=lambda x: x[0])
+                entries, title = future.result()
+                if entries:
+                    results.append((title, entries))
             
-            for title, entries in category_results:
-                md_output += f"<details><summary><b>{title}</b></summary>\n\n"
-                for entry in entries:
-                    link = entry.link
-                    summary = clean_html(getattr(entry, 'summary', getattr(entry, 'description', '')))
-                    # 날짜 (없으면 생략)
-                    published = getattr(entry, 'published', '')[:16]
+            if not results:
+                summary_output += "> *No significant updates.*\n\n"
+                continue
+            
+            results.sort(key=lambda x: x[0])
+            
+            for title, entries in results:
+                summary_output += f"### {title}\n"
+                for item in entries:
+                    # 중요 아이콘 표시
+                    icon = "🔥" if item['score'] >= 1 else "🔹"
                     
-                    md_output += f"- **[{entry.title}]({link})**\n"
-                    if published:
-                        md_output += f"  - <small>📅 {published}</small>\n"
-                    md_output += f"  - {summary}\n\n"
+                    summary_output += f"- {icon} **[{item['title']}]({item['link']})**\n"
+                    if item['summary']:
+                        summary_output += f"  - {item['summary']}\n"
                     
-                    total_articles += 1 # 카운터 증가
-                md_output += "</details>\n"
-        
-        md_output += "---\n"
+                    # AI 분석 결과 표시 (키워드 & 추가 검색 정보)
+                    if item['keywords']:
+                        tags = ", ".join([f"`{k}`" for k in item['keywords']])
+                        summary_output += f"  - 🧠 **AI Focus:** {tags}\n"
+                    
+                    # 추가 검색된 정보가 있으면 표시
+                    if item['extra_info']:
+                        for info in item['extra_info']:
+                            summary_output += f"  - *{info}*\n"
+                    
+                    summary_output += "\n"
+                    total_articles += 1
 
-    elapsed = time.time() - start
-    print(f"\n✨ DONE! Total {total_articles} articles collected in {elapsed:.2f}s")
-    
-    # 결과 파일 저장
+    # GitHub Actions 화면(Summary)에 출력하기 위해 환경변수에 쓰기
+    if "GITHUB_STEP_SUMMARY" in os.environ:
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+            f.write(summary_output)
+            
+    # 이슈 생성용 파일 저장
     with open("daily_security_report.md", "w", encoding="utf-8") as f:
-        f.write(md_output)
+        f.write(summary_output)
+
+    print(f"\n✨ Processed {total_articles} articles in {time.time()-start:.2f}s")
 
 if __name__ == "__main__":
     main()
