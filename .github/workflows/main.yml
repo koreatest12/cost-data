@@ -1,45 +1,42 @@
-name: Enterprise Security News Briefing
+name: AI Powered Security News
 
 on:
   schedule:
-    # 한국 시간 아침 8시 (UTC 23:00) 자동 실행
-    - cron: '0 23 * * *'
-  workflow_dispatch: # 수동 실행 버튼
+    - cron: '0 23 * * *' # 매일 아침 8시 (KST)
+  workflow_dispatch:
 
 jobs:
-  build:
+  ai-analysis:
+    name: 🤖 AI Security Analyst
     runs-on: ubuntu-latest
     permissions:
-      issues: write
       contents: read
+      issues: write
 
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python 3.11 (Upgrade)
+      - name: 🐍 Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip' # 대량 모듈 설치 속도 향상을 위한 캐싱 적용
+          cache: 'pip'
 
-      - name: 📦 Install Massive Dependencies
+      - name: 📦 Install AI & Network Tools
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # 만약 requirements.txt가 없더라도 강제로 핵심 모듈 설치
-          pip install feedparser requests beautifulsoup4 lxml
 
-      - name: 🚀 Run Security Intelligence Engine
-        run: |
-          python security_news.py
+      - name: 🚀 Run AI Analysis Engine
+        run: python security_news.py
 
-      - name: 📝 Create Daily Issue Report
+      # (옵션) 이슈로도 남기고 싶다면 유지, 화면만 보고 싶다면 삭제 가능
+      - name: 📝 Save to GitHub Issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "🛡️ ${{ steps.date.outputs.date }} 보안 인텔리전스 종합 리포트"
+          title: "🤖 AI Security Report - ${{ steps.date.outputs.date }}"
           content-filepath: ./daily_security_report.md
           labels: |
-            security-briefing
-            automated-report
-            enterprise
+            ai-report
+            security
