@@ -1,57 +1,50 @@
-name: AI Security News Briefing (Massive Update)
+name: Hourly AI Security Briefing
 
 on:
   schedule:
-    - cron: '0 23 * * *' # 매일 아침 8시 (한국시간)
+    - cron: '0 * * * *' # ⏰ 매 시간(Hourly) 0분에 자동 실행
   workflow_dispatch: # 수동 실행 버튼
 
 jobs:
-  security-briefing:
+  security-monitor:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
 
     steps:
-      # 1. 소스 코드 내려받기
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
 
-      # 2. 파이썬 3.11 환경 구성 (최신 버전)
       - name: 🐍 Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip' # 설치 속도 향상
+          cache: 'pip'
 
-      # 3. 🔥 [핵심] 대량 모듈 강제 설치 (여기가 해결책입니다)
-      - name: 📦 Install Massive Dependencies
+      - name: 📦 Install AI & Translator Tools
         run: |
           python -m pip install --upgrade pip
-          
-          # 봇 차단 우회, AI 검색, HTML 파싱을 위한 모든 모듈 대량 설치
-          pip install feedparser requests beautifulsoup4 lxml duckduckgo-search fake-useragent
+          # 번역(deep-translator) 및 AI 검색(duckduckgo) 모듈 대량 설치
+          pip install feedparser requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator
 
-      # 4. 스크립트 실행 (오류 발생 시에도 로그 출력)
-      - name: 🚀 Run AI Security Agent
+      - name: 🚀 Run Security Analyst Agent
         run: |
           python security_news.py
 
-      # 5. 실행 결과(화면)에 리포트 출력
-      - name: 📊 Summary Report
+      - name: 📊 Real-time Dashboard (Summary)
         if: always()
         run: |
-          if [ -f daily_security_report.md ]; then
-            cat daily_security_report.md >> $GITHUB_STEP_SUMMARY
+          if [ -f hourly_security_report.md ]; then
+            cat hourly_security_report.md >> $GITHUB_STEP_SUMMARY
           fi
 
-      # 6. (선택 사항) GitHub Issue 생성
-      - name: 📝 Create Issue
+      - name: 🚨 Create Hourly Alert Issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "🛡️ AI Security Briefing - ${{ steps.date.outputs.date }}"
-          content-filepath: ./daily_security_report.md
+          title: "🚨 [Hourly] AI Security Briefing - ${{ steps.date.outputs.date }}"
+          content-filepath: ./hourly_security_report.md
           labels: |
-            security
-            ai-report
-            automated
+            hourly-briefing
+            security-alert
+            auto-translated
