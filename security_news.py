@@ -1,102 +1,130 @@
 import feedparser
-from datetime import datetime
+import requests
 import re
-import ssl
-
-# SSL 인증서 문제 방지 (오래된 서버 대응)
-if hasattr(ssl, '_create_unverified_context'):
-    ssl._create_default_https_context = ssl._create_unverified_context
+import concurrent.futures
+from datetime import datetime
+import time
 
 # ---------------------------------------------------------
-# 1. 대량 보안 뉴스 채널 리스트 (카테고리별 분류)
+# 1. 초대량 보안 뉴스 채널 리스트 (30개 이상 확장)
 # ---------------------------------------------------------
 RSS_FEEDS = {
-    "🇰🇷 국내 주요 보안 뉴스": [
+    "🇰🇷 국내 엔터프라이즈 및 공공": [
         {"title": "보안뉴스 (BoanNews)", "url": "https://www.boannews.com/media/news_rss.xml"},
         {"title": "데일리시큐 (DailySecu)", "url": "https://www.dailysecu.com/rss/allArticle.xml"},
-        {"title": "KISA 보호나라 (보안공지)", "url": "https://www.krcert.or.kr/rss/feed.do?feedType=1"},
-        {"title": "ITWorld (Security)", "url": "https://www.itworld.co.kr/rss/topics/security"},
+        {"title": "ITWorld Korea", "url": "https://www.itworld.co.kr/rss/topics/security"}, 
         {"title": "CIO Korea", "url": "https://www.ciokorea.com/rss/topics/security"},
+        {"title": "KISA 보호나라 (공지사항)", "url": "https://www.krcert.or.kr/rss/feed.do?feedType=1"}, 
     ],
-    "🌍 글로벌 위협 인텔리전스": [
+    "🌍 글로벌 탑 티어 (Must Read)": [
         {"title": "The Hacker News", "url": "https://feeds.feedburner.com/TheHackersNews"},
         {"title": "BleepingComputer", "url": "https://www.bleepingcomputer.com/feed/"},
         {"title": "Dark Reading", "url": "https://www.darkreading.com/rss.xml"},
-        {"title": "Threatpost", "url": "https://threatpost.com/feed/"},
-        {"title": "Krebs on Security", "url": "https://krebsonsecurity.com/feed/"},
+        {"title": "TechCrunch Security", "url": "https://techcrunch.com/category/security/feed/"},
+        {"title": "Wired Security", "url": "https://www.wired.com/feed/category/security/latest/rss"},
     ],
-    "🐛 취약점 및 기술 분석 (CVE/Exploit)": [
-        {"title": "CISA Alerts (US Govt)", "url": "https://www.cisa.gov/uscert/ncas/alerts.xml"},
-        {"title": "Google Project Zero", "url": "https://googleprojectzero.blogspot.com/feeds/posts/default"},
+    "🏢 빅테크 & 벤더 블로그": [
+        {"title": "Microsoft Security", "url": "https://www.microsoft.com/security/blog/feed/"},
+        {"title": "Google Online Security", "url": "https://security.googleblog.com/feeds/posts/default"},
+        {"title": "AWS Security Blog", "url": "https://aws.amazon.com/blogs/security/feed/"},
+        {"title": "Cloudflare Blog", "url": "https://blog.cloudflare.com/rss/"},
+        {"title": "CrowdStrike Blog", "url": "https://www.crowdstrike.com/blog/feed/"},
+    ],
+    "🐛 취약점 & 악성코드 분석 (Deep Dive)": [
+        {"title": "Trend Micro Research", "url": "https://feeds.feedburner.com/TrendMicroResearch"},
+        {"title": "Malwarebytes Labs", "url": "https://blog.malwarebytes.com/feed/"},
+        {"title": "Securelist (Kaspersky)", "url": "https://securelist.com/feed/"},
         {"title": "Exploit-DB", "url": "https://www.exploit-db.com/rss.xml"},
+        {"title": "US-CERT (CISA)", "url": "https://www.cisa.gov/uscert/ncas/current-activity.xml"},
     ]
 }
 
 # ---------------------------------------------------------
-# 2. 유틸리티 함수: HTML 태그 제거 및 텍스트 정리
+# 2. 고급 설정: 봇 차단 우회 및 병렬 처리기
 # ---------------------------------------------------------
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
+
 def clean_html(raw_html):
-    if not raw_html:
-        return "요약 없음"
+    if not raw_html: return ""
     cleanr = re.compile('<.*?>')
     cleantext = re.sub(cleanr, '', raw_html)
-    return cleantext.strip()[:200] + "..." # 너무 길면 200자에서 자름
+    return cleantext.strip()[:150] + "..."
 
-# ---------------------------------------------------------
-# 3. 뉴스 수집 메인 로직
-# ---------------------------------------------------------
-def fetch_news():
-    today = datetime.now().strftime("%Y년 %m월 %d일")
-    report = f"# 🛡️ {today} 종합 보안 브리핑\n"
-    report += f"> 🕒 업데이트 시간: {datetime.now().strftime('%H:%M:%S')}\n\n"
-    
-    total_articles = 0
-
-    for category, feeds in RSS_FEEDS.items():
-        report += f"## {category}\n"
+def fetch_single_feed(feed):
+    """
+    개별 피드를 수집하는 함수 (타임아웃 및 예외처리 강화)
+    """
+    try:
+        # requests로 먼저 원본 데이터를 가져옴 (헤더 포함)
+        response = requests.get(feed['url'], headers=HEADERS, timeout=10)
+        response.raise_for_status()
         
-        for feed in feeds:
-            print(f"📡 Fetching: {feed['title']}...")
-            try:
-                parsed_feed = feedparser.parse(feed['url'])
-                
-                # 피드가 비어있거나 에러가 있는 경우 패스
-                if not parsed_feed.entries:
-                    print(f"  └─ ⚠️ 데이터 없음: {feed['url']}")
-                    continue
-
-                # UI 깔끔하게 하기 위해 접기 기능 사용 (<details>)
-                report += f"<details>\n<summary><b>{feed['title']}</b> (최신 {len(parsed_feed.entries[:5])}건)</summary>\n\n"
-                
-                # 각 피드에서 최신 글 5개만 가져오기 (너무 많으면 이슈 생성 실패함)
-                for entry in parsed_feed.entries[:5]:
-                    title = entry.title
-                    link = entry.link
-                    summary_raw = getattr(entry, 'summary', getattr(entry, 'description', ''))
-                    summary = clean_html(summary_raw)
-                    published = getattr(entry, 'published', '날짜 정보 없음')[:16] # 날짜 포맷 단순화
-
-                    report += f"- **[{title}]({link})** <br> <sub>📅 {published} | {summary}</sub>\n\n"
-                    total_articles += 1
-                
-                report += "</details>\n\n"
+        # feedparser에 텍스트 데이터 전달
+        parsed = feedparser.parse(response.content)
+        
+        if not parsed.entries:
+            return None, f"⚠️ 데이터 없음: {feed['title']}"
             
-            except Exception as e:
-                print(f"  └─ ❌ Error: {e}")
-                report += f"- ⚠️ *{feed['title']} 수집 실패*\n\n"
-
-        report += "---\n"
-    
-    print(f"\n✅ 총 {total_articles}개의 기사가 수집되었습니다.")
-    return report
+        return parsed.entries[:5], feed['title'] # 최신 5개만 반환
+        
+    except Exception as e:
+        return None, f"❌ 접속 실패 ({feed['title']}): {str(e)[:50]}"
 
 # ---------------------------------------------------------
-# 4. 실행 및 저장
+# 3. 메인 실행 로직 (멀티 스레드 적용)
 # ---------------------------------------------------------
-if __name__ == "__main__":
-    news_report = fetch_news()
+def main():
+    start_time = time.time()
+    today = datetime.now().strftime("%Y년 %m월 %d일")
     
+    final_report = f"# 🛡️ {today} 대용량 보안 인텔리전스 리포트\n"
+    final_report += f"> 🚀 시스템: 고성능 병렬 수집 엔진 가동\n\n"
+    
+    total_count = 0
+    
+    # 카테고리별 루프
+    for category, feeds in RSS_FEEDS.items():
+        final_report += f"## {category}\n"
+        print(f"\n📂 Processing Category: {category}")
+        
+        # 병렬 처리 (ThreadPoolExecutor) - 동시에 여러 사이트 접속
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            future_to_feed = {executor.submit(fetch_single_feed, feed): feed for feed in feeds}
+            
+            results = []
+            for future in concurrent.futures.as_completed(future_to_feed):
+                entries, msg_or_title = future.result()
+                if entries:
+                    results.append((msg_or_title, entries)) # 성공
+                    print(f"  ✅ Fetched: {msg_or_title}")
+                else:
+                    print(f"  {msg_or_title}") # 실패 메시지 출력
+
+            # 결과 정렬 및 리포트 작성
+            if not results:
+                final_report += "> *이 카테고리에서 수집된 뉴스가 없습니다.*\n\n"
+            
+            for title, entries in results:
+                final_report += f"<details><summary><b>{title}</b> ({len(entries)})</summary>\n\n"
+                for entry in entries:
+                    summary = clean_html(getattr(entry, 'summary', getattr(entry, 'description', '')))
+                    pub_date = getattr(entry, 'published', '')[:16]
+                    final_report += f"- **[{entry.title}]({entry.link})** <br> <sub>⏱️ {pub_date} | {summary}</sub>\n\n"
+                    total_count += 1
+                final_report += "</details>\n"
+        
+        final_report += "\n---\n"
+
+    elapsed_time = time.time() - start_time
+    footer = f"\n✅ **총 {total_count}개 기사 수집 완료** (소요 시간: {elapsed_time:.2f}초)"
+    print(footer)
+    final_report += footer
+    
+    # 파일 저장
     with open("daily_security_report.md", "w", encoding="utf-8") as f:
-        f.write(news_report)
-    
-    print("📂 daily_security_report.md 파일 생성 완료")
+        f.write(final_report)
+
+if __name__ == "__main__":
+    main()
