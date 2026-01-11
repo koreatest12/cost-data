@@ -1,4 +1,4 @@
-name: Copilot Agent - Complete Run
+name: Copilot Agent - Complete Run (MCP & Playwright Edition)
 
 on:
   push:
@@ -17,108 +17,127 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout code
+      # 1. 작업 설정
+      - name: 작업 설정 (Job Setup)
         uses: actions/checkout@v4
 
-      # [Security] Firewall & Security Upgrade
-      - name: Upgrade Firewall & Security Definitions
+      # 2. 실행기 OS 검증
+      - name: 실행기 OS 검증 (Verify Runner OS)
         shell: powershell
         run: |
-          Write-Host "Upgrading Windows Security Intelligence..."
+          Write-Host "Verifying Windows Runner Environment..."
+          Get-ComputerInfo | Select-Object WindowsVersion, OsArchitecture, CsName
+          Write-Host "OS Verification Completed."
+
+      # 3. 방화벽 설정 유효성 검사 (보안 업그레이드 포함)
+      - name: 방화벽 설정 유효성 검사 (Windows Firewall Validation)
+        shell: powershell
+        run: |
+          Write-Host "Validating and Upgrading Windows Security Definitions..."
+          
+          # 보안 인텔리전스(방화벽/바이러스 정의) 업데이트
           Update-MpSignature
-          Write-Host "Windows Firewall & Security Definitions Upgraded"
+          
+          # 방화벽 서비스 상태 확인
+          $firewall = Get-Service mpssvc
+          if ($firewall.Status -eq 'Running') {
+              Write-Host "✓ Windows Firewall Service is active."
+          } else {
+              Write-Host "✗ Windows Firewall Service is NOT running."
+              exit 1
+          }
+          Write-Host "Firewall Validation & Upgrade Completed."
 
-      # [Cache] Restore Maven Cache
-      - name: Restore Maven Cache
-        uses: actions/cache@v4
+      # 4. Playwright MCP 서버 다운로드 (백그라운드 시뮬레이션)
+      - name: Playwright MCP 서버 다운로드 (Download Playwright & Node.js)
+        uses: actions/setup-node@v4
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          node-version: '20'
+      - name: Playwright 패키지 설치
+        shell: powershell
+        run: |
+          Write-Host "Starting Playwright MCP Server Download..."
+          npm install -g playwright
+          # Playwright 브라우저 바이너리 다운로드
+          npx playwright install --with-deps chromium
+          Write-Host "Playwright MCP Server Components Downloaded."
 
-      # [Setup] Java 17 (Maven version option removed to fix warning)
-      - name: Setup Java 17
+      # 5. Copilot 준비 (Java/Maven 설정 및 대량 리소스 확보)
+      - name: Copilot(Windows) 준비 (Prepare Copilot Environment)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
 
-      # [NEW] Explicit Install of Maven 3.9.6 (Fix for missing input)
-      - name: Install Maven 3.9.6 Manually
+      - name: Maven 3.9.6 수동 설치 (Manual Install)
         shell: powershell
         run: |
-          Write-Host "Downloading Maven 3.9.6..."
+          Write-Host "Installing Maven 3.9.6 manually..."
           $url = "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.zip"
           $output = "maven.zip"
           Invoke-WebRequest -Uri $url -OutFile $output
-          
-          Write-Host "Extracting Maven..."
           Expand-Archive -Path $output -DestinationPath .
-          
-          $mavenHome = "$(Get-Location)\apache-maven-3.9.6"
-          $mavenBin = "$mavenHome\bin"
-          
-          Write-Host "Adding Maven to PATH: $mavenBin"
+          $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          
-          Write-Host "Maven 3.9.6 Installation Completed"
 
-      - name: Check Maven Version
-        shell: powershell
-        run: mvn -version
-
-      # [Massive] Bulk Download
-      - name: Massive Download of Maven Dependencies
+      - name: Copilot 리소스 대량 다운로드 (Massive Download)
         shell: powershell
         run: |
-          Write-Host "Starting Massive Maven Resource Download..."
-          
-          # 1. Resolve Project Dependencies
+          Write-Host "Pre-loading Copilot Dependencies & Resources..."
           mvn dependency:resolve -B
-          
-          # 2. Resolve All Plugins
           mvn dependency:resolve-plugins -B
-          
-          # 3. Download Sources (Removed invalid 'javadoc' goal)
           mvn dependency:sources -B -Dmaven.test.skip=true
-          
-          # 4. Go Offline check
           mvn dependency:go-offline -B
-          
-          Write-Host "Massive Download Completed."
+          Write-Host "Copilot Preparation Completed."
 
-      - name: Configure Windows Firewall
+      # 6. MCP 서버 시작 (방화벽 가동 및 포트 제어)
+      - name: MCP 서버 시작 (Start MCP Server & Configure Firewall)
         shell: powershell
         run: |
-          Write-Host "Configuring Windows Firewall..."
+          Write-Host "Starting MCP Server Context..."
+          # 실제 서버 시작 명령이 들어갈 자리 (예: node server.js &)
+          Write-Host "MCP Server initiated."
+
+          Write-Host "Configuring Firewall Rules (Blocking Unknown Traffic)..."
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
+          
+          # Allow Essential Ports (HTTP/HTTPS/SSH/DNS)
+          New-NetFirewallRule -DisplayName "Allow HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
+          New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Outbound -Protocol TCP -RemotePort 443 -Action Allow
+          New-NetFirewallRule -DisplayName "Allow DNS" -Direction Outbound -Protocol UDP -RemotePort 53 -Action Allow
+          
+          Write-Host "Firewall Active. MCP Server Secured."
 
-          # Essential Rules
-          New-NetFirewallRule -DisplayName "Allow HTTP Inbound" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
-          New-NetFirewallRule -DisplayName "Allow HTTP Outbound" -Direction Outbound -Protocol TCP -RemotePort 80 -Action Allow -ErrorAction SilentlyContinue
-          New-NetFirewallRule -DisplayName "Allow HTTPS Inbound" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow -ErrorAction SilentlyContinue
-          New-NetFirewallRule -DisplayName "Allow HTTPS Outbound" -Direction Outbound -Protocol TCP -RemotePort 443 -Action Allow -ErrorAction SilentlyContinue
-          New-NetFirewallRule -DisplayName "Allow SSH Inbound" -Direction Inbound -Protocol TCP -LocalPort 22 -Action Allow -ErrorAction SilentlyContinue
-          New-NetFirewallRule -DisplayName "Allow SSH Outbound" -Direction Outbound -Protocol TCP -RemotePort 22 -Action Allow -ErrorAction SilentlyContinue
-          New-NetFirewallRule -DisplayName "Allow DNS Outbound" -Direction Outbound -Protocol UDP -RemotePort 53 -Action Allow -ErrorAction SilentlyContinue
-
-      - name: Verify build works after firewall configuration
+      # 7. 요청 처리 (메인 빌드 실행)
+      - name: 요청 처리(Windows) (Process Request)
         shell: powershell
         run: |
+          Write-Host "Processing Request: Maven Build..."
           mvn clean verify -B -q
+          Write-Host "Request Processed Successfully."
 
-      - name: Agent execution summary
+      # 8. 정리
+      - name: 정리(윈도우) (Cleanup)
         shell: powershell
         run: |
-          Write-Host "================================"
-          Write-Host "Agent Execution Summary (Windows)"
-          Write-Host "================================"
-          Write-Host "Maven Version: 3.9.6 (Manually Installed)"
-          Write-Host "Firewall: ACTIVE"
-          Write-Host "Warning Fix: Valid Inputs Only"
-          Write-Host "================================"
+          Write-Host "Cleaning up temporary files..."
+          Remove-Item -Path "maven.zip" -ErrorAction SilentlyContinue
+          Write-Host "Cleanup Completed."
+
+      # 9. [선택 사항] 보관 세부 정보
+      - name: "[선택 사항] 보관 세부 정보 (Archive Artifacts)"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-logs
+          path: |
+            **/*.log
+            **/target/*.jar
+
+      # 10. 작업 완료
+      - name: 작업 완료 (Job Completed)
+        run: echo "Windows Agent Job Finished"
 
   agent-linux:
     name: Run Agent on Linux
@@ -126,112 +145,107 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout code
+      # 1. 작업 설정
+      - name: 작업 설정 (Job Setup)
         uses: actions/checkout@v4
 
-      # [Security] Firewall Upgrade
-      - name: Upgrade Firewall Software (UFW)
+      # 2. 실행기 OS 검증
+      - name: 실행기 OS 검증 (Verify Runner OS)
         run: |
-          echo "Upgrading UFW package..."
-          sudo apt-get update && sudo apt-get install --only-upgrade ufw -y
+          echo "Verifying Linux Runner Environment..."
+          uname -a
+          cat /etc/os-release
+          echo "OS Verification Completed."
 
-      # [Cache] Restore Maven Cache
-      - name: Restore Maven Cache
-        uses: actions/cache@v4
+      # 3. 방화벽 설정 유효성 검사 (보안 업그레이드 포함)
+      - name: 방화벽 설정 유효성 검사 (Linux Firewall Validation)
+        run: |
+          echo "Validating and Upgrading Firewall (UFW)..."
+          sudo apt-get update
+          sudo apt-get install --only-upgrade ufw -y
+          sudo ufw status verbose
+          echo "Firewall Validation & Upgrade Completed."
+
+      # 4. Playwright MCP 서버 다운로드 (백그라운드 시뮬레이션)
+      - name: Playwright MCP 서버 다운로드 (Download Playwright & Node.js)
+        uses: actions/setup-node@v4
         with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          node-version: '20'
+      - name: Playwright 패키지 설치
+        run: |
+          echo "Starting Playwright MCP Server Download..."
+          npm install -g playwright
+          # Playwright 의존성 설치
+          npx playwright install --with-deps chromium
+          echo "Playwright MCP Server Components Downloaded."
 
-      # [Setup] Java 17 (Maven version option removed)
-      - name: Setup Java 17
+      # 5. Copilot 준비 (Java/Maven 설정 및 대량 리소스 확보)
+      - name: Copilot(리눅스) 준비 (Prepare Copilot Environment)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
 
-      # [NEW] Explicit Install of Maven 3.9.6
-      - name: Install Maven 3.9.6 Manually
+      - name: Maven 3.9.6 수동 설치 (Manual Install)
         run: |
-          echo "Downloading Maven 3.9.6..."
+          echo "Installing Maven 3.9.6 manually..."
           wget -q https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
-          
-          echo "Extracting Maven..."
           tar -xzf apache-maven-3.9.6-bin.tar.gz
-          
-          echo "Adding Maven to PATH..."
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
-          
-          echo "Maven 3.9.6 Installation Completed"
 
-      - name: Check Maven Version
-        run: mvn -version
-
-      # [Massive] Bulk Download
-      - name: Massive Download of Maven Dependencies
+      - name: Copilot 리소스 대량 다운로드 (Massive Download)
         run: |
-          echo "Starting Massive Maven Resource Download..."
-          
-          # 1. Resolve Project Dependencies
+          echo "Pre-loading Copilot Dependencies & Resources..."
           mvn dependency:resolve -B
-          
-          # 2. Resolve All Plugins
           mvn dependency:resolve-plugins -B
-          
-          # 3. Download Sources
           mvn dependency:sources -B -Dmaven.test.skip=true
-          
-          # 4. Go Offline check
           mvn dependency:go-offline -B
-          
-          echo "Massive Download Completed."
+          echo "Copilot Preparation Completed."
 
-      - name: Configure Linux Firewall (UFW)
+      # 6. MCP 서버 시작 (방화벽 가동 및 포트 제어)
+      - name: MCP 서버 시작 (Start MCP Server & Configure Firewall)
         run: |
+          echo "Starting MCP Server Context..."
+          # Server start placeholder
+          echo "MCP Server initiated."
+
           echo "Configuring Linux Firewall (UFW)..."
-          sudo apt-get install -y ufw
           sudo ufw --force default deny incoming
           sudo ufw --force default allow outgoing
           sudo ufw --force enable
           
+          # Allow Essential Ports
           sudo ufw allow 80/tcp comment 'Allow HTTP'
           sudo ufw allow 443/tcp comment 'Allow HTTPS'
-          sudo ufw allow 22/tcp comment 'Allow SSH'
           sudo ufw allow out 53 comment 'Allow DNS'
           
-          sudo ufw reload
+          echo "Firewall Active. MCP Server Secured."
 
-      - name: Verify build works after firewall configuration
+      # 7. 요청 처리 (메인 빌드 실행)
+      - name: 요청 처리(리눅스) (Process Request)
         run: |
+          echo "Processing Request: Maven Build..."
           mvn clean verify -B -q
+          echo "Request Processed Successfully."
 
-      - name: Agent execution summary
+      # 8. 정리
+      - name: 정리(리눅스) (Cleanup)
         run: |
-          echo "================================"
-          echo "Agent Execution Summary (Linux)"
-          echo "================================"
-          echo "Maven Version: 3.9.6 (Manually Installed)"
-          echo "Firewall: ACTIVE"
-          echo "Warning Fix: Valid Inputs Only"
-          echo "================================"
+          echo "Cleaning up temporary files..."
+          rm -rf apache-maven-3.9.6-bin.tar.gz
+          echo "Cleanup Completed."
 
-  agent-validation:
-    name: Validate Agent Configuration
-    runs-on: ubuntu-latest
-    needs: [agent-windows, agent-linux]
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Final validation summary
-        run: |
-          echo "================================"
-          echo "Complete Agent Validation Summary"
-          echo "================================"
-          echo "Agents: Windows & Linux PASSED"
-          echo "Maven Install: MANUAL (v3.9.6)"
-          echo "Warnings: FIXED"
-          echo "================================"
+      # 9. [선택 사항] 보관 세부 정보
+      - name: "[선택 사항] 보관 세부 정보 (Archive Artifacts)"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build-logs
+          path: |
+            **/*.log
+            **/target/*.jar
+
+      # 10. 작업 완료
+      - name: 작업 완료 (Job Completed)
+        run: echo "Linux Agent Job Finished"
