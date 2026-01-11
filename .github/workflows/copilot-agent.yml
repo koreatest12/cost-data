@@ -193,7 +193,7 @@ jobs:
             # Check skip settings
             if grep -q "skip_firewall: false" \
                  .github/copilot/agent-config.yml && \
-               grep -q "skip_windows: false" \
+                 grep -q "skip_windows: false" \
                  .github/copilot/agent-config.yml; then
               echo "✓ Skip settings are correctly configured (no skipping)"
             else
