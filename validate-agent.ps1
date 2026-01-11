@@ -8,6 +8,10 @@ Write-Host ""
 
 $Errors = 0
 
+# Read files once at the beginning
+$configContent = Get-Content ".github/copilot/agent-config.yml" -Raw -ErrorAction SilentlyContinue
+$workflowContent = Get-Content ".github/workflows/copilot-agent.yml" -Raw -ErrorAction SilentlyContinue
+
 # Check if agent config exists
 Write-Host "Checking agent configuration file..."
 if (Test-Path ".github/copilot/agent-config.yml") {
@@ -19,7 +23,6 @@ if (Test-Path ".github/copilot/agent-config.yml") {
 
 # Check skip_firewall setting
 Write-Host "Checking firewall skip setting..."
-$configContent = Get-Content ".github/copilot/agent-config.yml" -Raw -ErrorAction SilentlyContinue
 if ($configContent -match "skip_firewall:\s*false") {
     Write-Host "✓ Firewall is configured to run (not skipped)" -ForegroundColor Green
 } else {
@@ -65,7 +68,6 @@ if (Test-Path ".github/workflows/copilot-agent.yml") {
 
 # Check setup steps before firewall
 Write-Host "Checking setup steps order in workflow..."
-$workflowContent = Get-Content ".github/workflows/copilot-agent.yml" -Raw -ErrorAction SilentlyContinue
 if ($workflowContent -match "Setup Java 17" -and $workflowContent -match "Download Maven dependencies") {
     Write-Host "✓ Setup steps configured before firewall" -ForegroundColor Green
 } else {

@@ -60,7 +60,7 @@ jobs:
           New-NetFirewallRule -DisplayName "Allow HTTP Outbound" `
             -Direction Outbound `
             -Protocol TCP `
-            -LocalPort 80 `
+            -RemotePort 80 `
             -Action Allow `
             -ErrorAction SilentlyContinue
 
@@ -75,7 +75,7 @@ jobs:
           New-NetFirewallRule -DisplayName "Allow HTTPS Outbound" `
             -Direction Outbound `
             -Protocol TCP `
-            -LocalPort 443 `
+            -RemotePort 443 `
             -Action Allow `
             -ErrorAction SilentlyContinue
 
@@ -90,7 +90,7 @@ jobs:
           New-NetFirewallRule -DisplayName "Allow SSH Outbound" `
             -Direction Outbound `
             -Protocol TCP `
-            -LocalPort 22 `
+            -RemotePort 22 `
             -Action Allow `
             -ErrorAction SilentlyContinue
 
@@ -101,7 +101,7 @@ jobs:
           New-NetFirewallRule -DisplayName "Allow DNS Outbound" `
             -Direction Outbound `
             -Protocol UDP `
-            -LocalPort 53 `
+            -RemotePort 53 `
             -Action Allow `
             -ErrorAction SilentlyContinue
 

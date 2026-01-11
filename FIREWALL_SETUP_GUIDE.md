@@ -62,18 +62,18 @@ The solution involves a carefully orchestrated setup sequence that ensures all d
 ```powershell
 # HTTP - Inbound and Outbound
 New-NetFirewallRule -DisplayName "Allow HTTP Inbound" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
-New-NetFirewallRule -DisplayName "Allow HTTP Outbound" -Direction Outbound -Protocol TCP -LocalPort 80 -Action Allow
+New-NetFirewallRule -DisplayName "Allow HTTP Outbound" -Direction Outbound -Protocol TCP -RemotePort 80 -Action Allow
 
-# HTTPS - Inbound and Outbound  
+# HTTPS - Inbound and Outbound
 New-NetFirewallRule -DisplayName "Allow HTTPS Inbound" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
-New-NetFirewallRule -DisplayName "Allow HTTPS Outbound" -Direction Outbound -Protocol TCP -LocalPort 443 -Action Allow
+New-NetFirewallRule -DisplayName "Allow HTTPS Outbound" -Direction Outbound -Protocol TCP -RemotePort 443 -Action Allow
 
 # SSH - Inbound and Outbound
 New-NetFirewallRule -DisplayName "Allow SSH Inbound" -Direction Inbound -Protocol TCP -LocalPort 22 -Action Allow
-New-NetFirewallRule -DisplayName "Allow SSH Outbound" -Direction Outbound -Protocol TCP -LocalPort 22 -Action Allow
+New-NetFirewallRule -DisplayName "Allow SSH Outbound" -Direction Outbound -Protocol TCP -RemotePort 22 -Action Allow
 
 # DNS - Outbound (essential for domain resolution)
-New-NetFirewallRule -DisplayName "Allow DNS Outbound" -Direction Outbound -Protocol UDP -LocalPort 53 -Action Allow
+New-NetFirewallRule -DisplayName "Allow DNS Outbound" -Direction Outbound -Protocol UDP -RemotePort 53 -Action Allow
 ```
 
 **Linux Firewall Configuration (UFW):**
