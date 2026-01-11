@@ -107,7 +107,7 @@ public class SecurityNewsService {
      */
     public List<SecurityNewsResponse> getNewsBySeverity(String severity) {
         return newsStore.values().stream()
-                .filter(news -> news.getSeverity().equalsIgnoreCase(severity))
+                .filter(news -> news.getSeverity() != null && news.getSeverity().equalsIgnoreCase(severity))
                 .sorted(Comparator.comparing(SecurityNews::getCreatedAt).reversed())
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -118,7 +118,7 @@ public class SecurityNewsService {
      */
     public List<SecurityNewsResponse> getNewsByCategory(String category) {
         return newsStore.values().stream()
-                .filter(news -> news.getCategory().equalsIgnoreCase(category))
+                .filter(news -> news.getCategory() != null && news.getCategory().equalsIgnoreCase(category))
                 .sorted(Comparator.comparing(SecurityNews::getCreatedAt).reversed())
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
