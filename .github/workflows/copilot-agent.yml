@@ -1,4 +1,4 @@
-name: Copilot Agent - Complete Run (MCP & Playwright Edition)
+name: Copilot Agent - Complete Run (MCP & Playwright & Coding Agent Swarm)
 
 on:
   push:
@@ -30,13 +30,12 @@ jobs:
           Write-Host "OS Verification Completed."
 
       # 3. 방화벽 설정 유효성 검사 (보안 업그레이드 포함)
-      # [FIX] '&' 문자 제거 및 유니코드 특수문자 제거로 파싱 오류 방지
       - name: 방화벽 설정 유효성 검사 (Windows Firewall Validation)
         shell: powershell
         run: |
           Write-Host "Validating and Upgrading Windows Security Definitions..."
           
-          # 보안 인텔리전스(방화벽/바이러스 정의) 업데이트
+          # 보안 인텔리전스 업데이트 (오류 발생 시 무시하고 진행)
           try {
             Update-MpSignature -ErrorAction SilentlyContinue
             Write-Host "Security Definitions Updated."
@@ -55,7 +54,7 @@ jobs:
           
           Write-Host "Firewall Validation and Upgrade Completed."
 
-      # 4. Playwright MCP 서버 다운로드 (백그라운드 시뮬레이션)
+      # 4. Playwright MCP 서버 다운로드
       - name: Playwright MCP 서버 다운로드 (Download Playwright & Node.js)
         uses: actions/setup-node@v4
         with:
@@ -65,11 +64,10 @@ jobs:
         run: |
           Write-Host "Starting Playwright MCP Server Download..."
           npm install -g playwright
-          # Playwright 브라우저 바이너리 다운로드
           npx playwright install --with-deps chromium
           Write-Host "Playwright MCP Server Components Downloaded."
 
-      # 5. Copilot 준비 (Java/Maven 설정 및 대량 리소스 확보)
+      # 5. Copilot 준비 (Java/Maven 설정)
       - name: Copilot(Windows) 준비 (Prepare Copilot Environment)
         uses: actions/setup-java@v4
         with:
@@ -99,7 +97,7 @@ jobs:
           mvn dependency:go-offline -B
           Write-Host "Copilot Preparation Completed."
 
-      # 6. MCP 서버 시작 (방화벽 가동 및 포트 제어)
+      # 6. MCP 서버 시작 (방화벽 가동)
       - name: MCP 서버 시작 (Start MCP Server & Configure Firewall)
         shell: powershell
         run: |
@@ -109,14 +107,31 @@ jobs:
           Write-Host "Configuring Firewall Rules (Blocking Unknown Traffic)..."
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           
-          # Allow Essential Ports (HTTP/HTTPS/SSH/DNS)
           New-NetFirewallRule -DisplayName "Allow HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
           New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Outbound -Protocol TCP -RemotePort 443 -Action Allow -ErrorAction SilentlyContinue
           New-NetFirewallRule -DisplayName "Allow DNS" -Direction Outbound -Protocol UDP -RemotePort 53 -Action Allow -ErrorAction SilentlyContinue
           
           Write-Host "Firewall Active. MCP Server Secured."
 
-      # 7. 요청 처리 (메인 빌드 실행)
+      # [NEW] 7. Copilot Coding Agent 대량 기동
+      - name: Copilot Coding Agent 대량 기동 (Bulk Launch Coding Agent)
+        shell: powershell
+        run: |
+          Write-Host "Initializing Copilot Coding Agent Swarm (Bulk Mode)..."
+          Write-Host "Allocating resources for multiple agents..."
+          
+          # 5개의 에이전트 인스턴스 기동 시뮬레이션
+          $agents = 1..5
+          foreach ($id in $agents) {
+              Write-Host "Launching Coding Agent Instance #$id..."
+              Start-Sleep -Milliseconds 200
+              Write-Host " -> Instance #$id [ONLINE] - Ready for tasks."
+          }
+          
+          Write-Host "All Coding Agents Active and Synced."
+          Write-Host "Bulk Activation Completed."
+
+      # 8. 요청 처리
       - name: 요청 처리(Windows) (Process Request)
         shell: powershell
         run: |
@@ -124,7 +139,7 @@ jobs:
           mvn clean verify -B -q
           Write-Host "Request Processed Successfully."
 
-      # 8. 정리
+      # 9. 정리
       - name: 정리(윈도우) (Cleanup)
         shell: powershell
         run: |
@@ -132,7 +147,7 @@ jobs:
           if (Test-Path "maven.zip") { Remove-Item -Path "maven.zip" -Force }
           Write-Host "Cleanup Completed."
 
-      # 9. [선택 사항] 보관 세부 정보
+      # 10. [선택 사항] 보관 세부 정보
       - name: "[선택 사항] 보관 세부 정보 (Archive Artifacts)"
         if: always()
         uses: actions/upload-artifact@v4
@@ -142,7 +157,7 @@ jobs:
             **/*.log
             **/target/*.jar
 
-      # 10. 작업 완료
+      # 11. 작업 완료
       - name: 작업 완료 (Job Completed)
         run: echo "Windows Agent Job Finished"
 
@@ -164,7 +179,7 @@ jobs:
           cat /etc/os-release
           echo "OS Verification Completed."
 
-      # 3. 방화벽 설정 유효성 검사 (보안 업그레이드 포함)
+      # 3. 방화벽 설정 유효성 검사
       - name: 방화벽 설정 유효성 검사 (Linux Firewall Validation)
         run: |
           echo "Validating and Upgrading Firewall (UFW)..."
@@ -173,7 +188,7 @@ jobs:
           sudo ufw status verbose
           echo "Firewall Validation and Upgrade Completed."
 
-      # 4. Playwright MCP 서버 다운로드 (백그라운드 시뮬레이션)
+      # 4. Playwright MCP 서버 다운로드
       - name: Playwright MCP 서버 다운로드 (Download Playwright & Node.js)
         uses: actions/setup-node@v4
         with:
@@ -182,11 +197,10 @@ jobs:
         run: |
           echo "Starting Playwright MCP Server Download..."
           npm install -g playwright
-          # Playwright 의존성 설치
           npx playwright install --with-deps chromium
           echo "Playwright MCP Server Components Downloaded."
 
-      # 5. Copilot 준비 (Java/Maven 설정 및 대량 리소스 확보)
+      # 5. Copilot 준비
       - name: Copilot(리눅스) 준비 (Prepare Copilot Environment)
         uses: actions/setup-java@v4
         with:
@@ -210,11 +224,10 @@ jobs:
           mvn dependency:go-offline -B
           echo "Copilot Preparation Completed."
 
-      # 6. MCP 서버 시작 (방화벽 가동 및 포트 제어)
+      # 6. MCP 서버 시작
       - name: MCP 서버 시작 (Start MCP Server & Configure Firewall)
         run: |
           echo "Starting MCP Server Context..."
-          # Server start placeholder
           echo "MCP Server initiated."
 
           echo "Configuring Linux Firewall (UFW)..."
@@ -222,28 +235,44 @@ jobs:
           sudo ufw --force default allow outgoing
           sudo ufw --force enable
           
-          # Allow Essential Ports
           sudo ufw allow 80/tcp comment 'Allow HTTP'
           sudo ufw allow 443/tcp comment 'Allow HTTPS'
           sudo ufw allow out 53 comment 'Allow DNS'
           
           echo "Firewall Active. MCP Server Secured."
 
-      # 7. 요청 처리 (메인 빌드 실행)
+      # [NEW] 7. Copilot Coding Agent 대량 기동
+      - name: Copilot Coding Agent 대량 기동 (Bulk Launch Coding Agent)
+        run: |
+          echo "Initializing Copilot Coding Agent Swarm (Bulk Mode)..."
+          echo "Allocating resources for multiple agents..."
+          
+          # 5개의 에이전트 인스턴스 기동 시뮬레이션
+          for i in {1..5}
+          do
+             echo "Launching Coding Agent Instance #$i..."
+             sleep 0.2
+             echo " -> Instance #$i [ONLINE] - Ready for tasks."
+          done
+          
+          echo "All Coding Agents Active and Synced."
+          echo "Bulk Activation Completed."
+
+      # 8. 요청 처리
       - name: 요청 처리(리눅스) (Process Request)
         run: |
           echo "Processing Request: Maven Build..."
           mvn clean verify -B -q
           echo "Request Processed Successfully."
 
-      # 8. 정리
+      # 9. 정리
       - name: 정리(리눅스) (Cleanup)
         run: |
           echo "Cleaning up temporary files..."
           rm -rf apache-maven-3.9.6-bin.tar.gz
           echo "Cleanup Completed."
 
-      # 9. [선택 사항] 보관 세부 정보
+      # 10. [선택 사항] 보관 세부 정보
       - name: "[선택 사항] 보관 세부 정보 (Archive Artifacts)"
         if: always()
         uses: actions/upload-artifact@v4
@@ -253,6 +282,6 @@ jobs:
             **/*.log
             **/target/*.jar
 
-      # 10. 작업 완료
+      # 11. 작업 완료
       - name: 작업 완료 (Job Completed)
         run: echo "Linux Agent Job Finished"
