@@ -10,6 +10,7 @@ Spring Boot 애플리케이션으로 파일 및 디렉토리 관리 기능과 �
 - 파일 목록 조회
 - 파일 읽기
 - 파일/디렉토리 삭제 (관리자 권한 필요)
+- **보안 뉴스 생성 및 관리** (GitHub Copilot 기반)
 - Spring Security를 통한 권한 관리
 
 ## 기술 스택
@@ -101,6 +102,77 @@ DELETE /api/files/delete?path=file-or-directory-path
 Authorization: Basic Auth (admin only)
 ```
 
+### 7. 보안 뉴스 생성
+```
+POST /api/security-news/create
+Authorization: Basic Auth (user/admin)
+
+Request Body:
+{
+  "title": "보안 뉴스 제목",
+  "content": "보안 뉴스 내용",
+  "severity": "HIGH",
+  "category": "VULNERABILITY",
+  "source": "출처"
+}
+```
+
+### 8. 자동 보안 뉴스 생성
+```
+POST /api/security-news/generate?type=VULNERABILITY
+Authorization: Basic Auth (user/admin)
+
+지원되는 타입: VULNERABILITY, PATCH, THREAT, ALERT
+```
+
+### 9. 보안 뉴스 목록 조회
+```
+GET /api/security-news/list
+Authorization: Basic Auth (user/admin)
+```
+
+### 10. 보안 뉴스 상세 조회
+```
+GET /api/security-news/{id}
+Authorization: Basic Auth (user/admin)
+```
+
+### 11. 심각도별 보안 뉴스 조회
+```
+GET /api/security-news/severity/{severity}
+Authorization: Basic Auth (user/admin)
+
+심각도: LOW, MEDIUM, HIGH, CRITICAL
+```
+
+### 12. 카테고리별 보안 뉴스 조회
+```
+GET /api/security-news/category/{category}
+Authorization: Basic Auth (user/admin)
+
+카테고리: VULNERABILITY, PATCH, THREAT, ALERT
+```
+
+### 13. 보안 뉴스 수정
+```
+PUT /api/security-news/{id}
+Authorization: Basic Auth (user/admin)
+
+Request Body:
+{
+  "title": "수정된 제목",
+  "content": "수정된 내용",
+  "severity": "CRITICAL",
+  "category": "THREAT"
+}
+```
+
+### 14. 보안 뉴스 삭제
+```
+DELETE /api/security-news/{id}
+Authorization: Basic Auth (admin only)
+```
+
 ## 사용 예시 (curl)
 
 ### 파일 생성
@@ -130,6 +202,40 @@ curl -u user:password http://localhost:8080/api/files/read?path=example.txt
 ### 파일 삭제 (관리자만 가능)
 ```bash
 curl -u admin:admin -X DELETE http://localhost:8080/api/files/delete?path=example.txt
+```
+
+### 보안 뉴스 생성
+```bash
+curl -u user:password -X POST http://localhost:8080/api/security-news/create \
+  -H "Content-Type: application/json" \
+  -d '{"title":"새로운 보안 취약점","content":"CVE-2024-12345 보안 취약점이 발견되었습니다.","severity":"HIGH","category":"VULNERABILITY","source":"GitHub Security"}'
+```
+
+### 자동 보안 뉴스 생성 (GitHub Copilot)
+```bash
+# VULNERABILITY 타입 생성
+curl -u user:password -X POST "http://localhost:8080/api/security-news/generate?type=VULNERABILITY"
+
+# PATCH 타입 생성
+curl -u user:password -X POST "http://localhost:8080/api/security-news/generate?type=PATCH"
+
+# THREAT 타입 생성
+curl -u user:password -X POST "http://localhost:8080/api/security-news/generate?type=THREAT"
+```
+
+### 보안 뉴스 목록 조회
+```bash
+curl -u user:password http://localhost:8080/api/security-news/list
+```
+
+### 심각도별 보안 뉴스 조회
+```bash
+curl -u user:password http://localhost:8080/api/security-news/severity/HIGH
+```
+
+### 카테고리별 보안 뉴스 조회
+```bash
+curl -u user:password http://localhost:8080/api/security-news/category/VULNERABILITY
 ```
 
 ## 파일 저장 위치
