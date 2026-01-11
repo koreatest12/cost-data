@@ -94,21 +94,21 @@ sudo ufw allow out 53 comment 'Allow DNS'
 **Linux iptables Configuration:**
 ```bash
 # Inbound rules
-sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT -m comment --comment "Allow HTTP"
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment "Allow HTTPS"
+sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT -m comment --comment "Allow SSH"
 
 # Outbound rules (for downloads)
-sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
-sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT -m comment --comment "Allow HTTP outbound"
+sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT -m comment --comment "Allow HTTPS outbound"
 
 # DNS rules
-sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
-sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
+sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT -m comment --comment "Allow DNS UDP"
+sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT -m comment --comment "Allow DNS TCP"
 
 # Allow established connections
-sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment "Allow established inbound"
+sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT -m comment --comment "Allow established outbound"
 ```
 
 #### 3. Firewall Allowlist
@@ -327,7 +327,7 @@ Configuration Summary:
 - [GitHub Actions Setup Python](https://github.com/actions/setup-python)
 - [Maven Dependency Plugin](https://maven.apache.org/plugins/maven-dependency-plugin/)
 - [UFW Firewall](https://help.ubuntu.com/community/UFW)
-- [Windows Firewall with PowerShell](https://docs.microsoft.com/en-us/powershell/module/netsecurity/)
+- [Windows Firewall with PowerShell](https://learn.microsoft.com/en-us/powershell/module/netsecurity/)
 - [iptables Tutorial](https://www.netfilter.org/documentation/)
 
 ## Support
