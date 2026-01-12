@@ -1,4 +1,4 @@
-name: Copilot Agent - Politics, Finance & Security Intelligence
+name: Copilot Agent - Containerized Intelligence & Data Lake
 
 on:
   schedule:
@@ -8,12 +8,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # 💾 리포트 및 DB 저장 권한
-  issues: write
+  contents: write  # 💾 DB 저장 및 릴리즈 권한
+  issues: write    # 이슈 생성 권한
+  packages: write  # 🐳 GitHub Container Registry 업로드 권한
 
 jobs:
   # --------------------------------------------------------------------------------
-  # 🖥️ Windows Agent: 실행 환경 검증
+  # 🖥️ Windows Agent: 환경 검증 (기존 유지)
   # --------------------------------------------------------------------------------
   agent-windows:
     name: 🤖 Run Agent on Windows
@@ -32,17 +33,18 @@ jobs:
         shell: powershell
         run: |
           Write-Host "[INIT] Initializing Intelligence Swarm..."
-          Write-Host " -> [ONLINE] Agent Unit #1 - Politics/Finance Module Loaded."
+          Write-Host " -> [ONLINE] Agent Unit #1 - Container Module Loaded."
 
   # --------------------------------------------------------------------------------
-  # 🐧 Linux Agent: 정치/금융/보안 통합 분석 및 데이터 누적
+  # 🐧 Linux Agent: AI 분석, 데이터 누적, Docker 패키징 및 배포 (핵심)
   # --------------------------------------------------------------------------------
   agent-linux-intelligence:
-    name: 🧠 AI Intelligence Node (Poly-Finance)
+    name: 🧠 AI Intelligence & Container Node
     runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
+      packages: write #
     
     steps:
       - name: 📥 소스 코드 체크아웃 (전체 히스토리)
@@ -56,13 +58,13 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: 📦 AI 학습 도구 대량 설치
+      - name: 📦 AI 학습 도구 설치
         run: |
           python -m pip install --upgrade pip
           pip install feedparser requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator pandas tabulate
 
       # ------------------------------------------------------------------
-      # 🔥 [핵심] AI 뉴럴 코어 (정치/금융/보안 통합 엔진)
+      # 🔥 [핵심] AI 뉴럴 코어 (뉴스 수집 및 데이터 누적)
       # ------------------------------------------------------------------
       - name: 🧬 Generate & Run AI Neural Core
         run: |
@@ -79,33 +81,27 @@ jobs:
 
           # --- [설정] ---
           DB_DIR = "DB"
-          MEMORY_FILE = os.path.join(DB_DIR, "neural_memory.json") # 학습 메모리
-          LOG_FILE = os.path.join(DB_DIR, "knowledge_base.md")     # 지식 베이스
+          MEMORY_FILE = os.path.join(DB_DIR, "neural_memory.json")
+          LOG_FILE = os.path.join(DB_DIR, "knowledge_base.md")
           REPORT_FILE = "latest_briefing.md"
 
-          # [NEW] 소스 대량 확장 (정치/금융/포털 포함)
+          # 소스 리스트 (정치, 경제, 보안, 연말정산)
           RSS_SOURCES = {
-              "🏛️ Politics (정치)": [
-                  {"url": "https://www.yna.co.kr/rss/politics.xml", "lang": "ko"}, # 연합뉴스 정치
-                  {"url": "https://fs.jtbc.co.kr/RSS/politics.xml", "lang": "ko"}, # JTBC 정치
-                  {"url": "https://news.google.com/rss/search?q=정치+대한민국&hl=ko&gl=KR&ceid=KR:ko", "lang": "ko"} # 구글뉴스 정치
+              "🏛️ Politics": [
+                  {"url": "https://www.yna.co.kr/rss/politics.xml", "lang": "ko"},
+                  {"url": "https://fs.jtbc.co.kr/RSS/politics.xml", "lang": "ko"}
               ],
-              "💰 Finance & Economy (금융/경제)": [
-                  {"url": "https://www.mk.co.kr/rss/30100041/", "lang": "ko"}, # 매일경제 (경제)
-                  {"url": "https://www.yna.co.kr/rss/economy.xml", "lang": "ko"}, # 연합뉴스 경제
-                  {"url": "https://news.google.com/rss/search?q=금융+OR+증권+OR+연말정산&hl=ko&gl=KR&ceid=KR:ko", "lang": "ko"} # 구글뉴스 금융
+              "💰 Finance": [
+                  {"url": "https://www.mk.co.kr/rss/30100041/", "lang": "ko"},
+                  {"url": "https://www.yna.co.kr/rss/economy.xml", "lang": "ko"}
               ],
-              "🚨 Security Critical (보안 긴급)": [
-                  {"url": "https://www.cisa.gov/uscert/ncas/alerts.xml", "lang": "en"},
-                  {"url": "https://www.microsoft.com/security/blog/feed/", "lang": "en"}
-              ],
-              "🧾 Tax & Cyber Threat (연말정산/해킹)": [
+              "🧾 Tax & Security": [
                   {"url": "https://www.boannews.com/media/news_rss.xml", "lang": "ko"},
-                  {"url": "https://www.dailysecu.com/rss/allArticle.xml", "lang": "ko"}
+                  {"url": "https://www.dailysecu.com/rss/allArticle.xml", "lang": "ko"},
+                  {"url": "https://www.cisa.gov/uscert/ncas/alerts.xml", "lang": "en"}
               ]
           }
 
-          # --- [유틸리티] ---
           def init_memory():
               if not os.path.exists(DB_DIR): os.makedirs(DB_DIR)
               if not os.path.exists(MEMORY_FILE):
@@ -128,92 +124,59 @@ jobs:
 
           def get_session():
               s = requests.Session()
-              # 타임아웃/재시도 전략 강화 (CISA 에러 방지)
               retries = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
               s.mount('https://', HTTPAdapter(max_retries=retries))
               try: s.headers.update({'User-Agent': UserAgent().random})
-              except: s.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+              except: s.headers.update({'User-Agent': 'Mozilla/5.0'})
               return s
 
-          # --- [실행 로직] ---
           def run_intelligence():
-              print("🤖 AI Intelligence Core Initialized (Poly-Finance Mode)...")
+              print("🤖 AI Intelligence Core Initialized...")
               init_memory()
               memory = load_memory()
               
-              report_parts = {} # 카테고리별 저장
-              knowledge_buffer = f"\n## 📅 Briefing: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
-              
+              report_buffer = ""
+              knowledge_buffer = f"\n## 📅 Data Snapshot: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
               total_new_count = 0
               session = get_session()
 
               for category, feeds in RSS_SOURCES.items():
                   print(f"📡 Scanning Sector: {category}...")
                   cat_content = ""
-                  
                   for feed in feeds:
                       try:
-                          # [FIX] 타임아웃 20초로 증가 (CISA 등 해외 사이트 대응)
                           resp = session.get(feed['url'], timeout=20, verify=False)
                           parsed = feedparser.parse(resp.content)
                           if not parsed.entries: parsed = feedparser.parse(resp.text)
                           
-                          # 피드당 최신 5개 분석
                           for entry in parsed.entries[:5]: 
                               if entry.link in memory: continue 
-                              
                               memory.add(entry.link)
                               total_new_count += 1
                               
                               title = entry.title
                               summary = clean_html(getattr(entry, 'summary', ''))
-                              
-                              # 영문 번역
                               if feed['lang'] == 'en':
                                   title = f"[번역] {translate(title)}"
                                   if summary: summary = translate(summary[:100]) + "..."
                               
                               item_md = f"- **[{title}]({entry.link})**\n  - {summary}\n\n"
                               cat_content += item_md
-
-                      except Exception as e:
-                          print(f"⚠️ Warning ({feed['url']}): {str(e)[:50]}")
+                      except Exception as e: print(f"⚠️ Error: {e}")
 
                   if cat_content:
-                      report_parts[category] = cat_content
+                      report_buffer += f"### {category}\n{cat_content}"
                       knowledge_buffer += f"### {category}\n{cat_content}"
 
-              # 리포트 조합 (우선순위: 정치 -> 금융 -> 보안)
-              final_report = ""
-              priority_order = [
-                  "🏛️ Politics (정치)", 
-                  "💰 Finance & Economy (금융/경제)", 
-                  "🧾 Tax & Cyber Threat (연말정산/해킹)",
-                  "🚨 Security Critical (보안 긴급)"
-              ]
-
-              for cat in priority_order:
-                  if cat in report_parts:
-                      final_report += f"## {cat}\n{report_parts[cat]}"
-
-              # 결과 저장
               if total_new_count > 0:
                   save_memory(memory)
-                  
-                  # 누적 지식 저장
-                  with open(LOG_FILE, 'a', encoding='utf-8') as f:
-                      f.write(knowledge_buffer)
-                      
-                  # 이번 릴리즈 리포트 저장
-                  header = f"# 🤖 Global Intelligence Briefing\n> 🧠 Memory Nodes: {len(memory)} | 🆕 New Intelligence: {total_new_count}\n\n"
-                  with open(REPORT_FILE, 'w', encoding='utf-8') as f:
-                      f.write(header + final_report)
-                      
-                  print(f"✅ Intelligence Cycle Complete. New Items: {total_new_count}")
+                  with open(LOG_FILE, 'a', encoding='utf-8') as f: f.write(knowledge_buffer)
+                  header = f"# 🤖 Global Intelligence Briefing\n> 🧠 Memory Nodes: {len(memory)} | 🆕 New Items: {total_new_count}\n\n"
+                  with open(REPORT_FILE, 'w', encoding='utf-8') as f: f.write(header + report_buffer)
+                  print(f"✅ Data Processed. New Items: {total_new_count}")
               else:
-                  with open(REPORT_FILE, 'w', encoding='utf-8') as f:
-                      f.write("# 🤖 AI Status Report\n\n> 💤 No significant updates in monitored sectors.")
-                  print("💤 No new data found.")
+                  with open(REPORT_FILE, 'w', encoding='utf-8') as f: f.write("# 🤖 Status: Idle\n\n> No new updates.")
+                  print("💤 No new data.")
 
           if __name__ == "__main__":
               run_intelligence()
@@ -222,14 +185,14 @@ jobs:
           python ai_neural_core.py
 
       # ------------------------------------------------------------------
-      # 💾 학습 데이터 영구 저장
+      # 💾 학습 데이터 영구 저장 (Git)
       # ------------------------------------------------------------------
       - name: 💾 Commit AI Memory
         run: |
           git config --global user.name "Copilot AI Bot"
           git config --global user.email "ai-bot@github.actions"
           git add DB/
-          git commit -m "🧠 Intelligence Update: Politics/Finance/Security [$(date +'%Y-%m-%d %H:%M')]" || echo "No updates."
+          git commit -m "🧠 Data Accumulation [$(date +'%Y-%m-%d %H:%M')]" || echo "No updates."
           git push
 
       # ------------------------------------------------------------------
@@ -238,33 +201,89 @@ jobs:
       - name: 🏷️ Generate Version Tag
         id: tagger
         shell: bash
-        run: echo "version=v$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
+        run: |
+          VERSION_TAG="v$(date +'%Y.%m.%d-%H%M')"
+          echo "version=$VERSION_TAG" >> $GITHUB_OUTPUT
+          # Docker 이미지 태그용 소문자 변환 (필수)
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "repo_lower=$REPO_LOWER" >> $GITHUB_OUTPUT
 
       # ------------------------------------------------------------------
-      # 🖥️ 통합 대시보드 (정치/금융 포함)
+      # 🐳 [NEW] Dockerfile 동적 생성
       # ------------------------------------------------------------------
-      - name: 🖥️ Display Intelligence Dashboard
+      - name: 🐳 Generate Dockerfile
+        run: |
+          cat <<EOF > Dockerfile
+          # 가벼운 Python 이미지 기반
+          FROM python:3.11-slim
+          
+          # 작업 디렉토리 설정
+          WORKDIR /app
+          
+          # 필수 패키지 설치
+          RUN pip install feedparser requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator pandas tabulate
+          
+          # 현재 디렉토리(누적된 DB 포함)를 컨테이너로 복사
+          COPY . /app
+          
+          # 메타데이터 레이블 추가
+          LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
+          LABEL org.opencontainers.image.description="AI Security & Finance Intelligence Data Lake"
+          LABEL org.opencontainers.image.licenses="MIT"
+          
+          # 실행 명령 (컨테이너 실행 시 다시 한번 수집 시도 가능)
+          CMD ["python", "ai_neural_core.py"]
+          EOF
+
+      # ------------------------------------------------------------------
+      # 🐳 [NEW] GitHub Container Registry 로그인
+      # ------------------------------------------------------------------
+      - name: 🔑 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }} #
+
+      # ------------------------------------------------------------------
+      # 🐳 [NEW] Docker 이미지 빌드 및 푸시
+      # ------------------------------------------------------------------
+      - name: 🚀 Build and Push Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # 태그 지정: 버전별 태그와 latest 태그 동시 생성
+          tags: |
+            ghcr.io/${{ steps.tagger.outputs.repo_lower }}:${{ steps.tagger.outputs.version }}
+            ghcr.io/${{ steps.tagger.outputs.repo_lower }}:latest
+          # 레이블 지정 (리포지토리 연결용)
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=Daily AI Intelligence Briefing
+
+      # ------------------------------------------------------------------
+      # 🖥️ 대시보드 출력
+      # ------------------------------------------------------------------
+      - name: 🖥️ Display Dashboard
         if: always()
         run: |
-          echo "## 🤖 Global Intelligence Dashboard" >> $GITHUB_STEP_SUMMARY
-          echo "| Core System | Status | Sectors | Memory |" >> $GITHUB_STEP_SUMMARY
+          echo "## 🤖 AI & Container Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "| System | Status | Memory | Container Image |" >> $GITHUB_STEP_SUMMARY
           echo "| :---: | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Poly-Finance Engine** | 🟢 **ONLINE** | **🏛️💰🚨** | **$(jq length DB/neural_memory.json 2>/dev/null || echo 0)** |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Neural Core** | 🟢 **ONLINE** | **$(jq length DB/neural_memory.json 2>/dev/null || echo 0)** | \`ghcr.io/...:${{ steps.tagger.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ -f latest_briefing.md ]; then
-            cat latest_briefing.md >> $GITHUB_STEP_SUMMARY
-          fi
+          if [ -f latest_briefing.md ]; then cat latest_briefing.md >> $GITHUB_STEP_SUMMARY; fi
 
       # ------------------------------------------------------------------
       # 🚀 릴리즈 생성
       # ------------------------------------------------------------------
-      - name: 🚀 Release Intelligence Package
+      - name: 🚀 Release Package
         uses: softprops/action-gh-release@v1
         if: success()
         with:
           tag_name: ${{ steps.tagger.outputs.version }}
-          name: "🏛️💰🛡️ Intelligence Briefing ${{ steps.tagger.outputs.version }}"
+          name: "🐳 Containerized Intelligence ${{ steps.tagger.outputs.version }}"
           body_path: latest_briefing.md
           files: |
             latest_briefing.md
