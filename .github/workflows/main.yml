@@ -1,20 +1,21 @@
-name: Copilot Agent - Massive Data Lake Container (Bulk Upload)
+name: Copilot Agent - PR Automation & Massive Data Lake
 
 on:
   schedule:
-    - cron: '0 * * * *' # ⏰ 매 시간 실행 (지속적 데이터 누적)
+    - cron: '0 * * * *' # ⏰ 매 시간 실행
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
-  contents: write  # 💾 DB 저장 및 릴리즈 권한
-  issues: write    # 이슈 생성 권한
-  packages: write  # 🐳 GHCR 패키지 업로드 권한
+  contents: write      # 💾 코드 및 태그 생성 권한
+  issues: write        # 이슈 생성 권한
+  packages: write      # 🐳 GHCR 업로드 권한
+  pull-requests: write # 🔀 [NEW] 풀 리퀘스트(PR) 생성 및 병합 권한
 
 jobs:
   # --------------------------------------------------------------------------------
-  # 🖥️ Windows Agent: 시스템 검증
+  # 🖥️ Windows Agent: 검증 (변동 없음)
   # --------------------------------------------------------------------------------
   agent-windows:
     name: 🤖 Run Agent on Windows
@@ -24,21 +25,22 @@ jobs:
         uses: actions/checkout@v4
       - name: 🛡️ 시스템 검증
         shell: powershell
-        run: Write-Host "[INIT] Ready for Massive Data Containerization."
+        run: Write-Host "[INIT] Ready for PR-based Workflow."
 
   # --------------------------------------------------------------------------------
-  # 🐧 Linux Agent: 대량 데이터 수집 -> 압축 -> 도커 주입 -> 대량 업로드
+  # 🐧 Linux Agent: 수집 -> 브랜치 생성 -> PR 생성 -> 도커 빌드
   # --------------------------------------------------------------------------------
   agent-linux-intelligence:
-    name: 🧠 Massive Data & Docker Upload
+    name: 🧠 Data Node & PR Ops
     runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
-      packages: write #
+      packages: write
+      pull-requests: write # [핵심] PR 권한
     
     steps:
-      - name: 📥 소스 코드 체크아웃 (전체 히스토리)
+      - name: 📥 소스 코드 체크아웃
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 
@@ -55,7 +57,7 @@ jobs:
           pip install feedparser aiohttp asyncio requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator pandas tabulate
 
       # ------------------------------------------------------------------
-      # 🔥 [단계 1] AI 뉴럴 코어 (90만 건 목표 대량 수집)
+      # 🔥 [단계 1] AI 뉴럴 코어 (데이터 수집)
       # ------------------------------------------------------------------
       - name: 🧬 Generate Async Neural Core
         run: |
@@ -64,24 +66,20 @@ jobs:
           from datetime import datetime
           from fake_useragent import UserAgent
 
-          # --- [설정] ---
           DB_DIR = "DB"
-          MEMORY_FILE = os.path.join(DB_DIR, "neural_memory.json.gz") # GZIP 압축 저장
+          MEMORY_FILE = os.path.join(DB_DIR, "neural_memory.json.gz")
           LOG_FILE = os.path.join(DB_DIR, "knowledge_base.md")
           REPORT_FILE = "latest_briefing.md"
           
-          # 대량 수집을 위한 키워드 조합 (정치, 경제, 사회, IT)
+          # 대량 수집 키워드
           BASE_KEYWORDS = [
-              "정치", "총선", "대통령", "국회", "법안",
-              "경제", "금리", "주식", "부동산", "삼성전자",
-              "사회", "날씨", "교통", "사건",
-              "IT", "AI", "보안", "해킹", "클라우드", "Docker",
-              "Politics", "Economy", "Tech", "Security"
+              "정치", "총선", "대통령", "경제", "금리", "삼성전자",
+              "사회", "사건", "IT", "AI", "보안", "해킹", "Docker",
+              "Politics", "Economy", "Tech", "Security", "Crypto"
           ]
           
           def generate_sources():
               urls = []
-              # 구글 뉴스 검색 RSS로 소스 대량 생성
               for kw in BASE_KEYWORDS:
                   urls.append({"url": f"https://news.google.com/rss/search?q={kw}&hl=ko&gl=KR&ceid=KR:ko", "tag": kw})
               return urls
@@ -98,7 +96,6 @@ jobs:
               return set()
 
           def save_memory(data):
-              # 압축하여 저장 (대량 데이터 용량 최적화)
               with gzip.open(MEMORY_FILE, 'wt', encoding='utf-8') as f:
                   json.dump(list(data), f)
 
@@ -126,7 +123,6 @@ jobs:
               headers = {'User-Agent': ua.random}
               
               async with aiohttp.ClientSession(headers=headers) as session:
-                  # 비동기 병렬 요청 (Massive Request)
                   tasks = [fetch_feed(session, src) for src in sources]
                   results = await asyncio.gather(*tasks)
                   
@@ -142,9 +138,8 @@ jobs:
 
               if new_items:
                   save_memory(memory)
-                  
-                  # 화면 출력용 리포트 생성 (Top 50)
-                  briefing = f"### 📰 Bulk Data Briefing (Total Memory: {len(memory)})\n\n| Tag | Headline |\n|---|---|\n"
+                  # 화면 출력용 리포트 (Top 50)
+                  briefing = f"### 📰 PR Data Briefing (New Items: {len(new_items)})\n\n| Tag | Headline |\n|---|---|\n"
                   for item in new_items[:50]:
                       briefing += f"| `{item['tag']}` | {item['title']} |\n"
                   
@@ -160,18 +155,61 @@ jobs:
           python ai_neural_core.py
 
       # ------------------------------------------------------------------
-      # 💾 [단계 2] 데이터 저장소 반영 (Git)
+      # 🔀 [단계 2] 브랜치 생성 및 변경사항 커밋 (PR 준비)
       # ------------------------------------------------------------------
-      - name: 💾 Commit Massive Data
+      - name: 🌿 Create Branch & Commit
+        id: git_ops
         run: |
+          # 날짜 기반 브랜치명 생성
+          BRANCH_NAME="news-update/$(date +'%Y%m%d-%H%M')"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          
           git config --global user.name "Copilot AI Bot"
           git config --global user.email "ai-bot@github.actions"
+          
+          # 새 브랜치 생성 및 이동
+          git checkout -b $BRANCH_NAME
+          
+          # 변경사항 추가
           git add DB/
-          git commit -m "🧠 Mass Data Injection [$(date +'%Y-%m-%d %H:%M')]" || echo "No updates."
-          git push
+          
+          # 변경사항이 있는지 확인
+          if git diff --staged --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "💤 No changes to commit."
+          else
+            git commit -m "🧠 Data Injection: $(date +'%Y-%m-%d %H:%M')"
+            git push origin $BRANCH_NAME
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
 
       # ------------------------------------------------------------------
-      # 🏷️ [단계 3] 버전 태그 생성
+      # 🔀 [단계 3] 풀 리퀘스트(PR) 생성 및 자동 병합
+      # ------------------------------------------------------------------
+      - name: 🔀 Create & Merge Pull Request
+        if: steps.git_ops.outputs.has_changes == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME="${{ steps.git_ops.outputs.branch_name }}"
+          
+          # 1. PR 생성
+          gh pr create \
+            --title "🧠 Intelligence Update [$(date +'%Y-%m-%d %H:%M')]" \
+            --body "Automated data ingestion from AI Neural Core. Contains new news data." \
+            --head $BRANCH_NAME \
+            --base main \
+            --label "automated" \
+            --label "data-sync"
+          
+          # 2. PR 자동 병합 (Auto-Merge)
+          # 대량 처리를 위해 검토 없이 즉시 병합 (필요 시 이 줄을 주석 처리)
+          gh pr merge --auto --squash --delete-branch "$BRANCH_NAME"
+          
+          echo "✅ PR Created and Auto-Merge enabled."
+
+      # ------------------------------------------------------------------
+      # 🏷️ [단계 4] 버전 태그 생성
       # ------------------------------------------------------------------
       - name: 🏷️ Generate Version Tag
         id: tagger
@@ -180,73 +218,64 @@ jobs:
           echo "repo_lower=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       # ------------------------------------------------------------------
-      # 🐳 [단계 4] Dockerfile 생성 (데이터 주입 최적화)
+      # 🐳 [단계 5] Dockerfile 생성
       # ------------------------------------------------------------------
       - name: 🐳 Generate Data-Lake Dockerfile
         run: |
           cat <<EOF > Dockerfile
           FROM python:3.11-slim
-          
-          # 시스템 최적화
           RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
           WORKDIR /app
-          
-          # 의존성 설치
           RUN pip install --upgrade pip && \
               pip install feedparser aiohttp asyncio requests beautifulsoup4 lxml duckduckgo-search fake-useragent
-          
-          # [핵심] 대량 데이터(DB 폴더)를 컨테이너 내부로 주입 (Injection)
+          # 데이터 주입 (현재 컨텍스트의 최신 데이터 복사)
           COPY . /app
-          
-          # 데이터 무결성 확인
-          RUN echo "📊 Checking Data Volume..." && ls -lh /app/DB/neural_memory.json.gz
-          
-          # 메타데이터 레이블
+          RUN echo "📊 Checking Data..." && ls -lh /app/DB/neural_memory.json.gz
           LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
-          LABEL org.opencontainers.image.description="Massive Data Lake Container (900K+ Capacity)"
-          
+          LABEL org.opencontainers.image.description="Massive Data Lake Container (PR Synced)"
           CMD ["python", "ai_neural_core.py"]
           EOF
 
       # ------------------------------------------------------------------
-      # 🐳 [단계 5] GHCR 로그인
+      # 🐳 [단계 6] GHCR 로그인 및 대량 업로드
       # ------------------------------------------------------------------
       - name: 🔑 Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }} #
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ------------------------------------------------------------------
-      # 🐳 [단계 6] 대량 업로드 (Build & Push)
-      # ------------------------------------------------------------------
       - name: 🚀 Build and Push Data Container
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          # 최신 태그와 버전 태그 동시 업로드
           tags: |
             ghcr.io/${{ steps.tagger.outputs.repo_lower }}:${{ steps.tagger.outputs.version }}
             ghcr.io/${{ steps.tagger.outputs.repo_lower }}:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=Massive Data Upload
+            org.opencontainers.image.description=Data Injection via PR
 
       # ------------------------------------------------------------------
-      # 🖥️ 화면 출력 (데이터 현황)
+      # 🖥️ 화면 출력
       # ------------------------------------------------------------------
-      - name: 🖥️ Display Data Status
+      - name: 🖥️ Display Dashboard
         if: always()
         run: |
-          echo "## 🤖 Massive Data & Docker Status" >> $GITHUB_STEP_SUMMARY
-          echo "| System | Total Records | Data Size | Docker Image |" >> $GITHUB_STEP_SUMMARY
+          echo "## 🤖 Data & PR Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "| System | PR Status | Data Count | Docker Image |" >> $GITHUB_STEP_SUMMARY
           echo "| :---: | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          # 데이터 건수 및 용량 계산
-          COUNT=$(python -c "import gzip, json, os; print(len(json.load(gzip.open('DB/neural_memory.json.gz', 'rt'))) if os.path.exists('DB/neural_memory.json.gz') else 0)")
-          SIZE=$(ls -lh DB/neural_memory.json.gz | awk '{print $5}')
-          echo "| **Async Core** | **$COUNT** | **$SIZE** | \`ghcr.io/...:latest\` |" >> $GITHUB_STEP_SUMMARY
+          
+          # 데이터 건수 확인
+          if [ -f DB/neural_memory.json.gz ]; then
+            COUNT=$(python -c "import gzip, json; print(len(json.load(gzip.open('DB/neural_memory.json.gz', 'rt'))))")
+          else
+            COUNT=0
+          fi
+          
+          echo "| **Async Core** | 🔀 **Merged** | **$COUNT** | \`ghcr.io/...:latest\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           
@@ -255,14 +284,14 @@ jobs:
           fi
 
       # ------------------------------------------------------------------
-      # 🚀 릴리즈
+      # 🚀 릴리즈 생성
       # ------------------------------------------------------------------
       - name: 🚀 Release
         uses: softprops/action-gh-release@v1
         if: success()
         with:
           tag_name: ${{ steps.tagger.outputs.version }}
-          name: "🧠 Bulk Data Release ${{ steps.tagger.outputs.version }}"
+          name: "🧠 PR-Synced Data Batch ${{ steps.tagger.outputs.version }}"
           body_path: latest_briefing.md
           files: |
             latest_briefing.md
