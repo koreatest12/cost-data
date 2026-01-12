@@ -205,3 +205,169 @@
 - **[[번역] BreachForums 해킹 포럼 데이터베이스가 유출되어 324,000개의 계정이 노출되었습니다.](https://www.bleepingcomputer.com/news/security/breachforums-hacking-forum-database-leaked-exposing-324-000-accounts/)**
   - 악명 높은 BreachForums 해킹 포럼의 최신 화신은 다음과 같은 데이터 침해를 겪었습니다....
 
+
+## 📅 Briefing: 2026-01-12 12:17
+### 🏛️ Politics (정치)
+- **[李대통령 "한일, 가치 함께한다는 점 중요…경쟁하며 협력해야"(종합)](https://www.yna.co.kr/view/AKR20260112142152073)**
+  - (도쿄=연합뉴스) 박상현 특파원 = 이재명 대통령이 12일 한일 관계에 대해 &quot;경쟁하면서도 협력할 분야가 워낙 많기 때문에 함께할 공통점으로 무......
+
+- **[이혜훈 청문계획서 채택 불발…증인·참고인 이견](https://www.yna.co.kr/view/AKR20260112144300001)**
+  - (서울=연합뉴스) 노선웅 기자 = 이혜훈 기획예산처 장관 후보자의 인사청문회 계획서 채택을 위한 국회 재정경제기획위원회 회의가 12일 무산됐다....
+
+- **[중앙지법 판사회의서 내란전담재판부 구성 논의…19일 속개(종합)](https://www.yna.co.kr/view/AKR20260112089751004)**
+  - (서울=연합뉴스) 이미령 기자 = 내란재판부법에 따라 관련 재판을 맡는 서울중앙지법 판사들이 12일 내란전담재판부와 영장전담법관 구성에 관해 논......
+
+- **['단전단수 지시' 이상민 징역 15년 구형…최후진술 도중 울먹(종합2보)](https://www.yna.co.kr/view/AKR20260112114152004)**
+  - (서울=연합뉴스) 이영섭 김빛나 이도흔 기자 = 12·3 비상계엄 당시 언론사 단전·단수 지시를 전달하는 등 내란에 가담한 혐의를 받는 이상민 ......
+
+- **[金총리 "최대과제는 AI 대전환…공학의 힘이 국가경쟁력 떠받쳐"](https://www.yna.co.kr/view/AKR20260112138400001)**
+  - (서울=연합뉴스) 이상현 기자 = 김민석 국무총리는 12일 &quot;정부의 최대 과제는 인공지능(AI) 대전환&quot;이라고 말했다....
+
+- **[10월 29일 (화) 뉴스룸 다시보기](https://news.jtbc.co.kr/article/article.aspx?news_id=NB12220971)**
+  - 시청자 여러분, JTBC 뉴스룸을 시작하겠습니다. 국정감사는 사실상 끝났습니다만, 김건희 여사 공천개입 의혹은 계속 이어지고 있습니다. 저희 뉴스룸은 김건희 여사가 언급되는 새로운 명태균 씨의 녹취를 확보했...
+
+- **[클로징](https://news.jtbc.co.kr/article/article.aspx?news_id=NB12220968)**
+  - 뉴스룸 저희가 준비한 소식은 여기까지입니다.시청해 주신 여러분 고맙습니다....
+
+- **[10월 29일 (화) 오대영 라이브 다시보기](https://news.jtbc.co.kr/article/article.aspx?news_id=NB12220923)**
+  - 반갑습니다. 오대영 라이브, 오대영입니다. 30조 원에 가까운 세수 펑크가 현실화 됐습니다. 원인은 둘째 치고 대책이 문제인데, 서민들 주택 청약까지 끌어다 쓰기로 해서 논란입니다. 명태균 씨가 등장하는 녹취...
+
+- **[[돌비뉴스] 국감 끝나자 뒤끝 시작…최민희 '콕' 찍은 이유](https://news.jtbc.co.kr/article/article.aspx?news_id=NB12220940)**
+  - [기자]지난주였죠. 각종 욕설, 파행으로 얼룩졌던 과학기술방송통신위원회 국감이 사실상 끝났는데 그 후유증이 이어지고 있습니다.국민의힘에서는 국감 끝나자마자 최민희 위원장을 '편파 진...
+
+- **[[돌비뉴스] 김 여사 누구와 통화?…허은아의 '오묘한' 답변](https://news.jtbc.co.kr/article/article.aspx?news_id=NB12220941)**
+  - [기자]김건희 여사가 최근 각종 논란들 때문에 한 야당 대표에 전화를 1시간 정도 하고 하소연을 했다, 이런 주장이 나오면서 정치권에서는 화제가 됐습니다.과연 누구랑 통화한 거냐, 이런 논...
+
+- **['국민의힘, 이번엔 어떤 이름?'...한국 정당은 어쩌다 자주 당명을 바꾸게 됐나 - BBC](https://news.google.com/rss/articles/CBMiXEFVX3lxTFBiLS0zekxrN1hNOVlkaFRfa1dISDJNdVpFLVdNWlVTaDZCTXdoWnJCbHJ2Uk9vUXlVYVpUNl9PYVNqSGZCVy15VUFNRThhejRVX1lOYy1GS256cF9H0gFiQVVfeXFMUDY3c2J2RDhLQ3B1Y21wUkxWZjZYZ3NfQklZSkdyT1JEV0xFSGRpclJLcF8yZGpjQVpPZHloWVRjUER2V21vSGVJVjVOVUVUbzlrUnczWm5MQnhYWUhxV0RtNFE?oc=5)**
+  - '국민의힘, 이번엔 어떤 이름?'...한국 정당은 어쩌다 자주 당명을 바꾸게 됐나&nbsp;&nbsp;BBC...
+
+- **[[사설] ‘이혜훈’이 그대로 보여주는 한국 정치 민낯 - 조선일보](https://news.google.com/rss/articles/CBMihgFBVV95cUxOVTdSenFmLXRTZjJia2UwQ21rX1pFRUdyN2J0b1lFemVBbkM1Mm9QdmdvT3ByY3dRZHNNUW91V0lHVXVidjBQa041bUxRR05ESWhnSy1nZlNNMlRiNml3OEJQQ3FEeGpLV3liZGhyeGl6Vnl3bkdxQk1ZLUFNalVXbmhndzdZZ9IBmgFBVV95cUxOam54ZjJrcGlXTTdFY1JyYW94NGxjUW5qQWVsbkJ2MGp3RmVOWmxVUTVULUNETzVqWEFoYUlzdDR6TjMwZ1JEdzlwZFRhZ09NT3VBd2N1b0FOVlRYdDlkcG9mbUYxVmRjOWZyRF8tYmR3Q2VqSnJfWEhjSFFEOW9BMnpqejMwSjlwQUNFbmpLQTYyWDlhMkctaVNR?oc=5)**
+  - [사설] ‘이혜훈’이 그대로 보여주는 한국 정치 민낯&nbsp;&nbsp;조선일보...
+
+- **[[박명수 교수] 미국 복음주의의 정치참여와 오늘의 한국 기독교 - 뉴스파워](https://news.google.com/rss/articles/CBMiR0FVX3lxTE8ySzd5V3Y3XzNYU0xjeEFOMktHWVBBeGJBZEJZTUZwMEFKWkxnQUs5eks3SUswaVFOZXBIQm0zdE5MRmUyODY0?oc=5)**
+  - [박명수 교수] 미국 복음주의의 정치참여와 오늘의 한국 기독교&nbsp;&nbsp;뉴스파워...
+
+- **[감사원장, 이재명 정부 첫 감사위원 임명제청…최승필 한국외대 교수 - 한겨레](https://news.google.com/rss/articles/CBMidEFVX3lxTE9lN0NvWndZTXpnRFVnTVZvSFZoNkZ1dTBRcTlCenR5cVlTU0xNV19CRHRMSnRGdG5QVU0xUnpWNVpVbHRJbFRlSS1Xa3NtMm5OZzJoUnh4dkQ1YjhXdDJvZldNZ3NxQ1IyTG9scnBteVRRaFMz?oc=5)**
+  - 감사원장, 이재명 정부 첫 감사위원 임명제청…최승필 한국외대 교수&nbsp;&nbsp;한겨레...
+
+- **[이재명 "2026년을 대한민국 경제 대도약 원년으로" - 충청투데이](https://news.google.com/rss/articles/CBMibkFVX3lxTE9YbmJ4aS1FUjI3U0w0UWg2R0tycHVYeklWSkF3ZWZNUXVnTDNiTHRMVVQyOXF5dEF5c2lPdmFtVDU3aWVyVEQtQmdySWstNldBS214aXdUTUJuU1hfOTdMUWFFdEZGNnM5TDBpbzRR?oc=5)**
+  - 이재명 "2026년을 대한민국 경제 대도약 원년으로"&nbsp;&nbsp;충청투데이...
+
+### 💰 Finance & Economy (금융/경제)
+- **[퍼시피코 에너지, 베트남 첫 풍력발전사업 상업운전 시작](https://www.mk.co.kr/news/economy/11930704)**
+  - 빈롱성 30MW ‘선프로 풍력발전단지’ 가동 베트남 전력그룹과 20년 구매계약 체결 “아·태 청정에너지 전환 가속”미국 에너지 인프라 기업 퍼시피코 에너지는 베트남 남부 메콩강 삼.....
+
+- **[[단독] 자동차 보험료, 연 9000원 이상 오른다…2월부터 1%대 줄인상](https://www.mk.co.kr/news/economy/11930605)**
+  - 삼성화재·현대해상 1.4% DB·KB손보는 1.3% 올려대형 손해보험사의 올해 자동차보험료 인상률이 1.3~1.4%로 확정됐다. 삼성화재·현대해상은 1.4%, DB·KB손해보험은 .....
+
+- **[[단독] 車보험료 2월부터 1%대 줄인상](https://www.mk.co.kr/news/economy/11930602)**
+  - 대형 손해보험사의 올해 자동차보험료 인상률이 1.3~1.4%로 확정됐다. 삼성화재·현대해상은 1.4%, DB·KB손해보험은 1.3% 등이다. 차보험료 인상은 2021년 이후 5년 .....
+
+- **[[단독] 부모님의 주택연금, 목돈 없이 자녀가 이어받을 길 열린다](https://www.mk.co.kr/news/economy/11930594)**
+  - 주택금융공사 올해 업무계획  현재는 연금받던 부모 사망시 목돈내고 주택상속 뒤 재가입 돈없을땐 경매한 후 잔액지급  갑작스러운 목돈 상환 부담에 남은 연금 이어받는 방안 추진주택연.....
+
+- **[[표] 외국환율고시표](https://www.mk.co.kr/news/economy/11930583)**
+  - ...
+
+- **['인터넷 전문 은행' 케이뱅크, 코스피 상장예심 통과](https://www.yna.co.kr/view/AKR20260112139900008)**
+  - (서울=연합뉴스) 이민영 기자 = 한국거래소 유가증권시장본부는 12일 케이뱅크에 대한 신규상장 예비심사 결과 적격 결정을 내렸다고 밝혔다....
+
+- **[농식품부, aT·마사회 등 업무점검…기관 쇄신에 전력 당부](https://www.yna.co.kr/view/AKR20260112140100030)**
+  - (서울=연합뉴스) 한주홍 기자 = 농림축산식품부는 12일 한국농수산식품유통공사(aT), 한국마사회, 한국농어촌공사 등 농식품부 소관 12개 공공......
+
+- **[[연합뉴스 이 시각 헤드라인] - 18:00](https://www.yna.co.kr/view/AKR20260112133500011)**
+  - ■ &apos;단전·단수 지시&apos; 이상민 징역 15년 구형…&quot;尹친위쿠데타 가담&quot;...
+
+- **[국토장관 "주택공급 후속대책 1월 중 발표 위해 최선"](https://www.yna.co.kr/view/AKR20260112135200003)**
+  - (세종=연합뉴스) 임기창 기자 = 김윤덕 국토교통부 장관은 정부와 여당이 준비 중인 주택 공급 후속대책 발표 시기와 관련해 &quot;1월 중에는 발표할......
+
+- **[280조대 세외수입도 국세청이 통합 징수한다…준비단 출범](https://www.yna.co.kr/view/AKR20260112129100002)**
+  - (세종=연합뉴스) 이대희 기자 = 280조원대에 달하지만 관리 부처가 제각각이라 미납이 적지 않은 &apos;국세외수입&apos; 징수를 국세청이 통합 관리한다....
+
+- **[블록체인으로 여는 새로운 금융질서: 토큰증권 - KDI 경제교육·정보센터](https://news.google.com/rss/articles/CBMimAFBVV95cUxPWF9haFM0WG9iLTdtWGJoYzRLbEQtOXZRWmdhQnhiQlR1VmVVMVZ4THEtRy1YamxDOVJOWFBhUFJpYklGa0J5MmFPU1I0aHdWQlBNSzdNSG1FWmhycTBFX1dpRC1OOUZsM1dkQWRlQ3EzTWtfZ2Ezd0pZWFhwbWhvdzJlU0JCU1N2ZVlPekRxdGpmSWk4X2ctZg?oc=5)**
+  - 블록체인으로 여는 새로운 금융질서: 토큰증권&nbsp;&nbsp;KDI 경제교육·정보센터...
+
+- **[루센트블록이 쏘아올린 혁신금융의 기로[스타트업 이슈 돋보기] - 동아일보](https://news.google.com/rss/articles/CBMidkFVX3lxTE5qNFA2bHF5UVhPVDRnT3dNMzQycVNCdnZtQWNxQkFjelZZODBxcDdqTUpMRDN0NDc2UndObHlyRXlEOUdQRzk5bUJTT3BJM2NNUzNvSWRndzhHMXJtNkY1cWdkRjNXdGdQVDJZX1R4MDdDdjhxeXfSAWZBVV95cUxNbjUxbXlRRTN2RGtFcTd3YjdMeHJvaHM2YlpiT0xtcmJyUUV0cy0yaEJrQnpRWUJyc2tKdFFuMlVnTUhkaHVkQXBvcHVzdTF2eTQ4Y2l2NnhDc1NuV2NmMFI2YnV4TFE?oc=5)**
+  - 루센트블록이 쏘아올린 혁신금융의 기로[스타트업 이슈 돋보기]&nbsp;&nbsp;동아일보...
+
+- **[농협손보, ‘금융소비자보호 실천 결의대회’ 개최 - 농민신문](https://news.google.com/rss/articles/CBMiWkFVX3lxTE9JMmhpWUxySFZTbWszUW9yX2MxTnNCaDhFYkVKNndzRVdZSF9BX0RKN0otbGRjM3pZSmFOMVIzUDhjQTlCVzhIcDZyeXhkdzlka2dqWVRoZkFrZw?oc=5)**
+  - 농협손보, ‘금융소비자보호 실천 결의대회’ 개최&nbsp;&nbsp;농민신문...
+
+- **[경쟁력 입증된 IMA···NH투자증권도 합류할까 - 톱데일리](https://news.google.com/rss/articles/CBMiUEFVX3lxTFBsS3lwUTVRS1pGUHVuV0FPYVZuOGpRVFZDM2lTOFBOQUdvRVJJeHFRVWJaYmtLX2JwQTJWNFVlVlJUbmM5YWVBN3lHQnhzUHdx?oc=5)**
+  - 경쟁력 입증된 IMA···NH투자증권도 합류할까&nbsp;&nbsp;톱데일리...
+
+- **[하나증권, ‘하나 THE 발행어음’ 첫 출시 기념 이벤트 실시 - 투데이신문](https://news.google.com/rss/articles/CBMia0FVX3lxTE1pNGo0MU5hT1dfSzlRdGkxVVJ4em1hOHNTNFdQYlhyTXpxNmFzcnVMSjlLU1hUOTB2N0dpNk9CSkl5N0xaM3lhTUxwaGhrZDlQYkt3MmJkTEY0TTA0ZTB3VjVTUWwzOGFZOXpV0gFvQVVfeXFMTnNaZWNPZ0d2Z3ZhVGZZb3dqbndNRXg3REsyUzZZUmxMNVRiTEcxODhUckE1bHlQeVk1UGctNzRiUUg1S1dic1NTeUpXZGxUVWtKaDFYaWljRDhYbFpDSERvM2piUTluWGZac3BILVpB?oc=5)**
+  - 하나증권, ‘하나 THE 발행어음’ 첫 출시 기념 이벤트 실시&nbsp;&nbsp;투데이신문...
+
+### 🚨 Security Critical (보안 긴급)
+- **[[번역] 전세계 사이버 사고에서 볼 수 있는 공개적으로 사용 가능한 도구](https://www.cisa.gov/news-events/cybersecurity-advisories/aa18-284a)**
+  - 요약
+
+본 보고서는 5국 사이버보안당국의 공동연구로 작성되었습니다....
+
+- **[[번역] 삼샘 랜섬웨어](https://www.cisa.gov/news-events/cybersecurity-advisories/aa18-337a)**
+  - 요약
+
+국토안보부(DHS) 국가 사이버보안 및 통신 통합...
+
+- **[[번역] DNS 인프라 하이재킹 캠페인](https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-024a)**
+  - 요약
+
+국가사이버보안통신통합센터(NCCIC)는 사이버보안국의 일부이다....
+
+- **[[번역] 안전하지 않은 SAP 시스템을 위한 새로운 공격](https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-122a)**
+  - 요약
+
+CISA(사이버보안 및 인프라 보안국)에서 이 활동 경고를 발행합니다....
+
+- **[[번역] Microsoft 운영 체제 BlueKeep 취약점](https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-168a)**
+  - 요약
+
+CISA(사이버보안 및 인프라 보안국)에서 이 활동 경고를 발행합니다....
+
+- **[[번역] 향상된 탄력성을 위한 최신 Microsoft 사고 대응 사전 서비스를 살펴보세요.](https://www.microsoft.com/en-us/security/blog/2026/01/07/explore-the-latest-microsoft-incident-response-proactive-services-for-enhanced-resilience/)**
+  - Microsoft Incident Response의 새로운 사전 대응 서비스는 보안 불확실성을 준비 상태로 전환합니다....
+
+- **[[번역] 피싱 행위자는 도메인을 스푸핑하기 위해 복잡한 라우팅과 잘못된 구성을 악용합니다.](https://www.microsoft.com/en-us/security/blog/2026/01/06/phishing-actors-exploit-complex-routing-and-misconfigurations-to-spoof-domains/)**
+  - 위협 행위자는 복잡한 라우팅 시나리오와 잘못 구성된 스푸핑 방지 기능을 악용하여...
+
+- **[[번역] Microsoft Defender Experts Suite 소개: 전문가 주도 서비스로 보안 강화](https://www.microsoft.com/en-us/security/blog/2026/01/06/introducing-the-microsoft-defender-experts-suite-elevate-your-security-with-expert-led-services/)**
+  - 보안을 지원하는 전문가 주도 서비스의 통합 세트인 Microsoft Defender Experts Suite 발표...
+
+- **[[번역] 새로운 Microsoft 전자책: 포인트 솔루션이 방해가 되는 3가지 이유](https://www.microsoft.com/en-us/security/blog/2025/12/18/new-microsoft-e-book-3-reasons-point-solutions-are-holding-you-back/)**
+  - 통합된 AI 지원 플랫폼이 어떻게 속도, 복원력 및 성능을 제공하는지에 대한 새로운 Microsoft 전자책을 살펴보세요....
+
+- **[[번역] Access Fabric: ID 및 네트워크 액세스에 대한 현대적인 접근 방식](https://www.microsoft.com/en-us/security/blog/2025/12/17/access-fabric-a-modern-approach-to-identity-and-network-access/)**
+  - Access Fabric은 누가 무엇에 액세스할 수 있는지 지속적으로 결정하는 통합 액세스 보안 솔루션입니다....
+
+### 🧾 Tax & Cyber Threat (연말정산/해킹)
+- **[[2026 방화벽 정책관리 솔루션 리포트] AI와 자동화로 정책은 물론 보안까지 사로잡다](http://www.boannews.com/media/view.asp?idx=141450&kind=&sub_kind=)**
+  - 보안 강화 위해 선택한 이기종 방화벽 전략... 관리 부실로 인한 보안 위협 불러1대의 방화벽이라도 정책이 100개 넘어가면 사람이 일일이 관리하기 어려워사용자 설문조사... 방화벽 운영관리에서 가장 문제가 되는 건 전문 인력 부족방화벽 정책관리 솔루션 전문기업 집중 분석: 벨로크, 위드네트웍스[보안뉴스 원병철 기자] 네트워크 방화벽(Network Fire...
+
+- **[41개 중소기업, KISIA 지원 랜섬웨어 대응 솔루션으로 보안 공백 극복](http://www.boannews.com/media/view.asp?idx=141448&kind=&sub_kind=)**
+  - 중소기업에 국내 랜섬웨어 대응 솔루션 무상 지원, 체험 기회 제공‘랜섬웨어 대응 솔루션 무상지원 사업’ 올해도 추진[보안뉴스 강현주 기자] “그동안 막연하게 인식해 왔던 보안 솔루션을 실제 경험하고 회사에 적합한 솔루션이 무엇인지 알 수 있었습니다. 이번 사업을 계기로 자체 예산을 편성해 랜섬웨어 대응 솔루션을 도입하게 됐습니다.”한국정보보호산업협회(KIS...
+
+- **[광주 서구, 서창천 산책로에 스마트 자동차단장치 설치... 하천 범람하면 자동 차단](http://www.boannews.com/media/view.asp?idx=141446&kind=&sub_kind=)**
+  - 기상이변 대응 위해 원격 제어 시스템 구축...인명피해 사전 예방 기대[보안뉴스 강초희 기자] 광주광역시 서구(구청장 김이강)는 집중호우 시 하천 범람으로 인한 안전사고를 예방하기 위해 금호동·벽진동 일원 서창천 산책로 입구 9곳에 스마트 자동차단장치를 설치한다.이번 사업은 최근 기후변화로 인한 국지성 호우가 빈번히 발생함에 따라 재난에 선제적으로 대비하고...
+
+- **[“지역 지키는 파수꾼” 미추홀구, CCTV 실시간 관제로 주민생활 안전망 강화](http://www.boannews.com/media/view.asp?idx=141447&kind=&sub_kind=)**
+  - 2025년 실시간 관제로 범죄 사건 112건 해결하며 지역 파수꾼 역할공원에 쓰러진 주민 발견한 관제요원이 119에 신속 신고하는 등 주민 안전 기여[보안뉴스 강초희 기자] 인천 미추홀구(구청장 이영훈)는 방범 취약지역에 설치한 ‘방범용 CCTV’가 범죄 예방 및 주민 안전을 지키는 든든한 파수꾼 역할을 하고 있다고 밝혔다. 2025년 12월 기준으로 구...
+
+- **[[쿠팡 해킹] 경찰 “쿠팡 개인정보 유출 3000건 훨씬 넘어”... 로저스 대표 1차 소환 불응](http://www.boannews.com/media/view.asp?idx=141445&kind=&sub_kind=)**
+  - 2차소환 조율·출국정지 검토 중[보안뉴스 강현주 기자] 경찰이 쿠팡 개인정보 유출 관련 “3000건보다 훨씬 많은 것으로 보고있다”고 밝혔다. 수사를 받고 있는 해롤드 로저스 한국 쿠팡 임시대표가 경찰의 1차 출석 요구에 불응했다. 박정보 서울경찰청장은 12일 정례 기자간담회에서 이 같이 발표했다. 박 청장은 “(로저스 대표가) 1차 출석을 불응했고 2차...
+
+- **[약한 인증 노린 ‘고브루트포서’ 봇넷 확산, 가상화폐·블록체인 프로젝트 DB 겨냥](https://www.dailysecu.com/news/articleView.html?idxno=204210)**
+  - 가상화폐 및 블록체인 프로젝트의 데이터베이스를 노린 ‘고브루트포서(GoBruteforcer)’ 봇넷 공격이 다시 확산하고 있다. 공격자는 리눅스 서버에 노출된 FTP, 마이SQL(MySQL), 포스트그레SQL(PostgreSQL), php마이어드민(phpMyAdmin) 같은 서비스를 대상으로 무차별 대입 방식의 비밀번호 공격을 수행하고, 감염된 서버를 다시...
+
+- **[[신년 인터뷰] 김형곤 이너버스 대표 "공공 넘어 금융·기업으로…이너버스 로그센터 SIEM 확장 가속"](https://www.dailysecu.com/news/articleView.html?idxno=204209)**
+  - 2025년 이너버스는 ‘로그센터(LogCenter)’의 완성도를 끌어올리는 데 역량을 집중한 한 해였다. 김형곤 이너버스 대표는 실제 고객 환경에서 요구되는 안정성, 운영 편의성, 분석 정확도를 제품 고도화의 핵심 축으로 삼았다고 설명했다. 공공·금융·일반 기업을 중심으로 기존 고객의 운영 안정화와 추가 연계 구축 수요가 이어졌고, 이를 통해 로그센터가 현...
+
+- **[인스피언, 커넥트서비스 확장 전략 가속...EDI 구독건수 2배 이상 증가](https://www.dailysecu.com/news/articleView.html?idxno=204207)**
+  - 인스피언의 클라우드 EDI(전자문서교환) 서비스 커넥트서비스가 기존 고객을 중심으로 사용 범위를 빠르게 넓히며, 2025년 EDI 구독건수가 전년 대비 2배 이상 증가한 것으로 나타났다.이번 구독건수 증가는 신규 고객 수 확대와 더불어, 기존 고객의 추가 구독과 연계 확장이 집중적으로 이뤄진 데 따른 것이다. 하나의 고객사가 거래처, 문서 유형, 연계 채널...
+
+- **[[신년 인터뷰] 권영목 파고네트웍스 대표 “딥액트 기반 MDR, 탐지–검증–대응–격리를 한 흐름으로”](https://www.dailysecu.com/news/articleView.html?idxno=204205)**
+  - 파고네트웍스 권영목 대표는 2026년 데일리시큐와 신년 인터뷰에서 2025년 보안 현장을 이렇게 정리했다. 그는 많은 조직이 탐지는 하고 있지만 책임과 실행 구조가 느슨해 “이미 인지된 위협에 제때 대응하지 못하는 상황”이 더 큰 위험이 되고 있다고 짚었다. 파고네트웍스가 2025년 한 해 동안 강조해온 것도 도구의 추가가 아니라, ‘보안이 실제로 굴러가게...
+
+- **[KISIA, ‘2025 랜섬웨어 대응 솔루션 무상지원사업’ 성공적으로 마무리...26년에도 동일 사업 추진](https://www.dailysecu.com/news/articleView.html?idxno=204206)**
+  - 중소기업의 랜섬웨어 대응 역량 강화를 위한 한국정보보호산업협회(KISIA, 회장 조영철) ‘2025년 랜섬웨어 대응 솔루션 무상지원사업’이 성공적으로 마무리되며, 실질적인 보안 수준 향상과 함께 현장의 높은 호응을 얻고 있다.해당 사업은 랜섬웨어 공격 증가에 따라 자체적인 보안 인프라 구축에 어려움을 겪는 중소기업을 대상으로, 국내 정보보호 솔루션·서비스를...
+
