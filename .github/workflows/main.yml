@@ -1,4 +1,4 @@
-name: Copilot Agent - Neural Core & Data Archive (Ultimate Fix)
+name: Copilot Agent - Neural Core & Data Archive (Final Fix)
 
 on:
   schedule:
@@ -8,12 +8,12 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # 💾 릴리즈 생성 및 DB 저장을 위한 필수 권한
+  contents: write  # 💾 릴리즈 및 DB 저장을 위한 권한
   issues: write
 
 jobs:
   # --------------------------------------------------------------------------------
-  # 🖥️ Windows Agent: 실행 환경 검증 (시뮬레이션)
+  # 🖥️ Windows Agent: 실행 환경 검증 (이모지 제거로 에러 해결)
   # --------------------------------------------------------------------------------
   agent-windows:
     name: 🤖 Run Agent on Windows
@@ -25,17 +25,18 @@ jobs:
       - name: 🛡️ 보안 환경 검증
         shell: powershell
         run: |
-          Write-Host "🔍 Scanning Windows Security Environment..."
-          Write-Host "✅ Firewall Service: ACTIVE"
+          # [FIX] 이모지 제거 -> 텍스트 태그 사용 (인코딩 에러 방지)
+          Write-Host "[SCAN] Scanning Windows Security Environment..."
+          Write-Host "[OK] Firewall Service: ACTIVE"
 
       - name: 🚀 Copilot 에이전트 기동 확인
         shell: powershell
         run: |
-          Write-Host "🚀 Initializing Copilot Agent Swarm..."
-          Write-Host " -> 🤖 Agent Unit #1 [ONLINE] - Systems Normal."
+          Write-Host "[INIT] Initializing Copilot Agent Swarm..."
+          Write-Host " -> [ONLINE] Agent Unit #1 - Systems Normal."
 
   # --------------------------------------------------------------------------------
-  # 🐧 Linux Agent: 실제 데이터 수집, 학습, DB 저장, 릴리즈 (핵심)
+  # 🐧 Linux Agent: AI 데이터 수집, 학습, 누적, 릴리즈 (핵심 로직)
   # --------------------------------------------------------------------------------
   agent-linux-intelligence:
     name: 🧠 AI Intelligence Node
@@ -221,7 +222,7 @@ jobs:
           echo "version=v$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
 
       # ------------------------------------------------------------------
-      # 🖥️ 로봇 대시보드 출력
+      # 🖥️ 로봇 대시보드 출력 (이모지 가능 - 리눅스는 문제 없음)
       # ------------------------------------------------------------------
       - name: 🖥️ Display Robot Dashboard
         if: always()
