@@ -1,19 +1,19 @@
-name: Copilot Agent - Neural Core & Data Archive (Final Fix)
+name: Copilot Agent - Tax Season Security Special
 
 on:
   schedule:
-    - cron: '0 * * * *' # ⏰ 매 시간 실행
+    - cron: '0 * * * *' # ⏰ 매 시간 실행 (연말정산 기간 집중 모니터링)
   push:
     branches: [ main, master, develop ]
   workflow_dispatch:
 
 permissions:
-  contents: write  # 💾 릴리즈 및 DB 저장을 위한 권한
+  contents: write  # 💾 DB 및 릴리즈 저장 권한
   issues: write
 
 jobs:
   # --------------------------------------------------------------------------------
-  # 🖥️ Windows Agent: 실행 환경 검증 (이모지 제거로 에러 해결)
+  # 🖥️ Windows Agent: 실행 환경 검증 (텍스트 태그 사용)
   # --------------------------------------------------------------------------------
   agent-windows:
     name: 🤖 Run Agent on Windows
@@ -25,7 +25,6 @@ jobs:
       - name: 🛡️ 보안 환경 검증
         shell: powershell
         run: |
-          # [FIX] 이모지 제거 -> 텍스트 태그 사용 (인코딩 에러 방지)
           Write-Host "[SCAN] Scanning Windows Security Environment..."
           Write-Host "[OK] Firewall Service: ACTIVE"
 
@@ -36,10 +35,10 @@ jobs:
           Write-Host " -> [ONLINE] Agent Unit #1 - Systems Normal."
 
   # --------------------------------------------------------------------------------
-  # 🐧 Linux Agent: AI 데이터 수집, 학습, 누적, 릴리즈 (핵심 로직)
+  # 🐧 Linux Agent: 연말정산 보안 이슈 집중 분석 및 데이터 누적
   # --------------------------------------------------------------------------------
   agent-linux-intelligence:
-    name: 🧠 AI Intelligence Node
+    name: 🧠 AI Intelligence Node (Tax Special)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -63,7 +62,7 @@ jobs:
           pip install feedparser requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator pandas tabulate
 
       # ------------------------------------------------------------------
-      # 🔥 [핵심] AI 뉴럴 코어 (데이터 누적/학습 스크립트)
+      # 🔥 [핵심] AI 뉴럴 코어 (연말정산 감시 로직 추가)
       # ------------------------------------------------------------------
       - name: 🧬 Generate & Run AI Neural Core
         run: |
@@ -83,18 +82,24 @@ jobs:
           LOG_FILE = os.path.join(DB_DIR, "knowledge_base.md")     # 누적 지식 데이터
           REPORT_FILE = "latest_briefing.md"
 
+          # [NEW] 연말정산 키워드 정의
+          TAX_KEYWORDS = ["연말정산", "국세청", "홈택스", "소득공제", "세금", "Year-end", "Tax", "환급", "세무", "Hometax"]
+
+          # 소스 대량 확장
           RSS_SOURCES = {
               "🚨 Critical": [
                   {"url": "https://www.cisa.gov/uscert/ncas/alerts.xml", "lang": "en"},
                   {"url": "https://www.microsoft.com/security/blog/feed/", "lang": "en"}
               ],
+              "🇰🇷 Tax & Finance (Season)": [
+                  {"url": "https://www.boannews.com/media/news_rss.xml", "lang": "ko"}, # 보안뉴스 (스미싱 주타겟)
+                  {"url": "https://www.dailysecu.com/rss/allArticle.xml", "lang": "ko"}, # 데일리시큐
+                  {"url": "https://rss.etnews.com/04045.xml", "lang": "ko"}, # 전자신문 (시스템 장애 등)
+                  {"url": "https://www.ddaily.co.kr/rss/?section_id=10", "lang": "ko"} # 디지털데일리
+              ],
               "🌍 Global": [
                   {"url": "https://feeds.feedburner.com/TheHackersNews", "lang": "en"},
                   {"url": "https://www.bleepingcomputer.com/feed/", "lang": "en"}
-              ],
-              "🇰🇷 Local": [
-                  {"url": "https://www.boannews.com/media/news_rss.xml", "lang": "ko"},
-                  {"url": "https://www.dailysecu.com/rss/allArticle.xml", "lang": "ko"}
               ]
           }
 
@@ -125,21 +130,27 @@ jobs:
               except: s.headers.update({'User-Agent': 'Mozilla/5.0'})
               return s
 
+          def is_tax_related(text):
+              return any(keyword in text for keyword in TAX_KEYWORDS)
+
           # --- [실행 로직] ---
           def run_intelligence():
-              print("🤖 AI Neural Core Initialized...")
+              print("🤖 AI Neural Core Initialized (Tax Season Mode)...")
               init_memory()
               memory = load_memory()
               
-              report_buffer = ""
+              # 섹션별 버퍼
+              tax_buffer = ""      # 연말정산 전용 섹션
+              general_buffer = ""  # 일반 보안 뉴스
+              
               knowledge_buffer = f"\n## 📅 Update: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
               new_items_count = 0
+              tax_items_count = 0
 
               session = get_session()
 
               for category, feeds in RSS_SOURCES.items():
                   print(f"📡 Scanning Sector: {category}...")
-                  cat_content = ""
                   
                   for feed in feeds:
                       try:
@@ -147,45 +158,68 @@ jobs:
                           parsed = feedparser.parse(resp.content)
                           if not parsed.entries: parsed = feedparser.parse(resp.text)
                           
-                          for entry in parsed.entries[:3]: 
-                              if entry.link in memory: continue # 이미 학습한 데이터 패스
+                          # [확장] 더 깊이 탐색 (최신 5개)
+                          for entry in parsed.entries[:5]: 
+                              if entry.link in memory: continue 
                               
-                              # 신규 데이터 발견 -> 메모리 추가
+                              # 신규 데이터 발견
                               memory.add(entry.link)
                               new_items_count += 1
                               
                               title = entry.title
                               summary = clean_html(getattr(entry, 'summary', ''))
                               
+                              # 번역
                               if feed['lang'] == 'en':
                                   title = f"[번역] {translate(title)}"
                                   if summary: summary = translate(summary[:100]) + "..."
                               
                               item_md = f"- **[{title}]({entry.link})**\n  - {summary}\n\n"
-                              cat_content += item_md
+                              
+                              # [핵심] 연말정산 분류 로직
+                              full_text = title + " " + summary
+                              if is_tax_related(full_text):
+                                  tax_buffer += item_md
+                                  tax_items_count += 1
+                                  item_md = "🧾 (Tax Security) " + item_md # 지식베이스엔 태그 추가
+                              else:
+                                  general_buffer += item_md
+
+                              # 지식베이스 누적
+                              knowledge_buffer += item_md
+
                       except Exception as e:
                           print(f"⚠️ Error reading feed: {e}")
 
-                  if cat_content:
-                      report_buffer += f"### {category}\n{cat_content}"
-                      knowledge_buffer += f"### {category}\n{cat_content}"
+              # 리포트 조합
+              final_report = ""
+              
+              # 1. 연말정산 섹션 (최상단 노출)
+              if tax_buffer:
+                  final_report += "## 🧾 🔥 긴급: 연말정산 보안 위협 (Tax Season Alert)\n"
+                  final_report += "> ⚠️ 국세청 사칭 스미싱 및 악성 파일 주의!\n\n"
+                  final_report += tax_buffer
+                  final_report += "---\n\n"
+              
+              # 2. 일반 뉴스 섹션
+              if general_buffer:
+                  final_report += "## 🌍 최신 보안 브리핑\n" + general_buffer
 
               # 변경사항 저장
               if new_items_count > 0:
                   save_memory(memory)
                   
-                  # 누적 데이터 파일에 추가 (Append)
+                  # 누적 데이터 파일에 추가
                   with open(LOG_FILE, 'a', encoding='utf-8') as f:
                       f.write(knowledge_buffer)
                       
                   # 이번 릴리즈용 리포트 생성
-                  header = f"# 🤖 AI Security Briefing\n> 🧠 Neural Memory: {len(memory)} Nodes | 🆕 New Insights: {new_items_count}\n\n"
+                  header = f"# 🤖 AI Security Briefing (Tax Season)\n> 🧠 Memory: {len(memory)} | 🆕 Total: {new_items_count} | 🧾 Tax Alerts: {tax_items_count}\n\n"
                   with open(REPORT_FILE, 'w', encoding='utf-8') as f:
-                      f.write(header + report_buffer)
+                      f.write(header + final_report)
                       
-                  print(f"✅ Learning Complete. Absorbed {new_items_count} new inputs.")
+                  print(f"✅ Learning Complete. New: {new_items_count}, Tax Related: {tax_items_count}")
               else:
-                  # 데이터가 없어도 파일 생성 (에러 방지)
                   with open(REPORT_FILE, 'w', encoding='utf-8') as f:
                       f.write("# 🤖 AI Status Report\n\n> 💤 No new patterns detected.")
                   print("💤 No new data to learn.")
@@ -198,7 +232,7 @@ jobs:
           python ai_neural_core.py
 
       # ------------------------------------------------------------------
-      # 💾 [수정] 학습 데이터 영구 저장 (Git Commit & Push)
+      # 💾 학습 데이터 영구 저장 (Git Commit & Push)
       # ------------------------------------------------------------------
       - name: 💾 Commit AI Memory (Save Learning)
         run: |
@@ -207,30 +241,28 @@ jobs:
           
           git add DB/
           
-          # 변경사항이 없어도 에러나지 않도록 처리
           git commit -m "🧠 AI Neural Upgrade: Memory Expanded [$(date +'%Y-%m-%d %H:%M')]" || echo "No memory updates needed."
           git push
 
       # ------------------------------------------------------------------
-      # 🏷️ [수정] 날짜 태그 생성 (422 에러 해결 핵심)
+      # 🏷️ 날짜 태그 생성 (422 에러 방지)
       # ------------------------------------------------------------------
       - name: 🏷️ Generate Version Tag
         id: tagger
         shell: bash
         run: |
-          # 여기서 미리 날짜를 계산해서 output 변수에 담습니다.
           echo "version=v$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
 
       # ------------------------------------------------------------------
-      # 🖥️ 로봇 대시보드 출력 (이모지 가능 - 리눅스는 문제 없음)
+      # 🖥️ 로봇 대시보드 출력 (연말정산 카운트 포함)
       # ------------------------------------------------------------------
       - name: 🖥️ Display Robot Dashboard
         if: always()
         run: |
           echo "## 🤖 Copilot Agent Status Dashboard" >> $GITHUB_STEP_SUMMARY
-          echo "| System | Status | Memory Nodes |" >> $GITHUB_STEP_SUMMARY
-          echo "| :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Neural Core** | 🟢 **ONLINE** | **$(jq length DB/neural_memory.json 2>/dev/null || echo 0)** |" >> $GITHUB_STEP_SUMMARY
+          echo "| System | Status | Mode | Memory |" >> $GITHUB_STEP_SUMMARY
+          echo "| :---: | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Neural Core** | 🟢 **ONLINE** | **🧾 Tax Season** | **$(jq length DB/neural_memory.json 2>/dev/null || echo 0)** |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ -f latest_briefing.md ]; then
@@ -238,15 +270,14 @@ jobs:
           fi
 
       # ------------------------------------------------------------------
-      # 🚀 [수정] 릴리즈 생성 (올바른 태그 사용)
+      # 🚀 릴리즈 생성 (패키지 배포)
       # ------------------------------------------------------------------
       - name: 🚀 Release AI Agent Package
         uses: softprops/action-gh-release@v1
         if: success()
         with:
-          # 위에서 생성한 tagger 단계의 output을 사용합니다.
           tag_name: ${{ steps.tagger.outputs.version }}
-          name: "🤖 AI Agent Release ${{ steps.tagger.outputs.version }}"
+          name: "🧾 Tax Season Security Briefing ${{ steps.tagger.outputs.version }}"
           body_path: latest_briefing.md
           files: |
             latest_briefing.md
