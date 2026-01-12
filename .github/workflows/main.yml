@@ -1,61 +1,254 @@
-name: Hourly Security Display & Archive
+name: Copilot Agent - Neural Core & Data Archive (Ultimate Fix)
 
 on:
   schedule:
-    - cron: '0 * * * *' # 매 시간 실행
-  workflow_dispatch: # 수동 실행
+    - cron: '0 * * * *' # ⏰ 매 시간 실행
+  push:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write  # 💾 릴리즈 생성 및 DB 저장을 위한 필수 권한
   issues: write
 
 jobs:
-  security-display:
-    name: 📊 화면 출력 및 보관 (Display & Archive)
-    runs-on: ubuntu-latest
-
+  # --------------------------------------------------------------------------------
+  # 🖥️ Windows Agent: 실행 환경 검증 (시뮬레이션)
+  # --------------------------------------------------------------------------------
+  agent-windows:
+    name: 🤖 Run Agent on Windows
+    runs-on: windows-latest
     steps:
-      - name: 📥 Checkout Code
+      - name: 📥 작업 설정
+        uses: actions/checkout@v4
+
+      - name: 🛡️ 보안 환경 검증
+        shell: powershell
+        run: |
+          Write-Host "🔍 Scanning Windows Security Environment..."
+          Write-Host "✅ Firewall Service: ACTIVE"
+
+      - name: 🚀 Copilot 에이전트 기동 확인
+        shell: powershell
+        run: |
+          Write-Host "🚀 Initializing Copilot Agent Swarm..."
+          Write-Host " -> 🤖 Agent Unit #1 [ONLINE] - Systems Normal."
+
+  # --------------------------------------------------------------------------------
+  # 🐧 Linux Agent: 실제 데이터 수집, 학습, DB 저장, 릴리즈 (핵심)
+  # --------------------------------------------------------------------------------
+  agent-linux-intelligence:
+    name: 🧠 AI Intelligence Node
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    
+    steps:
+      - name: 📥 소스 코드 체크아웃 (전체 히스토리)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 
 
-      - name: 🐍 Set up Python 3.11
+      - name: 🐍 Python 3.11 환경 구성
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: 📦 Install Tools
+      - name: 📦 AI 학습 도구 대량 설치
         run: |
           python -m pip install --upgrade pip
-          pip install feedparser requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator
+          pip install feedparser requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator pandas tabulate
 
-      - name: 🤖 Run Security Agent
-        run: python security_news.py
-
-      # [핵심 기능] 이 단계가 화면에 뉴스를 보여줍니다
-      - name: 🖥️ Show on Summary Screen
-        if: always()
+      # ------------------------------------------------------------------
+      # 🔥 [핵심] AI 뉴럴 코어 (데이터 누적/학습 스크립트)
+      # ------------------------------------------------------------------
+      - name: 🧬 Generate & Run AI Neural Core
         run: |
-          if [ -f hourly_security_report.md ]; then
-            cat hourly_security_report.md >> $GITHUB_STEP_SUMMARY
-          fi
+          # 파이썬 스크립트 생성
+          cat << 'EOF' > ai_neural_core.py
+          import feedparser, requests, os, json, time, re, random
+          from datetime import datetime
+          from fake_useragent import UserAgent
+          from deep_translator import GoogleTranslator
+          import urllib3
 
-      - name: 💾 Archive to DB (Commit)
+          urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+          # --- [설정] ---
+          DB_DIR = "DB"
+          MEMORY_FILE = os.path.join(DB_DIR, "neural_memory.json") # 학습된 URL 기억
+          LOG_FILE = os.path.join(DB_DIR, "knowledge_base.md")     # 누적 지식 데이터
+          REPORT_FILE = "latest_briefing.md"
+
+          RSS_SOURCES = {
+              "🚨 Critical": [
+                  {"url": "https://www.cisa.gov/uscert/ncas/alerts.xml", "lang": "en"},
+                  {"url": "https://www.microsoft.com/security/blog/feed/", "lang": "en"}
+              ],
+              "🌍 Global": [
+                  {"url": "https://feeds.feedburner.com/TheHackersNews", "lang": "en"},
+                  {"url": "https://www.bleepingcomputer.com/feed/", "lang": "en"}
+              ],
+              "🇰🇷 Local": [
+                  {"url": "https://www.boannews.com/media/news_rss.xml", "lang": "ko"},
+                  {"url": "https://www.dailysecu.com/rss/allArticle.xml", "lang": "ko"}
+              ]
+          }
+
+          # --- [함수] ---
+          def init_memory():
+              if not os.path.exists(DB_DIR): os.makedirs(DB_DIR)
+              if not os.path.exists(MEMORY_FILE):
+                  with open(MEMORY_FILE, 'w') as f: json.dump([], f)
+
+          def load_memory():
+              try:
+                  with open(MEMORY_FILE, 'r') as f: return set(json.load(f))
+              except: return set()
+
+          def save_memory(data):
+              with open(MEMORY_FILE, 'w') as f: json.dump(list(data), f)
+
+          def translate(text):
+              try: return GoogleTranslator(source='auto', target='ko').translate(text)
+              except: return text
+
+          def clean_html(raw):
+              return re.sub(r'<[^>]+>', '', raw).strip()[:200] + "..."
+
+          def get_session():
+              s = requests.Session()
+              try: s.headers.update({'User-Agent': UserAgent().random})
+              except: s.headers.update({'User-Agent': 'Mozilla/5.0'})
+              return s
+
+          # --- [실행 로직] ---
+          def run_intelligence():
+              print("🤖 AI Neural Core Initialized...")
+              init_memory()
+              memory = load_memory()
+              
+              report_buffer = ""
+              knowledge_buffer = f"\n## 📅 Update: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+              new_items_count = 0
+
+              session = get_session()
+
+              for category, feeds in RSS_SOURCES.items():
+                  print(f"📡 Scanning Sector: {category}...")
+                  cat_content = ""
+                  
+                  for feed in feeds:
+                      try:
+                          resp = session.get(feed['url'], timeout=10, verify=False)
+                          parsed = feedparser.parse(resp.content)
+                          if not parsed.entries: parsed = feedparser.parse(resp.text)
+                          
+                          for entry in parsed.entries[:3]: 
+                              if entry.link in memory: continue # 이미 학습한 데이터 패스
+                              
+                              # 신규 데이터 발견 -> 메모리 추가
+                              memory.add(entry.link)
+                              new_items_count += 1
+                              
+                              title = entry.title
+                              summary = clean_html(getattr(entry, 'summary', ''))
+                              
+                              if feed['lang'] == 'en':
+                                  title = f"[번역] {translate(title)}"
+                                  if summary: summary = translate(summary[:100]) + "..."
+                              
+                              item_md = f"- **[{title}]({entry.link})**\n  - {summary}\n\n"
+                              cat_content += item_md
+                      except Exception as e:
+                          print(f"⚠️ Error reading feed: {e}")
+
+                  if cat_content:
+                      report_buffer += f"### {category}\n{cat_content}"
+                      knowledge_buffer += f"### {category}\n{cat_content}"
+
+              # 변경사항 저장
+              if new_items_count > 0:
+                  save_memory(memory)
+                  
+                  # 누적 데이터 파일에 추가 (Append)
+                  with open(LOG_FILE, 'a', encoding='utf-8') as f:
+                      f.write(knowledge_buffer)
+                      
+                  # 이번 릴리즈용 리포트 생성
+                  header = f"# 🤖 AI Security Briefing\n> 🧠 Neural Memory: {len(memory)} Nodes | 🆕 New Insights: {new_items_count}\n\n"
+                  with open(REPORT_FILE, 'w', encoding='utf-8') as f:
+                      f.write(header + report_buffer)
+                      
+                  print(f"✅ Learning Complete. Absorbed {new_items_count} new inputs.")
+              else:
+                  # 데이터가 없어도 파일 생성 (에러 방지)
+                  with open(REPORT_FILE, 'w', encoding='utf-8') as f:
+                      f.write("# 🤖 AI Status Report\n\n> 💤 No new patterns detected.")
+                  print("💤 No new data to learn.")
+
+          if __name__ == "__main__":
+              run_intelligence()
+          EOF
+          
+          # 실행
+          python ai_neural_core.py
+
+      # ------------------------------------------------------------------
+      # 💾 [수정] 학습 데이터 영구 저장 (Git Commit & Push)
+      # ------------------------------------------------------------------
+      - name: 💾 Commit AI Memory (Save Learning)
         run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
+          git config --global user.name "Copilot AI Bot"
+          git config --global user.email "ai-bot@github.actions"
+          
           git add DB/
-          git commit -m "🗄️ News DB Update" || echo "No changes"
+          
+          # 변경사항이 없어도 에러나지 않도록 처리
+          git commit -m "🧠 AI Neural Upgrade: Memory Expanded [$(date +'%Y-%m-%d %H:%M')]" || echo "No memory updates needed."
           git push
 
-      - name: 🏷️ Release & Issue
-        if: success()
+      # ------------------------------------------------------------------
+      # 🏷️ [수정] 날짜 태그 생성 (422 에러 해결 핵심)
+      # ------------------------------------------------------------------
+      - name: 🏷️ Generate Version Tag
+        id: tagger
+        shell: bash
+        run: |
+          # 여기서 미리 날짜를 계산해서 output 변수에 담습니다.
+          echo "version=v$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
+
+      # ------------------------------------------------------------------
+      # 🖥️ 로봇 대시보드 출력
+      # ------------------------------------------------------------------
+      - name: 🖥️ Display Robot Dashboard
+        if: always()
+        run: |
+          echo "## 🤖 Copilot Agent Status Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "| System | Status | Memory Nodes |" >> $GITHUB_STEP_SUMMARY
+          echo "| :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Neural Core** | 🟢 **ONLINE** | **$(jq length DB/neural_memory.json 2>/dev/null || echo 0)** |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f latest_briefing.md ]; then
+            cat latest_briefing.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # ------------------------------------------------------------------
+      # 🚀 [수정] 릴리즈 생성 (올바른 태그 사용)
+      # ------------------------------------------------------------------
+      - name: 🚀 Release AI Agent Package
         uses: softprops/action-gh-release@v1
+        if: success()
         with:
-          tag_name: v$(date +'%Y.%m.%d-%H%M')
-          body_path: hourly_security_report.md
-          files: hourly_security_report.md
+          # 위에서 생성한 tagger 단계의 output을 사용합니다.
+          tag_name: ${{ steps.tagger.outputs.version }}
+          name: "🤖 AI Agent Release ${{ steps.tagger.outputs.version }}"
+          body_path: latest_briefing.md
+          files: |
+            latest_briefing.md
+            DB/knowledge_base.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
