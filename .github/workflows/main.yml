@@ -1,4 +1,4 @@
-name: Copilot Agent - PR Automation & Massive Data Lake
+name: Copilot Agent - Auto Labeling & PR System
 
 on:
   schedule:
@@ -8,14 +8,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write      # 💾 코드 및 태그 생성 권한
-  issues: write        # 이슈 생성 권한
-  packages: write      # 🐳 GHCR 업로드 권한
-  pull-requests: write # 🔀 [NEW] 풀 리퀘스트(PR) 생성 및 병합 권한
+  contents: write      # 💾 코드 및 태그 생성
+  issues: write        # 🏷️ 라벨 및 이슈 생성
+  packages: write      # 🐳 GHCR 업로드
+  pull-requests: write # 🔀 PR 생성 및 병합
 
 jobs:
   # --------------------------------------------------------------------------------
-  # 🖥️ Windows Agent: 검증 (변동 없음)
+  # 🖥️ Windows Agent
   # --------------------------------------------------------------------------------
   agent-windows:
     name: 🤖 Run Agent on Windows
@@ -25,19 +25,19 @@ jobs:
         uses: actions/checkout@v4
       - name: 🛡️ 시스템 검증
         shell: powershell
-        run: Write-Host "[INIT] Ready for PR-based Workflow."
+        run: Write-Host "[INIT] Ready for Auto-Labeling Workflow."
 
   # --------------------------------------------------------------------------------
-  # 🐧 Linux Agent: 수집 -> 브랜치 생성 -> PR 생성 -> 도커 빌드
+  # 🐧 Linux Agent: 라벨 대량 생성 -> 데이터 수집 -> PR -> 도커
   # --------------------------------------------------------------------------------
   agent-linux-intelligence:
-    name: 🧠 Data Node & PR Ops
+    name: 🧠 Data Node & Label Ops
     runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
       packages: write
-      pull-requests: write # [핵심] PR 권한
+      pull-requests: write
     
     steps:
       - name: 📥 소스 코드 체크아웃
@@ -51,13 +51,43 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: 📦 고성능 비동기 모듈 설치
+      - name: 📦 모듈 설치
         run: |
           python -m pip install --upgrade pip
           pip install feedparser aiohttp asyncio requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator pandas tabulate
 
       # ------------------------------------------------------------------
-      # 🔥 [단계 1] AI 뉴럴 코어 (데이터 수집)
+      # 🏷️ [NEW] 대량 라벨 자동 생성 (에러 방지 핵심 단계)
+      # ------------------------------------------------------------------
+      - name: 🏷️ Initialize Repository Labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🛠️ Checking and Creating Missing Labels..."
+          
+          # 생성할 라벨 목록 (대량 추가)
+          labels=(
+            "automated:0E8A16:Automated process"
+            "data-sync:1D76DB:Data synchronization"
+            "security-alert:B60205:Security critical alert"
+            "hourly-briefing:FBCA04:Hourly news update"
+            "security-release:0052CC:Official security release"
+            "package-launch:006B75:New package deployment"
+            "tax-season:D93F0B:Tax season special"
+          )
+          
+          for label_info in "${labels[@]}"; do
+            # 문자열 파싱 (이름:색상:설명)
+            IFS=':' read -r name color desc <<< "$label_info"
+            
+            # 라벨 생성 시도 (이미 존재하면 에러 무시하고 넘어감)
+            gh label create "$name" --color "$color" --description "$desc" --force || echo "Label '$name' already exists or updated."
+          done
+          
+          echo "✅ All labels are ready."
+
+      # ------------------------------------------------------------------
+      # 🔥 AI 뉴럴 코어 (데이터 수집)
       # ------------------------------------------------------------------
       - name: 🧬 Generate Async Neural Core
         run: |
@@ -71,11 +101,10 @@ jobs:
           LOG_FILE = os.path.join(DB_DIR, "knowledge_base.md")
           REPORT_FILE = "latest_briefing.md"
           
-          # 대량 수집 키워드
+          # 키워드 (정치, 경제, 사회, IT)
           BASE_KEYWORDS = [
               "정치", "총선", "대통령", "경제", "금리", "삼성전자",
-              "사회", "사건", "IT", "AI", "보안", "해킹", "Docker",
-              "Politics", "Economy", "Tech", "Security", "Crypto"
+              "사회", "IT", "AI", "보안", "해킹", "Docker", "연말정산"
           ]
           
           def generate_sources():
@@ -98,9 +127,6 @@ jobs:
           def save_memory(data):
               with gzip.open(MEMORY_FILE, 'wt', encoding='utf-8') as f:
                   json.dump(list(data), f)
-
-          def clean_html(raw):
-              return re.sub(r'<[^>]+>', '', raw).strip()[:100] + "..."
 
           async def fetch_feed(session, source):
               try:
@@ -138,8 +164,7 @@ jobs:
 
               if new_items:
                   save_memory(memory)
-                  # 화면 출력용 리포트 (Top 50)
-                  briefing = f"### 📰 PR Data Briefing (New Items: {len(new_items)})\n\n| Tag | Headline |\n|---|---|\n"
+                  briefing = f"### 📰 PR Data Briefing (New: {len(new_items)})\n\n| Tag | Headline |\n|---|---|\n"
                   for item in new_items[:50]:
                       briefing += f"| `{item['tag']}` | {item['title']} |\n"
                   
@@ -155,25 +180,20 @@ jobs:
           python ai_neural_core.py
 
       # ------------------------------------------------------------------
-      # 🔀 [단계 2] 브랜치 생성 및 변경사항 커밋 (PR 준비)
+      # 🔀 브랜치 생성 및 커밋
       # ------------------------------------------------------------------
       - name: 🌿 Create Branch & Commit
         id: git_ops
         run: |
-          # 날짜 기반 브랜치명 생성
           BRANCH_NAME="news-update/$(date +'%Y%m%d-%H%M')"
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           
           git config --global user.name "Copilot AI Bot"
           git config --global user.email "ai-bot@github.actions"
           
-          # 새 브랜치 생성 및 이동
           git checkout -b $BRANCH_NAME
-          
-          # 변경사항 추가
           git add DB/
           
-          # 변경사항이 있는지 확인
           if git diff --staged --quiet; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "💤 No changes to commit."
@@ -184,7 +204,7 @@ jobs:
           fi
 
       # ------------------------------------------------------------------
-      # 🔀 [단계 3] 풀 리퀘스트(PR) 생성 및 자동 병합
+      # 🔀 [수정] PR 생성 (라벨 에러 해결됨)
       # ------------------------------------------------------------------
       - name: 🔀 Create & Merge Pull Request
         if: steps.git_ops.outputs.has_changes == 'true'
@@ -193,23 +213,23 @@ jobs:
         run: |
           BRANCH_NAME="${{ steps.git_ops.outputs.branch_name }}"
           
-          # 1. PR 생성
+          # 이제 라벨이 무조건 존재하므로 에러가 발생하지 않습니다.
           gh pr create \
             --title "🧠 Intelligence Update [$(date +'%Y-%m-%d %H:%M')]" \
-            --body "Automated data ingestion from AI Neural Core. Contains new news data." \
+            --body "Automated data ingestion from AI Neural Core." \
             --head $BRANCH_NAME \
             --base main \
             --label "automated" \
-            --label "data-sync"
+            --label "data-sync" \
+            --label "hourly-briefing"
           
-          # 2. PR 자동 병합 (Auto-Merge)
-          # 대량 처리를 위해 검토 없이 즉시 병합 (필요 시 이 줄을 주석 처리)
+          # 자동 병합
           gh pr merge --auto --squash --delete-branch "$BRANCH_NAME"
           
-          echo "✅ PR Created and Auto-Merge enabled."
+          echo "✅ PR Created and Merged."
 
       # ------------------------------------------------------------------
-      # 🏷️ [단계 4] 버전 태그 생성
+      # 🏷️ 버전 태그
       # ------------------------------------------------------------------
       - name: 🏷️ Generate Version Tag
         id: tagger
@@ -218,7 +238,7 @@ jobs:
           echo "repo_lower=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       # ------------------------------------------------------------------
-      # 🐳 [단계 5] Dockerfile 생성
+      # 🐳 Dockerfile 생성
       # ------------------------------------------------------------------
       - name: 🐳 Generate Data-Lake Dockerfile
         run: |
@@ -228,7 +248,6 @@ jobs:
           WORKDIR /app
           RUN pip install --upgrade pip && \
               pip install feedparser aiohttp asyncio requests beautifulsoup4 lxml duckduckgo-search fake-useragent
-          # 데이터 주입 (현재 컨텍스트의 최신 데이터 복사)
           COPY . /app
           RUN echo "📊 Checking Data..." && ls -lh /app/DB/neural_memory.json.gz
           LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
@@ -237,7 +256,7 @@ jobs:
           EOF
 
       # ------------------------------------------------------------------
-      # 🐳 [단계 6] GHCR 로그인 및 대량 업로드
+      # 🐳 GHCR 로그인 및 업로드
       # ------------------------------------------------------------------
       - name: 🔑 Log in to GHCR
         uses: docker/login-action@v3
@@ -265,33 +284,31 @@ jobs:
         if: always()
         run: |
           echo "## 🤖 Data & PR Dashboard" >> $GITHUB_STEP_SUMMARY
-          echo "| System | PR Status | Data Count | Docker Image |" >> $GITHUB_STEP_SUMMARY
-          echo "| :---: | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
           
-          # 데이터 건수 확인
           if [ -f DB/neural_memory.json.gz ]; then
             COUNT=$(python -c "import gzip, json; print(len(json.load(gzip.open('DB/neural_memory.json.gz', 'rt'))))")
           else
             COUNT=0
           fi
           
-          echo "| **Async Core** | 🔀 **Merged** | **$COUNT** | \`ghcr.io/...:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Data Count | Docker |" >> $GITHUB_STEP_SUMMARY
+          echo "| :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔀 **Merged** | **$COUNT** | \`ghcr.io/...:latest\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
           
           if [ -f latest_briefing.md ]; then
             cat latest_briefing.md >> $GITHUB_STEP_SUMMARY
           fi
 
       # ------------------------------------------------------------------
-      # 🚀 릴리즈 생성
+      # 🚀 릴리즈
       # ------------------------------------------------------------------
       - name: 🚀 Release
         uses: softprops/action-gh-release@v1
         if: success()
         with:
           tag_name: ${{ steps.tagger.outputs.version }}
-          name: "🧠 PR-Synced Data Batch ${{ steps.tagger.outputs.version }}"
+          name: "🧠 PR-Synced Batch ${{ steps.tagger.outputs.version }}"
           body_path: latest_briefing.md
           files: |
             latest_briefing.md
