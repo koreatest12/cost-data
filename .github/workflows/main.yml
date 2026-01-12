@@ -1,87 +1,72 @@
-name: Hourly Security Release & Package
+name: Hourly Cumulative Security Briefing
 
 on:
   schedule:
-    - cron: '0 * * * *' # ⏰ 매 시간 0분에 실행
-  workflow_dispatch: # 수동 실행
+    - cron: '0 * * * *' # 매 시간 실행
+  workflow_dispatch:
 
 permissions:
-  contents: write  # 릴리즈 생성을 위해 쓰기 권한 필수
-  issues: write    # 이슈 생성을 위해 쓰기 권한 필수
+  contents: write # ⭐️ DB 저장을 위해 쓰기 권한 필수
+  issues: write
 
 jobs:
-  security-release:
-    name: 🚀 Build, Package & Release
+  security-archiving:
+    name: 🔄 Collect & Archive
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 소스 코드 체크아웃
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 히스토리 유지를 위해 전체 가져오기
 
-      # 2. 파이썬 환경 설정
       - name: 🐍 Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      # 3. 필수 도구 대량 설치
-      - name: 📦 Install AI & Tools
+      - name: 📦 Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install feedparser requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator
 
-      # 4. 보안 분석 에이전트 실행
-      - name: 🤖 Run Security Analyst
+      - name: 🔄 Run Cumulative Collector
         run: python security_news.py
 
-      # 5. [NEW] 버전 태그 생성 (예: v2026.01.11-1800)
+      # [NEW] ⭐️ DB 변경사항(누적된 뉴스)을 저장소에 반영
+      - name: 💾 Commit & Push DB Changes
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          
+          # DB 폴더와 JSON 파일 추가
+          git add DB/
+          
+          # 변경사항이 있을 때만 커밋
+          git commit -m "🗄️ Update Security News DB [$(date +'%Y-%m-%d %H:%M')]" || echo "No changes to commit"
+          git push
+
       - name: 🏷️ Generate Version Tag
         id: tagger
-        run: |
-          echo "version=v$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
-          echo "date_str=$(date +'%Y-%m-%d %H:%M')" >> $GITHUB_OUTPUT
+        run: echo "version=v$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
 
-      # 6. [NEW] 아티팩트 패키징 (압축 저장)
-      - name: 📦 Upload Artifact Package
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-report-${{ steps.tagger.outputs.version }}
-          path: hourly_security_report.md
-          retention-days: 90 # 90일간 보관
-
-      # 7. [NEW] GitHub Release 정식 출시 (파일 첨부)
-      - name: 🚀 Create GitHub Release
+      - name: 🚀 Create Release (Hourly Snapshot)
         uses: softprops/action-gh-release@v1
-        if: success() # 성공했을 때만 릴리즈
+        if: success()
         with:
           tag_name: ${{ steps.tagger.outputs.version }}
           name: "🛡️ Security Briefing ${{ steps.tagger.outputs.version }}"
           body_path: hourly_security_report.md
-          draft: false
-          prerelease: false
-          files: |
-            hourly_security_report.md
+          files: hourly_security_report.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 8. 대시보드(Summary) 출력
-      - name: 📊 Dashboard Summary
-        if: always()
-        run: |
-          if [ -f hourly_security_report.md ]; then
-            echo "### 🚀 Release Created: ${{ steps.tagger.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-            cat hourly_security_report.md >> $GITHUB_STEP_SUMMARY
-          fi
-
-      # 9. (선택) 이슈 생성 알림
-      - name: 🚨 Create Alert Issue
+      - name: 🚨 Create Issue (Notification)
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "🚨 [Release] Security Report ${{ steps.tagger.outputs.version }}"
+          title: "🚨 [Update] Security News - ${{ steps.tagger.outputs.version }}"
           content-filepath: ./hourly_security_report.md
           labels: |
-            security-release
+            security-update
             automated
-            package-launch
