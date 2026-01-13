@@ -1,4 +1,4 @@
-name: Copilot Agent - PR Authority & Massive Data Lake
+name: Copilot Agent - GenAI & Massive Data Lake
 
 on:
   schedule:
@@ -25,13 +25,13 @@ jobs:
         uses: actions/checkout@v4
       - name: 🛡️ 시스템 검증
         shell: powershell
-        run: Write-Host "[INIT] Ready for PR Authority Workflow."
+        run: Write-Host "[INIT] Ready for Generative AI Intelligence."
 
   # --------------------------------------------------------------------------------
-  # 🐧 Linux Agent: 권한 상승 -> 라벨 생성 -> 데이터 수집 -> PR -> 도커
+  # 🐧 Linux Agent: AI 데이터 수집 -> PR -> 도커
   # --------------------------------------------------------------------------------
   agent-linux-intelligence:
-    name: 🧠 Data Node & Authority Ops
+    name: 🧠 GenAI Data Node
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -57,7 +57,7 @@ jobs:
           pip install feedparser aiohttp asyncio requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator pandas tabulate
 
       # ------------------------------------------------------------------
-      # 🏷️ 라벨 자동 생성 (권한 오류 방지)
+      # 🏷️ 라벨 자동 생성 (GenAI 라벨 추가)
       # ------------------------------------------------------------------
       - name: 🏷️ Initialize Repository Labels
         env:
@@ -67,6 +67,8 @@ jobs:
           labels=(
             "automated:0E8A16:Automated process"
             "data-sync:1D76DB:Data synchronization"
+            "gen-ai:BFD4F2:Generative AI News"  # [NEW] 생성형 AI 전용 라벨
+            "security-alert:B60205:Security critical alert"
             "hourly-briefing:FBCA04:Hourly news update"
           )
           for label_info in "${labels[@]}"; do
@@ -75,7 +77,7 @@ jobs:
           done
 
       # ------------------------------------------------------------------
-      # 🔥 AI 뉴럴 코어 (데이터 수집)
+      # 🔥 AI 뉴럴 코어 (생성형 AI 키워드 대량 추가)
       # ------------------------------------------------------------------
       - name: 🧬 Generate Async Neural Core
         run: |
@@ -88,13 +90,24 @@ jobs:
           MEMORY_FILE = os.path.join(DB_DIR, "neural_memory.json.gz")
           REPORT_FILE = "latest_briefing.md"
           
+          # [핵심] 수집 키워드 정의 (생성형 AI 섹션 강화)
           BASE_KEYWORDS = [
-              "정치", "총선", "대통령", "경제", "금리", "삼성전자",
-              "사회", "IT", "AI", "보안", "해킹", "Docker", "연말정산"
+              # 🧠 Generative AI & LLM (신규 추가)
+              "생성형 AI", "Generative AI", "ChatGPT", "GPT-4", "GPT-5",
+              "Gemini", "Google DeepMind", "LLM", "sLLM", "OpenAI", "Anthropic", "Claude",
+              "Midjourney", "Stable Diffusion", "Sora", "AI 영상", "AI 윤리",
+              "RAG", "프롬프트 엔지니어링", "NVIDIA", "GPU", "AI 반도체",
+              
+              # 🛡️ Security & IT
+              "보안", "해킹", "랜섬웨어", "제로데이", "사이버 공격",
+              
+              # 🏛️ Politics & Economy
+              "정치", "총선", "경제", "금리", "삼성전자", "주식", "연말정산"
           ]
           
           def generate_sources():
               urls = []
+              # 구글 뉴스 검색 RSS로 소스 대량 생성
               for kw in BASE_KEYWORDS:
                   urls.append({"url": f"https://news.google.com/rss/search?q={kw}&hl=ko&gl=KR&ceid=KR:ko", "tag": kw})
               return urls
@@ -125,7 +138,7 @@ jobs:
               except: return []
 
           async def main_intelligence():
-              print("🚀 Async Massive Core Running...")
+              print("🚀 Async GenAI Core Running...")
               init_db()
               memory = load_memory()
               sources = generate_sources()
@@ -150,7 +163,13 @@ jobs:
 
               if new_items:
                   save_memory(memory)
-                  briefing = f"### 📰 PR Data Briefing (New: {len(new_items)})\n\n| Tag | Headline |\n|---|---|\n"
+                  
+                  # 화면 출력용 리포트 (Top 50 - GenAI 우선 노출)
+                  # AI 관련 뉴스를 상단에 배치하기 위한 정렬 로직
+                  gen_ai_terms = ["AI", "GPT", "LLM", "Gemini", "OpenAI"]
+                  new_items.sort(key=lambda x: any(t in x['tag'] or t in x['title'] for t in gen_ai_terms), reverse=True)
+                  
+                  briefing = f"### 📰 GenAI & News Briefing (New: {len(new_items)})\n\n| Tag | Headline |\n|---|---|\n"
                   for item in new_items[:50]:
                       briefing += f"| `{item['tag']}` | {item['title']} |\n"
                   
@@ -184,18 +203,17 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "💤 No changes to commit."
           else
-            git commit -m "🧠 Data Injection: $(date +'%Y-%m-%d %H:%M')"
+            git commit -m "🧠 GenAI Data Injection: $(date +'%Y-%m-%d %H:%M')"
             git push origin $BRANCH_NAME
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
 
       # ------------------------------------------------------------------
-      # 🔀 [핵심] PR 생성 및 자동 병합 (권한 처리 강화)
+      # 🔀 PR 생성 및 자동 병합 (GenAI 라벨 추가)
       # ------------------------------------------------------------------
       - name: 🔀 Create & Merge Pull Request
         if: steps.git_ops.outputs.has_changes == 'true'
         env:
-          # [TIP] 설정 변경 후에도 실패하면 secrets.MY_PAT (개인토큰)을 사용하도록 자동 전환
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH_NAME="${{ steps.git_ops.outputs.branch_name }}"
@@ -203,13 +221,13 @@ jobs:
           echo "🚀 Creating PR from $BRANCH_NAME to main..."
           
           gh pr create \
-            --title "🧠 Intelligence Update [$(date +'%Y-%m-%d %H:%M')]" \
-            --body "Automated data ingestion from AI Neural Core." \
+            --title "🧠 GenAI Intelligence Update [$(date +'%Y-%m-%d %H:%M')]" \
+            --body "Automated ingestion of Generative AI and Security news." \
             --head $BRANCH_NAME \
             --base main \
             --label "automated" \
             --label "data-sync" \
-            --label "hourly-briefing"
+            --label "gen-ai"
           
           echo "✅ PR Created. Attempting Auto-Merge..."
           
@@ -240,7 +258,7 @@ jobs:
           COPY . /app
           RUN echo "📊 Checking Data..." && ls -lh /app/DB/neural_memory.json.gz
           LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
-          LABEL org.opencontainers.image.description="Massive Data Lake Container (PR Synced)"
+          LABEL org.opencontainers.image.description="GenAI & Massive Data Lake Container"
           CMD ["python", "ai_neural_core.py"]
           EOF
 
@@ -264,7 +282,7 @@ jobs:
             ghcr.io/${{ steps.tagger.outputs.repo_lower }}:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=Data Injection via PR
+            org.opencontainers.image.description=GenAI Data Injection
 
       # ------------------------------------------------------------------
       # 🖥️ 화면 출력
@@ -272,7 +290,7 @@ jobs:
       - name: 🖥️ Display Dashboard
         if: always()
         run: |
-          echo "## 🤖 Data & PR Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "## 🤖 GenAI & Data Dashboard" >> $GITHUB_STEP_SUMMARY
           
           if [ -f DB/neural_memory.json.gz ]; then
             COUNT=$(python -c "import gzip, json; print(len(json.load(gzip.open('DB/neural_memory.json.gz', 'rt'))))")
@@ -280,9 +298,9 @@ jobs:
             COUNT=0
           fi
           
-          echo "| Status | Data Count | Docker |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Total Data | Docker Image |" >> $GITHUB_STEP_SUMMARY
           echo "| :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔀 **Merged** | **$COUNT** | \`ghcr.io/...:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧠 **GenAI Mode** | **$COUNT** | \`ghcr.io/...:latest\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ -f latest_briefing.md ]; then
@@ -297,7 +315,7 @@ jobs:
         if: success()
         with:
           tag_name: ${{ steps.tagger.outputs.version }}
-          name: "🧠 PR-Synced Batch ${{ steps.tagger.outputs.version }}"
+          name: "🧠 GenAI & News Batch ${{ steps.tagger.outputs.version }}"
           body_path: latest_briefing.md
           files: |
             latest_briefing.md
