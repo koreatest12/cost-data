@@ -1,0 +1,17 @@
+name: Setup Copilot Environment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    steps:
+      # Node.js 설정 (MCP 서버가 대부분 Node 기반이므로 필수)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      # (선택사항) 만약 사전에 설치가 꼭 필요한 패키지가 있다면 여기에 추가
+      # npx를 사용할 것이므로 별도 npm install은 필수는 아닙니다.
