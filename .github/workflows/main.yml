@@ -1,17 +1,17 @@
-name: Copilot Agent - Multi-Domain Data Lake (Politics, IT, Agri)
+name: Copilot Agent - Data Loader & Service Injection
 
 on:
   schedule:
-    - cron: '0 * * * *' # ⏰ 매 시간 실행
+    - cron: '0 * * * *' # ⏰ 매 시간 실행 (데이터 적재)
   push:
     branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
-  contents: write      # 💾 코드 및 태그
+  contents: write      # 💾 코드, 태그, DB 저장
   issues: write        # 🏷️ 라벨 및 이슈
   packages: write      # 🐳 GHCR 업로드
-  pull-requests: write # 🔀 PR 생성 및 병합
+  pull-requests: write # 🔀 PR 자동화
 
 jobs:
   # --------------------------------------------------------------------------------
@@ -25,13 +25,13 @@ jobs:
         uses: actions/checkout@v4
       - name: 🛡️ 시스템 검증
         shell: powershell
-        run: Write-Host "[INIT] Ready for Multi-Domain Intelligence."
+        run: Write-Host "[INIT] Ready for Service Data Loading."
 
   # --------------------------------------------------------------------------------
-  # 🐧 Linux Agent: 다분야 데이터 수집 -> PR -> 도커
+  # 🐧 Linux Agent: 데이터 수집 -> 카탈로그 생성 -> 서비스 적재 -> 도커 배포
   # --------------------------------------------------------------------------------
   agent-linux-intelligence:
-    name: 🧠 Multi-Domain Node
+    name: 🧠 Data Loader Node
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -57,21 +57,20 @@ jobs:
           pip install feedparser aiohttp asyncio requests beautifulsoup4 lxml duckduckgo-search fake-useragent deep-translator pandas tabulate
 
       # ------------------------------------------------------------------
-      # 🏷️ 라벨 자동 생성 (농산물, 정치, IT 추가)
+      # 🏷️ 라벨 초기화
       # ------------------------------------------------------------------
-      - name: 🏷️ Initialize Repository Labels
+      - name: 🏷️ Initialize Labels
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🛠️ Creating Domain Labels..."
+          echo "🛠️ Creating Service Labels..."
           labels=(
             "automated:0E8A16:Automated process"
             "data-sync:1D76DB:Data synchronization"
-            "gen-ai:BFD4F2:Generative AI & IT"
-            "politics:D93F0B:Politics & Policy"
-            "agriculture:2ECC71:Agriculture & Food" # [NEW] 농산물 라벨
-            "economy:FBCA04:Economy & Finance"
-            "security-alert:B60205:Security critical alert"
+            "service-loader:0052CC:Data injected to services"
+            "agriculture:2ECC71:Agriculture"
+            "politics:D93F0B:Politics"
+            "it-genai:BFD4F2:IT & GenAI"
           )
           for label_info in "${labels[@]}"; do
             IFS=':' read -r name color desc <<< "$label_info"
@@ -79,49 +78,34 @@ jobs:
           done
 
       # ------------------------------------------------------------------
-      # 🔥 AI 뉴럴 코어 (분야별 키워드 대량 확장)
+      # 🔥 AI 뉴럴 코어 (서비스 적재 로직 추가)
       # ------------------------------------------------------------------
-      - name: 🧬 Generate Async Neural Core
+      - name: 🧬 Generate Data Loader Core
         run: |
           cat << 'EOF' > ai_neural_core.py
           import asyncio, aiohttp, feedparser, os, json, re, gzip
           from datetime import datetime
           from fake_useragent import UserAgent
 
+          # [설정] 데이터 적재 경로
           DB_DIR = "DB"
-          MEMORY_FILE = os.path.join(DB_DIR, "neural_memory.json.gz")
+          MEMORY_FILE = os.path.join(DB_DIR, "neural_memory.json.gz") # 원본 데이터
+          CATALOG_FILE = os.path.join(DB_DIR, "service_catalog.json") # 서비스용 메타데이터
           REPORT_FILE = "latest_briefing.md"
           
-          # [핵심] 분야별 키워드 매핑 (카테고리화)
+          # [핵심] 다분야 키워드 맵
           KEYWORD_MAP = {
-              "🏛️ Politics": [
-                  "정치", "국회", "대통령", "총선", "여당", "야당", "법안", "행정", "외교", "정책"
-              ],
-              "💻 IT & GenAI": [
-                  "IT", "AI", "생성형 AI", "ChatGPT", "Gemini", "반도체", "클라우드", 
-                  "네이버", "카카오", "스타트업", "코딩", "LLM"
-              ],
-              "🌾 Agriculture": [
-                  "농산물", "식량", "스마트팜", "배추", "과일", "쌀값", "농식품부", 
-                  "농업", "축산", "기후변화", "장바구니 물가"
-              ],
-              "💰 Economy": [
-                  "경제", "주식", "금리", "부동산", "환율", "삼성전자", "물가", "재테크"
-              ],
-              "🛡️ Security": [
-                  "보안", "해킹", "랜섬웨어", "정보유출", "사이버 공격", "제로데이"
-              ],
-              "🌍 Society": [
-                  "사회", "날씨", "교통", "사건사고", "환경"
-              ]
+              "🏛️ Politics": ["정치", "국회", "대통령", "총선", "정책", "외교"],
+              "💻 IT & GenAI": ["IT", "AI", "생성형 AI", "ChatGPT", "Gemini", "반도체", "클라우드"],
+              "🌾 Agriculture": ["농산물", "식량", "스마트팜", "배추", "과일", "농업", "물가"],
+              "💰 Economy": ["경제", "주식", "금리", "부동산", "삼성전자", "환율"],
+              "🛡️ Security": ["보안", "해킹", "랜섬웨어", "정보유출", "제로데이"]
           }
           
           def generate_sources():
               urls = []
-              # 카테고리와 키워드를 조합하여 소스 생성
               for category, keywords in KEYWORD_MAP.items():
                   for kw in keywords:
-                      # category 정보를 함께 담음
                       urls.append({
                           "url": f"https://news.google.com/rss/search?q={kw}&hl=ko&gl=KR&ceid=KR:ko", 
                           "tag": kw,
@@ -140,9 +124,24 @@ jobs:
               except: pass
               return set()
 
-          def save_memory(data):
+          def save_to_services(memory_data, new_items):
+              # 1. 원본 데이터 압축 저장 (DB 적재)
               with gzip.open(MEMORY_FILE, 'wt', encoding='utf-8') as f:
-                  json.dump(list(data), f)
+                  json.dump(list(memory_data), f)
+              
+              # 2. 서비스 카탈로그 생성 (Service Loading)
+              # 외부 서비스나 도커 컨테이너가 쉽게 읽을 수 있는 요약본 생성
+              catalog = {
+                  "last_updated": datetime.now().isoformat(),
+                  "total_records": len(memory_data),
+                  "new_batch_size": len(new_items),
+                  "categories": list(KEYWORD_MAP.keys()),
+                  "latest_items": new_items[:20] # 최신 20개만 샘플링
+              }
+              with open(CATALOG_FILE, 'w', encoding='utf-8') as f:
+                  json.dump(catalog, f, indent=2, ensure_ascii=False)
+              
+              print(f"✅ Data Loaded to Service Catalog: {CATALOG_FILE}")
 
           async def fetch_feed(session, source):
               try:
@@ -157,7 +156,7 @@ jobs:
               except: return []
 
           async def main_intelligence():
-              print("🚀 Async Multi-Domain Core Running...")
+              print("🚀 Data Loader Engine Running...")
               init_db()
               memory = load_memory()
               sources = generate_sources()
@@ -178,29 +177,26 @@ jobs:
                               "title": entry.title,
                               "link": entry.link,
                               "tag": entry.get('source_tag', 'General'),
-                              "category": entry.get('category', 'Unknown')
+                              "category": entry.get('category', 'Unknown'),
+                              "timestamp": datetime.now().isoformat()
                           })
 
               if new_items:
-                  save_memory(memory)
+                  # [중요] 각 서비스(DB, Catalog, Docker)로 데이터 적재 실행
+                  save_to_services(memory, new_items)
                   
-                  # 화면 출력용 리포트 (카테고리별 정렬)
-                  # 우선순위: 농산물 -> 정치 -> IT -> 경제
+                  # 화면 리포트 생성
                   category_order = ["🌾 Agriculture", "🏛️ Politics", "💻 IT & GenAI", "💰 Economy"]
-                  
-                  briefing = f"### 📰 Multi-Domain Briefing (New: {len(new_items)})\n\n"
+                  briefing = f"### 🏭 Service Data Loader Report (New: {len(new_items)})\n\n"
                   briefing += "| Category | Tag | Headline |\n|---|---|---|\n"
-                  
-                  # 우선순위 카테고리 먼저 출력
                   sorted_items = sorted(new_items[:60], key=lambda x: category_order.index(x['category']) if x['category'] in category_order else 99)
-                  
                   for item in sorted_items:
                       briefing += f"| `{item['category']}` | `{item['tag']}` | {item['title']} |\n"
                   
                   with open(REPORT_FILE, 'w', encoding='utf-8') as f: f.write(briefing)
-                  print(f"✅ Bulk Processed: {len(new_items)} new items.")
+                  print(f"✅ Batch Processed: {len(new_items)} items loaded.")
               else:
-                  with open(REPORT_FILE, 'w', encoding='utf-8') as f: f.write("### 💤 No new data.")
+                  with open(REPORT_FILE, 'w', encoding='utf-8') as f: f.write("### 💤 No new data to load.")
 
           if __name__ == "__main__":
               asyncio.run(main_intelligence())
@@ -209,12 +205,12 @@ jobs:
           python ai_neural_core.py
 
       # ------------------------------------------------------------------
-      # 🔀 브랜치 생성 및 커밋
+      # 🔀 브랜치 생성 및 커밋 (DB 업데이트)
       # ------------------------------------------------------------------
       - name: 🌿 Create Branch & Commit
         id: git_ops
         run: |
-          BRANCH_NAME="news-update/$(date +'%Y%m%d-%H%M')"
+          BRANCH_NAME="data-load/$(date +'%Y%m%d-%H%M')"
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           
           git config --global user.name "Copilot AI Bot"
@@ -225,37 +221,30 @@ jobs:
           
           if git diff --staged --quiet; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "💤 No changes to commit."
           else
-            git commit -m "🧠 Multi-Domain Data Injection: $(date +'%Y-%m-%d %H:%M')"
+            git commit -m "🏭 Data Loading: $(date +'%Y-%m-%d %H:%M')"
             git push origin $BRANCH_NAME
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
 
       # ------------------------------------------------------------------
-      # 🔀 PR 생성 (다분야 라벨 적용)
+      # 🔀 PR 생성 및 병합 (서비스 적재 라벨)
       # ------------------------------------------------------------------
-      - name: 🔀 Create & Merge Pull Request
+      - name: 🔀 Create & Merge PR
         if: steps.git_ops.outputs.has_changes == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH_NAME="${{ steps.git_ops.outputs.branch_name }}"
-          
           gh pr create \
-            --title "🧠 Intelligence Update [$(date +'%Y-%m-%d %H:%M')]" \
-            --body "Updates included: Politics, IT/GenAI, Agriculture, Economy." \
+            --title "🏭 Service Data Load [$(date +'%Y-%m-%d %H:%M')]" \
+            --body "Data injected into Service Catalog and DB." \
             --head $BRANCH_NAME \
             --base main \
             --label "automated" \
-            --label "data-sync" \
-            --label "agriculture" \
-            --label "politics" \
-            --label "gen-ai"
+            --label "service-loader"
           
           gh pr merge --auto --squash --delete-branch "$BRANCH_NAME"
-          
-          echo "🎉 Merge Complete!"
 
       # ------------------------------------------------------------------
       # 🏷️ 버전 태그
@@ -267,9 +256,9 @@ jobs:
           echo "repo_lower=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       # ------------------------------------------------------------------
-      # 🐳 Dockerfile 생성
+      # 🐳 [핵심] Dockerfile (데이터 적재 검증 포함)
       # ------------------------------------------------------------------
-      - name: 🐳 Generate Data-Lake Dockerfile
+      - name: 🐳 Generate Service-Ready Dockerfile
         run: |
           cat <<EOF > Dockerfile
           FROM python:3.11-slim
@@ -277,15 +266,24 @@ jobs:
           WORKDIR /app
           RUN pip install --upgrade pip && \
               pip install feedparser aiohttp asyncio requests beautifulsoup4 lxml duckduckgo-search fake-useragent
+          
+          # [Data Injection] DB 폴더(카탈로그 포함)를 컨테이너로 적재
           COPY . /app
-          RUN echo "📊 Checking Data..." && ls -lh /app/DB/neural_memory.json.gz
+          
+          # [Validation] 데이터 적재 상태 검증
+          RUN echo "📊 Verifying Service Data Injection..." && \
+              ls -lh /app/DB/neural_memory.json.gz && \
+              cat /app/DB/service_catalog.json && \
+              echo "✅ Data Load Verified."
+          
           LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
-          LABEL org.opencontainers.image.description="Multi-Domain Data Lake Container"
+          LABEL org.opencontainers.image.description="Service-Ready Data Container"
+          
           CMD ["python", "ai_neural_core.py"]
           EOF
 
       # ------------------------------------------------------------------
-      # 🐳 GHCR 로그인 및 업로드
+      # 🐳 GHCR 업로드 (서비스 이미지 배포)
       # ------------------------------------------------------------------
       - name: 🔑 Log in to GHCR
         uses: docker/login-action@v3
@@ -294,7 +292,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🚀 Build and Push Data Container
+      - name: 🚀 Build and Push Service Container
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -304,15 +302,15 @@ jobs:
             ghcr.io/${{ steps.tagger.outputs.repo_lower }}:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=Multi-Domain Data
+            org.opencontainers.image.description=Service Data Loader
 
       # ------------------------------------------------------------------
-      # 🖥️ 화면 출력
+      # 🖥️ 대시보드 (적재 현황)
       # ------------------------------------------------------------------
-      - name: 🖥️ Display Dashboard
+      - name: 🖥️ Display Loader Dashboard
         if: always()
         run: |
-          echo "## 🤖 Multi-Domain Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "## 🏭 Service Data Loader Dashboard" >> $GITHUB_STEP_SUMMARY
           
           if [ -f DB/neural_memory.json.gz ]; then
             COUNT=$(python -c "import gzip, json; print(len(json.load(gzip.open('DB/neural_memory.json.gz', 'rt'))))")
@@ -320,9 +318,11 @@ jobs:
             COUNT=0
           fi
           
-          echo "| Status | Total Data | Docker Image |" >> $GITHUB_STEP_SUMMARY
-          echo "| :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌍 **All Domains** | **$COUNT** | \`ghcr.io/...:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| System | Total Records | Catalog Status | Docker |" >> $GITHUB_STEP_SUMMARY
+          echo "| :---: | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
+          # 카탈로그 파일 존재 여부 체크
+          if [ -f DB/service_catalog.json ]; then CAT="✅ Created"; else CAT="❌ Missing"; fi
+          echo "| **Loader** | **$COUNT** | **$CAT** | \`ghcr.io/...:latest\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [ -f latest_briefing.md ]; then
@@ -337,10 +337,10 @@ jobs:
         if: success()
         with:
           tag_name: ${{ steps.tagger.outputs.version }}
-          name: "🧠 Multi-Domain Batch ${{ steps.tagger.outputs.version }}"
+          name: "🏭 Service Data Batch ${{ steps.tagger.outputs.version }}"
           body_path: latest_briefing.md
           files: |
             latest_briefing.md
-            DB/knowledge_base.md
+            DB/service_catalog.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
