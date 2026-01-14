@@ -1,4 +1,4 @@
-name: Ultimate Deploy (Network Fix & Full Install)
+name: Full Server Init & Network Setup & Deploy
 
 on:
   workflow_dispatch:
@@ -6,139 +6,150 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-deploy:
+  # [Job 1] 소스 생성 -> 빌드 -> 서버 전송
+  build-and-transfer:
     runs-on: ubuntu-latest
-    timeout-minutes: 15 # 전체 작업 제한시간 15분으로 연장
+    timeout-minutes: 20 # 대량 설치 시간을 고려하여 넉넉하게 설정
     steps:
       - name: 소스 코드 체크아웃
         uses: actions/checkout@v4
 
-      # ----------------------------------------------------------------
-      # [Phase 1] MVC 풀 패키지 소스 대량 자동 생성
-      # ----------------------------------------------------------------
-      - name: 🏗️ 프로젝트 소스 및 구조 대량 생성
+      # ------------------------------------------------------------
+      # [Phase 1] Java Spring Boot 소스 코드 대량 생성 (MVC 패턴)
+      # ------------------------------------------------------------
+      - name: 🏗️ 프로젝트 소스 대량 생성
         run: |
-          echo ">>> 소스 코드 생성 시작..."
           if [ ! -f "pom.xml" ]; then
+            echo ">>> 소스 코드가 없어 자동으로 생성합니다..."
             mkdir -p src/main/java/com/example/demo/controller
-            mkdir -p src/main/java/com/example/demo/service
-            mkdir -p src/main/resources/static/css
+            mkdir -p src/main/resources/static
             
-            # pom.xml 생성
+            # pom.xml
             printf '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"><modelVersion>4.0.0</modelVersion><groupId>com.example</groupId><artifactId>demo</artifactId><version>1.0.0</version><parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.0</version></parent><properties><java.version>17</java.version></properties><dependencies><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies><build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build></project>\n' > pom.xml
 
-            # Main App
+            # Java Code
             F="src/main/java/com/example/demo/DemoApplication.java"
-            printf 'package com.example.demo; import org.springframework.boot.SpringApplication; import org.springframework.boot.autoconfigure.SpringBootApplication; @SpringBootApplication public class DemoApplication { public static void main(String[] args) { SpringApplication.run(DemoApplication.class, args); } }\n' > $F
+            printf 'package com.example.demo; import org.springframework.boot.SpringApplication; import org.springframework.boot.autoconfigure.SpringBootApplication; import org.springframework.web.bind.annotation.GetMapping; import org.springframework.web.bind.annotation.RestController; @SpringBootApplication @RestController public class DemoApplication { public static void main(String[] args) { SpringApplication.run(DemoApplication.class, args); } @GetMapping("/") public String home() { return "<h1>🚀 리눅스 서버 네트워크 설치 완료!</h1>"; } }\n' > $F
 
-            # Controller
-            F="src/main/java/com/example/demo/controller/WebController.java"
-            printf 'package com.example.demo.controller; import org.springframework.web.bind.annotation.GetMapping; import org.springframework.web.bind.annotation.RestController; @RestController public class WebController { @GetMapping("/") public String home() { return "<h1>🚀 네트워크 배포 성공! (Network Fixed)</h1>"; } }\n' > $F
-            
-            # 설정 파일
+            # Config
             printf 'server.port=8080\n' > src/main/resources/application.properties
           fi
-
-          # Dockerfile 생성
+          
+          # Dockerfile
           printf 'FROM maven:3.9-eclipse-temurin-17 AS builder\nWORKDIR /app\nCOPY . .\nRUN mvn clean package -DskipTests\n\nFROM eclipse-temurin:17-jre-alpine\nWORKDIR /app\nCOPY --from=builder /app/target/*.jar app.jar\nENTRYPOINT ["java", "-jar", "app.jar"]\n' > Dockerfile
 
-      # ----------------------------------------------------------------
-      # [Phase 2] 빌드 및 파일 권한 강제 개방
-      # ----------------------------------------------------------------
-      - name: 🐳 이미지 빌드 및 권한 해결
+      # ------------------------------------------------------------
+      # [Phase 2] 빌드 및 권한 문제 해결 (Permission Fix)
+      # ------------------------------------------------------------
+      - name: 🐳 빌드 및 파일 권한 강제 변경
         run: |
           sudo docker build -t cost-data-app:latest .
           sudo docker save -o cost-data-app.tar cost-data-app:latest
           
-          # [중요] 타임아웃/권한 에러 방지를 위한 권한 대개방
+          # 파일 권한을 777로 열어서 전송 오류 원천 차단
           sudo chmod 777 cost-data-app.tar
           sudo chown $USER:$USER cost-data-app.tar
 
-      # ----------------------------------------------------------------
-      # [Phase 3] 서버 전송 (타임아웃 대폭 연장)
-      # ----------------------------------------------------------------
-      - name: 🚀 서버로 파일 전송 (네트워크 강화)
+      # ------------------------------------------------------------
+      # [Phase 3] 서버로 파일 전송 (SCP)
+      # ------------------------------------------------------------
+      - name: 🚀 서버로 설치 파일 전송
         uses: appleboy/scp-action@v0.1.7
         with:
-          # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-          # [수정 필수] 123.123...을 지우고 본인의 '실제 서버 IP'를 넣으세요!
-          host: "123.123.123.123" 
-          # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+          # ▼▼▼ [수정 필수] 실제 서버 정보 입력 ▼▼▼
+          host: "123.123.123.123"
           port: 22
-          username: "root"             # [수정 필요] 서버 아이디
-          password: "my_password_123"  # [수정 필요] 서버 비밀번호
+          username: "root"
+          password: "my_password_123"
+          # ▲▲▲ [수정 필수] 실제 서버 정보 입력 ▲▲▲
           
           source: "cost-data-app.tar"
           target: "/root/deploy/"
-          
-          # [중요] 타임아웃을 120초(2분)로 늘려 네트워크 불안정 해결
-          timeout: "120s"
-          command_timeout: "120s"
+          timeout: "120s" # 네트워크 느릴 경우 대비
 
-      # ----------------------------------------------------------------
-      # [Phase 4] 서버 네트워크/방화벽 설치 및 배포
-      # ----------------------------------------------------------------
-      - name: 🔧 서버 네트워크/환경 대량 설치 및 실행
+  # [Job 2] 리눅스 서버 초기화 및 네트워크 설치
+  setup-and-deploy:
+    needs: build-and-transfer
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 🔧 리눅스 서버 대량 설치 및 배포
         uses: appleboy/ssh-action@v1.0.3
         with:
-          # ▼▼▼ [수정 필수] 위와 동일한 실제 서버 IP 입력 ▼▼▼
+          # ▼▼▼ [수정 필수] 위와 동일하게 입력 ▼▼▼
           host: "123.123.123.123"
           port: 22
-          username: "root"             # [수정 필요]
-          password: "my_password_123"  # [수정 필요]
-          # ▲▲▲ [수정 필수] 위와 동일한 실제 서버 IP 입력 ▲▲▲
+          username: "root"
+          password: "my_password_123"
+          # ▲▲▲ [수정 필수] 위와 동일하게 입력 ▲▲▲
           
           script_stop: true
-          # 타임아웃 5분으로 설정
-          timeout: "5m"
+          timeout: "10m" # 설치 시간 확보
           script: |
             echo "#######################################################"
-            echo ">>> [Install] 필수 네트워크 도구 및 Docker 대량 설치"
+            echo ">>> [System] 리눅스 패키지 업데이트 및 시간 설정"
             echo "#######################################################"
             
-            # 1. 패키지 목록 업데이트
+            # 1. 패키지 목록 갱신 (비대화형 모드)
             export DEBIAN_FRONTEND=noninteractive
             apt-get update -y
+            
+            # 2. 한국 시간(KST)으로 서버 시간 변경
+            ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
+            echo "현재 서버 시간: $(date)"
 
-            # 2. 네트워크 유틸리티 및 필수 도구 설치 (curl, net-tools, ufw 등)
-            # - net-tools: netstat 사용 가능
-            # - ufw: 방화벽 관리
-            echo ">>> 네트워크 도구 설치 중..."
-            apt-get install -y curl wget git net-tools ufw
+            echo "#######################################################"
+            echo ">>> [Network] 네트워크 도구 및 필수 유틸리티 대량 설치"
+            echo "#######################################################"
+            
+            # 3. 필수 도구 대량 설치
+            # net-tools: ifconfig, netstat 등 사용 가능
+            # curl, wget: 파일 다운로드 도구
+            # vim, nano: 텍스트 에디터
+            # ufw: 방화벽 관리 도구
+            # htop: 시스템 모니터링
+            # iputils-ping: 핑 테스트 도구
+            # dnsutils: nslookup 등 도메인 확인 도구
+            
+            echo "설치 진행 중... (시간이 조금 걸립니다)"
+            apt-get install -y net-tools curl wget vim nano git htop unzip ufw iputils-ping dnsutils
 
-            # 3. Docker 자동 설치 (없을 경우에만)
+            echo "#######################################################"
+            echo ">>> [Firewall] 방화벽 포트 개방 및 Docker 설치"
+            echo "#######################################################"
+
+            # 4. 방화벽 설정 (SSH 끊김 방지 후 포트 개방)
+            if command -v ufw &> /dev/null; then
+                ufw allow 22/tcp   # SSH 허용
+                ufw allow 80/tcp   # HTTP 허용
+                ufw allow 8080/tcp # Spring Boot 허용
+                # ufw enable 은 SSH 연결이 끊길 수 있어 규칙만 추가함
+                echo "방화벽 규칙 추가 완료."
+            fi
+
+            # 5. Docker 설치 (없을 경우)
             if ! command -v docker &> /dev/null; then
-                echo ">>> Docker 설치 시작..."
+                echo "Docker 설치 중..."
                 curl -fsSL https://get.docker.com -o get-docker.sh
                 sh get-docker.sh
             fi
 
-            # 4. 방화벽(Firewall) 설정 - 8080 포트 강제 개방
-            echo ">>> 방화벽 포트(8080) 개방 설정..."
-            # ufw가 비활성화 상태라면 활성화하지 않고 rule만 추가 (서버 잠김 방지)
-            if command -v ufw &> /dev/null; then
-                ufw allow 22/tcp  # SSH 접속 보장
-                ufw allow 80/tcp
-                ufw allow 8080/tcp
-                echo ">>> 방화벽 규칙 추가 완료."
-            fi
-
             echo "#######################################################"
-            echo ">>> [Deploy] 컨테이너 배포 시작"
+            echo ">>> [Deploy] 애플리케이션 배포 시작"
             echo "#######################################################"
 
             mkdir -p /root/deploy
             cd /root/deploy
 
-            # 이미지 로드
             if [ -f "cost-data-app.tar" ]; then
+                echo "이미지 로드 중..."
                 docker load -i cost-data-app.tar
             else
                 echo "❌ 오류: 전송된 파일이 없습니다."
                 exit 1
             fi
 
-            # 기존 컨테이너 삭제 및 재실행
+            # 컨테이너 재시작
             docker stop cost-data-app || true
             docker rm cost-data-app || true
 
@@ -148,10 +159,11 @@ jobs:
               -p 80:8080 \
               cost-data-app:latest
 
-            # 설치 파일 정리
+            # 청소 및 네트워크 상태 확인
             rm -f cost-data-app.tar
             docker image prune -f
 
-            echo ">>> 배포 완료!"
-            echo ">>> 현재 열려있는 포트 확인:"
-            netstat -tuln | grep 8080 || echo "포트 확인 불가 (권한 부족 등)"
+            echo ">>> [Status] 현재 네트워크 포트 상태:"
+            netstat -tuln | grep 8080 || echo "포트 확인 중..."
+            
+            echo "✅ 모든 설치 및 배포가 완료되었습니다!"
