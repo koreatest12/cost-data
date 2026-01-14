@@ -1,4 +1,4 @@
-name: Deploy (No Secrets & Auto-Install)
+name: Deploy (Fix Permissions & Auto-Install)
 
 on:
   workflow_dispatch:
@@ -15,14 +15,13 @@ jobs:
       # ----------------------------------------------------------------
       # [Phase 1] 소스 코드 및 Dockerfile 자동 생성
       # ----------------------------------------------------------------
-      - name: 🏗️ 빈 프로젝트 감지 시 소스 강제 생성
+      - name: 🏗️ 빈 프로젝트 감지 및 소스 강제 생성
         run: |
-          echo ">>> 소스 코드 유무 확인 및 생성"
+          echo ">>> 소스 코드 점검 시작"
           
-          # pom.xml이 없으면 Java Spring Boot 프로젝트 자동 생성
+          # pom.xml이 없으면 프로젝트 생성
           if [ ! -f "pom.xml" ] && [ ! -f "build.gradle" ]; then
-            echo "⚠️ 소스 코드가 없어 자동으로 생성합니다..."
-            
+            echo "⚠️ 소스 코드가 없어 생성합니다..."
             mkdir -p src/main/java/com/example/demo
             mkdir -p src/main/resources
             
@@ -54,12 +53,11 @@ jobs:
             printf '@SpringBootApplication @RestController\n' >> $T
             printf 'public class DemoApplication {\n' >> $T
             printf '    public static void main(String[] args) { SpringApplication.run(DemoApplication.class, args); }\n' >> $T
-            printf '    @GetMapping("/") public String home() { return "<h1>🚀 배포 및 서버설치 완료!</h1>"; }\n' >> $T
+            printf '    @GetMapping("/") public String home() { return "<h1>🚀 권한 문제 해결 완료! (Permission Fixed)</h1>"; }\n' >> $T
             printf '}\n' >> $T
           fi
 
-          # Dockerfile 생성 (Maven + Temurin)
-          echo ">>> Dockerfile 생성"
+          # Dockerfile 생성
           printf 'FROM maven:3.9-eclipse-temurin-17 AS builder\n' > Dockerfile
           printf 'WORKDIR /app\n' >> Dockerfile
           printf 'COPY . .\n' >> Dockerfile
@@ -71,87 +69,97 @@ jobs:
           printf 'ENTRYPOINT ["java", "-jar", "app.jar"]\n' >> Dockerfile
 
       # ----------------------------------------------------------------
-      # [Phase 2] 이미지 빌드 및 파일 저장
+      # [Phase 2] 이미지 빌드 및 ★권한 강제 수정★ (핵심 수정 사항)
       # ----------------------------------------------------------------
-      - name: 🐳 도커 이미지 빌드
+      - name: 🐳 도커 이미지 빌드 및 권한 해제
         run: |
-          docker build -t cost-data-app:latest .
-          docker save -o cost-data-app.tar cost-data-app:latest
+          echo ">>> 도커 이미지 빌드 중..."
+          # sudo를 사용하여 권한 문제 방지
+          sudo docker build -t cost-data-app:latest .
+          
+          echo ">>> 이미지를 파일로 저장 중..."
+          sudo docker save -o cost-data-app.tar cost-data-app:latest
+
+          echo ">>> [중요] 파일 권한 강제 변경 (Permission Denied 해결)"
+          # 생성된 파일의 소유권을 현재 Runner 사용자로 변경하고 권한을 777로 풂
+          sudo chmod 777 cost-data-app.tar
+          sudo chown $USER:$USER cost-data-app.tar
+          
+          echo ">>> 파일 권한 확인:"
+          ls -l cost-data-app.tar
 
       # ----------------------------------------------------------------
-      # [Phase 3] 서버 전송 (SCP) - 시크릿 없이 직접 입력
+      # [Phase 3] 서버 전송 (SCP)
       # ----------------------------------------------------------------
       - name: 🚀 이미지 파일 서버 전송
         uses: appleboy/scp-action@v0.1.7
         with:
-          # ▼▼▼ 아래 정보를 본인의 서버 정보로 직접 수정하세요 ▼▼▼
-          host: "123.123.123.123"      # [사용자_입력_필요] 서버 IP 주소
-          port: 22                     # [사용자_입력_필요] SSH 포트 (보통 22)
-          username: "root"             # [사용자_입력_필요] 서버 아이디 (보통 root)
-          password: "my_password_123"  # [사용자_입력_필요] 서버 비밀번호
-          # ▲▲▲ 위 정보를 본인의 서버 정보로 직접 수정하세요 ▲▲▲
+          # ▼▼▼ [수정 필요] 본인의 서버 정보 입력 ▼▼▼
+          host: "123.123.123.123"
+          port: 22
+          username: "root"
+          password: "my_password_123"
+          # ▲▲▲ [수정 필요] 본인의 서버 정보 입력 ▲▲▲
           
           source: "cost-data-app.tar"
           target: "/root/deploy/"
-          timeout: "30s"
+          timeout: "60s" # 전송 시간 넉넉하게 늘림
 
       # ----------------------------------------------------------------
-      # [Phase 4] 서버 접속, 자동 설치(Install) 및 배포
+      # [Phase 4] 서버 자동 설치 및 배포
       # ----------------------------------------------------------------
-      - name: 🔧 서버 환경 설치 및 컨테이너 실행
+      - name: 🔧 서버 환경 설치 및 실행
         uses: appleboy/ssh-action@v1.0.3
         with:
-          # ▼▼▼ 아래 정보를 위와 동일하게 수정하세요 ▼▼▼
-          host: "123.123.123.123"      # [사용자_입력_필요]
-          port: 22                     # [사용자_입력_필요]
-          username: "root"             # [사용자_입력_필요]
-          password: "my_password_123"  # [사용자_입력_필요]
-          # ▲▲▲ 위 정보를 위와 동일하게 수정하세요 ▲▲▲
+          # ▼▼▼ [수정 필요] 위와 동일하게 입력 ▼▼▼
+          host: "123.123.123.123"
+          port: 22
+          username: "root"
+          password: "my_password_123"
+          # ▲▲▲ [수정 필요] 위와 동일하게 입력 ▲▲▲
           
           script_stop: true
           script: |
             echo "#######################################################"
-            echo ">>> [Step 1] 서버 필수 프로그램 자동 설치 (Installation)"
+            echo ">>> [Server] Docker 자동 설치 및 배포 시작"
             echo "#######################################################"
             
-            # 1. Docker 설치 확인 및 설치
+            # Docker 설치
             if ! command -v docker &> /dev/null; then
-                echo "Docker가 설치되어 있지 않습니다. 자동 설치를 시작합니다..."
-                # 우분투/데비안 기준
+                echo "Docker 설치 중..."
                 export DEBIAN_FRONTEND=noninteractive
-                apt-get update -y
-                apt-get install -y curl
+                apt-get update -y > /dev/null
+                apt-get install -y curl > /dev/null
                 curl -fsSL https://get.docker.com -o get-docker.sh
-                sh get-docker.sh
-                echo "Docker 설치 완료!"
-            else
-                echo "Docker가 이미 설치되어 있습니다."
+                sh get-docker.sh > /dev/null
             fi
 
-            # 2. 작업 디렉토리 이동
+            # 작업 폴더 준비
             mkdir -p /root/deploy
             cd /root/deploy
 
-            echo "#######################################################"
-            echo ">>> [Step 2] 이미지 로드 및 컨테이너 실행"
-            echo "#######################################################"
-            
-            # 이미지 파일 로드
-            docker load -i cost-data-app.tar
-
-            # 기존 컨테이너 중지 및 삭제 (이름: cost-data-app)
+            echo ">>> 이미지 로딩 (Load)"
+            # 기존 컨테이너 정리
             docker stop cost-data-app || true
             docker rm cost-data-app || true
+            
+            # 파일이 전송되었는지 확인 후 로드
+            if [ -f "cost-data-app.tar" ]; then
+                docker load -i cost-data-app.tar
+            else
+                echo "❌ 오류: 이미지 파일이 전송되지 않았습니다."
+                exit 1
+            fi
 
-            # 새 컨테이너 실행
+            echo ">>> 컨테이너 실행 (Run)"
             docker run -d \
               --name cost-data-app \
               --restart always \
               -p 80:8080 \
               cost-data-app:latest
 
-            # 청소
+            # 정리
             rm -f cost-data-app.tar
             docker image prune -f
 
-            echo ">>> 배포가 완료되었습니다!"
+            echo ">>> ✅ 모든 작업 완료!"
