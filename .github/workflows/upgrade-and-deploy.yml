@@ -1,4 +1,4 @@
-name: Deploy (Fix Permissions & Auto-Install)
+name: Ultimate Deploy (Network Fix & Full Install)
 
 on:
   workflow_dispatch:
@@ -8,158 +8,150 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15 # 전체 작업 제한시간 15분으로 연장
     steps:
       - name: 소스 코드 체크아웃
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------
-      # [Phase 1] 소스 코드 및 Dockerfile 자동 생성
+      # [Phase 1] MVC 풀 패키지 소스 대량 자동 생성
       # ----------------------------------------------------------------
-      - name: 🏗️ 빈 프로젝트 감지 및 소스 강제 생성
+      - name: 🏗️ 프로젝트 소스 및 구조 대량 생성
         run: |
-          echo ">>> 소스 코드 점검 시작"
-          
-          # pom.xml이 없으면 프로젝트 생성
-          if [ ! -f "pom.xml" ] && [ ! -f "build.gradle" ]; then
-            echo "⚠️ 소스 코드가 없어 생성합니다..."
-            mkdir -p src/main/java/com/example/demo
-            mkdir -p src/main/resources
+          echo ">>> 소스 코드 생성 시작..."
+          if [ ! -f "pom.xml" ]; then
+            mkdir -p src/main/java/com/example/demo/controller
+            mkdir -p src/main/java/com/example/demo/service
+            mkdir -p src/main/resources/static/css
             
-            # pom.xml 생성 (printf 사용)
-            printf '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n' > pom.xml
-            printf '  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">\n' >> pom.xml
-            printf '  <modelVersion>4.0.0</modelVersion>\n' >> pom.xml
-            printf '  <groupId>com.example</groupId>\n' >> pom.xml
-            printf '  <artifactId>demo</artifactId>\n' >> pom.xml
-            printf '  <version>0.0.1-SNAPSHOT</version>\n' >> pom.xml
-            printf '  <parent>\n' >> pom.xml
-            printf '    <groupId>org.springframework.boot</groupId>\n' >> pom.xml
-            printf '    <artifactId>spring-boot-starter-parent</artifactId>\n' >> pom.xml
-            printf '    <version>3.2.0</version>\n' >> pom.xml
-            printf '  </parent>\n' >> pom.xml
-            printf '  <properties><java.version>17</java.version></properties>\n' >> pom.xml
-            printf '  <dependencies>\n' >> pom.xml
-            printf '    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>\n' >> pom.xml
-            printf '  </dependencies>\n' >> pom.xml
-            printf '  <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>\n' >> pom.xml
-            printf '</project>\n' >> pom.xml
+            # pom.xml 생성
+            printf '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"><modelVersion>4.0.0</modelVersion><groupId>com.example</groupId><artifactId>demo</artifactId><version>1.0.0</version><parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.0</version></parent><properties><java.version>17</java.version></properties><dependencies><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies><build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build></project>\n' > pom.xml
 
-            # Main Java 파일 생성
-            T="src/main/java/com/example/demo/DemoApplication.java"
-            printf 'package com.example.demo;\n' > $T
-            printf 'import org.springframework.boot.SpringApplication;\n' >> $T
-            printf 'import org.springframework.boot.autoconfigure.SpringBootApplication;\n' >> $T
-            printf 'import org.springframework.web.bind.annotation.*;\n' >> $T
-            printf '@SpringBootApplication @RestController\n' >> $T
-            printf 'public class DemoApplication {\n' >> $T
-            printf '    public static void main(String[] args) { SpringApplication.run(DemoApplication.class, args); }\n' >> $T
-            printf '    @GetMapping("/") public String home() { return "<h1>🚀 권한 문제 해결 완료! (Permission Fixed)</h1>"; }\n' >> $T
-            printf '}\n' >> $T
+            # Main App
+            F="src/main/java/com/example/demo/DemoApplication.java"
+            printf 'package com.example.demo; import org.springframework.boot.SpringApplication; import org.springframework.boot.autoconfigure.SpringBootApplication; @SpringBootApplication public class DemoApplication { public static void main(String[] args) { SpringApplication.run(DemoApplication.class, args); } }\n' > $F
+
+            # Controller
+            F="src/main/java/com/example/demo/controller/WebController.java"
+            printf 'package com.example.demo.controller; import org.springframework.web.bind.annotation.GetMapping; import org.springframework.web.bind.annotation.RestController; @RestController public class WebController { @GetMapping("/") public String home() { return "<h1>🚀 네트워크 배포 성공! (Network Fixed)</h1>"; } }\n' > $F
+            
+            # 설정 파일
+            printf 'server.port=8080\n' > src/main/resources/application.properties
           fi
 
           # Dockerfile 생성
-          printf 'FROM maven:3.9-eclipse-temurin-17 AS builder\n' > Dockerfile
-          printf 'WORKDIR /app\n' >> Dockerfile
-          printf 'COPY . .\n' >> Dockerfile
-          printf 'RUN mvn clean package -DskipTests\n' >> Dockerfile
-          printf '\n' >> Dockerfile
-          printf 'FROM eclipse-temurin:17-jre-alpine\n' >> Dockerfile
-          printf 'WORKDIR /app\n' >> Dockerfile
-          printf 'COPY --from=builder /app/target/*.jar app.jar\n' >> Dockerfile
-          printf 'ENTRYPOINT ["java", "-jar", "app.jar"]\n' >> Dockerfile
+          printf 'FROM maven:3.9-eclipse-temurin-17 AS builder\nWORKDIR /app\nCOPY . .\nRUN mvn clean package -DskipTests\n\nFROM eclipse-temurin:17-jre-alpine\nWORKDIR /app\nCOPY --from=builder /app/target/*.jar app.jar\nENTRYPOINT ["java", "-jar", "app.jar"]\n' > Dockerfile
 
       # ----------------------------------------------------------------
-      # [Phase 2] 이미지 빌드 및 ★권한 강제 수정★ (핵심 수정 사항)
+      # [Phase 2] 빌드 및 파일 권한 강제 개방
       # ----------------------------------------------------------------
-      - name: 🐳 도커 이미지 빌드 및 권한 해제
+      - name: 🐳 이미지 빌드 및 권한 해결
         run: |
-          echo ">>> 도커 이미지 빌드 중..."
-          # sudo를 사용하여 권한 문제 방지
           sudo docker build -t cost-data-app:latest .
-          
-          echo ">>> 이미지를 파일로 저장 중..."
           sudo docker save -o cost-data-app.tar cost-data-app:latest
-
-          echo ">>> [중요] 파일 권한 강제 변경 (Permission Denied 해결)"
-          # 생성된 파일의 소유권을 현재 Runner 사용자로 변경하고 권한을 777로 풂
+          
+          # [중요] 타임아웃/권한 에러 방지를 위한 권한 대개방
           sudo chmod 777 cost-data-app.tar
           sudo chown $USER:$USER cost-data-app.tar
-          
-          echo ">>> 파일 권한 확인:"
-          ls -l cost-data-app.tar
 
       # ----------------------------------------------------------------
-      # [Phase 3] 서버 전송 (SCP)
+      # [Phase 3] 서버 전송 (타임아웃 대폭 연장)
       # ----------------------------------------------------------------
-      - name: 🚀 이미지 파일 서버 전송
+      - name: 🚀 서버로 파일 전송 (네트워크 강화)
         uses: appleboy/scp-action@v0.1.7
         with:
-          # ▼▼▼ [수정 필요] 본인의 서버 정보 입력 ▼▼▼
-          host: "123.123.123.123"
+          # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+          # [수정 필수] 123.123...을 지우고 본인의 '실제 서버 IP'를 넣으세요!
+          host: "123.123.123.123" 
+          # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
           port: 22
-          username: "root"
-          password: "my_password_123"
-          # ▲▲▲ [수정 필요] 본인의 서버 정보 입력 ▲▲▲
+          username: "root"             # [수정 필요] 서버 아이디
+          password: "my_password_123"  # [수정 필요] 서버 비밀번호
           
           source: "cost-data-app.tar"
           target: "/root/deploy/"
-          timeout: "60s" # 전송 시간 넉넉하게 늘림
+          
+          # [중요] 타임아웃을 120초(2분)로 늘려 네트워크 불안정 해결
+          timeout: "120s"
+          command_timeout: "120s"
 
       # ----------------------------------------------------------------
-      # [Phase 4] 서버 자동 설치 및 배포
+      # [Phase 4] 서버 네트워크/방화벽 설치 및 배포
       # ----------------------------------------------------------------
-      - name: 🔧 서버 환경 설치 및 실행
+      - name: 🔧 서버 네트워크/환경 대량 설치 및 실행
         uses: appleboy/ssh-action@v1.0.3
         with:
-          # ▼▼▼ [수정 필요] 위와 동일하게 입력 ▼▼▼
+          # ▼▼▼ [수정 필수] 위와 동일한 실제 서버 IP 입력 ▼▼▼
           host: "123.123.123.123"
           port: 22
-          username: "root"
-          password: "my_password_123"
-          # ▲▲▲ [수정 필요] 위와 동일하게 입력 ▲▲▲
+          username: "root"             # [수정 필요]
+          password: "my_password_123"  # [수정 필요]
+          # ▲▲▲ [수정 필수] 위와 동일한 실제 서버 IP 입력 ▲▲▲
           
           script_stop: true
+          # 타임아웃 5분으로 설정
+          timeout: "5m"
           script: |
             echo "#######################################################"
-            echo ">>> [Server] Docker 자동 설치 및 배포 시작"
+            echo ">>> [Install] 필수 네트워크 도구 및 Docker 대량 설치"
             echo "#######################################################"
             
-            # Docker 설치
+            # 1. 패키지 목록 업데이트
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -y
+
+            # 2. 네트워크 유틸리티 및 필수 도구 설치 (curl, net-tools, ufw 등)
+            # - net-tools: netstat 사용 가능
+            # - ufw: 방화벽 관리
+            echo ">>> 네트워크 도구 설치 중..."
+            apt-get install -y curl wget git net-tools ufw
+
+            # 3. Docker 자동 설치 (없을 경우에만)
             if ! command -v docker &> /dev/null; then
-                echo "Docker 설치 중..."
-                export DEBIAN_FRONTEND=noninteractive
-                apt-get update -y > /dev/null
-                apt-get install -y curl > /dev/null
+                echo ">>> Docker 설치 시작..."
                 curl -fsSL https://get.docker.com -o get-docker.sh
-                sh get-docker.sh > /dev/null
+                sh get-docker.sh
             fi
 
-            # 작업 폴더 준비
+            # 4. 방화벽(Firewall) 설정 - 8080 포트 강제 개방
+            echo ">>> 방화벽 포트(8080) 개방 설정..."
+            # ufw가 비활성화 상태라면 활성화하지 않고 rule만 추가 (서버 잠김 방지)
+            if command -v ufw &> /dev/null; then
+                ufw allow 22/tcp  # SSH 접속 보장
+                ufw allow 80/tcp
+                ufw allow 8080/tcp
+                echo ">>> 방화벽 규칙 추가 완료."
+            fi
+
+            echo "#######################################################"
+            echo ">>> [Deploy] 컨테이너 배포 시작"
+            echo "#######################################################"
+
             mkdir -p /root/deploy
             cd /root/deploy
 
-            echo ">>> 이미지 로딩 (Load)"
-            # 기존 컨테이너 정리
-            docker stop cost-data-app || true
-            docker rm cost-data-app || true
-            
-            # 파일이 전송되었는지 확인 후 로드
+            # 이미지 로드
             if [ -f "cost-data-app.tar" ]; then
                 docker load -i cost-data-app.tar
             else
-                echo "❌ 오류: 이미지 파일이 전송되지 않았습니다."
+                echo "❌ 오류: 전송된 파일이 없습니다."
                 exit 1
             fi
 
-            echo ">>> 컨테이너 실행 (Run)"
+            # 기존 컨테이너 삭제 및 재실행
+            docker stop cost-data-app || true
+            docker rm cost-data-app || true
+
             docker run -d \
               --name cost-data-app \
               --restart always \
               -p 80:8080 \
               cost-data-app:latest
 
-            # 정리
+            # 설치 파일 정리
             rm -f cost-data-app.tar
             docker image prune -f
 
-            echo ">>> ✅ 모든 작업 완료!"
+            echo ">>> 배포 완료!"
+            echo ">>> 현재 열려있는 포트 확인:"
+            netstat -tuln | grep 8080 || echo "포트 확인 불가 (권한 부족 등)"
