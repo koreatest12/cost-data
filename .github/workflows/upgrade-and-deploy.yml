@@ -1,65 +1,118 @@
-name: Deploy and Sync Cost-Data
+name: Build, Install & Deploy
 
 on:
   workflow_dispatch: # 수동 실행
+  push:
+    branches: [ "main" ] # 메인 브랜치 푸시 시 자동 실행 (필요 시 주석 해제)
 
 jobs:
-  deploy:
+  # [Step 1] 도커 이미지 빌드 및 푸시 (Build & Push)
+  build-image:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH Remote Commands
+      - name: 소스 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 도커 로그인 (Docker Hub)
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 도커 이미지 빌드 및 푸시
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # 태그 설정: latest 태그와 현재 커밋 해시 태그 동시 생성
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/cost-data-app:latest
+            ${{ secrets.DOCKER_USERNAME }}/cost-data-app:${{ github.sha }}
+
+  # [Step 2] 서버 환경 설치 및 배포 (Install & Deploy)
+  deploy-server:
+    needs: build-image # 빌드가 성공해야 실행됨
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH 접속 및 서버 설정/배포
         uses: appleboy/ssh-action@v1.0.3
         with:
-          # Settings > Secrets에 등록된 변수들을 불러옵니다.
-          host: ${{ secrets.SERVER_HOST }}     
-          username: ${{ secrets.SERVER_USER }} 
-          key: ${{ secrets.SERVER_KEY }}       
-          port: ${{ secrets.SERVER_PORT }}     
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
           script_stop: true
           script: |
-            echo "========== [1] 시스템 및 도커 엔진 보안 업데이트 =========="
-            sudo apt-get update
-            # 도커 관련 패키지만 지정하여 업그레이드 (시스템 전체 업그레이드 방지)
-            sudo apt-get install --only-upgrade docker-ce docker-ce-cli containerd.io -y || true
-
-            echo "========== [2] Cost-Data 리포지토리 대량 동기화 =========="
-            # 데이터를 저장할 서버 경로 (필요시 수정하세요)
-            DEPLOY_DIR="/home/${{ secrets.SERVER_USER }}/cost-data"
-            REPO_URL="https://github.com/koreatest12/cost-data.git"
-
-            # 1. 폴더가 없으면 Clone(복제)
-            if [ ! -d "$DEPLOY_DIR" ]; then
-              echo "폴더가 없어 새로 복제합니다."
-              git clone "$REPO_URL" "$DEPLOY_DIR"
+            echo "#######################################################"
+            echo ">>> [Phase 1] 배포 서버 환경 자동 설치 (Provisioning)"
+            echo "#######################################################"
+            
+            # 1. Git 설치 확인 및 설치
+            if ! command -v git &> /dev/null; then
+                echo "Git이 없습니다. 설치를 진행합니다..."
+                sudo apt-get update
+                sudo apt-get install -y git
             else
-              # 2. 폴더가 있으면 강제 동기화 (Reset Hard)
-              echo "기존 폴더를 최신 상태로 강제 동기화합니다."
-              cd "$DEPLOY_DIR"
-              
-              # 최신 변경사항 가져오기
-              git fetch origin main
-              
-              # [중요] '대량 적용'의 핵심: 로컬의 변경사항을 무시하고 리포지토리와 100% 똑같이 맞춤
-              git reset --hard origin/main
-              
-              # 불필요한 파일 삭제 (리포지토리에 없는 파일 제거)
-              git clean -fd
+                echo "Git이 이미 설치되어 있습니다."
             fi
 
-            echo "-> $DEPLOY_DIR 경로에 데이터 동기화 완료"
+            # 2. Docker 설치 확인 및 설치 (Docker 공식 스크립트 활용)
+            if ! command -v docker &> /dev/null; then
+                echo "Docker가 없습니다. 설치를 진행합니다..."
+                curl -fsSL https://get.docker.com -o get-docker.sh
+                sudo sh get-docker.sh
+                # 현재 사용자를 docker 그룹에 추가 (sudo 없이 docker 사용)
+                sudo usermod -aG docker ${{ secrets.SERVER_USER }}
+            else
+                echo "Docker가 이미 설치되어 있습니다."
+            fi
 
-            echo "========== [3] 도커 컨테이너 서비스 업그레이드 =========="
-            # docker-compose.yml 파일이 위에서 동기화한 폴더 안에 있다고 가정
-            # 만약 다른 곳에 있다면 경로를 수정해야 함 (예: cd /home/user/my-app)
-            cd "$DEPLOY_DIR"
+            # 3. Docker Compose 설치 확인 및 설치 (플러그인 방식)
+            if ! docker compose version &> /dev/null; then
+                echo "Docker Compose Plugin 설치 중..."
+                sudo apt-get update
+                sudo apt-get install -y docker-compose-plugin
+            fi
 
-            # 최신 이미지가 있다면 받아오기
-            docker-compose pull
-
-            # 컨테이너 재생성 (이미지나 설정이 변경된 경우만 재시작됨)
-            docker-compose up -d --remove-orphans
-
-            # 디스크 공간 확보를 위해 사용하지 않는 이미지 정리
-            docker image prune -f
+            echo "#######################################################"
+            echo ">>> [Phase 2] Cost-Data 데이터 대량 동기화"
+            echo "#######################################################"
             
-            echo "========== 모든 작업 완료 =========="
+            APP_DIR="/home/${{ secrets.SERVER_USER }}/cost-data-service"
+            REPO_URL="https://github.com/koreatest12/cost-data.git"
+
+            # 폴더 생성
+            mkdir -p $APP_DIR
+
+            # Git Clone 또는 Reset (강제 동기화)
+            if [ ! -d "$APP_DIR/.git" ]; then
+                echo "프로젝트 폴더를 새로 복제합니다."
+                git clone $REPO_URL $APP_DIR
+            else
+                echo "기존 폴더를 최신 상태로 강제 동기화합니다."
+                cd $APP_DIR
+                git fetch origin main
+                git reset --hard origin/main
+                git clean -fd # 추적되지 않는 파일 삭제
+            fi
+
+            echo "#######################################################"
+            echo ">>> [Phase 3] 컨테이너 서비스 업그레이드 및 배포"
+            echo "#######################################################"
+            
+            cd $APP_DIR
+            
+            # .env 파일 생성 (필요한 경우 환경변수 주입)
+            # echo "IMAGE_TAG=latest" > .env
+            
+            # 최신 이미지 다운로드 (Build Job에서 만든 이미지)
+            # docker-compose.yml 파일 내의 image가 ${{ secrets.DOCKER_USERNAME }}/cost-data-app:latest 여야 함
+            docker compose pull
+
+            # 컨테이너 재실행 (이미지 변경 감지 시 자동 재시작)
+            docker compose up -d --remove-orphans
+            
+            # 구버전 이미지 정리
+            docker image prune -f
+
+            echo ">>> 모든 배포 과정이 완료되었습니다."
