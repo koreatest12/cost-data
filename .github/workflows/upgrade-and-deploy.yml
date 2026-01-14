@@ -1,0 +1,71 @@
+name: System Upgrade & Bulk Data Apply
+
+on:
+  workflow_dispatch: # 수동 실행 (운영 안정성을 위해 권장)
+
+jobs:
+  server-maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH Remote Commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_KEY }} # 또는 password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }} # 기본값 22
+          script_stop: true # 에러 발생 시 즉시 중단
+          script: |
+            echo "========== [1] 도커 서버 및 시스템 패키지 업그레이드 =========="
+            # 패키지 목록 갱신
+            sudo apt-get update
+            
+            # 도커 엔진 및 관련 패키지만 업그레이드 (전체 upgrade는 위험할 수 있으므로 지정 권장)
+            sudo apt-get install --only-upgrade docker-ce docker-ce-cli containerd.io -y
+            
+            # (선택사항) 미사용 데이터 정리
+            docker system prune -f
+
+            echo "========== [2] 도커 컨테이너 이미지 업그레이드 및 재기동 =========="
+            # 도커 컴포즈 파일이 있는 경로로 이동 (사용자 환경에 맞게 수정 필요)
+            cd /home/${{ secrets.SERVER_USER }}/my-docker-project
+            
+            # 최신 이미지 다운로드
+            docker-compose pull
+            
+            # 컨테이너 재생성 (변경된 이미지만 적용)
+            docker-compose up -d --remove-orphans
+
+            echo "========== [3] Cost-Data 리포지토리 동기화 및 대량 적용 =========="
+            # 데이터를 저장할 작업 디렉토리 설정
+            WORK_DIR="/home/${{ secrets.SERVER_USER }}/cost-data-work"
+            REPO_URL="https://github.com/koreatest12/cost-data.git"
+
+            # 폴더가 없으면 Clone, 있으면 Pull
+            if [ ! -d "$WORK_DIR" ]; then
+              git clone $REPO_URL $WORK_DIR
+            else
+              cd $WORK_DIR
+              git reset --hard HEAD # 로컬 변경사항 무시 (강제 동기화)
+              git pull origin main
+            fi
+
+            # [중요] 해당 경로의 모든 파일/폴더에 대해 대량 적용 로직
+            # 예시: 해당 폴더의 모든 파일을 특정 컨테이너로 복사하거나, 스크립트 실행
+            
+            cd $WORK_DIR
+            
+            # 방법 A: 모든 파일을 루프 돌며 처리하는 예시
+            # find . -type f -not -path '*/.*' | while read file; do
+            #   echo "Applying $file ..."
+            #   # 예: 파일을 특정 도커 볼륨 경로로 복사
+            #   # cp "$file" /path/to/docker/volumes/data/
+            #   # 예: 파일을 DB에 import
+            #   # docker exec -i my-db-container mysql -u user -ppass < "$file"
+            # done
+
+            # 방법 B: 단순히 전체 폴더를 타겟 경로로 rsync (동기화) 하는 예시 (가장 추천)
+            TARGET_PATH="/path/to/final/destination"
+            # sudo rsync -av --delete --exclude '.git' ./ $TARGET_PATH/
+            
+            echo "모든 작업이 완료되었습니다."
