@@ -1,12 +1,15 @@
 name: Deploy Server Network Installation with Retry
 
+# 이 워크플로우는 배포 서버에 네트워크 도구를 설치하고 성공할 때까지 재시도합니다.
+# 최대 99,999번 재시도는 사용자 요구사항에 따라 설정되었습니다.
+
 on:
   workflow_dispatch:
     inputs:
       server_host:
         description: '서버 호스트 주소 (Server Host Address)'
         required: true
-        default: '123.123.123.123'
+        default: '123.123.123.123'  # 예시 IP - 실제 서버 IP로 변경 필요
       server_port:
         description: '서버 포트 (Server Port)'
         required: true
@@ -16,9 +19,9 @@ on:
         required: true
         default: 'root'
       max_retries:
-        description: '최대 재시도 횟수 (Max Retry Count)'
+        description: '최대 재시도 횟수 (Max Retry Count) - 요구사항: 99999'
         required: true
-        default: '99999'
+        default: '99999'  # 사용자 요구사항: 성공할 때까지 최대 99999번 재시도
   push:
     branches: [ "main" ]
 
@@ -26,7 +29,7 @@ jobs:
   deploy-with-retry:
     name: 🚀 배포 서버 네트워크 설치 (성공시까지 반복)
     runs-on: ubuntu-latest
-    timeout-minutes: 480  # 8시간 타임아웃
+    timeout-minutes: 480  # 8시간 - 최대 재시도 횟수를 고려한 충분한 시간
     
     steps:
       - name: 📥 소스 코드 체크아웃
