@@ -1,0 +1,367 @@
+name: Deploy Server Network Installation with Retry
+
+# 이 워크플로우는 배포 서버에 네트워크 도구를 설치하고 성공할 때까지 재시도합니다.
+# 최대 99,999번 재시도는 사용자 요구사항에 따라 설정되었습니다.
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_host:
+        description: '서버 호스트 주소 (Server Host Address)'
+        required: true
+        default: '123.123.123.123'  # 예시 IP - 실제 서버 IP로 변경 필요
+      server_port:
+        description: '서버 포트 (Server Port)'
+        required: true
+        default: '22'
+      server_user:
+        description: '서버 사용자명 (Server Username)'
+        required: true
+        default: 'root'
+      max_retries:
+        description: '최대 재시도 횟수 (Max Retry Count) - 요구사항: 99999'
+        required: true
+        default: '99999'  # 사용자 요구사항: 성공할 때까지 최대 99999번 재시도
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy-with-retry:
+    name: 🚀 배포 서버 네트워크 설치 (성공시까지 반복)
+    runs-on: ubuntu-latest
+    timeout-minutes: 480  # 8시간 - 최대 재시도 횟수를 고려한 충분한 시간
+    
+    steps:
+      - name: 📥 소스 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python 환경 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 필수 패키지 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: 🔧 네트워크 설치 스크립트 생성
+        run: |
+          cat << 'EOF' > deploy_network_installer.py
+          #!/usr/bin/env python3
+          """
+          배포 서버 네트워크 설치 자동화 스크립트
+          파일 다운로드 및 설치를 성공할 때까지 반복 실행
+          """
+          import os
+          import sys
+          import time
+          import subprocess
+          from datetime import datetime
+
+          class NetworkInstaller:
+              def __init__(self, max_retries=99999):
+                  self.max_retries = max_retries
+                  self.install_dir = "/tmp/network_install"
+                  self.log_file = "installation_log.txt"
+                  
+              def log(self, message):
+                  """로그 메시지 출력 및 저장"""
+                  timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                  log_msg = f"[{timestamp}] {message}"
+                  print(log_msg)
+                  with open(self.log_file, 'a') as f:
+                      f.write(log_msg + '\n')
+              
+              def install_network_tools(self):
+                  """네트워크 도구 설치"""
+                  try:
+                      self.log("🔧 네트워크 도구 설치 시작...")
+                      
+                      # 시스템 업데이트
+                      subprocess.run(['sudo', 'apt-get', 'update', '-y'], 
+                                   check=True, capture_output=True)
+                      
+                      # 네트워크 도구 설치
+                      tools = [
+                          'net-tools',
+                          'curl',
+                          'wget',
+                          'iputils-ping',
+                          'dnsutils',
+                          'netcat',
+                          'traceroute',
+                          'nmap',
+                          'tcpdump',
+                          'iptables',
+                          'ufw'
+                      ]
+                      
+                      for tool in tools:
+                          self.log(f"  ⚙️ 설치 중: {tool}")
+                          try:
+                              subprocess.run(
+                                  ['sudo', 'apt-get', 'install', '-y', tool],
+                                  check=True,
+                                  capture_output=True,
+                                  timeout=300
+                              )
+                              self.log(f"  ✅ 설치 완료: {tool}")
+                          except subprocess.TimeoutExpired:
+                              self.log(f"  ⏱️ 타임아웃: {tool}")
+                              raise
+                          except subprocess.CalledProcessError as e:
+                              self.log(f"  ⚠️ 설치 실패: {tool} - {e}")
+                              # 일부 도구는 선택사항이므로 계속 진행
+                              continue
+                      
+                      self.log("✅ 네트워크 도구 설치 완료")
+                      return True
+                      
+                  except Exception as e:
+                      self.log(f"❌ 네트워크 도구 설치 실패: {str(e)}")
+                      return False
+              
+              def configure_network(self):
+                  """네트워크 구성"""
+                  try:
+                      self.log("🌐 네트워크 구성 시작...")
+                      
+                      # 네트워크 상태 확인
+                      result = subprocess.run(['ip', 'addr'], 
+                                            capture_output=True, text=True)
+                      self.log(f"네트워크 인터페이스:\n{result.stdout}")
+                      
+                      # 방화벽 설정 (기본 포트 개방)
+                      ports = ['22', '80', '443', '8080']
+                      for port in ports:
+                          try:
+                              subprocess.run(
+                                  ['sudo', 'ufw', 'allow', f'{port}/tcp'],
+                                  capture_output=True
+                              )
+                              self.log(f"  🔓 포트 개방: {port}/tcp")
+                          except:
+                              pass
+                      
+                      self.log("✅ 네트워크 구성 완료")
+                      return True
+                      
+                  except Exception as e:
+                      self.log(f"❌ 네트워크 구성 실패: {str(e)}")
+                      return False
+              
+              def verify_installation(self):
+                  """설치 검증"""
+                  try:
+                      self.log("🔍 설치 검증 시작...")
+                      
+                      # 기본 네트워크 명령어 테스트
+                      commands = ['ping', 'curl', 'wget', 'netstat', 'ifconfig']
+                      
+                      for cmd in commands:
+                          result = subprocess.run(
+                              ['which', cmd],
+                              capture_output=True
+                          )
+                          if result.returncode == 0:
+                              self.log(f"  ✅ {cmd}: 사용 가능")
+                          else:
+                              self.log(f"  ⚠️ {cmd}: 사용 불가")
+                      
+                      # 네트워크 연결 테스트
+                      result = subprocess.run(
+                          ['ping', '-c', '3', '8.8.8.8'],
+                          capture_output=True,
+                          timeout=10
+                      )
+                      
+                      if result.returncode == 0:
+                          self.log("  ✅ 네트워크 연결: 정상")
+                          self.log("✅ 설치 검증 완료")
+                          return True
+                      else:
+                          self.log("  ⚠️ 네트워크 연결: 불안정")
+                          return False
+                          
+                  except Exception as e:
+                      self.log(f"❌ 검증 실패: {str(e)}")
+                      return False
+              
+              def run_installation(self):
+                  """전체 설치 프로세스 실행"""
+                  try:
+                      # 작업 디렉토리 생성
+                      os.makedirs(self.install_dir, exist_ok=True)
+                      os.chdir(self.install_dir)
+                      
+                      self.log("=" * 60)
+                      self.log("🚀 배포 서버 네트워크 설치 시작")
+                      self.log("=" * 60)
+                      
+                      # 1. 네트워크 도구 설치
+                      if not self.install_network_tools():
+                          return False
+                      
+                      # 2. 네트워크 구성
+                      if not self.configure_network():
+                          return False
+                      
+                      # 3. 설치 검증
+                      if not self.verify_installation():
+                          return False
+                      
+                      self.log("=" * 60)
+                      self.log("🎉 모든 설치가 성공적으로 완료되었습니다!")
+                      self.log("=" * 60)
+                      
+                      return True
+                      
+                  except Exception as e:
+                      self.log(f"❌ 설치 프로세스 실패: {str(e)}")
+                      return False
+              
+              def run_with_retry(self):
+                  """재시도 로직으로 설치 실행"""
+                  for attempt in range(1, self.max_retries + 1):
+                      self.log("")
+                      self.log("*" * 60)
+                      self.log(f"🔄 시도 횟수: {attempt}/{self.max_retries}")
+                      self.log("*" * 60)
+                      
+                      if self.run_installation():
+                          self.log("")
+                          self.log("🎊" * 20)
+                          self.log(f"✅ 설치 성공! (시도 횟수: {attempt})")
+                          self.log("🎊" * 20)
+                          return 0
+                      
+                      if attempt < self.max_retries:
+                          wait_time = min(10 * attempt, 300)  # 최대 5분 대기
+                          self.log(f"⏳ {wait_time}초 후 재시도...")
+                          time.sleep(wait_time)
+                  
+                  self.log("")
+                  self.log("❌" * 20)
+                  self.log(f"❌ 최대 재시도 횟수({self.max_retries})를 초과했습니다.")
+                  self.log("❌" * 20)
+                  return 1
+
+          if __name__ == "__main__":
+              max_retries = int(os.environ.get('MAX_RETRIES', '99999'))
+              installer = NetworkInstaller(max_retries=max_retries)
+              sys.exit(installer.run_with_retry())
+          EOF
+          
+          chmod +x deploy_network_installer.py
+
+      - name: 🚀 네트워크 설치 실행 (최대 ${{ github.event.inputs.max_retries || '99999' }}번 재시도)
+        env:
+          MAX_RETRIES: ${{ github.event.inputs.max_retries || '99999' }}
+        run: |
+          echo "🎯 배포 서버 네트워크 설치를 시작합니다..."
+          echo "📊 최대 재시도 횟수: $MAX_RETRIES"
+          echo ""
+          
+          python3 deploy_network_installer.py
+          
+          EXIT_CODE=$?
+          
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo ""
+            echo "✅ 설치가 성공적으로 완료되었습니다!"
+          else
+            echo ""
+            echo "❌ 설치에 실패했습니다."
+            exit 1
+          fi
+
+      - name: 📊 설치 로그 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installation-log-${{ github.run_number }}
+          path: |
+            installation_log.txt
+            /tmp/network_install/
+          retention-days: 30
+
+      - name: 📈 설치 결과 요약
+        if: always()
+        run: |
+          echo "## 🚀 배포 서버 네트워크 설치 결과" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 항목 | 내용 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 실행 시간 | $(date +'%Y-%m-%d %H:%M:%S') |" >> $GITHUB_STEP_SUMMARY
+          echo "| 워크플로우 ID | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 최대 재시도 | ${{ github.event.inputs.max_retries || '99999' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "installation_log.txt" ]; then
+            echo "### 📋 설치 로그 (마지막 50줄)" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -50 installation_log.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # 원격 서버에 배포하는 작업 (선택사항)
+  deploy-to-remote-server:
+    name: 🌐 원격 서버 배포 (선택사항)
+    runs-on: ubuntu-latest
+    needs: deploy-with-retry
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.server_host != '' && github.event.inputs.server_host != '123.123.123.123'
+    timeout-minutes: 60
+    
+    steps:
+      - name: 🌐 원격 서버에 SSH로 설치 실행
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ github.event.inputs.server_host }}
+          port: ${{ github.event.inputs.server_port }}
+          username: ${{ github.event.inputs.server_user }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: false
+          timeout: 30m
+          script: |
+            # 최대 재시도 횟수
+            MAX_RETRIES=${{ github.event.inputs.max_retries || '99999' }}
+            
+            for i in $(seq 1 $MAX_RETRIES); do
+              echo ""
+              echo "=========================================="
+              echo "🔄 시도 횟수: $i/$MAX_RETRIES"
+              echo "=========================================="
+              
+              # 네트워크 도구 설치
+              export DEBIAN_FRONTEND=noninteractive
+              
+              if apt-get update -y && \
+                 apt-get install -y net-tools curl wget iputils-ping dnsutils ufw htop && \
+                 ufw allow 22/tcp && \
+                 ufw allow 80/tcp && \
+                 ufw allow 443/tcp && \
+                 ufw allow 8080/tcp && \
+                 ping -c 3 8.8.8.8; then
+                
+                echo ""
+                echo "=========================================="
+                echo "✅ 설치 성공! (시도 횟수: $i)"
+                echo "=========================================="
+                exit 0
+              fi
+              
+              if [ $i -lt $MAX_RETRIES ]; then
+                WAIT_TIME=$((i * 10))
+                [ $WAIT_TIME -gt 300 ] && WAIT_TIME=300
+                echo "⏳ ${WAIT_TIME}초 후 재시도..."
+                sleep $WAIT_TIME
+              fi
+            done
+            
+            echo ""
+            echo "=========================================="
+            echo "❌ 최대 재시도 횟수를 초과했습니다."
+            echo "=========================================="
+            exit 1
