@@ -1,7 +1,7 @@
-name: Docker Upgrade & Bulk Data Sync
+name: Deploy and Sync Cost-Data
 
 on:
-  workflow_dispatch: # 수동 실행 (필요 시 push로 변경 가능)
+  workflow_dispatch: # 수동 실행
 
 jobs:
   deploy:
@@ -10,74 +10,56 @@ jobs:
       - name: SSH Remote Commands
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}     # [필수] Settings > Secrets에 등록 확인
-          username: ${{ secrets.SERVER_USER }} # [필수] Settings > Secrets에 등록 확인
-          key: ${{ secrets.SERVER_KEY }}       # [필수] Settings > Secrets에 등록 확인
-          port: ${{ secrets.SERVER_PORT }}     # [필수] 없다면 기본값 22 사용
-          script_stop: true                     # 하나라도 에러나면 즉시 중단
+          # Settings > Secrets에 등록된 변수들을 불러옵니다.
+          host: ${{ secrets.SERVER_HOST }}     
+          username: ${{ secrets.SERVER_USER }} 
+          key: ${{ secrets.SERVER_KEY }}       
+          port: ${{ secrets.SERVER_PORT }}     
+          script_stop: true
           script: |
-            echo "#######################################################"
-            echo ">>> [Step 1] 리눅스 시스템 및 도커 엔진 보안 업그레이드"
-            echo "#######################################################"
+            echo "========== [1] 시스템 및 도커 엔진 보안 업데이트 =========="
             sudo apt-get update
-            # 도커 관련 패키지만 안전하게 업그레이드
+            # 도커 관련 패키지만 지정하여 업그레이드 (시스템 전체 업그레이드 방지)
             sudo apt-get install --only-upgrade docker-ce docker-ce-cli containerd.io -y || true
 
-            echo "#######################################################"
-            echo ">>> [Step 2] Cost-Data 리포지토리 대량 동기화 (Bulk Apply)"
-            echo "#######################################################"
-            
-            # 1. 깃 데이터를 받을 임시 폴더
-            GIT_DIR="/home/${{ secrets.SERVER_USER }}/git-temp/cost-data"
-            # 2. 실제 서비스가 참조하는 데이터 폴더 (여기로 대량 적용됨)
-            TARGET_DIR="/home/${{ secrets.SERVER_USER }}/real-data"
-            
-            # 폴더 생성
-            mkdir -p $GIT_DIR
-            mkdir -p $TARGET_DIR
+            echo "========== [2] Cost-Data 리포지토리 대량 동기화 =========="
+            # 데이터를 저장할 서버 경로 (필요시 수정하세요)
+            DEPLOY_DIR="/home/${{ secrets.SERVER_USER }}/cost-data"
+            REPO_URL="https://github.com/koreatest12/cost-data.git"
 
-            # Git Clone 또는 Pull
-            if [ -d "$GIT_DIR/.git" ]; then
-                echo "기존 리포지토리가 존재합니다. 업데이트를 수행합니다."
-                cd $GIT_DIR
-                git reset --hard HEAD
-                git pull origin main
+            # 1. 폴더가 없으면 Clone(복제)
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "폴더가 없어 새로 복제합니다."
+              git clone "$REPO_URL" "$DEPLOY_DIR"
             else
-                echo "리포지토리를 새로 복제합니다."
-                # Public 리포지토리인 경우
-                git clone https://github.com/koreatest12/cost-data.git $GIT_DIR
-                
-                # (만약 Private 리포지토리라면 아래 형식 사용)
-                # git clone https://<YOUR_TOKEN>@github.com/koreatest12/cost-data.git $GIT_DIR
+              # 2. 폴더가 있으면 강제 동기화 (Reset Hard)
+              echo "기존 폴더를 최신 상태로 강제 동기화합니다."
+              cd "$DEPLOY_DIR"
+              
+              # 최신 변경사항 가져오기
+              git fetch origin main
+              
+              # [중요] '대량 적용'의 핵심: 로컬의 변경사항을 무시하고 리포지토리와 100% 똑같이 맞춤
+              git reset --hard origin/main
+              
+              # 불필요한 파일 삭제 (리포지토리에 없는 파일 제거)
+              git clean -fd
             fi
 
-            echo ">>> rsync를 사용하여 대량 파일 변경사항 적용 중..."
-            # rsync 옵션 설명:
-            # -a: 아카이브 모드 (권한, 시간 보존)
-            # -v: 상세 출력
-            # --delete: 깃에 없는 파일은 타겟 폴더에서도 삭제 (완벽 동기화)
-            # --exclude '.git': .git 폴더는 복사하지 않음
-            rsync -av --delete --exclude '.git' $GIT_DIR/ $TARGET_DIR/
-            
-            echo ">>> 데이터 대량 적용 완료: $TARGET_DIR"
+            echo "-> $DEPLOY_DIR 경로에 데이터 동기화 완료"
 
-            echo "#######################################################"
-            echo ">>> [Step 3] 도커 컨테이너 이미지 업그레이드 및 재시작"
-            echo "#######################################################"
-            
-            # docker-compose 파일이 있는 위치로 이동
-            # (이 경로는 사용자의 실제 docker-compose.yml 위치로 수정해주세요)
-            PROJECT_ROOT="/home/${{ secrets.SERVER_USER }}/my-project"
-            cd $PROJECT_ROOT
-            
-            # 최신 이미지 Pull
+            echo "========== [3] 도커 컨테이너 서비스 업그레이드 =========="
+            # docker-compose.yml 파일이 위에서 동기화한 폴더 안에 있다고 가정
+            # 만약 다른 곳에 있다면 경로를 수정해야 함 (예: cd /home/user/my-app)
+            cd "$DEPLOY_DIR"
+
+            # 최신 이미지가 있다면 받아오기
             docker-compose pull
-            
-            # 컨테이너 재시작 (변경된 데이터나 이미지가 있으면 적용)
-            # -v 옵션이 호스트의 $TARGET_DIR를 마운트하고 있다면 데이터 즉시 반영됨
-            docker-compose up -d --remove-orphans
-            
-            # 불필요한 구버전 이미지 정리
-            docker image prune -f
 
-            echo ">>> 모든 작업이 성공적으로 완료되었습니다."
+            # 컨테이너 재생성 (이미지나 설정이 변경된 경우만 재시작됨)
+            docker-compose up -d --remove-orphans
+
+            # 디스크 공간 확보를 위해 사용하지 않는 이미지 정리
+            docker image prune -f
+            
+            echo "========== 모든 작업 완료 =========="
