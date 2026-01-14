@@ -1,12 +1,12 @@
-name: Build, Install & Deploy
+name: Build, Install & Deploy (Enhanced)
 
 on:
   workflow_dispatch: # 수동 실행
   push:
-    branches: [ "main" ] # 메인 브랜치 푸시 시 자동 실행 (필요 시 주석 해제)
+    branches: [ "main" ] # 메인 브랜치 푸시 시 자동 실행
 
 jobs:
-  # [Step 1] 도커 이미지 빌드 및 푸시 (Build & Push)
+  # [Step 1] 도커 이미지 빌드 및 푸시
   build-image:
     runs-on: ubuntu-latest
     steps:
@@ -24,14 +24,13 @@ jobs:
         with:
           context: .
           push: true
-          # 태그 설정: latest 태그와 현재 커밋 해시 태그 동시 생성
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/cost-data-app:latest
             ${{ secrets.DOCKER_USERNAME }}/cost-data-app:${{ github.sha }}
 
-  # [Step 2] 서버 환경 설치 및 배포 (Install & Deploy)
+  # [Step 2] 서버 환경 설치, 데이터 동기화 및 배포
   deploy-server:
-    needs: build-image # 빌드가 성공해야 실행됨
+    needs: build-image
     runs-on: ubuntu-latest
     steps:
       - name: SSH 접속 및 서버 설정/배포
@@ -47,72 +46,84 @@ jobs:
             echo ">>> [Phase 1] 배포 서버 환경 자동 설치 (Provisioning)"
             echo "#######################################################"
             
-            # 1. Git 설치 확인 및 설치
+            # 1. 시스템 패키지 업데이트
+            sudo apt-get update -y
+
+            # 2. Git 설치 (공식 패키지)
             if ! command -v git &> /dev/null; then
-                echo "Git이 없습니다. 설치를 진행합니다..."
-                sudo apt-get update
+                echo "Git 설치 중..."
                 sudo apt-get install -y git
-            else
-                echo "Git이 이미 설치되어 있습니다."
             fi
 
-            # 2. Docker 설치 확인 및 설치 (Docker 공식 스크립트 활용)
+            # 3. Docker 설치 (공식 get.docker.com 스크립트 사용)
             if ! command -v docker &> /dev/null; then
-                echo "Docker가 없습니다. 설치를 진행합니다..."
+                echo "Docker 공식 스크립트로 설치 중..."
                 curl -fsSL https://get.docker.com -o get-docker.sh
                 sudo sh get-docker.sh
-                # 현재 사용자를 docker 그룹에 추가 (sudo 없이 docker 사용)
                 sudo usermod -aG docker ${{ secrets.SERVER_USER }}
-            else
-                echo "Docker가 이미 설치되어 있습니다."
             fi
 
-            # 3. Docker Compose 설치 확인 및 설치 (플러그인 방식)
+            # 4. Docker Compose Plugin 설치 (최신 표준 방식)
             if ! docker compose version &> /dev/null; then
-                echo "Docker Compose Plugin 설치 중..."
-                sudo apt-get update
-                sudo apt-get install -y docker-compose-plugin
+                 echo "Docker Compose Plugin 설치 중..."
+                 sudo apt-get install -y docker-compose-plugin
             fi
 
             echo "#######################################################"
-            echo ">>> [Phase 2] Cost-Data 데이터 대량 동기화"
+            echo ">>> [Phase 2] 데이터 대량 동기화 (Source Sync)"
             echo "#######################################################"
             
             APP_DIR="/home/${{ secrets.SERVER_USER }}/cost-data-service"
             REPO_URL="https://github.com/koreatest12/cost-data.git"
 
-            # 폴더 생성
+            # 폴더가 없으면 생성
             mkdir -p $APP_DIR
 
-            # Git Clone 또는 Reset (강제 동기화)
+            # Git 초기화 또는 동기화
             if [ ! -d "$APP_DIR/.git" ]; then
-                echo "프로젝트 폴더를 새로 복제합니다."
+                echo "저장소를 새로 복제합니다 (Clone)."
                 git clone $REPO_URL $APP_DIR
-            else
-                echo "기존 폴더를 최신 상태로 강제 동기화합니다."
                 cd $APP_DIR
-                git fetch origin main
+            else
+                echo "기존 저장소를 최신 상태로 강제 동기화합니다 (Reset & Pull)."
+                cd $APP_DIR
+                # 원격의 최신 정보를 가져옴
+                git fetch --all
+                # 로컬의 변경사항을 모두 무시하고 원격 main 브랜치와 1:1로 맞춤 (대량 반영 시 필수)
                 git reset --hard origin/main
-                git clean -fd # 추적되지 않는 파일 삭제
+                # 추적되지 않는 불필요한 파일 삭제
+                git clean -fd
             fi
 
             echo "#######################################################"
-            echo ">>> [Phase 3] 컨테이너 서비스 업그레이드 및 배포"
+            echo ">>> [Phase 3] 보안 정보 주입 및 컨테이너 업그레이드"
             echo "#######################################################"
+
+            # 중요: GitHub Secrets에 저장된 ID/PW/설정 정보를 .env 파일로 생성
+            # 이렇게 하면 소스코드에 비밀번호를 노출하지 않고 주입할 수 있습니다.
+            echo "환경 변수 파일(.env) 생성 중..."
+            cat <<EOF > .env
+            # Docker 이미지 정보
+            DOCKER_IMAGE=${{ secrets.DOCKER_USERNAME }}/cost-data-app:latest
             
-            cd $APP_DIR
+            # 데이터베이스 정보 (GitHub Secrets 사용)
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             
-            # .env 파일 생성 (필요한 경우 환경변수 주입)
-            # echo "IMAGE_TAG=latest" > .env
-            
-            # 최신 이미지 다운로드 (Build Job에서 만든 이미지)
-            # docker-compose.yml 파일 내의 image가 ${{ secrets.DOCKER_USERNAME }}/cost-data-app:latest 여야 함
+            # 기타 애플리케이션 설정
+            API_KEY=${{ secrets.API_KEY }}
+            SERVER_PORT=80
+            EOF
+
+            echo "최신 이미지 다운로드 (Pull)..."
             docker compose pull
 
-            # 컨테이너 재실행 (이미지 변경 감지 시 자동 재시작)
-            docker compose up -d --remove-orphans
-            
-            # 구버전 이미지 정리
+            echo "컨테이너 재배포 (Up)..."
+            # --force-recreate: 설정이 바뀌지 않아도 강제로 컨테이너 재생성
+            docker compose up -d --remove-orphans --force-recreate
+
+            echo "구버전 이미지 정리 (Prune)..."
             docker image prune -f
 
-            echo ">>> 모든 배포 과정이 완료되었습니다."
+            echo ">>> 배포가 성공적으로 완료되었습니다."
