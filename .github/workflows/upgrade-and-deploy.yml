@@ -1,71 +1,83 @@
-name: System Upgrade & Bulk Data Apply
+name: Docker Upgrade & Bulk Data Sync
 
 on:
-  workflow_dispatch: # 수동 실행 (운영 안정성을 위해 권장)
+  workflow_dispatch: # 수동 실행 (필요 시 push로 변경 가능)
 
 jobs:
-  server-maintenance:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: SSH Remote Commands
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_KEY }} # 또는 password: ${{ secrets.SERVER_PASSWORD }}
-          port: ${{ secrets.SERVER_PORT }} # 기본값 22
-          script_stop: true # 에러 발생 시 즉시 중단
+          host: ${{ secrets.SERVER_HOST }}     # [필수] Settings > Secrets에 등록 확인
+          username: ${{ secrets.SERVER_USER }} # [필수] Settings > Secrets에 등록 확인
+          key: ${{ secrets.SERVER_KEY }}       # [필수] Settings > Secrets에 등록 확인
+          port: ${{ secrets.SERVER_PORT }}     # [필수] 없다면 기본값 22 사용
+          script_stop: true                     # 하나라도 에러나면 즉시 중단
           script: |
-            echo "========== [1] 도커 서버 및 시스템 패키지 업그레이드 =========="
-            # 패키지 목록 갱신
+            echo "#######################################################"
+            echo ">>> [Step 1] 리눅스 시스템 및 도커 엔진 보안 업그레이드"
+            echo "#######################################################"
             sudo apt-get update
-            
-            # 도커 엔진 및 관련 패키지만 업그레이드 (전체 upgrade는 위험할 수 있으므로 지정 권장)
-            sudo apt-get install --only-upgrade docker-ce docker-ce-cli containerd.io -y
-            
-            # (선택사항) 미사용 데이터 정리
-            docker system prune -f
+            # 도커 관련 패키지만 안전하게 업그레이드
+            sudo apt-get install --only-upgrade docker-ce docker-ce-cli containerd.io -y || true
 
-            echo "========== [2] 도커 컨테이너 이미지 업그레이드 및 재기동 =========="
-            # 도커 컴포즈 파일이 있는 경로로 이동 (사용자 환경에 맞게 수정 필요)
-            cd /home/${{ secrets.SERVER_USER }}/my-docker-project
+            echo "#######################################################"
+            echo ">>> [Step 2] Cost-Data 리포지토리 대량 동기화 (Bulk Apply)"
+            echo "#######################################################"
             
-            # 최신 이미지 다운로드
-            docker-compose pull
+            # 1. 깃 데이터를 받을 임시 폴더
+            GIT_DIR="/home/${{ secrets.SERVER_USER }}/git-temp/cost-data"
+            # 2. 실제 서비스가 참조하는 데이터 폴더 (여기로 대량 적용됨)
+            TARGET_DIR="/home/${{ secrets.SERVER_USER }}/real-data"
             
-            # 컨테이너 재생성 (변경된 이미지만 적용)
-            docker-compose up -d --remove-orphans
+            # 폴더 생성
+            mkdir -p $GIT_DIR
+            mkdir -p $TARGET_DIR
 
-            echo "========== [3] Cost-Data 리포지토리 동기화 및 대량 적용 =========="
-            # 데이터를 저장할 작업 디렉토리 설정
-            WORK_DIR="/home/${{ secrets.SERVER_USER }}/cost-data-work"
-            REPO_URL="https://github.com/koreatest12/cost-data.git"
-
-            # 폴더가 없으면 Clone, 있으면 Pull
-            if [ ! -d "$WORK_DIR" ]; then
-              git clone $REPO_URL $WORK_DIR
+            # Git Clone 또는 Pull
+            if [ -d "$GIT_DIR/.git" ]; then
+                echo "기존 리포지토리가 존재합니다. 업데이트를 수행합니다."
+                cd $GIT_DIR
+                git reset --hard HEAD
+                git pull origin main
             else
-              cd $WORK_DIR
-              git reset --hard HEAD # 로컬 변경사항 무시 (강제 동기화)
-              git pull origin main
+                echo "리포지토리를 새로 복제합니다."
+                # Public 리포지토리인 경우
+                git clone https://github.com/koreatest12/cost-data.git $GIT_DIR
+                
+                # (만약 Private 리포지토리라면 아래 형식 사용)
+                # git clone https://<YOUR_TOKEN>@github.com/koreatest12/cost-data.git $GIT_DIR
             fi
 
-            # [중요] 해당 경로의 모든 파일/폴더에 대해 대량 적용 로직
-            # 예시: 해당 폴더의 모든 파일을 특정 컨테이너로 복사하거나, 스크립트 실행
+            echo ">>> rsync를 사용하여 대량 파일 변경사항 적용 중..."
+            # rsync 옵션 설명:
+            # -a: 아카이브 모드 (권한, 시간 보존)
+            # -v: 상세 출력
+            # --delete: 깃에 없는 파일은 타겟 폴더에서도 삭제 (완벽 동기화)
+            # --exclude '.git': .git 폴더는 복사하지 않음
+            rsync -av --delete --exclude '.git' $GIT_DIR/ $TARGET_DIR/
             
-            cd $WORK_DIR
-            
-            # 방법 A: 모든 파일을 루프 돌며 처리하는 예시
-            # find . -type f -not -path '*/.*' | while read file; do
-            #   echo "Applying $file ..."
-            #   # 예: 파일을 특정 도커 볼륨 경로로 복사
-            #   # cp "$file" /path/to/docker/volumes/data/
-            #   # 예: 파일을 DB에 import
-            #   # docker exec -i my-db-container mysql -u user -ppass < "$file"
-            # done
+            echo ">>> 데이터 대량 적용 완료: $TARGET_DIR"
 
-            # 방법 B: 단순히 전체 폴더를 타겟 경로로 rsync (동기화) 하는 예시 (가장 추천)
-            TARGET_PATH="/path/to/final/destination"
-            # sudo rsync -av --delete --exclude '.git' ./ $TARGET_PATH/
+            echo "#######################################################"
+            echo ">>> [Step 3] 도커 컨테이너 이미지 업그레이드 및 재시작"
+            echo "#######################################################"
             
-            echo "모든 작업이 완료되었습니다."
+            # docker-compose 파일이 있는 위치로 이동
+            # (이 경로는 사용자의 실제 docker-compose.yml 위치로 수정해주세요)
+            PROJECT_ROOT="/home/${{ secrets.SERVER_USER }}/my-project"
+            cd $PROJECT_ROOT
+            
+            # 최신 이미지 Pull
+            docker-compose pull
+            
+            # 컨테이너 재시작 (변경된 데이터나 이미지가 있으면 적용)
+            # -v 옵션이 호스트의 $TARGET_DIR를 마운트하고 있다면 데이터 즉시 반영됨
+            docker-compose up -d --remove-orphans
+            
+            # 불필요한 구버전 이미지 정리
+            docker image prune -f
+
+            echo ">>> 모든 작업이 성공적으로 완료되었습니다."
