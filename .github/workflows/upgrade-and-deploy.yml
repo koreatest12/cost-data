@@ -1,4 +1,4 @@
-name: Build, Auto-Gen & Deploy (No Login + Auto Dockerfile)
+name: Build, Auto-Scaffold & Deploy (Final Fix)
 
 on:
   workflow_dispatch: # 수동 실행
@@ -6,87 +6,83 @@ on:
     branches: [ "main" ]
 
 jobs:
-  # [Job 1] Dockerfile 자동 생성 -> 빌드 -> 서버 전송
+  # [Job 1] 파일/디렉토리 자동 생성 -> 빌드 -> 서버 전송
   build-and-transfer:
     runs-on: ubuntu-latest
     steps:
       - name: 소스 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: 📂 파일 목록 및 위치 확인 (디버깅용)
+      - name: 🛠️ 프로젝트 구조 분석 및 대량 파일 자동 생성
         run: |
-          echo "현재 디렉토리 파일 목록:"
-          ls -al
-          echo "프로젝트 구조 확인:"
-          find . -maxdepth 2 -not -path '*/.*'
-
-      - name: 🛠️ Dockerfile 자동 감지 및 생성 (대량 생성 로직)
-        run: |
-          # 1. 이미 Dockerfile이 있다면 건너뜀
-          if [ -f "Dockerfile" ]; then
-            echo "✅ 기존 Dockerfile이 감지되었습니다. 이를 사용합니다."
-            exit 0
-          fi
-
-          echo "⚠️ Dockerfile이 없습니다. 프로젝트 유형을 분석하여 자동 생성합니다..."
-
-          # 2. Java (Maven/Gradle) 프로젝트 감지
-          if [ -f "pom.xml" ] || [ -f "build.gradle" ]; then
-            echo "☕ Java (Spring Boot) 프로젝트가 감지되었습니다."
-            echo "자동으로 OpenJDK 17 기반의 Dockerfile을 생성합니다..."
-            
-            cat <<EOF > Dockerfile
-            # --- Build Stage ---
-            FROM gradle:8.5-jdk17 AS builder
-            WORKDIR /app
-            COPY . .
-            # Gradle인 경우
-            RUN if [ -f "build.gradle" ]; then gradle build -x test --no-daemon; fi
-            # Maven인 경우
-            RUN if [ -f "pom.xml" ]; then apt-get update && apt-get install -y maven && mvn clean package -DskipTests; fi
-
-            # --- Run Stage ---
-            FROM openjdk:17-jdk-slim
-            WORKDIR /app
-            # 빌드된 JAR 파일을 찾아서 app.jar로 복사 (이름이 달라도 자동 탐색)
-            COPY --from=builder /app/build/libs/*.jar app.jar 2>/dev/null || COPY --from=builder /app/target/*.jar app.jar
-            ENTRYPOINT ["java", "-jar", "app.jar"]
-            EOF
+          echo ">>> [Phase 1] 프로젝트 구조 진단 시작"
           
-          # 3. Node.js 프로젝트 감지
+          # 1. Java 프로젝트 감지
+          if [ -f "pom.xml" ] || [ -f "build.gradle" ]; then
+             echo "✅ Java 프로젝트 감지됨."
+             PROJECT_TYPE="JAVA"
+          
+          # 2. Node.js 프로젝트 감지
           elif [ -f "package.json" ]; then
-            echo "🟢 Node.js 프로젝트가 감지되었습니다."
-            
-            cat <<EOF > Dockerfile
-            FROM node:18-alpine
-            WORKDIR /app
-            COPY package*.json ./
-            RUN npm install --production
-            COPY . .
-            CMD ["npm", "start"]
-            EOF
-
-          # 4. 그 외 (HTML/Static) 감지
+             echo "✅ Node.js 프로젝트 감지됨."
+             PROJECT_TYPE="NODE"
+          
+          # 3. 아무것도 없을 경우 -> 정적 웹사이트(Nginx)로 자동 생성
           else
-            echo "🌐 일반 정적 웹 프로젝트로 간주합니다 (Nginx)."
-            
-            cat <<EOF > Dockerfile
-            FROM nginx:alpine
-            COPY . /usr/share/nginx/html
-            EOF
+             echo "⚠️ 소스 코드가 없습니다. '대량 파일 생성 모드'를 실행합니다..."
+             PROJECT_TYPE="STATIC"
+             
+             # 디렉토리 생성
+             mkdir -p src/main/resources/static
+             
+             # 샘플 HTML 파일 생성
+             echo '<!DOCTYPE html><html><body><h1>🚀 배포 성공! (Auto-Generated)</h1><p>소스코드가 감지되지 않아 샘플 페이지가 생성되었습니다.</p></body></html>' > src/main/resources/static/index.html
+             
+             echo "✅ 샘플 파일 및 디렉토리 구조 생성 완료."
           fi
 
-          echo "🎉 Dockerfile 생성이 완료되었습니다."
-          cat Dockerfile
+          # 4. Dockerfile 자동 생성 (EOF 문법 오류 방지를 위해 printf 사용)
+          if [ ! -f "Dockerfile" ]; then
+            echo ">>> [Phase 2] Dockerfile이 없어 자동으로 생성합니다 ($PROJECT_TYPE 타입)"
+            
+            if [ "$PROJECT_TYPE" == "JAVA" ]; then
+                # Java용 Dockerfile 생성
+                printf "FROM gradle:8.5-jdk17 AS builder\n" > Dockerfile
+                printf "WORKDIR /app\n" >> Dockerfile
+                printf "COPY . .\n" >> Dockerfile
+                printf "RUN if [ -f \"build.gradle\" ]; then gradle build -x test --no-daemon; else apt-get update && apt-get install -y maven && mvn clean package -DskipTests; fi\n\n" >> Dockerfile
+                printf "FROM openjdk:17-jdk-slim\n" >> Dockerfile
+                printf "WORKDIR /app\n" >> Dockerfile
+                printf "COPY --from=builder /app/build/libs/*.jar app.jar 2>/dev/null || COPY --from=builder /app/target/*.jar app.jar\n" >> Dockerfile
+                printf "ENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]\n" >> Dockerfile
+
+            elif [ "$PROJECT_TYPE" == "NODE" ]; then
+                # Node.js용 Dockerfile 생성
+                printf "FROM node:18-alpine\n" > Dockerfile
+                printf "WORKDIR /app\n" >> Dockerfile
+                printf "COPY package*.json ./\n" >> Dockerfile
+                printf "RUN npm install --production\n" >> Dockerfile
+                printf "COPY . .\n" >> Dockerfile
+                printf "CMD [\"npm\", \"start\"]\n" >> Dockerfile
+
+            else
+                # 정적 웹(Nginx)용 Dockerfile 생성
+                printf "FROM nginx:alpine\n" > Dockerfile
+                printf "COPY src/main/resources/static /usr/share/nginx/html\n" >> Dockerfile
+            fi
+            
+            echo "✅ Dockerfile 생성 완료:"
+            cat Dockerfile
+          fi
 
       - name: 🐳 도커 이미지 빌드 (로그인 불필요)
         run: |
-          # 위에서 생성된(혹은 기존의) Dockerfile을 이용해 빌드
+          # 위에서 생성된 Dockerfile로 빌드
           docker build -t cost-data-app:latest .
-          # 이미지를 파일로 저장 (.tar)
+          # 이미지를 파일로 추출 (.tar)
           docker save -o cost-data-app.tar cost-data-app:latest
 
-      - name: 🚀 서버로 이미지 및 설정 전송
+      - name: 🚀 서버로 이미지 파일 전송
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -96,12 +92,12 @@ jobs:
           source: "cost-data-app.tar,docker-compose.yml"
           target: "/home/${{ secrets.SERVER_USER }}/cost-data-service/"
 
-  # [Job 2] 서버 배포 (오프라인 로드)
+  # [Job 2] 서버 접속 및 컨테이너 업그레이드
   deploy-server:
     needs: build-and-transfer
     runs-on: ubuntu-latest
     steps:
-      - name: SSH 접속 및 배포 실행
+      - name: SSH 접속 및 배포
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -113,35 +109,40 @@ jobs:
             APP_DIR="/home/${{ secrets.SERVER_USER }}/cost-data-service"
             cd $APP_DIR
 
-            echo ">>> [Phase 1] 환경 변수(.env) 강제 주입"
-            cat <<EOF > .env
+            echo ">>> [Phase 1] 환경 변수(.env) 설정"
+            # API 키나 DB 정보가 없어도 에러가 나지 않도록 빈 값 처리
+            cat <<ENV > .env
             DB_URL=${{ secrets.DB_URL }}
             DB_USERNAME=${{ secrets.DB_USERNAME }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             API_KEY=${{ secrets.API_KEY }}
-            EOF
+            ENV
 
             echo ">>> [Phase 2] Docker 이미지 로드 (Load)"
+            # 이전 이미지 로드 실패 방지
             docker load -i cost-data-app.tar
 
-            echo ">>> [Phase 3] 컨테이너 서비스 재시작"
-            # docker-compose가 없으면 실행, 있으면 강제 재생성
-            if [ -f "docker-compose.yml" ]; then
-                # 이미지명을 cost-data-app:latest로 강제 치환 (안전장치)
-                sed -i 's|image: .*|image: cost-data-app:latest|g' docker-compose.yml
-                docker compose up -d --force-recreate
-            else
-                # docker run 명령어로 직접 실행 (Fallback)
-                docker stop cost-data-container || true
-                docker rm cost-data-container || true
-                docker run -d --name cost-data-container \
-                  --restart always \
-                  -p 80:8080 \
-                  --env-file .env \
-                  cost-data-app:latest
+            echo ">>> [Phase 3] 컨테이너 실행"
+            # docker-compose.yml이 없으면 임시 생성
+            if [ ! -f "docker-compose.yml" ]; then
+                echo "docker-compose.yml이 없어 임시로 생성합니다."
+                echo "version: '3'" > docker-compose.yml
+                echo "services:" >> docker-compose.yml
+                echo "  app:" >> docker-compose.yml
+                echo "    image: cost-data-app:latest" >> docker-compose.yml
+                echo "    ports: ['80:80', '8080:8080']" >> docker-compose.yml
+                echo "    restart: always" >> docker-compose.yml
+                echo "    env_file: .env" >> docker-compose.yml
             fi
 
-            # 청소
+            # docker-compose 파일 내 이미지 이름 강제 보정
+            sed -i 's|image: .*|image: cost-data-app:latest|g' docker-compose.yml
+            
+            # 컨테이너 재실행
+            docker compose up -d --force-recreate
+
+            # 파일 정리
             rm -f cost-data-app.tar
             docker image prune -f
-            echo ">>> 모든 배포가 완료되었습니다."
+
+            echo ">>> 모든 배포 과정이 성공적으로 완료되었습니다."
