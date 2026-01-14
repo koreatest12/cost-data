@@ -1,132 +1,113 @@
-name: Full Auto-Gen Build & Deploy (Final Solution)
+name: Robust Auto-Gen & Deploy (Printf Mode)
 
 on:
-  workflow_dispatch: # 수동 실행
+  workflow_dispatch:
   push:
     branches: [ "main" ]
 
 jobs:
-  # [Job 1] 소스/Dockerfile 완전 자동 생성 -> 빌드 -> 전송
   build-and-transfer:
     runs-on: ubuntu-latest
     steps:
       - name: 소스 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: 🏗️ Java Spring Boot 소스 코드 강제 생성 (대량 생성)
+      - name: 🏗️ Java Spring Boot 소스 대량 자동 생성 (Safe Mode)
         run: |
-          echo ">>> [Phase 1] 프로젝트 소스 코드 점검 및 생성"
+          echo ">>> [Phase 1] 소스 코드 유무 확인 및 생성"
 
-          # pom.xml이나 build.gradle이 없으면 "빈 프로젝트"로 간주하고 소스 생성
+          # pom.xml이 없으면 프로젝트가 없다고 판단하여 생성 시작
           if [ ! -f "pom.xml" ] && [ ! -f "build.gradle" ]; then
-            echo "⚠️ Java 소스 코드가 없습니다. Spring Boot 프로젝트를 자동으로 생성합니다..."
+            echo "⚠️ 소스 코드가 없어 'printf' 방식으로 안전하게 생성합니다..."
             
-            # 1. 디렉토리 구조 생성
+            # 1. 필수 디렉토리 구조 생성
             mkdir -p src/main/java/com/example/demo
             mkdir -p src/main/resources
             
-            # 2. pom.xml 생성 (Maven 빌드 설정)
-            echo "📄 pom.xml 생성 중..."
-            cat <<EOF > pom.xml
-            <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-              <modelVersion>4.0.0</modelVersion>
-              <groupId>com.example</groupId>
-              <artifactId>demo</artifactId>
-              <version>0.0.1-SNAPSHOT</version>
-              <parent>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-parent</artifactId>
-                <version>3.2.0</version>
-              </parent>
-              <properties>
-                <java.version>17</java.version>
-              </properties>
-              <dependencies>
-                <dependency>
-                  <groupId>org.springframework.boot</groupId>
-                  <artifactId>spring-boot-starter-web</artifactId>
-                </dependency>
-              </dependencies>
-              <build>
-                <plugins>
-                  <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                  </plugin>
-                </plugins>
-              </build>
-            </project>
-            EOF
+            # 2. pom.xml 생성 (EOF 대신 printf 사용으로 문법 에러 원천 차단)
+            printf '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n' > pom.xml
+            printf '  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">\n' >> pom.xml
+            printf '  <modelVersion>4.0.0</modelVersion>\n' >> pom.xml
+            printf '  <groupId>com.example</groupId>\n' >> pom.xml
+            printf '  <artifactId>demo</artifactId>\n' >> pom.xml
+            printf '  <version>0.0.1-SNAPSHOT</version>\n' >> pom.xml
+            printf '  <parent>\n' >> pom.xml
+            printf '    <groupId>org.springframework.boot</groupId>\n' >> pom.xml
+            printf '    <artifactId>spring-boot-starter-parent</artifactId>\n' >> pom.xml
+            printf '    <version>3.2.0</version>\n' >> pom.xml
+            printf '  </parent>\n' >> pom.xml
+            printf '  <properties>\n' >> pom.xml
+            printf '    <java.version>17</java.version>\n' >> pom.xml
+            printf '  </properties>\n' >> pom.xml
+            printf '  <dependencies>\n' >> pom.xml
+            printf '    <dependency>\n' >> pom.xml
+            printf '      <groupId>org.springframework.boot</groupId>\n' >> pom.xml
+            printf '      <artifactId>spring-boot-starter-web</artifactId>\n' >> pom.xml
+            printf '    </dependency>\n' >> pom.xml
+            printf '  </dependencies>\n' >> pom.xml
+            printf '  <build>\n' >> pom.xml
+            printf '    <plugins>\n' >> pom.xml
+            printf '      <plugin>\n' >> pom.xml
+            printf '        <groupId>org.springframework.boot</groupId>\n' >> pom.xml
+            printf '        <artifactId>spring-boot-maven-plugin</artifactId>\n' >> pom.xml
+            printf '      </plugin>\n' >> pom.xml
+            printf '    </plugins>\n' >> pom.xml
+            printf '  </build>\n' >> pom.xml
+            printf '</project>\n' >> pom.xml
 
-            # 3. Main Application Java 파일 생성
-            echo "📄 Java Main 파일 생성 중..."
-            cat <<EOF > src/main/java/com/example/demo/DemoApplication.java
-            package com.example.demo;
-            import org.springframework.boot.SpringApplication;
-            import org.springframework.boot.autoconfigure.SpringBootApplication;
-            import org.springframework.web.bind.annotation.GetMapping;
-            import org.springframework.web.bind.annotation.RestController;
+            # 3. Java Main Application 생성
+            TARGET_JAVA="src/main/java/com/example/demo/DemoApplication.java"
+            printf 'package com.example.demo;\n' > $TARGET_JAVA
+            printf 'import org.springframework.boot.SpringApplication;\n' >> $TARGET_JAVA
+            printf 'import org.springframework.boot.autoconfigure.SpringBootApplication;\n' >> $TARGET_JAVA
+            printf 'import org.springframework.web.bind.annotation.GetMapping;\n' >> $TARGET_JAVA
+            printf 'import org.springframework.web.bind.annotation.RestController;\n' >> $TARGET_JAVA
+            printf '\n' >> $TARGET_JAVA
+            printf '@SpringBootApplication\n' >> $TARGET_JAVA
+            printf '@RestController\n' >> $TARGET_JAVA
+            printf 'public class DemoApplication {\n' >> $TARGET_JAVA
+            printf '    public static void main(String[] args) {\n' >> $TARGET_JAVA
+            printf '        SpringApplication.run(DemoApplication.class, args);\n' >> $TARGET_JAVA
+            printf '    }\n' >> $TARGET_JAVA
+            printf '    @GetMapping("/")\n' >> $TARGET_JAVA
+            printf '    public String home() {\n' >> $TARGET_JAVA
+            printf '        return "<h1>🚀 배포 성공! (Syntax Error Fixed)</h1>";\n' >> $TARGET_JAVA
+            printf '    }\n' >> $TARGET_JAVA
+            printf '}\n' >> $TARGET_JAVA
 
-            @SpringBootApplication
-            @RestController
-            public class DemoApplication {
-                public static void main(String[] args) {
-                    SpringApplication.run(DemoApplication.class, args);
-                }
-
-                @GetMapping("/")
-                public String home() {
-                    return "<h1>🚀 배포 성공! (Auto-Generated Spring Boot)</h1>";
-                }
-            }
-            EOF
-
-            # 4. 설정 파일 생성
-            echo "server.port=8080" > src/main/resources/application.properties
+            # 4. application.properties 생성
+            printf 'server.port=8080\n' > src/main/resources/application.properties
             
-            echo "✅ Spring Boot 프로젝트 자동 생성 완료."
+            echo "✅ Spring Boot 소스 코드 생성 완료 (printf 방식 적용)."
           else
-            echo "✅ 기존 소스 코드가 감지되었습니다."
+            echo "✅ 기존 소스 코드가 존재합니다."
           fi
 
-      - name: 🛠️ Dockerfile 자동 생성 (OS 호환성 해결 버전)
+      - name: 🛠️ Dockerfile 자동 생성 (Safe Mode)
         run: |
-          echo ">>> [Phase 2] Dockerfile 생성 (Maven + Temurin)"
+          echo ">>> [Phase 2] Dockerfile 생성"
           
-          # 기존 Dockerfile이 있어도 덮어써서 에러를 방지함 (강제 갱신)
-          # apt-get 에러를 피하기 위해 'maven:3.9-eclipse-temurin-17' 이미지를 사용 (Debian 기반)
+          # Dockerfile 생성 (Maven 이미지 사용으로 apt-get 에러 방지)
+          printf 'FROM maven:3.9-eclipse-temurin-17 AS builder\n' > Dockerfile
+          printf 'WORKDIR /app\n' >> Dockerfile
+          printf 'COPY . .\n' >> Dockerfile
+          printf 'RUN mvn clean package -DskipTests\n' >> Dockerfile
+          printf '\n' >> Dockerfile
+          printf 'FROM eclipse-temurin:17-jre-alpine\n' >> Dockerfile
+          printf 'WORKDIR /app\n' >> Dockerfile
+          printf 'COPY --from=builder /app/target/*.jar app.jar\n' >> Dockerfile
+          printf 'ENTRYPOINT ["java", "-jar", "app.jar"]\n' >> Dockerfile
           
-          cat <<EOF > Dockerfile
-          # --- Build Stage ---
-          # 'apt-get'이 필요 없는 Maven 공식 이미지를 사용하여 빌드 환경 구축
-          FROM maven:3.9-eclipse-temurin-17 AS builder
-          WORKDIR /app
-          COPY . .
-          # 의존성 설치 및 빌드 (테스트 건너뛰기)
-          RUN mvn clean package -DskipTests
+          echo "✅ Dockerfile 생성 완료."
 
-          # --- Run Stage ---
-          # 실행은 가벼운 Alpine 이미지 사용
-          FROM eclipse-temurin:17-jre-alpine
-          WORKDIR /app
-          # 빌드된 JAR 파일을 찾아서 복사 (target 폴더 내의 .jar)
-          COPY --from=builder /app/target/*.jar app.jar
-          ENTRYPOINT ["java", "-jar", "app.jar"]
-          EOF
-          
-          echo "✅ Dockerfile 생성 완료. 내용을 확인합니다:"
-          cat Dockerfile
-
-      - name: 🐳 도커 이미지 빌드 (로그인 불필요)
+      - name: 🐳 도커 이미지 빌드
         run: |
-          echo ">>> 이미지 빌드 시작..."
+          # 빌드 시작
           docker build -t cost-data-app:latest .
-          
-          echo ">>> 이미지 파일로 변환 중..."
+          # 파일 저장
           docker save -o cost-data-app.tar cost-data-app:latest
 
-      - name: 🚀 서버로 이미지 파일 전송
+      - name: 🚀 서버로 전송
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -136,7 +117,6 @@ jobs:
           source: "cost-data-app.tar,docker-compose.yml"
           target: "/home/${{ secrets.SERVER_USER }}/cost-data-service/"
 
-  # [Job 2] 서버 배포 (기존과 동일하지만 안정성 강화)
   deploy-server:
     needs: build-and-transfer
     runs-on: ubuntu-latest
@@ -153,37 +133,32 @@ jobs:
             APP_DIR="/home/${{ secrets.SERVER_USER }}/cost-data-service"
             cd $APP_DIR
 
-            echo ">>> [Phase 1] 환경 변수(.env) 설정"
-            cat <<ENV > .env
-            DB_URL=${{ secrets.DB_URL }}
-            DB_USERNAME=${{ secrets.DB_USERNAME }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            API_KEY=${{ secrets.API_KEY }}
-            ENV
+            # 환경변수 파일 생성 (printf 사용)
+            printf "DB_URL=${{ secrets.DB_URL }}\n" > .env
+            printf "DB_USERNAME=${{ secrets.DB_USERNAME }}\n" >> .env
+            printf "DB_PASSWORD=${{ secrets.DB_PASSWORD }}\n" >> .env
+            printf "API_KEY=${{ secrets.API_KEY }}\n" >> .env
 
-            echo ">>> [Phase 2] 이미지 로드 (Load)"
+            # 이미지 로드
             docker load -i cost-data-app.tar
 
-            echo ">>> [Phase 3] 컨테이너 실행"
-            # docker-compose.yml 자동 생성 (만약 전송되지 않았을 경우 대비)
+            # docker-compose.yml 생성 (없을 경우)
             if [ ! -f "docker-compose.yml" ]; then
-                echo "version: '3'" > docker-compose.yml
-                echo "services:" >> docker-compose.yml
-                echo "  app:" >> docker-compose.yml
-                echo "    image: cost-data-app:latest" >> docker-compose.yml
-                echo "    ports: ['80:80', '8080:8080']" >> docker-compose.yml
-                echo "    restart: always" >> docker-compose.yml
-                echo "    env_file: .env" >> docker-compose.yml
+                printf "version: '3'\n" > docker-compose.yml
+                printf "services:\n" >> docker-compose.yml
+                printf "  app:\n" >> docker-compose.yml
+                printf "    image: cost-data-app:latest\n" >> docker-compose.yml
+                printf "    ports: ['80:80', '8080:8080']\n" >> docker-compose.yml
+                printf "    restart: always\n" >> docker-compose.yml
+                printf "    env_file: .env\n" >> docker-compose.yml
             fi
 
-            # 이미지명 강제 동기화
+            # 컨테이너 실행
             sed -i 's|image: .*|image: cost-data-app:latest|g' docker-compose.yml
-            
-            # 컨테이너 강제 재생성
             docker compose up -d --force-recreate
-
+            
             # 정리
             rm -f cost-data-app.tar
             docker image prune -f
-
+            
             echo ">>> 배포 성공!"
