@@ -96,5 +96,7 @@ ehthumbs.db
 # AWX 데이터는 Docker 볼륨에 저장되므로 로컬 백업 파일만 제외
 awx_backup_*.sql
 awx_data_backup_*.tar.gz
+# Environment files with secrets
+orchestra/.env
 
 

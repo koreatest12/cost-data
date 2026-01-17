@@ -16,14 +16,12 @@
       debug:
         var: disk_space.stdout_lines
     
-    - name: Check memory usage
-      shell: free -h
-      register: memory_usage
-      changed_when: false
-    
-    - name: Display memory usage
+    - name: Display memory usage from facts
       debug:
-        var: memory_usage.stdout_lines
+        msg: |
+          Total Memory: {{ ansible_memtotal_mb }} MB
+          Free Memory: {{ ansible_memfree_mb }} MB
+          Used Memory: {{ ansible_memtotal_mb - ansible_memfree_mb }} MB
     
     - name: Check system uptime
       shell: uptime
@@ -34,12 +32,14 @@
       debug:
         var: system_uptime.stdout
     
-    - name: Gather basic facts
+    - name: Gather and display system facts
       debug:
         msg: |
           Hostname: {{ ansible_hostname }}
+          FQDN: {{ ansible_fqdn }}
           OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
           Kernel: {{ ansible_kernel }}
           Architecture: {{ ansible_architecture }}
           CPU Cores: {{ ansible_processor_vcpus }}
           Total Memory: {{ ansible_memtotal_mb }} MB
+          IP Address: {{ ansible_default_ipv4.address | default('N/A') }}
