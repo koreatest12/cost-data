@@ -37,7 +37,7 @@ jobs:
           New-NetFirewallRule -DisplayName "Allow Auth Service" -Direction Inbound -Protocol TCP -LocalPort 389 -Action Allow -ErrorAction SilentlyContinue
           New-NetFirewallRule -DisplayName "Allow Docker" -Direction Outbound -Protocol TCP -RemotePort 2375 -Action Allow -ErrorAction SilentlyContinue
 
-      # [UPGRADE] 3. 초대량 가상 계정 생성 (200개로 증가)
+      # 3. 초대량 가상 계정 생성 (200개)
       - name: 초대량 계정 생성 및 활성화 (Mass Account Provisioning)
         shell: powershell
         run: |
@@ -61,7 +61,7 @@ jobs:
           }
           Write-Host "Registry saved to $csvPath"
 
-      # [UPGRADE] 4. 초대량 파일/디렉토리 데이터 생성 (Stress Test)
+      # 4. 초대량 파일/디렉토리 데이터 생성 (Stress Test)
       - name: 초대량 데이터 파일 생성 (Mass Data Generation)
         shell: powershell
         run: |
@@ -100,14 +100,14 @@ jobs:
           server-id: github
           settings-path: ${{ github.workspace }}
 
-      # 6. [FIX] 데이터 권한 수정 (따옴표 추가) 및 분할
+      # 6. 데이터 권한 수정 및 분할
       - name: 데이터 처리 및 도커 빌드 (Fix Applied)
         shell: powershell
         run: |
           $target = "cost-data-repo"
           Write-Host "Upgrading Permissions for $target..."
           
-          # [FIX] 에러 수정: 권한 구문을 따옴표로 감싸서 문자열 처리
+          # [FIX] 권한 구문을 문자열로 처리하여 에러 방지
           icacls $target /grant "Everyone:(OI)(CI)F" /T
           
           Write-Host "Splitting Large Files..."
@@ -157,7 +157,7 @@ jobs:
           sudo apt-get install --only-upgrade ufw openssl -y
           sudo ufw allow 22/tcp
 
-      # [UPGRADE] 2. 초대량 계정 생성 (200개)
+      # 2. 초대량 계정 생성 (200개)
       - name: 초대량 계정 생성 (Mass Account Provisioning)
         run: |
           AUTH_DIR="cost-data-repo/auth_registry"
@@ -169,13 +169,14 @@ jobs:
           
           for i in {1..200}; do
             USERNAME="svc_linux_$i"
+            # openssl을 이용해 랜덤 비밀번호 생성
             PASS_HASH=$(openssl rand -base64 12 | openssl passwd -1 -stdin)
             SERVICE="Daemon_Tier_$((i % 10))"
             echo "$USERNAME,$PASS_HASH,$SERVICE,Active,$(date)" >> $CSV_PATH
           done
           echo "Registry generation done."
 
-      # [UPGRADE] 3. 초대량 데이터 파일 생성
+      # 3. 초대량 데이터 파일 생성
       - name: 초대량 데이터 파일 생성
         run: |
           BASE="cost-data-repo/generated_data"
@@ -187,7 +188,7 @@ jobs:
             mkdir -p $SUB
             for j in {1..100}; do echo "Data $j" > "$SUB/file_$j.log"; done
             
-            # 대용량 파일
+            # 대용량 파일 생성 (dd 명령 사용)
             if [ $((i % 5)) -eq 0 ]; then
               dd if=/dev/zero of="$SUB/heavy_file_$i.bin" bs=1M count=120
             fi
@@ -221,7 +222,7 @@ jobs:
           if [ ! -f Dockerfile ]; then echo -e "FROM alpine:latest\nCOPY . /data\nCMD [\"ls\", \"-R\"]" > Dockerfile; fi
           docker build -t cost-data-linux:v5 .
 
-      # 6. 패키징
+      # 6. 패키징 및 업로드
       - name: 패키징 및 업로드
         run: |
           VERSION="v5.0.$(date +%Y%m%d)"
