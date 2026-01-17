@@ -1,4 +1,4 @@
-name: 💰 Complete Tax Settlement (All Files & Directories)
+name: 🏢 Tax Master System (Migration & Simulation)
 
 on:
   workflow_dispatch:
@@ -7,36 +7,45 @@ on:
 
 jobs:
   # ==================================================================================
-  # [Job 1] 데이터 통합 분석 -> 인물별 합산 계산 -> 결과 리포트
+  # [Job] 데이터 마이그레이션 -> 엔진 구동 -> 결과 분석 -> 리포트 생성
   # ==================================================================================
-  analyze-all-data:
+  master-processing:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     
     steps:
-      - name: 📥 메인 코드 체크아웃
+      - name: 📥 메인 시스템 체크아웃
         uses: actions/checkout@v4
 
-      # 1. 데이터 리포지토리(koreatest12/cost-data) 전체 가져오기
-      - name: 📥 전체 데이터 가져오기 (Recursive)
+      # ----------------------------------------------------------------------
+      # [Step 1] 전체 데이터 리포지토리 마이그레이션 (모든 하위 폴더 포함)
+      # ----------------------------------------------------------------------
+      - name: 📥 데이터 마이그레이션 (koreatest12/cost-data)
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
           path: app_root/cost_data
-          fetch-depth: 0 # 모든 히스토리 및 파일 가져오기
+          fetch-depth: 0 # 전체 히스토리 및 파일 가져오기
+
+      - name: 🔧 파일 권한 대량 수정 (Permission Fix)
+        run: |
+          echo ">>> 데이터 접근 권한을 수정합니다..."
+          chmod -R 755 app_root/cost_data
 
       - name: 🐍 파이썬 환경 설정
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      # 2. 통합 시뮬레이션 엔진 작성
-      - name: 🏗️ 통합 분석 엔진(Aggregator) 작성
+      # ----------------------------------------------------------------------
+      # [Step 2] 마스터 시뮬레이션 엔진 생성 (Engine + Web UI)
+      # ----------------------------------------------------------------------
+      - name: 🏗️ 마스터 시스템 코드 생성
         run: |
           mkdir -p app_root/templates
           mkdir -p app_root/static
 
-          # [패키지 설정]
+          # 1. 필수 라이브러리
           cat <<EOF > app_root/requirements.txt
           flask
           pandas
@@ -45,8 +54,8 @@ jobs:
           tabulate
           EOF
 
-          # [핵심 스크립트] simulator.py
-          cat <<EOF > app_root/simulator.py
+          # 2. [Core] 마이그레이션 및 계산 엔진 (engine.py)
+          cat <<EOF > app_root/engine.py
           import os
           import glob
           import json
@@ -58,219 +67,228 @@ jobs:
 
           DATA_DIR = 'cost_data'
           
-          # --- 1. 데이터 저장소 (인물별 합산용) ---
-          # 구조: people['홍길동'] = { salary: 0, insurance: 0, medical: 0, card: 0, ... }
-          people = defaultdict(lambda: {
-              'salary': 0, 
-              'pension': 0, 
-              'insurance': 0, 
-              'medical': 0, 
-              'card': 0, 
-              'donation': 0,
-              'pre_paid': 0,
-              'files': set()
+          # [A] 데이터 저장소 (In-Memory DB)
+          # 사람별로 데이터를 통합(Aggregation)합니다.
+          db = defaultdict(lambda: {
+              'salary': 0,        # 총급여
+              'pension': 0,       # 국민연금
+              'insurance': 0,     # 보장성보험
+              'medical': 0,       # 의료비
+              'card': 0,          # 신용카드등
+              'donation': 0,      # 기부금
+              'pre_paid': 0,      # 기납부세액
+              'files': set()      # 출처 파일들
           })
 
-          # --- 2. 텍스트에서 금액 추출 헬퍼 함수 ---
-          def extract_money(text, keywords):
-              # 키워드 주변의 숫자(콤마 포함)를 찾음
+          # [B] 정밀 파싱 헬퍼
+          def extract_number(text, keywords, min_value=0):
+              best_val = 0
               for key in keywords:
-                  # 예: "납입금액 : 1,200,000" 또는 "총급여 50,000,000"
-                  pattern = key + r'[^0-9]*([0-9,]+)'
-                  match = re.search(pattern, text)
-                  if match:
+                  # 키워드 뒤에 오는 숫자 탐색 (예: "총급여 50,000,000")
+                  # 콤마(,) 포함 숫자를 찾고 정수로 변환
+                  matches = re.finditer(key + r'[^0-9\n]*([0-9,]+)', text)
+                  for match in matches:
                       try:
-                          return int(match.group(1).replace(',', ''))
-                      except:
-                          continue
-              return 0
+                          val = int(match.group(1).replace(',', ''))
+                          if val >= min_value:
+                              best_val = max(best_val, val) # 가장 큰 금액을 선택 (오탐지 방지)
+                      except: pass
+              return best_val
 
-          # --- 3. 파일 파싱 및 데이터 통합 ---
-          def parse_all_files():
-              # 하위 디렉토리 포함 모든 파일 검색
+          # [C] 데이터 마이그레이션 (모든 파일 스캔 -> 통합)
+          def migrate_data():
+              # 재귀적으로 모든 파일 탐색
               all_files = glob.glob(os.path.join(DATA_DIR, '**', '*.*'), recursive=True)
-              print(f">>> 총 {len(all_files)}개의 파일을 스캔합니다...")
+              print(f">>> [Migration] 총 {len(all_files)}개의 파일을 분석합니다.")
 
               for filepath in all_files:
                   filename = os.path.basename(filepath)
                   ext = os.path.splitext(filepath)[1].lower()
-                  
-                  # 임시 데이터 컨테이너
-                  current_data = {'name': None}
+                  name = None
                   
                   try:
-                      # A. JSON 파싱
+                      # 1. JSON 처리
                       if ext == '.json':
                           with open(filepath, 'r', encoding='utf-8') as f:
                               js = json.load(f)
-                              current_data['name'] = js.get('name')
-                              if 'total_salary' in js: people[js['name']]['salary'] = max(people[js['name']]['salary'], int(js['total_salary']))
-                              if 'credit' in js: people[js['name']]['card'] += int(js.get('credit',0)) + int(js.get('debit',0))
-                              
-                      # B. Excel 파싱
+                              name = js.get('name')
+                              if name:
+                                  db[name]['salary'] = max(db[name]['salary'], int(js.get('total_salary', 0)))
+                                  db[name]['card'] += int(js.get('credit', 0)) + int(js.get('debit', 0))
+
+                      # 2. Excel 처리
                       elif ext == '.xlsx':
                           df = pd.read_excel(filepath)
-                          # 첫번째 행을 데이터로 가정
-                          row = df.iloc[0]
-                          if 'name' in df.columns or '성명' in df.columns:
-                              name = row.get('name', row.get('성명'))
-                              current_data['name'] = name
-                              # 급여나 공제 항목이 있으면 합산
-                              if 'total_salary' in row: people[name]['salary'] = max(people[name]['salary'], int(row['total_salary']))
-                              if 'credit' in row: people[name]['card'] += int(row['credit'])
+                          row = df.iloc[0] # 첫 줄 기준
+                          # 이름 컬럼 찾기
+                          for col in ['name', '성명', '이름']:
+                              if col in df.columns:
+                                  name = row[col]
+                                  break
+                          if name:
+                              if 'total_salary' in row: db[name]['salary'] = max(db[name]['salary'], int(row['total_salary']))
+                              if 'credit' in row: db[name]['card'] += int(row['credit'])
 
-                      # C. PDF 파싱 (핵심)
+                      # 3. PDF 처리 (핵심)
                       elif ext == '.pdf':
                           with pdfplumber.open(filepath) as pdf:
-                              text = "".join([page.extract_text() or "" for page in pdf.pages])
+                              text = "".join([p.extract_text() or "" for p in pdf.pages])
                               
-                              # 1. 이름 찾기 (성명 : 홍길동)
-                              name_match = re.search(r'성\s*명\s*[:]?\s*([가-힣]{2,4})', text)
-                              if name_match:
-                                  current_data['name'] = name_match.group(1)
-                              else:
-                                  # 이름이 없으면 파일명에서 유추 시도 "홍길동_의료비.pdf"
-                                  name_from_file = re.match(r'([가-힣]{2,4})', filename)
-                                  if name_from_file: current_data['name'] = name_from_file.group(1)
+                              # 이름 추출 (성명 : 홍길동)
+                              nm_match = re.search(r'성\s*명\s*[:]?\s*([가-힣]{2,4})', text)
+                              if nm_match: name = nm_match.group(1)
+                              else: 
+                                  # 파일명에서 이름 추측 (예: 김병권_자료.pdf)
+                                  nm_file = re.match(r'([가-힣]{2,4})', filename)
+                                  if nm_file: name = nm_file.group(1)
 
-                              if current_data['name']:
-                                  name = current_data['name']
-                                  
-                                  # 2. 항목별 금액 추출 및 합산
-                                  # 급여 (큰 금액 위주)
-                                  sal = extract_money(text, ['총급여', '급여계', '소득월액'])
-                                  if sal > 5000000: # 500만원 이상일 때만 급여로 인정 (오인식 방지)
-                                      people[name]['salary'] = max(people[name]['salary'], sal)
-                                  
-                                  # 보험료/연금
-                                  people[name]['insurance'] += extract_money(text, ['보험료', '납입금액', '보장성'])
-                                  people[name]['pension'] += extract_money(text, ['국민연금', '연금보험'])
-                                  
-                                  # 의료비
-                                  people[name]['medical'] += extract_money(text, ['의료비', '진료비', '약제비'])
-                                  
-                                  # 카드/현금영수증
-                                  people[name]['card'] += extract_money(text, ['신용카드', '직불카드', '현금영수증', '사용금액'])
-                                  
-                                  # 기부금
-                                  people[name]['donation'] += extract_money(text, ['기부금'])
+                              if name:
+                                  # 급여 (100만원 이상만 유효)
+                                  salary = extract_number(text, ['총급여', '급여계', '소득월액'], 1000000)
+                                  if salary > 0: db[name]['salary'] = max(db[name]['salary'], salary)
 
-                      # 파일 추적 (어떤 파일을 참조했는지)
-                      if current_data['name']:
-                          people[current_data['name']]['files'].add(filename)
+                                  # 공제 항목 합산
+                                  db[name]['insurance'] += extract_number(text, ['보장성', '보험료'])
+                                  db[name]['pension'] += extract_number(text, ['국민연금', '연금'])
+                                  db[name]['medical'] += extract_number(text, ['의료비', '진료비'])
+                                  db[name]['card'] += extract_number(text, ['신용카드', '직불카드', '현금영수증'])
+                                  db[name]['donation'] += extract_number(text, ['기부금'])
+
+                      # 파일 기록
+                      if name: db[name]['files'].add(filename)
 
                   except Exception as e:
-                      print(f"Skipping error file {filename}: {e}")
+                      print(f"Skipping {filename}: {e}")
+              
+              return db
 
-              return people
-
-          # --- 4. 세금 계산 로직 ---
-          def calculate_tax(name, data):
-              salary = data['salary']
-              
-              # 급여 정보가 아예 없으면 기본값(4000만) 적용하여 시뮬레이션 (경고 표시)
-              is_simulated_salary = False
-              if salary == 0:
-                  salary = 40000000
-                  is_simulated_salary = True
-              
-              # 소득공제
-              if salary <= 5000000: income_ded = salary * 0.7
-              elif salary <= 15000000: income_ded = 3500000 + (salary - 5000000) * 0.4
-              elif salary <= 45000000: income_ded = 7500000 + (salary - 15000000) * 0.15
-              elif salary <= 100000000: income_ded = 12000000 + (salary - 45000000) * 0.05
-              else: income_ded = 14750000 + (salary - 100000000) * 0.02
-              
-              basic_ded = 1500000 # 본인
-              
-              # 각종 공제 합계
-              deductions = income_ded + basic_ded + data['pension'] + data['insurance'] + data['medical'] + data['donation'] + (data['card'] * 0.15)
-              
-              # 과세표준
-              tax_base = max(salary - deductions, 0)
-              
-              # 산출세액
-              if tax_base <= 14000000: calc_tax = tax_base * 0.06
-              elif tax_base <= 50000000: calc_tax = 840000 + (tax_base - 14000000) * 0.15
-              elif tax_base <= 88000000: calc_tax = 6240000 + (tax_base - 50000000) * 0.24
-              else: calc_tax = 37060000 + (tax_base - 88000000) * 0.35
-              
-              # 기납부세액 (데이터 없으면 급여의 5% 가정)
-              pre_paid = data['pre_paid']
-              if pre_paid == 0: pre_paid = int(salary * 0.05)
-              
-              final_money = int(calc_tax - pre_paid)
-              
-              return {
-                  "name": name,
-                  "salary": salary,
-                  "salary_note": "(추정)" if is_simulated_salary else "",
-                  "total_deduction": int(deductions),
-                  "calc_tax": int(calc_tax),
-                  "pre_paid": int(pre_paid),
-                  "final_money": final_money,
-                  "type": "💰환급" if final_money < 0 else "💸징수",
-                  "files_count": len(data['files'])
-              }
-
-          # --- 메인 실행 ---
-          if __name__ == "__main__":
-              people_data = parse_all_files()
+          # [D] 정산 시뮬레이션 (계산 공식 적용)
+          def run_simulation():
+              migrate_data()
               results = []
+
+              for name, data in db.items():
+                  # 유효한 데이터만 처리
+                  if not name or len(name) < 2: continue
+                  
+                  salary = data['salary']
+                  is_estimated = False
+                  
+                  # 급여 정보가 없으면 기본값 적용 (시뮬레이션 모드)
+                  if salary == 0:
+                      salary = 40000000
+                      is_estimated = True
+                  
+                  # 1. 근로소득공제
+                  if salary <= 5000000: income_ded = salary * 0.7
+                  elif salary <= 15000000: income_ded = 3500000 + (salary - 5000000) * 0.4
+                  elif salary <= 45000000: income_ded = 7500000 + (salary - 15000000) * 0.15
+                  elif salary <= 100000000: income_ded = 12000000 + (salary - 45000000) * 0.05
+                  else: income_ded = 14750000 + (salary - 100000000) * 0.02
+                  
+                  basic_ded = 1500000 # 본인 공제
+                  
+                  # 2. 특별/그밖의 공제
+                  # 카드공제 (간이: 급여 25% 초과분의 15%)
+                  card_threshold = salary * 0.25
+                  card_ded = 0
+                  if data['card'] > card_threshold:
+                      card_ded = (data['card'] - card_threshold) * 0.15
+                      card_ded = min(card_ded, 3000000) # 한도 300
+
+                  # 의료비공제 (간이: 급여 3% 초과분의 15%)
+                  medi_threshold = salary * 0.03
+                  medi_ded = 0 # 의료비는 세액공제지만 편의상 여기서 계산 흐름 설명
+                  medi_credit = 0
+                  if data['medical'] > medi_threshold:
+                      medi_credit = (data['medical'] - medi_threshold) * 0.15
+                      medi_credit = min(medi_credit, 7000000)
+
+                  # 과세표준 계산
+                  # (소득공제 항목 합산)
+                  total_income_deductions = income_ded + basic_ded + data['pension'] + data['insurance'] + data['donation'] + card_ded
+                  tax_base = max(salary - total_income_deductions, 0)
+                  
+                  # 3. 산출세액
+                  if tax_base <= 14000000: calc_tax = tax_base * 0.06
+                  elif tax_base <= 50000000: calc_tax = 840000 + (tax_base - 14000000) * 0.15
+                  elif tax_base <= 88000000: calc_tax = 6240000 + (tax_base - 50000000) * 0.24
+                  else: calc_tax = 15360000 + (tax_base - 88000000) * 0.35
+                  
+                  # 4. 세액공제 반영
+                  # (의료비, 보험료 세액공제 등)
+                  insurance_credit = min(data['insurance'], 1000000) * 0.12
+                  total_credits = medi_credit + insurance_credit
+                  
+                  determined_tax = max(calc_tax - total_credits, 0)
+                  
+                  # 5. 기납부세액 (데이터 없으면 급여의 4~5% 가정)
+                  pre_paid = data['pre_paid']
+                  if pre_paid == 0: pre_paid = int(salary * 0.045)
+                  
+                  # 6. 최종 결과
+                  final_money = int(determined_tax - pre_paid)
+                  
+                  results.append({
+                      "name": name,
+                      "salary": int(salary),
+                      "salary_note": "(추정)" if is_estimated else "",
+                      "files_count": len(data['files']),
+                      "deductions": {
+                          "income": int(income_ded),
+                          "card": int(card_ded),
+                          "pension": int(data['pension'])
+                      },
+                      "tax": {
+                          "calc": int(calc_tax),
+                          "determined": int(determined_tax),
+                          "pre_paid": int(pre_paid)
+                      },
+                      "final_money": final_money,
+                      "type": "환급" if final_money < 0 else "징수"
+                  })
+                  
+              return results
+
+          if __name__ == "__main__":
+              res = run_simulation()
+              # JSON으로 결과 저장 (Web UI 연동용)
+              with open('final_result.json', 'w', encoding='utf-8') as f:
+                  json.dump(res, f, ensure_ascii=False)
               
-              for name, data in people_data.items():
-                  # 유효한 이름이 있는 경우만 계산
-                  if name and len(name) >= 2:
-                      results.append(calculate_tax(name, data))
-              
-              # 결과 출력
+              # 콘솔 출력 (Log 확인용)
               print("\n" + "="*80)
-              print("   📊 [종합] 연말정산 시뮬레이션 결과 (인물별 통합 분석)")
+              print("   🚀 [Master] 연말정산 마이그레이션 및 시뮬레이션 결과")
               print("="*80)
               
               table = []
-              total_refund = 0
-              total_collect = 0
-              
-              for r in results:
-                  money = abs(r['final_money'])
-                  row = [
+              for r in res:
+                  table.append([
                       r['name'], 
                       f"{r['salary']:,}{r['salary_note']}", 
                       f"{r['files_count']}개", 
                       r['type'], 
-                      f"{money:,} 원"
-                  ]
-                  table.append(row)
-                  
-                  if r['final_money'] < 0: total_refund += money
-                  else: total_collect += money
-                  
-              if not results:
-                  print("⚠️ 분석 가능한 데이터가 없습니다. (파일 내용을 확인해주세요)")
-              else:
-                  print(tabulate(table, headers=["성명", "총급여", "참조파일", "구분", "금액"], tablefmt="grid"))
-                  print("\n")
-                  print(f" ▶ 총 환급액 (받을 돈): {total_refund:,} 원")
-                  print(f" ▶ 총 징수액 (낼 돈)  : {total_collect:,} 원")
-                  print("\n" + "-"*80)
-                  
-              # 데이터 저장
-              with open('result.json', 'w', encoding='utf-8') as f:
-                  json.dump(results, f, ensure_ascii=False)
+                      f"{abs(r['final_money']):,} 원"
+                  ])
+              
+              if not res: print("⚠️ 분석된 데이터가 없습니다.")
+              else: print(tabulate(table, headers=["성명", "총급여", "파일수", "결과", "금액"], tablefmt="grid"))
           EOF
 
-          # [웹 서버] app.py
+          # 3. [UI] 웹 리포트 서버 (app.py)
           cat <<EOF > app_root/app.py
           from flask import Flask, render_template_string
           import json
+          import os
           
           app = Flask(__name__)
           
           @app.route('/')
           def index():
+              # 엔진이 생성한 결과 로드
               try:
-                  with open('result.json', 'r', encoding='utf-8') as f: results = json.load(f)
+                  with open('final_result.json', 'r', encoding='utf-8') as f:
+                      results = json.load(f)
               except: results = []
               
               total_refund = sum([abs(r['final_money']) for r in results if r['final_money'] < 0])
@@ -280,28 +298,69 @@ jobs:
               <!DOCTYPE html>
               <html>
               <head>
-                  <title>종합 연말정산 결과</title>
+                  <title>Tax Master Report</title>
                   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                  <style>body { background: #f8f9fa; }</style>
               </head>
-              <body class="bg-light p-5">
+              <body class="p-5">
                   <div class="container bg-white p-5 shadow rounded">
-                      <h2 class="mb-4 text-center fw-bold">📊 종합 연말정산 분석 리포트</h2>
-                      <div class="row mb-4 text-center">
-                          <div class="col"><div class="p-3 bg-primary text-white rounded"><h3>총 환급</h3><h1>{{ "{:,}".format(total_refund) }}원</h1></div></div>
-                          <div class="col"><div class="p-3 bg-danger text-white rounded"><h3>총 징수</h3><h1>{{ "{:,}".format(total_collect) }}원</h1></div></div>
+                      <div class="d-flex justify-content-between align-items-center mb-4">
+                          <h2 class="fw-bold">🏢 종합 연말정산 마스터 리포트</h2>
+                          <span class="badge bg-dark">v2.0 Master System</span>
                       </div>
+                      
+                      <div class="row text-center mb-5">
+                          <div class="col-md-6">
+                              <div class="card bg-primary text-white border-0 shadow-sm">
+                                  <div class="card-body">
+                                      <h5>총 환급 예상액 (돌려받는 돈)</h5>
+                                      <h1 class="fw-bold">{{ "{:,}".format(total_refund) }} 원</h1>
+                                  </div>
+                              </div>
+                          </div>
+                          <div class="col-md-6">
+                              <div class="card bg-danger text-white border-0 shadow-sm">
+                                  <div class="card-body">
+                                      <h5>총 징수 예상액 (더 낼 돈)</h5>
+                                      <h1 class="fw-bold">{{ "{:,}".format(total_collect) }} 원</h1>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+
+                      <h4 class="mb-3 fw-bold">👤 개인별 상세 정산 내역</h4>
                       <table class="table table-hover align-middle">
-                          <thead class="table-dark">
-                              <tr><th>성명</th><th>총급여</th><th>참조 파일 수</th><th>결과</th><th>금액</th></tr>
+                          <thead class="table-light">
+                              <tr>
+                                  <th>성명</th>
+                                  <th>총급여 (연봉)</th>
+                                  <th>참조 데이터</th>
+                                  <th>산출세액 / 기납부</th>
+                                  <th>최종 결과</th>
+                              </tr>
                           </thead>
                           <tbody>
                               {% for r in results %}
                               <tr>
                                   <td class="fw-bold">{{ r.name }}</td>
-                                  <td>{{ "{:,}".format(r.salary) }} <small class="text-muted">{{ r.salary_note }}</small></td>
-                                  <td><span class="badge bg-secondary">{{ r.files_count }} files</span></td>
-                                  <td><span class="badge {% if r.final_money < 0 %}bg-primary{% else %}bg-danger{% endif %}">{{ r.type }}</span></td>
-                                  <td class="fw-bold">{{ "{:,}".format(abs(r.final_money)) }}원</td>
+                                  <td>
+                                      {{ "{:,}".format(r.salary) }}
+                                      <small class="text-muted">{{ r.salary_note }}</small>
+                                  </td>
+                                  <td>
+                                      <span class="badge bg-secondary">{{ r.files_count }} files</span>
+                                  </td>
+                                  <td class="small">
+                                      산출: {{ "{:,}".format(r.tax.determined) }}<br>
+                                      기납: {{ "{:,}".format(r.tax.pre_paid) }}
+                                  </td>
+                                  <td>
+                                      {% if r.final_money < 0 %}
+                                      <span class="badge bg-primary">환급</span> <span class="text-primary fw-bold">+{{ "{:,}".format(abs(r.final_money)) }}</span>
+                                      {% else %}
+                                      <span class="badge bg-danger">징수</span> <span class="text-danger fw-bold">-{{ "{:,}".format(r.final_money) }}</span>
+                                      {% endif %}
+                                  </td>
                               </tr>
                               {% endfor %}
                           </tbody>
@@ -311,7 +370,7 @@ jobs:
               </html>
               """
               return render_template_string(html, results=results, total_refund=total_refund, total_collect=total_collect)
-              
+
           if __name__ == '__main__':
               app.run(host='0.0.0.0', port=8080)
           EOF
@@ -323,27 +382,34 @@ jobs:
           COPY requirements.txt .
           RUN pip install --no-cache-dir -r requirements.txt
           COPY . .
+          # 권한 문제 방지 (Docker 내부)
+          RUN chmod -R 755 cost_data
           EXPOSE 8080
           CMD ["python", "app.py"]
           EOF
 
-      # 3. 실행 및 결과 확인
-      - name: 🚀 통합 시뮬레이션 실행
+      # ----------------------------------------------------------------------
+      # [Step 3] 엔진 구동 및 결과 확인 (로그)
+      # ----------------------------------------------------------------------
+      - name: 🚀 마이그레이션 & 시뮬레이션 실행
         run: |
           cd app_root
           pip install -r requirements.txt
-          python simulator.py
+          # 먼저 엔진을 돌려 json 결과를 생성
+          python engine.py
 
-      # 4. 결과 앱 빌드 및 저장
-      - name: 🐳 결과 리포트 앱 빌드
+      # ----------------------------------------------------------------------
+      # [Step 4] 최종 산출물 빌드 (Docker Image)
+      # ----------------------------------------------------------------------
+      - name: 🐳 마스터 시스템 이미지 빌드
         run: |
           cd app_root
-          docker build -t tax-report-app:latest .
-          docker save -o tax-report-app.tar tax-report-app:latest
+          docker build -t tax-master-system:latest .
+          docker save -o tax-master-system.tar tax-master-system:latest
 
-      - name: 📦 결과물 저장
+      - name: 📦 실행 파일 저장 (Artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: Tax_Complete_Report
-          path: app_root/tax-report-app.tar
+          name: Tax_Master_System_App
+          path: app_root/tax-master-system.tar
           retention-days: 7
