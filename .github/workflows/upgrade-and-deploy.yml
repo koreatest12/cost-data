@@ -1,169 +1,219 @@
-name: Full Server Init & Network Setup & Deploy
+name: 📊 Mass Data Analysis & Tax Report
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # 수동 실행 버튼
   push:
     branches: [ "main" ]
 
 jobs:
-  # [Job 1] 소스 생성 -> 빌드 -> 서버 전송
-  build-and-transfer:
+  # ==================================================================================
+  # [Job 1] 대량 데이터 생성 -> 일괄 분석 -> 리포트 아티팩트 저장
+  # ==================================================================================
+  batch-processing:
     runs-on: ubuntu-latest
-    timeout-minutes: 20 # 대량 설치 시간을 고려하여 넉넉하게 설정
+    timeout-minutes: 15
+    
     steps:
-      - name: 소스 코드 체크아웃
+      - name: 📥 소스 코드 체크아웃
         uses: actions/checkout@v4
 
-      # ------------------------------------------------------------
-      # [Phase 1] Java Spring Boot 소스 코드 대량 생성 (MVC 패턴)
-      # ------------------------------------------------------------
-      - name: 🏗️ 프로젝트 소스 대량 생성
-        run: |
-          if [ ! -f "pom.xml" ]; then
-            echo ">>> 소스 코드가 없어 자동으로 생성합니다..."
-            mkdir -p src/main/java/com/example/demo/controller
-            mkdir -p src/main/resources/static
-            
-            # pom.xml
-            printf '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"><modelVersion>4.0.0</modelVersion><groupId>com.example</groupId><artifactId>demo</artifactId><version>1.0.0</version><parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.0</version></parent><properties><java.version>17</java.version></properties><dependencies><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies><build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build></project>\n' > pom.xml
-
-            # Java Code
-            F="src/main/java/com/example/demo/DemoApplication.java"
-            printf 'package com.example.demo; import org.springframework.boot.SpringApplication; import org.springframework.boot.autoconfigure.SpringBootApplication; import org.springframework.web.bind.annotation.GetMapping; import org.springframework.web.bind.annotation.RestController; @SpringBootApplication @RestController public class DemoApplication { public static void main(String[] args) { SpringApplication.run(DemoApplication.class, args); } @GetMapping("/") public String home() { return "<h1>🚀 리눅스 서버 네트워크 설치 완료!</h1>"; } }\n' > $F
-
-            # Config
-            printf 'server.port=8080\n' > src/main/resources/application.properties
-          fi
-          
-          # Dockerfile
-          printf 'FROM maven:3.9-eclipse-temurin-17 AS builder\nWORKDIR /app\nCOPY . .\nRUN mvn clean package -DskipTests\n\nFROM eclipse-temurin:17-jre-alpine\nWORKDIR /app\nCOPY --from=builder /app/target/*.jar app.jar\nENTRYPOINT ["java", "-jar", "app.jar"]\n' > Dockerfile
-
-      # ------------------------------------------------------------
-      # [Phase 2] 빌드 및 권한 문제 해결 (Permission Fix)
-      # ------------------------------------------------------------
-      - name: 🐳 빌드 및 파일 권한 강제 변경
-        run: |
-          sudo docker build -t cost-data-app:latest .
-          sudo docker save -o cost-data-app.tar cost-data-app:latest
-          
-          # 파일 권한을 777로 열어서 전송 오류 원천 차단
-          sudo chmod 777 cost-data-app.tar
-          sudo chown $USER:$USER cost-data-app.tar
-
-      # ------------------------------------------------------------
-      # [Phase 3] 서버로 파일 전송 (SCP)
-      # ------------------------------------------------------------
-      - name: 🚀 서버로 설치 파일 전송
-        uses: appleboy/scp-action@v0.1.7
+      # ----------------------------------------------------------------------
+      # [Step 1] 파이썬 환경 설정
+      # ----------------------------------------------------------------------
+      - name: 🐍 파이썬 3.9 설정
+        uses: actions/setup-python@v4
         with:
-          # ▼▼▼ [수정 필수] 실제 서버 정보 입력 ▼▼▼
-          host: "123.123.123.123"
-          port: 22
-          username: "root"
-          password: "my_password_123"
-          # ▲▲▲ [수정 필수] 실제 서버 정보 입력 ▲▲▲
-          
-          source: "cost-data-app.tar"
-          target: "/root/deploy/"
-          timeout: "120s" # 네트워크 느릴 경우 대비
+          python-version: '3.9'
 
-  # [Job 2] 리눅스 서버 초기화 및 네트워크 설치
-  setup-and-deploy:
-    needs: build-and-transfer
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: 🔧 리눅스 서버 대량 설치 및 배포
-        uses: appleboy/ssh-action@v1.0.3
+      # ----------------------------------------------------------------------
+      # [Step 2] 분석 프로그램 및 샘플 대량 데이터 자동 생성
+      # ----------------------------------------------------------------------
+      - name: 🏗️ 분석 엔진 및 대량 데이터 생성
+        run: |
+          echo ">>> [Init] 프로젝트 구조 생성..."
+          mkdir -p src
+          mkdir -p data # 데이터가 위치할 폴더
+
+          # 1. 핵심 계산 로직 (TaxCalculator)
+          cat <<EOF > src/tax_calculator.py
+          class TaxCalculator:
+              def __init__(self, salary):
+                  self.salary = int(salary)
+              
+              def calc_tax(self, data):
+                  # 근로소득공제 (간이)
+                  if self.salary <= 5000000: income_ded = self.salary * 0.7
+                  elif self.salary <= 15000000: income_ded = 3500000 + (self.salary - 5000000) * 0.4
+                  elif self.salary <= 45000000: income_ded = 7500000 + (self.salary - 15000000) * 0.15
+                  elif self.salary <= 100000000: income_ded = 12000000 + (self.salary - 45000000) * 0.05
+                  else: income_ded = 14750000 + (self.salary - 100000000) * 0.02
+                  
+                  # 공제 계산
+                  basic_ded = 1500000
+                  ins_ded = data.get('pension',0) + data.get('health',0) + data.get('employ',0)
+                  housing_ded = min(data.get('housing',0) * 0.4, 2400000)
+                  
+                  # 신용카드 등
+                  min_usage = self.salary * 0.25
+                  total_usage = data.get('credit',0) + data.get('debit',0) + data.get('cash',0)
+                  card_ded = 0
+                  if total_usage > min_usage:
+                      card_ded = min((total_usage - min_usage) * 0.15, 3000000)
+                      
+                  # 과세표준
+                  deductions = int(income_ded + basic_ded + ins_ded + housing_ded + card_ded)
+                  tax_base = max(self.salary - deductions, 0)
+                  
+                  # 산출세액
+                  if tax_base <= 14000000: calc_tax = tax_base * 0.06
+                  elif tax_base <= 50000000: calc_tax = 840000 + (tax_base - 14000000) * 0.15
+                  elif tax_base <= 88000000: calc_tax = 6240000 + (tax_base - 50000000) * 0.24
+                  else: calc_tax = 15360000 + (tax_base - 88000000) * 0.35
+                  
+                  return {
+                      "salary": self.salary,
+                      "income_ded": int(income_ded),
+                      "deductions": deductions,
+                      "tax_base": int(tax_base),
+                      "calc_tax": int(calc_tax)
+                  }
+          EOF
+
+          # 2. 대량 분석기 (Batch Analyzer) - 통계 및 리포트 생성
+          cat <<EOF > src/batch_analyzer.py
+          import glob
+          import json
+          import datetime
+          from tax_calculator import TaxCalculator
+
+          def run_analysis():
+              files = glob.glob('data/*.json')
+              print(f">>> [Analysis] 총 {len(files)}개의 데이터 파일을 발견했습니다.")
+              
+              results = []
+              total_salary = 0
+              total_tax = 0
+              
+              # 1. 일괄 계산 (Loop)
+              for f_path in files:
+                  with open(f_path, 'r', encoding='utf-8') as f:
+                      user_data = json.load(f)
+                      
+                  calc = TaxCalculator(user_data['total_salary'])
+                  res = calc.calc_tax(user_data)
+                  
+                  res['name'] = user_data['name']
+                  results.append(res)
+                  
+                  total_salary += res['salary']
+                  total_tax += res['calc_tax']
+              
+              # 2. 통계 분석
+              count = len(results)
+              avg_tax = total_tax / count if count > 0 else 0
+              max_tax_payer = max(results, key=lambda x: x['calc_tax']) if count > 0 else None
+              
+              # 3. HTML 리포트 생성
+              html_content = f"""
+              <html>
+              <head>
+                  <meta charset="utf-8">
+                  <style>
+                      body {{ font-family: Arial, sans-serif; padding: 20px; }}
+                      table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                      th, td {{ border: 1px solid #ddd; padding: 8px; text-align: right; }}
+                      th {{ background-color: #f2f2f2; text-align: center; }}
+                      .summary {{ background-color: #e8f4f8; padding: 15px; border-radius: 5px; }}
+                      h1 {{ color: #2c3e50; }}
+                  </style>
+              </head>
+              <body>
+                  <h1>📊 연말정산 대량 분석 리포트</h1>
+                  <p>생성일시: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                  
+                  <div class="summary">
+                      <h2>📈 종합 분석 요약</h2>
+                      <ul>
+                          <li><strong>총 처리 건수:</strong> {count} 건</li>
+                          <li><strong>총 급여 합계:</strong> {total_salary:,} 원</li>
+                          <li><strong>총 징수 예상 세액:</strong> {total_tax:,} 원</li>
+                          <li><strong>1인당 평균 세액:</strong> {int(avg_tax):,} 원</li>
+                          <li><strong>최대 납부 예상자:</strong> {max_tax_payer['name']} ({max_tax_payer['calc_tax']:,} 원)</li>
+                      </ul>
+                  </div>
+
+                  <h2>📋 상세 내역 (전체)</h2>
+                  <table>
+                      <tr>
+                          <th>성명</th>
+                          <th>총급여</th>
+                          <th>소득공제 총액</th>
+                          <th>과세표준</th>
+                          <th>산출세액</th>
+                      </tr>
+              """
+              
+              for r in results:
+                  html_content += f"""
+                      <tr>
+                          <td style="text-align:center">{r['name']}</td>
+                          <td>{r['salary']:,}</td>
+                          <td>{r['deductions']:,}</td>
+                          <td>{r['tax_base']:,}</td>
+                          <td><strong>{r['calc_tax']:,}</strong></td>
+                      </tr>
+                  """
+                  
+              html_content += """
+                  </table>
+              </body>
+              </html>
+              """
+              
+              with open('analysis_report.html', 'w', encoding='utf-8') as f:
+                  f.write(html_content)
+                  print(">>> [Report] 'analysis_report.html' 생성 완료!")
+
+          if __name__ == '__main__':
+              run_analysis()
+          EOF
+
+          # 3. 테스트용 대량 데이터 생성 (JSON)
+          # 김병권님 데이터
+          cat <<EOF > data/user_001.json
+          { "name": "김병권", "total_salary": 40000000, "pension": 1236000, "health": 1126370, "employ": 252360, "housing": 1200000, "credit": 412670, "debit": 13086527, "cash": 2502383 }
+          EOF
+          
+          # 가상 데이터 1 (고액 연봉자)
+          cat <<EOF > data/user_002.json
+          { "name": "이철수", "total_salary": 85000000, "pension": 2000000, "health": 1500000, "employ": 300000, "housing": 0, "credit": 15000000, "debit": 5000000, "cash": 1000000 }
+          EOF
+          
+          # 가상 데이터 2 (신입 사원)
+          cat <<EOF > data/user_003.json
+          { "name": "박지민", "total_salary": 28000000, "pension": 900000, "health": 800000, "employ": 150000, "housing": 2400000, "credit": 5000000, "debit": 5000000, "cash": 500000 }
+          EOF
+          
+          # 가상 데이터 3
+          cat <<EOF > data/user_004.json
+          { "name": "정민수", "total_salary": 55000000, "pension": 1500000, "health": 1200000, "employ": 200000, "housing": 0, "credit": 8000000, "debit": 2000000, "cash": 1500000 }
+          EOF
+
+          echo ">>> [Data] 샘플 데이터 4건 생성 완료 (폴더: data/)"
+
+      # ----------------------------------------------------------------------
+      # [Step 3] 대량 분석 실행
+      # ----------------------------------------------------------------------
+      - name: 🚀 데이터 일괄 분석 실행
+        run: |
+          python src/batch_analyzer.py
+
+      # ----------------------------------------------------------------------
+      # [Step 4] 분석 리포트 업로드 (다운로드 가능하도록)
+      # ----------------------------------------------------------------------
+      - name: 📊 분석 결과 리포트 저장
+        uses: actions/upload-artifact@v4
         with:
-          # ▼▼▼ [수정 필수] 위와 동일하게 입력 ▼▼▼
-          host: "123.123.123.123"
-          port: 22
-          username: "root"
-          password: "my_password_123"
-          # ▲▲▲ [수정 필수] 위와 동일하게 입력 ▲▲▲
-          
-          script_stop: true
-          timeout: "10m" # 설치 시간 확보
-          script: |
-            echo "#######################################################"
-            echo ">>> [System] 리눅스 패키지 업데이트 및 시간 설정"
-            echo "#######################################################"
-            
-            # 1. 패키지 목록 갱신 (비대화형 모드)
-            export DEBIAN_FRONTEND=noninteractive
-            apt-get update -y
-            
-            # 2. 한국 시간(KST)으로 서버 시간 변경
-            ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
-            echo "현재 서버 시간: $(date)"
-
-            echo "#######################################################"
-            echo ">>> [Network] 네트워크 도구 및 필수 유틸리티 대량 설치"
-            echo "#######################################################"
-            
-            # 3. 필수 도구 대량 설치
-            # net-tools: ifconfig, netstat 등 사용 가능
-            # curl, wget: 파일 다운로드 도구
-            # vim, nano: 텍스트 에디터
-            # ufw: 방화벽 관리 도구
-            # htop: 시스템 모니터링
-            # iputils-ping: 핑 테스트 도구
-            # dnsutils: nslookup 등 도메인 확인 도구
-            
-            echo "설치 진행 중... (시간이 조금 걸립니다)"
-            apt-get install -y net-tools curl wget vim nano git htop unzip ufw iputils-ping dnsutils
-
-            echo "#######################################################"
-            echo ">>> [Firewall] 방화벽 포트 개방 및 Docker 설치"
-            echo "#######################################################"
-
-            # 4. 방화벽 설정 (SSH 끊김 방지 후 포트 개방)
-            if command -v ufw &> /dev/null; then
-                ufw allow 22/tcp   # SSH 허용
-                ufw allow 80/tcp   # HTTP 허용
-                ufw allow 8080/tcp # Spring Boot 허용
-                # ufw enable 은 SSH 연결이 끊길 수 있어 규칙만 추가함
-                echo "방화벽 규칙 추가 완료."
-            fi
-
-            # 5. Docker 설치 (없을 경우)
-            if ! command -v docker &> /dev/null; then
-                echo "Docker 설치 중..."
-                curl -fsSL https://get.docker.com -o get-docker.sh
-                sh get-docker.sh
-            fi
-
-            echo "#######################################################"
-            echo ">>> [Deploy] 애플리케이션 배포 시작"
-            echo "#######################################################"
-
-            mkdir -p /root/deploy
-            cd /root/deploy
-
-            if [ -f "cost-data-app.tar" ]; then
-                echo "이미지 로드 중..."
-                docker load -i cost-data-app.tar
-            else
-                echo "❌ 오류: 전송된 파일이 없습니다."
-                exit 1
-            fi
-
-            # 컨테이너 재시작
-            docker stop cost-data-app || true
-            docker rm cost-data-app || true
-
-            docker run -d \
-              --name cost-data-app \
-              --restart always \
-              -p 80:8080 \
-              cost-data-app:latest
-
-            # 청소 및 네트워크 상태 확인
-            rm -f cost-data-app.tar
-            docker image prune -f
-
-            echo ">>> [Status] 현재 네트워크 포트 상태:"
-            netstat -tuln | grep 8080 || echo "포트 확인 중..."
-            
-            echo "✅ 모든 설치 및 배포가 완료되었습니다!"
+          name: Tax_Analysis_Report
+          path: analysis_report.html
+          retention-days: 3
