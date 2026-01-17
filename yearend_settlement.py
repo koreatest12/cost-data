@@ -255,16 +255,16 @@ def print_help():
 =====================================
 
 1. 기본 사용법 (대화형 모드):
-   python yearend_settlement.py
+   python3 yearend_settlement.py
 
 2. 설정 파일 사용:
-   python yearend_settlement.py --config <설정파일.json>
+   python3 yearend_settlement.py --config <설정파일.json>
 
 3. 예제 설정 파일 생성:
-   python yearend_settlement.py --create-example
+   python3 yearend_settlement.py --create-example
 
 4. 도움말:
-   python yearend_settlement.py --help
+   python3 yearend_settlement.py --help
 
 설정 파일 형식 (JSON):
 {
