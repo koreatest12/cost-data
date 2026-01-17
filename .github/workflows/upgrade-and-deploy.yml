@@ -1,40 +1,44 @@
-name: 📊 Mass Data Analysis & Tax Report
+name: 📊 Universal Tax Analysis (JSON, Excel, PDF)
 
 on:
-  workflow_dispatch: # 수동 실행 버튼
+  workflow_dispatch:
   push:
     branches: [ "main" ]
 
 jobs:
   # ==================================================================================
-  # [Job 1] 대량 데이터 생성 -> 일괄 분석 -> 리포트 아티팩트 저장
+  # [Job 1] 멀티 포맷 데이터 생성 -> 지능형 파싱 -> 일괄 분석 -> 리포트
   # ==================================================================================
-  batch-processing:
+  universal-batch-processing:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     
     steps:
       - name: 📥 소스 코드 체크아웃
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] 파이썬 환경 설정
+      # [Step 1] 파이썬 환경 및 필수 라이브러리 설치 (Pandas, PDFPlumber)
       # ----------------------------------------------------------------------
-      - name: 🐍 파이썬 3.9 설정
+      - name: 🐍 파이썬 설정 및 라이브러리 설치
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
+          
+      - name: 📦 데이터 처리 패키지 설치
+        run: |
+          pip install pandas openpyxl pdfplumber
 
       # ----------------------------------------------------------------------
-      # [Step 2] 분석 프로그램 및 샘플 대량 데이터 자동 생성
+      # [Step 2] 분석 엔진 및 샘플 데이터(Excel, PDF) 생성
       # ----------------------------------------------------------------------
-      - name: 🏗️ 분석 엔진 및 대량 데이터 생성
+      - name: 🏗️ 차세대 분석 엔진 및 데이터 생성
         run: |
           echo ">>> [Init] 프로젝트 구조 생성..."
           mkdir -p src
-          mkdir -p data # 데이터가 위치할 폴더
+          mkdir -p data
 
-          # 1. 핵심 계산 로직 (TaxCalculator)
+          # 1. 핵심 계산 로직 (TaxCalculator) - 기존과 동일
           cat <<EOF > src/tax_calculator.py
           class TaxCalculator:
               def __init__(self, salary):
@@ -79,141 +83,213 @@ jobs:
                   }
           EOF
 
-          # 2. 대량 분석기 (Batch Analyzer) - 통계 및 리포트 생성
+          # 2. 통합 분석기 (Excel/PDF 지원)
           cat <<EOF > src/batch_analyzer.py
           import glob
           import json
           import datetime
+          import pandas as pd
+          import pdfplumber
+          import re
+          import os
           from tax_calculator import TaxCalculator
 
+          def parse_json(path):
+              with open(path, 'r', encoding='utf-8') as f:
+                  return json.load(f)
+
+          def parse_excel(path):
+              # 엑셀은 'Key', 'Value' 컬럼이 있거나, 첫 행이 헤더인 구조 가정
+              try:
+                  df = pd.read_excel(path)
+                  # 데이터가 가로로 긴 형태 (1행이 데이터)
+                  if 'total_salary' in df.columns:
+                      data = df.iloc[0].to_dict()
+                      return data
+                  # 데이터가 세로 형태 (Key-Value)
+                  elif 'Key' in df.columns and 'Value' in df.columns:
+                      return dict(zip(df['Key'], df['Value']))
+              except Exception as e:
+                  print(f"Excel parsing error: {e}")
+                  return {}
+              return {}
+
+          def parse_pdf(path):
+              # PDF 텍스트 추출 및 키워드 기반 숫자 파싱 (시뮬레이션)
+              data = {"name": "PDF_User", "total_salary": 50000000} # 기본값
+              try:
+                  with pdfplumber.open(path) as pdf:
+                      text = ""
+                      for page in pdf.pages:
+                          text += page.extract_text() or ""
+                      
+                      # 간단한 키워드 파싱 로직 (예: "총급여 50,000,000")
+                      # 실제로는 정규표현식으로 정교하게 짜야 함
+                      name_match = re.search(r'성명\s*[:]?\s*([가-힣]+)', text)
+                      if name_match: data['name'] = name_match.group(1)
+                      
+                      # 숫자 추출 헬퍼
+                      def find_val(keyword):
+                          # 키워드 뒤에 나오는 숫자(쉼표 포함) 추출
+                          match = re.search(keyword + r'[^0-9]*([0-9,]+)', text)
+                          if match:
+                              return int(match.group(1).replace(',', ''))
+                          return 0
+                          
+                      # 항목별 매핑
+                      salary = find_val("총급여")
+                      if salary > 0: data['total_salary'] = salary
+                      
+                      data['pension'] = find_val("국민연금")
+                      data['health'] = find_val("건강보험")
+                      data['credit'] = find_val("신용카드")
+                      
+              except Exception as e:
+                  print(f"PDF parsing error: {e}")
+              return data
+
           def run_analysis():
-              files = glob.glob('data/*.json')
-              print(f">>> [Analysis] 총 {len(files)}개의 데이터 파일을 발견했습니다.")
+              # 확장자별 파일 수집
+              files_json = glob.glob('data/*.json')
+              files_xlsx = glob.glob('data/*.xlsx')
+              files_pdf = glob.glob('data/*.pdf')
+              
+              all_files = files_json + files_xlsx + files_pdf
+              print(f">>> [Analysis] 총 {len(all_files)}개의 파일 감지 (JSON:{len(files_json)}, Excel:{len(files_xlsx)}, PDF:{len(files_pdf)})")
               
               results = []
-              total_salary = 0
               total_tax = 0
               
-              # 1. 일괄 계산 (Loop)
-              for f_path in files:
-                  with open(f_path, 'r', encoding='utf-8') as f:
-                      user_data = json.load(f)
-                      
+              for f_path in all_files:
+                  ext = os.path.splitext(f_path)[1].lower()
+                  user_data = {}
+                  
+                  if ext == '.json':
+                      user_data = parse_json(f_path)
+                  elif ext == '.xlsx':
+                      user_data = parse_excel(f_path)
+                  elif ext == '.pdf':
+                      user_data = parse_pdf(f_path)
+                  
+                  # 필수 필드 보정
+                  if 'total_salary' not in user_data: user_data['total_salary'] = 30000000 # Default
+                  if 'name' not in user_data: user_data['name'] = os.path.basename(f_path)
+                  
+                  # 계산 실행
                   calc = TaxCalculator(user_data['total_salary'])
                   res = calc.calc_tax(user_data)
-                  
                   res['name'] = user_data['name']
-                  results.append(res)
+                  res['file_type'] = ext.upper()
                   
-                  total_salary += res['salary']
+                  results.append(res)
                   total_tax += res['calc_tax']
-              
-              # 2. 통계 분석
-              count = len(results)
-              avg_tax = total_tax / count if count > 0 else 0
-              max_tax_payer = max(results, key=lambda x: x['calc_tax']) if count > 0 else None
-              
-              # 3. HTML 리포트 생성
+
+              # HTML 리포트 생성
               html_content = f"""
               <html>
               <head>
                   <meta charset="utf-8">
                   <style>
-                      body {{ font-family: Arial, sans-serif; padding: 20px; }}
+                      body {{ font-family: 'Malgun Gothic', sans-serif; padding: 20px; }}
                       table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
                       th, td {{ border: 1px solid #ddd; padding: 8px; text-align: right; }}
                       th {{ background-color: #f2f2f2; text-align: center; }}
-                      .summary {{ background-color: #e8f4f8; padding: 15px; border-radius: 5px; }}
-                      h1 {{ color: #2c3e50; }}
+                      .badge {{ padding: 3px 8px; border-radius: 4px; color: white; font-size: 0.8em; }}
+                      .json {{ background-color: #2ecc71; }}
+                      .xlsx {{ background-color: #3498db; }}
+                      .pdf {{ background-color: #e74c3c; }}
                   </style>
               </head>
               <body>
-                  <h1>📊 연말정산 대량 분석 리포트</h1>
-                  <p>생성일시: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                  <h1>📊 통합 연말정산 분석 리포트 (Excel/PDF 포함)</h1>
+                  <p>분석 일시: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
                   
-                  <div class="summary">
-                      <h2>📈 종합 분석 요약</h2>
-                      <ul>
-                          <li><strong>총 처리 건수:</strong> {count} 건</li>
-                          <li><strong>총 급여 합계:</strong> {total_salary:,} 원</li>
-                          <li><strong>총 징수 예상 세액:</strong> {total_tax:,} 원</li>
-                          <li><strong>1인당 평균 세액:</strong> {int(avg_tax):,} 원</li>
-                          <li><strong>최대 납부 예상자:</strong> {max_tax_payer['name']} ({max_tax_payer['calc_tax']:,} 원)</li>
-                      </ul>
-                  </div>
+                  <h3>📈 분석 요약</h3>
+                  <ul>
+                      <li>총 처리 파일: {len(all_files)} 개</li>
+                      <li>총 징수 예상 세액: {total_tax:,} 원</li>
+                  </ul>
 
-                  <h2>📋 상세 내역 (전체)</h2>
+                  <h3>📋 상세 내역</h3>
                   <table>
                       <tr>
+                          <th>파일유형</th>
                           <th>성명</th>
                           <th>총급여</th>
-                          <th>소득공제 총액</th>
                           <th>과세표준</th>
                           <th>산출세액</th>
                       </tr>
               """
               
               for r in results:
+                  badge_class = r['file_type'].replace('.', '').lower()
                   html_content += f"""
                       <tr>
+                          <td style="text-align:center"><span class="badge {badge_class}">{r['file_type']}</span></td>
                           <td style="text-align:center">{r['name']}</td>
                           <td>{r['salary']:,}</td>
-                          <td>{r['deductions']:,}</td>
                           <td>{r['tax_base']:,}</td>
                           <td><strong>{r['calc_tax']:,}</strong></td>
                       </tr>
                   """
-                  
-              html_content += """
-                  </table>
-              </body>
-              </html>
-              """
               
-              with open('analysis_report.html', 'w', encoding='utf-8') as f:
+              html_content += "</table></body></html>"
+              
+              with open('analysis_report_v2.html', 'w', encoding='utf-8') as f:
                   f.write(html_content)
-                  print(">>> [Report] 'analysis_report.html' 생성 완료!")
+                  print(">>> [Report] 리포트 생성 완료!")
 
           if __name__ == '__main__':
               run_analysis()
           EOF
 
-          # 3. 테스트용 대량 데이터 생성 (JSON)
-          # 김병권님 데이터
-          cat <<EOF > data/user_001.json
-          { "name": "김병권", "total_salary": 40000000, "pension": 1236000, "health": 1126370, "employ": 252360, "housing": 1200000, "credit": 412670, "debit": 13086527, "cash": 2502383 }
-          EOF
-          
-          # 가상 데이터 1 (고액 연봉자)
-          cat <<EOF > data/user_002.json
-          { "name": "이철수", "total_salary": 85000000, "pension": 2000000, "health": 1500000, "employ": 300000, "housing": 0, "credit": 15000000, "debit": 5000000, "cash": 1000000 }
-          EOF
-          
-          # 가상 데이터 2 (신입 사원)
-          cat <<EOF > data/user_003.json
-          { "name": "박지민", "total_salary": 28000000, "pension": 900000, "health": 800000, "employ": 150000, "housing": 2400000, "credit": 5000000, "debit": 5000000, "cash": 500000 }
-          EOF
-          
-          # 가상 데이터 3
-          cat <<EOF > data/user_004.json
-          { "name": "정민수", "total_salary": 55000000, "pension": 1500000, "health": 1200000, "employ": 200000, "housing": 0, "credit": 8000000, "debit": 2000000, "cash": 1500000 }
-          EOF
+          # 3. 데이터 생성 스크립트 (Python으로 Excel 생성)
+          cat <<EOF > create_sample_data.py
+          import pandas as pd
+          import json
 
-          echo ">>> [Data] 샘플 데이터 4건 생성 완료 (폴더: data/)"
+          # 1. JSON 데이터 생성
+          data_json = { "name": "김JSON", "total_salary": 45000000, "pension": 1500000, "credit": 5000000 }
+          with open('data/sample_1.json', 'w', encoding='utf-8') as f:
+              json.dump(data_json, f)
+
+          # 2. Excel 데이터 생성 (DataFrame)
+          data_excel = [{
+              "name": "박Excel",
+              "total_salary": 60000000,
+              "pension": 2000000,
+              "health": 1800000,
+              "employ": 400000,
+              "housing": 0,
+              "credit": 12000000,
+              "debit": 3000000,
+              "cash": 1000000
+          }]
+          df = pd.DataFrame(data_excel)
+          df.to_excel('data/sample_2.xlsx', index=False)
+
+          # 3. PDF 시뮬레이션용 텍스트 파일 (실제 PDF 생성은 복잡하므로 텍스트로 대체하거나 생략)
+          # 여기서는 워크플로우 테스트를 위해 PDF 파일이 있다고 가정하고 
+          # 파서가 에러 처리하는 것을 확인하거나, 실제 PDF 라이브러리 테스트를 위해 생략
+          print(">>> 샘플 데이터(JSON, Excel) 생성 완료")
+          EOF
+          
+          # 데이터 생성 실행
+          python create_sample_data.py
 
       # ----------------------------------------------------------------------
-      # [Step 3] 대량 분석 실행
+      # [Step 3] 통합 분석 실행
       # ----------------------------------------------------------------------
       - name: 🚀 데이터 일괄 분석 실행
         run: |
           python src/batch_analyzer.py
 
       # ----------------------------------------------------------------------
-      # [Step 4] 분석 리포트 업로드 (다운로드 가능하도록)
+      # [Step 4] 결과 리포트 저장
       # ----------------------------------------------------------------------
       - name: 📊 분석 결과 리포트 저장
         uses: actions/upload-artifact@v4
         with:
-          name: Tax_Analysis_Report
-          path: analysis_report.html
+          name: Universal_Tax_Report
+          path: analysis_report_v2.html
           retention-days: 3
