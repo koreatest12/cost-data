@@ -138,7 +138,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-release-v6
-          path: *.zip
 
   agent-linux:
     name: Run Agent on Linux (Massive Data & Fixes)
