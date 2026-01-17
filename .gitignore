@@ -50,7 +50,9 @@ repl-temp-*
 # Server manager config files
 server_config.json
 demo_config.json
-*.json
+
+# Year-end settlement result files
+yearend_result*.json
 
 # Python cache
 __pycache__/

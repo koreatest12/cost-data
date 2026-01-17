@@ -1,0 +1,16 @@
+{
+  "name": "홍길동",
+  "total_salary": 40000000,
+  "deductions": {
+    "pension": 1236000,
+    "insurance_health": 1378730,
+    "housing_saving": 1200000,
+    "credit_card": 412670,
+    "debit_card": 13086527,
+    "cash_receipt": 2502383,
+    "medical_expense": 2695380,
+    "medical_silson": 1163706,
+    "insurance_guarantee": 761880,
+    "donation": 120000
+  }
+}
