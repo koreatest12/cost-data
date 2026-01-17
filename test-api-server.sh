@@ -92,26 +92,43 @@ echo ""
 
 # Test delete with regular user (should fail)
 echo "8. Testing delete with regular user (should be forbidden)..."
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -u "$USER_CRED" \
+CREATE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -u "$USER_CRED" \
     -X POST "$API_URL/api/files/create" \
     -H "Content-Type: application/json" \
     -d '{"path":"test-file2.txt","content":"Test"}')
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -u "$USER_CRED" \
-    -X DELETE "$API_URL/api/files/delete?path=test-file2.txt")
-if [ "$HTTP_CODE" == "403" ]; then
-    echo "✓ Regular user cannot delete (HTTP $HTTP_CODE - Forbidden)"
+if [ "$CREATE_CODE" == "200" ]; then
+    DELETE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -u "$USER_CRED" \
+        -X DELETE "$API_URL/api/files/delete?path=test-file2.txt")
+    if [ "$DELETE_CODE" == "403" ]; then
+        echo "✓ Regular user cannot delete (HTTP $DELETE_CODE - Forbidden)"
+    else
+        echo "✗ Authorization test unexpected result (HTTP $DELETE_CODE)"
+    fi
 else
-    echo "✗ Authorization test unexpected result (HTTP $HTTP_CODE)"
+    echo "✗ Failed to create test file (HTTP $CREATE_CODE)"
 fi
 echo ""
 
 # Cleanup
 echo "9. Cleaning up test files..."
-curl -s -o /dev/null -u "$ADMIN_CRED" \
-    -X DELETE "$API_URL/api/files/delete?path=test-file2.txt"
-curl -s -o /dev/null -u "$ADMIN_CRED" \
-    -X DELETE "$API_URL/api/files/delete?path=test-directory"
-echo "✓ Cleanup complete"
+CLEANUP_ERRORS=0
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -u "$ADMIN_CRED" \
+    -X DELETE "$API_URL/api/files/delete?path=test-file2.txt")
+if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "404" ]; then
+    echo "⚠ Warning: Failed to delete test-file2.txt (HTTP $HTTP_CODE)"
+    CLEANUP_ERRORS=$((CLEANUP_ERRORS + 1))
+fi
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -u "$ADMIN_CRED" \
+    -X DELETE "$API_URL/api/files/delete?path=test-directory")
+if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "404" ]; then
+    echo "⚠ Warning: Failed to delete test-directory (HTTP $HTTP_CODE)"
+    CLEANUP_ERRORS=$((CLEANUP_ERRORS + 1))
+fi
+if [ $CLEANUP_ERRORS -eq 0 ]; then
+    echo "✓ Cleanup complete"
+else
+    echo "⚠ Cleanup completed with $CLEANUP_ERRORS warning(s)"
+fi
 echo ""
 
 echo "======================================"

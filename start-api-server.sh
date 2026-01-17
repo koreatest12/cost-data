@@ -15,8 +15,13 @@ if ! command -v java &> /dev/null; then
 fi
 
 # Check Java version
-JAVA_VERSION=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d'.' -f1)
-if [ "$JAVA_VERSION" -lt 17 ]; then
+JAVA_VERSION=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
+JAVA_MAJOR=$(echo "$JAVA_VERSION" | cut -d'.' -f1)
+# Handle both old (1.8) and new (11, 17, etc.) version formats
+if [ "$JAVA_MAJOR" == "1" ]; then
+    JAVA_MAJOR=$(echo "$JAVA_VERSION" | cut -d'.' -f2)
+fi
+if [ "$JAVA_MAJOR" -lt 17 ]; then
     echo "Error: Java 17 or higher is required. Current version: $JAVA_VERSION"
     exit 1
 fi
