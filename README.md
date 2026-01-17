@@ -1,7 +1,24 @@
 
 # Cost Data - File Management System
 
-Spring Boot 애플리케이션으로 파일 및 디렉토리 관리 기능과 권한 인증을 제공합니다.
+Spring Boot 애플리케이션으로 파일 및 디렉토리 관리 기능과 권한 인증, 그리고 **고급 방화벽 보안 기능**을 제공합니다.
+
+## 🔥 새로운 방화벽 기능
+
+이 시스템은 이제 **완전한 방화벽 및 보안 기능**을 포함합니다:
+
+### Java Spring Boot 방화벽 기능
+- ✅ **IP 기반 접근 제어**: 화이트리스트/블랙리스트 관리
+- ✅ **속도 제한 (Rate Limiting)**: DDoS 공격 방지
+- ✅ **실시간 방화벽 관리 API**: 관리자 전용 엔드포인트
+- ✅ **보안 헤더**: CSP, Frame Options, Content Type Protection
+- ✅ **요청 필터링 및 검증**
+
+### Python 서버 관리 방화벽 기능
+- ✅ **방화벽 설치 및 구성**: UFW, Windows Firewall, iptables 지원
+- ✅ **방화벽 규칙 관리**: 포트, 프로토콜, 방향 제어
+- ✅ **고급 보안 업그레이드**: DDoS 보호, 침입 탐지, 속도 제한
+- ✅ **지리적 차단 (Geo-blocking)** 지원
 
 ## 기능
 
@@ -11,6 +28,9 @@ Spring Boot 애플리케이션으로 파일 및 디렉토리 관리 기능과 �
 - 파일 읽기
 - 파일/디렉토리 삭제 (관리자 권한 필요)
 - Spring Security를 통한 권한 관리
+- **🔥 IP 기반 방화벽 보호**
+- **🔥 요청 속도 제한**
+- **🔥 실시간 방화벽 규칙 관리**
 
 ## 기술 스택
 
@@ -53,6 +73,8 @@ mvn spring-boot:run
 - 권한: 모든 기능 + 삭제
 
 ## API 엔드포인트
+
+### 파일 관리 API
 
 ### 1. 파일 생성
 ```
@@ -101,6 +123,69 @@ DELETE /api/files/delete?path=file-or-directory-path
 Authorization: Basic Auth (admin only)
 ```
 
+### 방화벽 관리 API (관리자 전용)
+
+### 7. 방화벽 상태 조회
+```
+GET /api/firewall/status
+Authorization: Basic Auth (admin only)
+
+Response:
+{
+  "success": true,
+  "message": "Firewall status retrieved",
+  "data": {
+    "enabled": true,
+    "whitelist_count": 2,
+    "blacklist_count": 1,
+    "allow_localhost": true,
+    "max_requests_per_minute": 100
+  }
+}
+```
+
+### 8. 화이트리스트 관리
+```
+# 화이트리스트 조회
+GET /api/firewall/whitelist
+Authorization: Basic Auth (admin only)
+
+# IP 추가
+POST /api/firewall/whitelist?ip=192.168.1.100
+Authorization: Basic Auth (admin only)
+
+# IP 제거
+DELETE /api/firewall/whitelist?ip=192.168.1.100
+Authorization: Basic Auth (admin only)
+```
+
+### 9. 블랙리스트 관리
+```
+# 블랙리스트 조회
+GET /api/firewall/blacklist
+Authorization: Basic Auth (admin only)
+
+# IP 추가
+POST /api/firewall/blacklist?ip=10.0.0.50
+Authorization: Basic Auth (admin only)
+
+# IP 제거
+DELETE /api/firewall/blacklist?ip=10.0.0.50
+Authorization: Basic Auth (admin only)
+```
+
+### 10. 방화벽 활성화/비활성화
+```
+POST /api/firewall/toggle?enabled=true
+Authorization: Basic Auth (admin only)
+```
+
+### 11. 속도 제한 설정
+```
+POST /api/firewall/rate-limit?maxRequestsPerMinute=150
+Authorization: Basic Auth (admin only)
+```
+
 ## 사용 예시 (curl)
 
 ### 파일 생성
@@ -138,6 +223,28 @@ curl -u admin:admin -X DELETE http://localhost:8080/api/files/delete?path=exampl
 
 ```properties
 file.storage.location=uploads
+```
+
+## 방화벽 설정
+
+방화벽 기능은 `application.properties`에서 구성할 수 있습니다:
+
+```properties
+# 방화벽 활성화/비활성화
+firewall.enabled=true
+
+# 로컬호스트 접근 허용
+firewall.allow-localhost=true
+
+# 분당 최대 요청 수 (속도 제한)
+firewall.max-requests-per-minute=100
+
+# 화이트리스트 IP 추가 (예시)
+# firewall.whitelist[0]=192.168.1.0/24
+# firewall.whitelist[1]=10.0.0.100
+
+# 블랙리스트 IP 추가 (예시)
+# firewall.blacklist[0]=203.0.113.0
 ```
 
 ## 테스트
@@ -259,6 +366,9 @@ A comprehensive server management system for server upgrades, capacity managemen
 - ✅ **Capacity Expansion (용량 증설)** - Expand CPU, memory, or disk capacity
 - ✅ **Disk Installation (디스크 설치)** - Install new disks
 - ✅ **Disk Addition Reflection (디스크 추가 반영)** - Add and reflect disk changes
+- 🔥 **Firewall Installation (방화벽 설치)** - Install and configure firewalls (UFW, Windows, iptables)
+- 🔥 **Firewall Rule Management (방화벽 규칙 관리)** - Add, remove, and list firewall rules
+- 🔥 **Firewall Upgrade (방화벽 업그레이드)** - Enable advanced security features (DDoS protection, IDS, rate limiting)
 
 ## Quick Start
 
@@ -284,6 +394,23 @@ python3 server_manager.py install-disk --server-id server-1 --disk-size 500 --di
 
 # List all servers
 python3 server_manager.py list
+
+# 🔥 FIREWALL MANAGEMENT
+
+# Install firewall
+python3 server_manager.py install-firewall --server-id server-1 --firewall-type ufw
+
+# Upgrade firewall with advanced features
+python3 server_manager.py upgrade-firewall --server-id server-1 --enable-ddos --enable-ids --enable-rate-limit
+
+# Add firewall rule
+python3 server_manager.py add-firewall-rule --server-id server-1 --rule-name "Custom SSH" --protocol TCP --port 2222 --direction inbound --action allow
+
+# List firewall rules
+python3 server_manager.py list-firewall-rules --server-id server-1
+
+# Remove firewall rule
+python3 server_manager.py remove-firewall-rule --server-id server-1 --rule-id rule-1
 ```
 
 ## Documentation
