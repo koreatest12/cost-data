@@ -54,16 +54,6 @@ demo_config.json
 # Year-end settlement result files
 yearend_result*.json
 
-# Exclude all other JSON files first
-*.json
-
-# Then re-include specific yearend config files (but not result files)
-!yearend_example.json
-!yearend_김병권.json
-
-# Don't exclude pom.xml
-!pom.xml
-
 # Python cache
 __pycache__/
 *.pyc

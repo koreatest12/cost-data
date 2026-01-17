@@ -65,12 +65,47 @@ class YearEndSettlement:
             성공 여부
         """
         try:
+            import os
+            # 파일 크기 검증 (최대 1MB)
+            if os.path.getsize(filename) > 1024 * 1024:
+                print("오류: 파일 크기가 너무 큽니다 (최대 1MB)")
+                return False
+                
             with open(filename, 'r', encoding='utf-8') as f:
                 config = json.load(f)
-                self.name = config.get('name', self.name)
-                self.total_salary = config.get('total_salary', self.total_salary)
-                self.set_data(**config.get('deductions', {}))
+                
+            # 설정 구조 검증
+            if not isinstance(config, dict):
+                print("오류: 잘못된 설정 파일 형식입니다.")
+                return False
+                
+            if 'name' not in config or 'total_salary' not in config:
+                print("오류: 필수 항목(name, total_salary)이 없습니다.")
+                return False
+                
+            # 총급여액 유효성 검사
+            total_salary = config.get('total_salary', 0)
+            if not isinstance(total_salary, (int, float)) or total_salary < 0:
+                print("오류: 총급여액은 0 이상의 숫자여야 합니다.")
+                return False
+                
+            self.name = config.get('name', self.name)
+            self.total_salary = int(total_salary)
+            
+            # deductions가 딕셔너리인지 확인
+            deductions = config.get('deductions', {})
+            if not isinstance(deductions, dict):
+                print("오류: deductions는 딕셔너리여야 합니다.")
+                return False
+                
+            self.set_data(**deductions)
             return True
+        except FileNotFoundError:
+            print(f"오류: 파일을 찾을 수 없습니다: {filename}")
+            return False
+        except json.JSONDecodeError as e:
+            print(f"JSON 파싱 오류: {e}")
+            return False
         except Exception as e:
             print(f"파일 로드 오류: {e}")
             return False
@@ -288,7 +323,15 @@ def interactive_mode():
     
     try:
         name = input("이름을 입력하세요: ").strip()
-        total_salary = int(input("총급여액을 입력하세요 (원): ").strip())
+        total_salary_input = input("총급여액을 입력하세요 (원): ").strip()
+        total_salary = int(total_salary_input)
+        
+        # 총급여액 유효성 검사
+        if total_salary < 0:
+            print("오류: 총급여액은 음수일 수 없습니다.")
+            return
+        if total_salary == 0:
+            print("경고: 총급여액이 0입니다.")
         
         settlement = YearEndSettlement(name, total_salary)
         
