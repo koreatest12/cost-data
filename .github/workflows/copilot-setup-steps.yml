@@ -1,4 +1,4 @@
-name: Copilot Agent - Complete Run (Ultimate Release Edition v5)
+name: Copilot Agent - Complete Run (Ultimate Release Edition v6)
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   agent-windows:
-    name: Run Agent on Windows (Fixed & Enhanced)
+    name: Run Agent on Windows (Massive Data & Fixes)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -22,23 +22,27 @@ jobs:
       - uses: actions/checkout@v4
 
       # 1. 데이터 리포지토리 체크아웃
-      - name: 데이터 리포지토리 체크아웃
+      - name: Checkout Cost Data Repository
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
           path: cost-data-repo
           fetch-depth: 0
 
-      # 2. 기본 환경 검증 및 방화벽
-      - name: 환경 검증 및 방화벽 설정
+      # 2. 환경 검증 및 방화벽 설정
+      - name: Verify Environment & Firewall
         shell: powershell
         run: |
-          Write-Host "Environment Check..."
+          Write-Host "Verifying Windows Environment..."
+          Get-ComputerInfo | Select-Object WindowsVersion, OsArchitecture
+          
+          # 방화벽 규칙 추가
           New-NetFirewallRule -DisplayName "Allow Auth Service" -Direction Inbound -Protocol TCP -LocalPort 389 -Action Allow -ErrorAction SilentlyContinue
           New-NetFirewallRule -DisplayName "Allow Docker" -Direction Outbound -Protocol TCP -RemotePort 2375 -Action Allow -ErrorAction SilentlyContinue
+          Write-Host "Firewall configured."
 
-      # 3. 초대량 가상 계정 생성 (200개)
-      - name: 초대량 계정 생성 및 활성화 (Mass Account Provisioning)
+      # 3. [Massive] 초대량 가상 계정 생성 (300개로 증량)
+      - name: Mass Account Provisioning (300 Accounts)
         shell: powershell
         run: |
           $authDir = "cost-data-repo\auth_registry"
@@ -47,13 +51,13 @@ jobs:
           
           "Username,Password,Service,Status,Created_At" | Out-File -FilePath $csvPath -Encoding utf8
           
-          Write-Host "Starting Massive Account Activation (Target: 200 Accounts)..."
+          Write-Host "Generating 300 Windows Service Accounts..."
           
-          1..200 | ForEach-Object {
+          1..300 | ForEach-Object {
               $id = $_
-              $username = "svc_user_$id"
-              $password = -join ((33..126) | Get-Random -Count 20 | % {[char]$_})
-              $service = "Win_Svc_Tier_$($id % 10)"
+              $username = "svc_win_$id"
+              $password = -join ((33..126) | Get-Random -Count 24 | % {[char]$_})
+              $service = "Win_Service_Tier_$($id % 15)"
               $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
               
               $entry = "$username,$password,$service,Active,$timestamp"
@@ -61,15 +65,15 @@ jobs:
           }
           Write-Host "Registry saved to $csvPath"
 
-      # 4. 초대량 파일/디렉토리 데이터 생성 (Stress Test)
-      - name: 초대량 데이터 파일 생성 (Mass Data Generation)
+      # 4. [Massive] 초대량 파일 데이터 생성 (Stress Test)
+      - name: Mass Data File Generation
         shell: powershell
         run: |
           $baseDir = "cost-data-repo\generated_data"
           New-Item -ItemType Directory -Force -Path $baseDir | Out-Null
           
-          Write-Host "Generating massive directory structure (20 Categories x 100 Files)..."
-          1..20 | ForEach-Object {
+          Write-Host "Generating massive directory structure (30 Categories x 100 Files)..."
+          1..30 | ForEach-Object {
               $subDir = "$baseDir\Category_$_"
               New-Item -ItemType Directory -Force -Path $subDir | Out-Null
               
@@ -78,10 +82,10 @@ jobs:
                   Set-Content -Path "$subDir\data_$_.log" -Value $content
               }
               
-              # 대용량 파일 생성 (분할 테스트용)
+              # 대용량 파일 (150MB) 생성
               if ($_ % 5 -eq 0) {
-                  fsutil file createnew "$subDir\large_blob_$_.dat" (120 * 1024 * 1024)
-                  Write-Host "Created 120MB file in Category_$_"
+                  fsutil file createnew "$subDir\heavy_blob_$_.dat" (150 * 1024 * 1024)
+                  Write-Host "Created 150MB file in Category_$_"
               }
           }
 
@@ -100,17 +104,17 @@ jobs:
           server-id: github
           settings-path: ${{ github.workspace }}
 
-      # 6. 데이터 권한 수정 및 분할
-      - name: 데이터 처리 및 도커 빌드 (Fix Applied)
+      # 6. [FIXED] 권한 구문 수정 ("") 및 데이터 처리
+      - name: Permission Fix & Data Splitting
         shell: powershell
         run: |
           $target = "cost-data-repo"
           Write-Host "Upgrading Permissions for $target..."
           
-          # [FIX] 권한 구문을 문자열로 처리하여 에러 방지
+          # [FIX] 인용부호 추가로 파워셸 구문 오류 해결
           icacls $target /grant "Everyone:(OI)(CI)F" /T
           
-          Write-Host "Splitting Large Files..."
+          Write-Host "Splitting Large Files (>100MB)..."
           Get-ChildItem -Path $target -Recurse -File | Where-Object { $_.Length -gt 100MB } | ForEach-Object {
               Write-Host "Splitting $($_.Name)..."
               Rename-Item -Path $_.FullName -NewName "$($_.Name).split"
@@ -119,13 +123,13 @@ jobs:
           # 도커 빌드
           cd cost-data-repo
           if (-not (Test-Path "Dockerfile")) { "FROM alpine:latest`nCOPY . /data`nCMD [`"ls`", `"-R`", `"/data`"]" | Out-File -FilePath Dockerfile -Encoding utf8 }
-          docker build -t cost-data-win:v5 .
+          docker build -t cost-data-win:v6 .
 
-      # 7. 패키징
-      - name: 패키징
+      # 7. 패키징 및 업로드
+      - name: Package & Release
         shell: powershell
         run: |
-          $ver = "v5.0.$(Get-Date -Format 'yyyyMMdd')"
+          $ver = "v6.0.$(Get-Date -Format 'yyyyMMdd')"
           $pkg = "copilot-agent-win-$ver.zip"
           mkdir target -Force
           Compress-Archive -Path "cost-data-repo\*" -DestinationPath $pkg -Force
@@ -133,11 +137,11 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: windows-release-v5
+          name: windows-release-v6
           path: *.zip
 
   agent-linux:
-    name: Run Agent on Linux (Fixed & Enhanced)
+    name: Run Agent on Linux (Massive Data & Fixes)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -151,50 +155,49 @@ jobs:
           fetch-depth: 0
 
       # 1. 보안 업그레이드
-      - name: 보안 업그레이드
+      - name: Security Upgrade
         run: |
           sudo apt-get update
           sudo apt-get install --only-upgrade ufw openssl -y
           sudo ufw allow 22/tcp
 
-      # 2. 초대량 계정 생성 (200개)
-      - name: 초대량 계정 생성 (Mass Account Provisioning)
+      # 2. [Massive] 초대량 계정 생성 (300개)
+      - name: Mass Account Provisioning (300 Accounts)
         run: |
           AUTH_DIR="cost-data-repo/auth_registry"
           mkdir -p $AUTH_DIR
           CSV_PATH="$AUTH_DIR/linux_accounts.csv"
           
           echo "Username,Password_Hash,Service,Status,Created_At" > $CSV_PATH
-          echo "Generating 200 Linux Service Accounts..."
+          echo "Generating 300 Linux Service Accounts..."
           
-          for i in {1..200}; do
+          for i in {1..300}; do
             USERNAME="svc_linux_$i"
-            # openssl을 이용해 랜덤 비밀번호 생성
             PASS_HASH=$(openssl rand -base64 12 | openssl passwd -1 -stdin)
-            SERVICE="Daemon_Tier_$((i % 10))"
+            SERVICE="Daemon_Tier_$((i % 15))"
             echo "$USERNAME,$PASS_HASH,$SERVICE,Active,$(date)" >> $CSV_PATH
           done
           echo "Registry generation done."
 
-      # 3. 초대량 데이터 파일 생성
-      - name: 초대량 데이터 파일 생성
+      # 3. [Massive] 초대량 데이터 파일 생성
+      - name: Mass Data File Generation
         run: |
           BASE="cost-data-repo/generated_data"
           mkdir -p $BASE
-          echo "Generating 20 Categories x 100 Files..."
+          echo "Generating 30 Categories x 100 Files..."
           
-          for i in {1..20}; do
+          for i in {1..30}; do
             SUB="$BASE/Cat_$i"
             mkdir -p $SUB
             for j in {1..100}; do echo "Data $j" > "$SUB/file_$j.log"; done
             
-            # 대용량 파일 생성 (dd 명령 사용)
+            # 대용량 파일 생성
             if [ $((i % 5)) -eq 0 ]; then
-              dd if=/dev/zero of="$SUB/heavy_file_$i.bin" bs=1M count=120
+              dd if=/dev/zero of="$SUB/heavy_file_$i.bin" bs=1M count=150
             fi
           done
 
-      # 4. Playwright 및 Maven
+      # 4. Playwright 및 Maven (들여쓰기 수정됨)
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
       - run: |
@@ -212,7 +215,7 @@ jobs:
       - run: mvn dependency:resolve -B -s ${{ github.workspace }}/settings.xml
 
       # 5. 권한, 분할, 도커
-      - name: 데이터 처리 및 도커 빌드
+      - name: Data Processing & Docker Build
         run: |
           TARGET="cost-data-repo"
           chmod -R 777 $TARGET
@@ -220,15 +223,15 @@ jobs:
           
           cd cost-data-repo
           if [ ! -f Dockerfile ]; then echo -e "FROM alpine:latest\nCOPY . /data\nCMD [\"ls\", \"-R\"]" > Dockerfile; fi
-          docker build -t cost-data-linux:v5 .
+          docker build -t cost-data-linux:v6 .
 
       # 6. 패키징 및 업로드
-      - name: 패키징 및 업로드
+      - name: Package & Release
         run: |
-          VERSION="v5.0.$(date +%Y%m%d)"
+          VERSION="v6.0.$(date +%Y%m%d)"
           tar -czf copilot-agent-linux-$VERSION.tar.gz cost-data-repo/
       
       - uses: actions/upload-artifact@v4
         with:
-          name: linux-release-v5
+          name: linux-release-v6
           path: *.tar.gz
