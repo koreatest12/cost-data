@@ -1,0 +1,39 @@
+Cost Data Deployment Information
+=================================
+Deployment Date: {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+Server: {{ ansible_hostname }}
+Port: {{ deploy_port }}
+Install Directory: {{ install_dir }}
+Deploy User: {{ app_user }}
+
+Components Deployed:
+- Spring Boot File Management Application (port {{ deploy_port }})
+- Python Server Management System
+- Demo Scripts
+- Security News System
+
+Service Management:
+  Start:   sudo systemctl start cost-data
+  Stop:    sudo systemctl stop cost-data
+  Status:  sudo systemctl status cost-data
+  Restart: sudo systemctl restart cost-data
+  Enable:  sudo systemctl enable cost-data (auto-start on boot)
+
+Access:
+  API: http://{{ ansible_default_ipv4.address }}:{{ deploy_port }}/api
+  Health: http://{{ ansible_default_ipv4.address }}:{{ deploy_port }}/actuator/health
+
+Default Users:
+  User: user / password
+  Admin: admin / admin
+
+Directories:
+  Uploads: {{ install_dir }}/uploads
+  Data: {{ install_dir }}/data
+  Logs: /var/log/syslog (search for 'cost-data')
+
+Server Information:
+  OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+  Kernel: {{ ansible_kernel }}
+  Python: {{ ansible_python_version }}
+  Architecture: {{ ansible_architecture }}

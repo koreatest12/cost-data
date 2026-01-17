@@ -36,7 +36,33 @@ mvn clean install
 mvn spring-boot:run
 ```
 
-애플리케이션은 기본적으로 `http://localhost:8080`에서 실행됩니다.
+애플리케이션은 기본적으로 `http://localhost:9999`에서 실행됩니다.
+
+### 빠른 시작 (Quick Start)
+```bash
+./quick-start.sh
+```
+
+## 배포 (Deployment)
+
+프로덕션 서버에 배포하려면 **포트 9999**로 자동 배포됩니다.
+
+### 자동 배포
+```bash
+sudo ./deploy/deploy.sh
+```
+
+### Docker 배포
+```bash
+docker-compose up -d
+```
+
+### Ansible 대량 배포
+```bash
+ansible-playbook -i inventory.ini deploy/playbook.yml
+```
+
+자세한 배포 가이드는 [DEPLOYMENT.md](DEPLOYMENT.md)를 참조하세요.
 
 ## 사용자 인증
 
@@ -105,31 +131,31 @@ Authorization: Basic Auth (admin only)
 
 ### 파일 생성
 ```bash
-curl -u user:password -X POST http://localhost:8080/api/files/create \
+curl -u user:password -X POST http://localhost:9999/api/files/create \
   -H "Content-Type: application/json" \
   -d '{"path":"example.txt","content":"Hello World"}'
 ```
 
 ### 디렉토리 생성
 ```bash
-curl -u user:password -X POST http://localhost:8080/api/files/directory/create \
+curl -u user:password -X POST http://localhost:9999/api/files/directory/create \
   -H "Content-Type: application/json" \
   -d '{"path":"my-directory"}'
 ```
 
 ### 파일 목록 조회
 ```bash
-curl -u user:password http://localhost:8080/api/files/list
+curl -u user:password http://localhost:9999/api/files/list
 ```
 
 ### 파일 읽기
 ```bash
-curl -u user:password http://localhost:8080/api/files/read?path=example.txt
+curl -u user:password http://localhost:9999/api/files/read?path=example.txt
 ```
 
 ### 파일 삭제 (관리자만 가능)
 ```bash
-curl -u admin:admin -X DELETE http://localhost:8080/api/files/delete?path=example.txt
+curl -u admin:admin -X DELETE http://localhost:9999/api/files/delete?path=example.txt
 ```
 
 ## 파일 저장 위치
