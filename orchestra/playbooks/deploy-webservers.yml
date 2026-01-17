@@ -1,0 +1,74 @@
+---
+# Example Ansible Playbook for AWX
+# 이 플레이북은 AWX에서 사용할 수 있는 예제 플레이북입니다.
+# 웹 서버에 Nginx를 설치하고 설정합니다.
+
+- name: Configure Web Servers
+  hosts: web_servers
+  become: yes
+  
+  vars:
+    nginx_port: 80
+    server_name: example.com
+  
+  tasks:
+    - name: Update apt cache (Ubuntu/Debian)
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+    
+    - name: Install Nginx
+      package:
+        name: nginx
+        state: present
+    
+    - name: Start and enable Nginx service
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+    
+    - name: Deploy custom index.html
+      copy:
+        dest: /var/www/html/index.html
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Welcome to {{ server_name }}</title>
+          </head>
+          <body>
+              <h1>Success! Nginx is running on {{ ansible_hostname }}</h1>
+              <p>Deployed via Ansible AWX Orchestra</p>
+          </body>
+          </html>
+        mode: '0644'
+    
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+
+- name: Configure Deploy Server
+  hosts: deploy_server
+  become: yes
+  
+  tasks:
+    - name: Install required packages
+      package:
+        name:
+          - git
+          - curl
+          - wget
+        state: present
+    
+    - name: Create deployment directory
+      file:
+        path: /opt/deployments
+        state: directory
+        mode: '0755'
+    
+    - name: Display deployment server info
+      debug:
+        msg: "Deploy server {{ ansible_hostname }} is configured and ready"

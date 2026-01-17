@@ -1,5 +1,37 @@
 
-# Cost Data - File Management System
+# Cost Data - Multi-Purpose Management System
+
+이 저장소는 다양한 관리 기능을 제공하는 종합 시스템입니다:
+
+- **서버 관리 시스템**: 서버 업그레이드, 용량 관리, 디스크 운영
+- **오케스트라 서버 (Ansible AWX)**: 웹 기반 Ansible 자동화 및 오케스트레이션
+- **파일 관리 시스템**: Spring Boot 기반 파일 및 디렉토리 관리
+
+## 주요 기능
+
+### 🎭 Orchestra Server (Ansible AWX)
+- **웹 기반 UI**: 브라우저를 통한 Ansible 작업 관리
+- **인벤토리 관리**: 호스트 및 그룹 중앙 관리
+- **플레이북 실행**: Ansible 플레이북의 자동화된 실행
+- **작업 스케줄링**: 정기적인 자동화 작업
+- **역할 기반 접근 제어**: 사용자 및 팀 권한 관리
+
+**설치 방법**: [Orchestra 설치 가이드](orchestra/README.md) 참조
+
+```bash
+cd orchestra
+chmod +x install-awx.sh
+./install-awx.sh
+```
+
+### 🖥️ Server Management System
+- 서버 업그레이드 구성
+- 용량 체크 및 증설
+- 디스크 설치 및 관리
+
+**사용 방법**: [DOCUMENTATION.md](DOCUMENTATION.md) 참조
+
+### 📁 File Management System
 
 Spring Boot 애플리케이션으로 파일 및 디렉토리 관리 기능과 권한 인증을 제공합니다.
 
