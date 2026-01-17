@@ -75,7 +75,7 @@
 
     - name: Copy application JAR
       copy:
-        src: ../target/file-management-1.0.0.jar
+        src: "{{ lookup('fileglob', '../target/*.jar') }}"
         dest: "{{ install_dir }}/cost-data.jar"
         owner: "{{ app_user }}"
         group: "{{ app_user }}"

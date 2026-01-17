@@ -73,11 +73,23 @@ fi
 print_step "Creating installation directory..."
 if [ ! -d "$INSTALL_DIR" ]; then
     sudo mkdir -p "$INSTALL_DIR"
-    sudo chown $DEPLOY_USER:$DEPLOY_USER "$INSTALL_DIR"
     print_success "Created $INSTALL_DIR"
 else
     print_success "Directory $INSTALL_DIR already exists"
 fi
+
+# Create costdata user if it doesn't exist
+print_step "Setting up deployment user..."
+if ! id -u costdata &>/dev/null; then
+    sudo useradd -r -s /bin/bash -d "$INSTALL_DIR" -c "Cost Data Application" costdata
+    print_success "Created costdata user"
+else
+    print_success "User costdata already exists"
+fi
+
+# Set ownership
+sudo chown -R costdata:costdata "$INSTALL_DIR"
+print_success "Directory ownership set to costdata"
 
 # Build Spring Boot application
 print_step "Building Spring Boot application..."
@@ -91,28 +103,39 @@ fi
 
 # Copy application files
 print_step "Copying application files..."
-sudo cp target/*.jar "$INSTALL_DIR/cost-data.jar" 2>/dev/null || {
+JAR_FILE=$(find target -name "*.jar" -type f | head -n 1)
+if [ -z "$JAR_FILE" ]; then
+    print_error "No JAR file found in target directory"
+    exit 1
+fi
+sudo cp "$JAR_FILE" "$INSTALL_DIR/cost-data.jar" || {
     print_error "Failed to copy JAR file"
     exit 1
 }
-sudo cp -r src/main/resources "$INSTALL_DIR/" 2>/dev/null || true
-sudo cp server_manager.py "$INSTALL_DIR/" 2>/dev/null || true
-sudo cp demo.py "$INSTALL_DIR/" 2>/dev/null || true
-sudo cp security_news.py "$INSTALL_DIR/" 2>/dev/null || true
-sudo cp requirements.txt "$INSTALL_DIR/" 2>/dev/null || true
-sudo chown -R $DEPLOY_USER:$DEPLOY_USER "$INSTALL_DIR"
+
+if [ -d "src/main/resources" ]; then
+    sudo cp -r src/main/resources "$INSTALL_DIR/" || print_error "Warning: Failed to copy resources directory"
+fi
+
+for script in server_manager.py demo.py security_news.py requirements.txt; do
+    if [ -f "$script" ]; then
+        sudo cp "$script" "$INSTALL_DIR/" || print_error "Warning: Failed to copy $script"
+    fi
+done
+
+sudo chown -R costdata:costdata "$INSTALL_DIR"
 print_success "Application files copied to $INSTALL_DIR"
 
 # Create uploads directory
 print_step "Creating uploads directory..."
 sudo mkdir -p "$INSTALL_DIR/uploads"
-sudo chown $DEPLOY_USER:$DEPLOY_USER "$INSTALL_DIR/uploads"
+sudo chown costdata:costdata "$INSTALL_DIR/uploads"
 print_success "Uploads directory created"
 
 # Create data directory for server manager
 print_step "Creating data directory..."
 sudo mkdir -p "$INSTALL_DIR/data"
-sudo chown $DEPLOY_USER:$DEPLOY_USER "$INSTALL_DIR/data"
+sudo chown costdata:costdata "$INSTALL_DIR/data"
 print_success "Data directory created"
 
 # Install systemd service
@@ -146,7 +169,7 @@ Cost Data Deployment Information
 Deployment Date: $(date)
 Port: $DEPLOY_PORT
 Install Directory: $INSTALL_DIR
-Deploy User: $DEPLOY_USER
+Deploy User: costdata
 
 Components Deployed:
 - Spring Boot File Management Application (port $DEPLOY_PORT)
