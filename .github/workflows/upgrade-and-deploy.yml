@@ -1,73 +1,68 @@
-name: 💸 Tax Settlement Simulation (koreatest12 Data)
+name: 💰 Tax Money Simulation & Instant Result
 
 on:
-  workflow_dispatch: # 수동 실행
+  workflow_dispatch:
   push:
     branches: [ "main" ]
 
 jobs:
   # ==================================================================================
-  # [Job 1] 데이터 리포지토리 연동 -> 정산 엔진 생성 -> 도커 빌드
+  # [Job 1] 데이터 분석 -> 금액 계산(로그 출력) -> 웹 리포트 빌드
   # ==================================================================================
-  simulate-settlement:
+  calculate-and-show:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     
     steps:
       - name: 📥 메인 코드 체크아웃
         uses: actions/checkout@v4
 
-      # ----------------------------------------------------------------------
-      # [Step 1] 지정된 데이터 리포지토리(koreatest12/cost-data) 클론
-      # ----------------------------------------------------------------------
-      - name: 📥 정산 데이터 가져오기 (koreatest12/cost-data)
+      # 1. 정산 데이터 가져오기 (koreatest12/cost-data)
+      - name: 📥 데이터 리포지토리 연동
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
-          path: webapp/cost_data  # 웹 앱 폴더 내부로 데이터 다운로드
-          token: ${{ secrets.GITHUB_TOKEN }} # 공용 리포지토리라면 생략 가능
+          path: app_root/cost_data
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🐍 파이썬 환경 설정
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      # ----------------------------------------------------------------------
-      # [Step 2] 정산 시뮬레이터 웹 앱 소스 생성 (Flask)
-      # ----------------------------------------------------------------------
-      - name: 🏗️ 정산 시뮬레이션 앱 생성
+      # 2. 시뮬레이션 엔진 및 웹 앱 생성
+      - name: 🏗️ 시뮬레이션 엔진 & 리포트 생성기 작성
         run: |
-          echo ">>> [Init] 시뮬레이션 엔진 구축 중..."
-          mkdir -p webapp/templates
-          mkdir -p webapp/static
+          mkdir -p app_root/templates
+          mkdir -p app_root/static
 
-          # 1. 의존성 패키지
-          cat <<EOF > webapp/requirements.txt
+          # [패키지 설정]
+          cat <<EOF > app_root/requirements.txt
           flask
           pandas
           openpyxl
           pdfplumber
+          tabulate
           EOF
 
-          # 2. 정산 로직 및 데이터 파서 (app.py)
-          cat <<EOF > webapp/app.py
+          # [핵심] 시뮬레이터 + 결과 출력 + 웹 생성 (simulator.py)
+          cat <<EOF > app_root/simulator.py
           import os
+          import glob
+          import json
           import pandas as pd
           import pdfplumber
-          import json
           import re
-          import glob
-          from flask import Flask, render_template
+          from tabulate import tabulate # 콘솔 출력용
 
-          app = Flask(__name__)
           DATA_DIR = 'cost_data'
-
-          # --- [Core] 세금 계산 엔진 ---
-          def calculate_settlement(data):
-              # 1. 데이터 전처리 (결측치 방어)
-              salary = int(data.get('total_salary', 40000000)) # 기본값 4000만
+          
+          # --- 1. 세금 계산 로직 (금액 시뮬레이션) ---
+          def calculate_money(data):
+              # 급여 (기본값 4000만)
+              salary = int(data.get('total_salary', 40000000))
               
-              # 2. 소득공제 계산 (간이 로직)
+              # 소득공제 (간이)
               if salary <= 5000000: income_ded = salary * 0.7
               elif salary <= 15000000: income_ded = 3500000 + (salary - 5000000) * 0.4
               elif salary <= 45000000: income_ded = 7500000 + (salary - 15000000) * 0.15
@@ -75,216 +70,206 @@ jobs:
               else: income_ded = 14750000 + (salary - 100000000) * 0.02
               
               basic_ded = 1500000
-              
-              # 지출 내역 합산
+              # 지출 공제
               pension = float(data.get('pension', 0))
-              credit = float(data.get('credit', 0))
-              debit = float(data.get('debit', 0))
+              card = float(data.get('credit', 0)) + float(data.get('debit', 0))
               
               # 과세표준
-              deductions = income_ded + basic_ded + pension + (credit * 0.15)
-              tax_base = max(salary - deductions, 0)
+              tax_base = max(salary - (income_ded + basic_ded + pension + (card * 0.15)), 0)
               
               # 산출세액
               if tax_base <= 14000000: calc_tax = tax_base * 0.06
               elif tax_base <= 50000000: calc_tax = 840000 + (tax_base - 14000000) * 0.15
               else: calc_tax = 6240000 + (tax_base - 50000000) * 0.24
               
-              # 세액공제 (약식)
-              tax_credit = 500000 
-              determined_tax = max(calc_tax - tax_credit, 0)
+              # 기납부세액 (데이터 없으면 급여의 4% 가정)
+              pre_paid = float(data.get('pre_paid_tax', salary * 0.04))
               
-              # 기납부세액 (데이터에 없으면 급여의 약 5%로 추정 시뮬레이션)
-              pre_paid = float(data.get('pre_paid_tax', salary * 0.05))
-              
-              # 최종 정산 결과 ((-)환급, (+)징수)
-              final_result = determined_tax - pre_paid
+              # [결과] (-)환급, (+)징수
+              final_money = int(calc_tax - pre_paid)
               
               return {
-                  "name": data.get('name', 'Unknown'),
-                  "salary": int(salary),
-                  "determined_tax": int(determined_tax),
+                  "name": data.get('name', '미상'),
+                  "salary": salary,
+                  "calc_tax": int(calc_tax),
                   "pre_paid": int(pre_paid),
-                  "final_result": int(final_result),
-                  "is_refund": final_result < 0
+                  "final_money": final_money,
+                  "type": "💰환급(받을돈)" if final_money < 0 else "💸징수(낼돈)",
+                  "abs_money": abs(final_money)
               }
 
-          # --- [Parser] 다양한 파일 형식 처리 ---
-          def parse_data_files():
-              results = []
-              # 재귀적으로 모든 파일 검색
+          # --- 2. 데이터 파싱 ---
+          def run_simulation():
               files = glob.glob(os.path.join(DATA_DIR, '**', '*.*'), recursive=True)
+              results = []
               
               for filepath in files:
-                  filename = os.path.basename(filepath)
-                  ext = os.path.splitext(filename)[1].lower()
-                  data = {"name": filename} # 기본 이름
-                  
+                  ext = os.path.splitext(filepath)[1].lower()
+                  data = {"name": os.path.basename(filepath)}
                   try:
                       if ext == '.json':
-                          with open(filepath, 'r', encoding='utf-8') as f:
-                              data.update(json.load(f))
-                              
+                          with open(filepath, 'r', encoding='utf-8') as f: data.update(json.load(f))
                       elif ext == '.xlsx':
                           df = pd.read_excel(filepath)
-                          if 'total_salary' in df.columns:
-                              data.update(df.iloc[0].to_dict())
-                              
+                          if 'total_salary' in df.columns: data.update(df.iloc[0].to_dict())
                       elif ext == '.pdf':
                           with pdfplumber.open(filepath) as pdf:
                               text = "".join([p.extract_text() or "" for p in pdf.pages])
-                              # PDF 파싱 시뮬레이션 (총급여 추출)
-                              match = re.search(r'총급여[^0-9]*([0-9,]+)', text)
-                              if match: data['total_salary'] = int(match.group(1).replace(',',''))
-                              # 이름 추출 시도
-                              name_match = re.search(r'성명\s*[:]?\s*([가-힣]+)', text)
-                              if name_match: data['name'] = name_match.group(1)
+                              sal = re.search(r'총급여[^0-9]*([0-9,]+)', text)
+                              if sal: data['total_salary'] = int(sal.group(1).replace(',',''))
+                              nm = re.search(r'성명\s*[:]?\s*([가-힣]+)', text)
+                              if nm: data['name'] = nm.group(1)
                       
-                      # 데이터가 유효한 경우만 계산 진행
-                      if 'total_salary' in data or ext in ['.pdf', '.xlsx', '.json']:
-                          res = calculate_settlement(data)
-                          res['filename'] = filename
-                          res['file_type'] = ext.upper().replace('.', '')
-                          results.append(res)
-                          
-                  except Exception as e:
-                      print(f"Error parsing {filename}: {e}")
-                      
+                      if 'total_salary' in data or ext in ['.json','.xlsx','.pdf']:
+                          results.append(calculate_money(data))
+                  except: pass
+              
               return results
 
+          # --- 메인 실행 ---
+          if __name__ == "__main__":
+              results = run_simulation()
+              
+              # 1. [콘솔 출력] GitHub Action 로그에서 바로 보이게 함
+              print("\n" + "="*60)
+              print("   💰 [2025 귀속] 연말정산 금액 시뮬레이션 결과")
+              print("="*60)
+              
+              table_data = []
+              total_refund = 0
+              total_pay = 0
+              
+              for r in results:
+                  money_str = f"{r['abs_money']:,} 원"
+                  table_data.append([r['name'], f"{r['salary']:,}", r['type'], money_str])
+                  if r['final_money'] < 0: total_refund += abs(r['final_money'])
+                  else: total_pay += r['final_money']
+                  
+              print(tabulate(table_data, headers=["이름", "총급여", "구분", "금액"], tablefmt="grid"))
+              
+              print("\n" + "-"*60)
+              print(f" 💵 총 환급 예상액 (받을 돈): {total_refund:,} 원")
+              print(f" 💳 총 징수 예상액 (낼 돈)  : {total_pay:,} 원")
+              print("-"*60 + "\n")
+              
+              # 2. [웹 리포트 생성] Flask용 HTML 파일 생성
+              html = """
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>정산 시뮬레이션 결과</title>
+                  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+              </head>
+              <body class="bg-light p-5">
+                  <div class="container bg-white p-5 shadow rounded">
+                      <h2 class="mb-4 fw-bold text-center">💰 연말정산 금액 시뮬레이션</h2>
+                      <div class="row text-center mb-4">
+                          <div class="col-6"><div class="p-3 bg-primary text-white rounded"><h4>총 환급액</h4><h1>{{total_refund}} 원</h1></div></div>
+                          <div class="col-6"><div class="p-3 bg-danger text-white rounded"><h4>총 징수액</h4><h1>{{total_pay}} 원</h1></div></div>
+                      </div>
+                      <table class="table table-striped table-hover text-center align-middle">
+                          <thead class="table-dark"><tr><th>이름</th><th>총급여</th><th>구분</th><th>금액</th></tr></thead>
+                          <tbody>
+                              {% for r in results %}
+                              <tr>
+                                  <td>{{ r.name }}</td>
+                                  <td>{{ "{:,}".format(r.salary) }}</td>
+                                  <td><span class="badge {% if r.final_money < 0 %}bg-primary{% else %}bg-danger{% endif %}">{{ r.type }}</span></td>
+                                  <td class="fw-bold">{{ "{:,}".format(r.abs_money) }}</td>
+                              </tr>
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                  </div>
+              </body>
+              </html>
+              """
+              # 템플릿 파일 저장 (나중에 Flask가 렌더링할 때 데이터 주입 필요하지만, 여기서는 정적 파일로 굽기 위해 간단히 처리하거나 JSON 저장)
+              # 간편함을 위해 JSON으로 데이터 저장 후 app.py에서 로드
+              with open('app_root/data.json', 'w', encoding='utf-8') as f:
+                  json.dump({"results": results, "total_refund": f"{total_refund:,}", "total_pay": f"{total_pay:,}"}, f, ensure_ascii=False)
+          EOF
+
+          # [웹 서버] Flask App (app.py)
+          cat <<EOF > app_root/app.py
+          from flask import Flask, render_template_string
+          import json
+          
+          app = Flask(__name__)
+          
           @app.route('/')
           def index():
-              # GitHub에서 가져온 데이터로 시뮬레이션 실행
-              simulation_results = parse_data_files()
+              with open('data.json', 'r', encoding='utf-8') as f:
+                  data = json.load(f)
               
-              # 통계
-              total_refund = sum([abs(r['final_result']) for r in simulation_results if r['is_refund']])
-              total_collect = sum([r['final_result'] for r in simulation_results if not r['is_refund']])
-              
-              return render_template('index.html', results=simulation_results, 
-                                     total_refund=total_refund, total_collect=total_collect, count=len(simulation_results))
+              # 템플릿 (위에서 정의한 HTML 구조 사용)
+              html_template = """
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>정산 시뮬레이션 결과</title>
+                  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+              </head>
+              <body class="bg-light p-5">
+                  <div class="container bg-white p-5 shadow rounded">
+                      <h2 class="mb-4 fw-bold text-center">💰 연말정산 금액 시뮬레이션</h2>
+                      <div class="alert alert-info text-center">GitHub Actions에서 자동 분석된 결과입니다.</div>
+                      <div class="row text-center mb-4">
+                          <div class="col-6"><div class="p-3 bg-primary text-white rounded"><h4>총 환급액</h4><h1>{{data.total_refund}} 원</h1></div></div>
+                          <div class="col-6"><div class="p-3 bg-danger text-white rounded"><h4>총 징수액</h4><h1>{{data.total_pay}} 원</h1></div></div>
+                      </div>
+                      <table class="table table-striped table-hover text-center align-middle">
+                          <thead class="table-dark"><tr><th>이름</th><th>총급여</th><th>구분</th><th>금액</th></tr></thead>
+                          <tbody>
+                              {% for r in data.results %}
+                              <tr>
+                                  <td>{{ r.name }}</td>
+                                  <td>{{ "{:,}".format(r.salary) }}</td>
+                                  <td><span class="badge {% if r.final_money < 0 %}bg-primary{% else %}bg-danger{% endif %}">{{ r.type }}</span></td>
+                                  <td class="fw-bold">{{ "{:,}".format(r.abs_money) }}</td>
+                              </tr>
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                  </div>
+              </body>
+              </html>
+              """
+              return render_template_string(html_template, data=data)
 
           if __name__ == '__main__':
               app.run(host='0.0.0.0', port=8080)
           EOF
 
-          # 3. 대시보드 UI (index.html)
-          cat <<EOF > webapp/templates/index.html
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <title>연말정산 시뮬레이션 (Cost-Data)</title>
-              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-              <style>
-                  body { background-color: #f4f6f9; padding: 20px; }
-                  .card-stat { border-radius: 10px; border: none; color: white; }
-                  .badge-file { font-size: 0.8em; opacity: 0.8; }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <div class="d-flex justify-content-between align-items-center mb-4">
-                      <h2 class="fw-bold">💸 정산 시뮬레이션 리포트</h2>
-                      <span class="badge bg-dark">Source: koreatest12/cost-data</span>
-                  </div>
-
-                  <div class="row mb-4">
-                      <div class="col-md-4">
-                          <div class="card card-stat bg-secondary p-3 mb-2">
-                              <h5>분석된 파일</h5>
-                              <h1 class="fw-bold">{{ count }} 건</h1>
-                          </div>
-                      </div>
-                      <div class="col-md-4">
-                          <div class="card card-stat bg-primary p-3 mb-2">
-                              <h5>총 환급 예상 (받을 돈)</h5>
-                              <h1 class="fw-bold">{{ "{:,}".format(total_refund) }} 원</h1>
-                          </div>
-                      </div>
-                      <div class="col-md-4">
-                          <div class="card card-stat bg-danger p-3 mb-2">
-                              <h5>총 징수 예상 (낼 돈)</h5>
-                              <h1 class="fw-bold">{{ "{:,}".format(total_collect) }} 원</h1>
-                          </div>
-                      </div>
-                  </div>
-
-                  <div class="card shadow-sm">
-                      <div class="card-header bg-white fw-bold">📄 데이터별 정산 상세 내역</div>
-                      <div class="table-responsive">
-                          <table class="table table-hover align-middle mb-0">
-                              <thead class="table-light">
-                                  <tr>
-                                      <th>파일유형</th>
-                                      <th>파일명 / 성명</th>
-                                      <th>총급여</th>
-                                      <th>결정세액</th>
-                                      <th>기납부세액</th>
-                                      <th>최종 결과</th>
-                                  </tr>
-                              </thead>
-                              <tbody>
-                                  {% for r in results %}
-                                  <tr>
-                                      <td><span class="badge bg-secondary badge-file">{{ r.file_type }}</span></td>
-                                      <td>
-                                          <div class="fw-bold">{{ r.name }}</div>
-                                          <div class="small text-muted">{{ r.filename }}</div>
-                                      </td>
-                                      <td>{{ "{:,}".format(r.salary) }}</td>
-                                      <td>{{ "{:,}".format(r.determined_tax) }}</td>
-                                      <td class="text-muted">{{ "{:,}".format(r.pre_paid) }}</td>
-                                      <td>
-                                          {% if r.is_refund %}
-                                              <span class="badge bg-primary">환급</span> 
-                                              <span class="text-primary fw-bold">+ {{ "{:,}".format(abs(r.final_result)) }}</span>
-                                          {% else %}
-                                              <span class="badge bg-danger">징수</span> 
-                                              <span class="text-danger fw-bold">- {{ "{:,}".format(r.final_result) }}</span>
-                                          {% endif %}
-                                      </td>
-                                  </tr>
-                                  {% endfor %}
-                              </tbody>
-                          </table>
-                      </div>
-                  </div>
-              </div>
-          </body>
-          </html>
-          EOF
-
-          # 4. Dockerfile (데이터 폴더 포함)
-          cat <<EOF > webapp/Dockerfile
+          # [Dockerfile]
+          cat <<EOF > app_root/Dockerfile
           FROM python:3.9-slim
           WORKDIR /app
-          
-          # 의존성 설치
           COPY requirements.txt .
           RUN pip install --no-cache-dir -r requirements.txt
-          
-          # 소스 코드 및 데이터 복사
-          # cost_data 폴더가 이미지 안에 포함됨
           COPY . .
-          
           EXPOSE 8080
           CMD ["python", "app.py"]
           EOF
-          
-          echo ">>> [Complete] 정산 시뮬레이션 앱 빌드 준비 완료"
 
-      # ----------------------------------------------------------------------
-      # [Step 3] 도커 빌드 및 아티팩트 생성
-      # ----------------------------------------------------------------------
-      - name: 🐳 시뮬레이션 앱 빌드
+      # 3. [핵심 기능] 시뮬레이션 실행 및 로그 출력
+      - name: 🚀 금액 시뮬레이션 실행 & 결과보기
         run: |
-          cd webapp
-          docker build -t tax-simulation:cost-data .
-          docker save -o tax-simulation.tar tax-simulation:cost-data
+          cd app_root
+          pip install -r requirements.txt
+          python simulator.py
 
+      # 4. 도커 이미지 빌드 (결과 포함)
+      - name: 🐳 시뮬레이션 결과 앱 빌드
+        run: |
+          cd app_root
+          docker build -t tax-money-simulation:latest .
+          docker save -o tax-money-simulation.tar tax-money-simulation:latest
+
+      # 5. 아티팩트 업로드
       - name: 📦 실행 파일 저장
         uses: actions/upload-artifact@v4
         with:
-          name: Tax_Simulation_App
-          path: webapp/tax-simulation.tar
+          name: Tax_Money_Simulation_App
+          path: app_root/tax-money-simulation.tar
           retention-days: 7
