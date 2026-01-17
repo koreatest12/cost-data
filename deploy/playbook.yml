@@ -1,0 +1,200 @@
+---
+# Cost Data Deployment Playbook
+# Deploys the application to multiple servers on port 9999
+
+- name: Deploy Cost Data Application
+  hosts: web_servers
+  become: yes
+  vars:
+    app_name: cost-data
+    deploy_port: 9999
+    install_dir: /opt/cost-data
+    app_user: costdata
+    java_version: "17"
+
+  tasks:
+    - name: Update apt cache (Debian/Ubuntu)
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+      tags: prerequisites
+
+    - name: Install Java JDK
+      package:
+        name: "openjdk-{{ java_version }}-jdk"
+        state: present
+      tags: prerequisites
+
+    - name: Install Python3
+      package:
+        name: python3
+        state: present
+      tags: prerequisites
+
+    - name: Install Maven
+      package:
+        name: maven
+        state: present
+      tags: prerequisites
+
+    - name: Create application user
+      user:
+        name: "{{ app_user }}"
+        state: present
+        system: yes
+        shell: /bin/bash
+        create_home: yes
+      tags: setup
+
+    - name: Create installation directory
+      file:
+        path: "{{ install_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+      tags: setup
+
+    - name: Create uploads directory
+      file:
+        path: "{{ install_dir }}/uploads"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+      tags: setup
+
+    - name: Create data directory
+      file:
+        path: "{{ install_dir }}/data"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+      tags: setup
+
+    - name: Copy application JAR
+      copy:
+        src: "{{ lookup('fileglob', '../target/*.jar') }}"
+        dest: "{{ install_dir }}/cost-data.jar"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+      tags: deploy
+      notify: restart cost-data
+
+    - name: Copy Python management scripts
+      copy:
+        src: "{{ item }}"
+        dest: "{{ install_dir }}/{{ item }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+      with_items:
+        - server_manager.py
+        - demo.py
+        - security_news.py
+      tags: deploy
+
+    - name: Copy application properties
+      copy:
+        src: ../src/main/resources/application.properties
+        dest: "{{ install_dir }}/application.properties"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+      tags: deploy
+
+    - name: Copy systemd service file
+      template:
+        src: templates/cost-data.service.j2
+        dest: /etc/systemd/system/cost-data.service
+        mode: '0644'
+      tags: deploy
+      notify: 
+        - reload systemd
+        - restart cost-data
+
+    - name: Configure firewall (UFW)
+      ufw:
+        rule: allow
+        port: "{{ deploy_port }}"
+        proto: tcp
+      when: ansible_os_family == "Debian"
+      tags: firewall
+
+    - name: Configure firewall (firewalld)
+      firewalld:
+        port: "{{ deploy_port }}/tcp"
+        permanent: yes
+        state: enabled
+      when: ansible_os_family == "RedHat"
+      tags: firewall
+      notify: reload firewalld
+
+    - name: Enable cost-data service
+      systemd:
+        name: cost-data
+        enabled: yes
+        state: started
+      tags: service
+
+    - name: Create deployment info file
+      template:
+        src: templates/deployment-info.txt.j2
+        dest: "{{ install_dir }}/deployment-info.txt"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0644'
+      tags: info
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: restart cost-data
+      systemd:
+        name: cost-data
+        state: restarted
+
+    - name: reload firewalld
+      service:
+        name: firewalld
+        state: reloaded
+
+- name: Deploy to Deployment Server
+  hosts: deploy_server
+  become: yes
+  vars:
+    install_dir: /opt/cost-data-deploy
+    deploy_user: admin
+
+  tasks:
+    - name: Create deployment control directory
+      file:
+        path: "{{ install_dir }}"
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0755'
+
+    - name: Copy deployment scripts
+      copy:
+        src: ../deploy/
+        dest: "{{ install_dir }}/deploy/"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0755'
+
+    - name: Copy inventory file
+      copy:
+        src: ../inventory.ini
+        dest: "{{ install_dir }}/inventory.ini"
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0644'
+
+    - name: Display deployment status
+      debug:
+        msg: "Deployment server configured at {{ install_dir }}"

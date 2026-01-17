@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  cost-data:
+    build: .
+    container_name: cost-data-app
+    ports:
+      - "9999:9999"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./data:/app/data
+      - ./DB:/app/DB
+    environment:
+      - SERVER_PORT=9999
+      - JAVA_OPTS=-Xmx512m -Xms256m
+      - FILE_STORAGE_LOCATION=/app/uploads
+    restart: unless-stopped
+    networks:
+      - cost-data-network
+
+networks:
+  cost-data-network:
+    driver: bridge

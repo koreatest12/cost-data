@@ -1,0 +1,26 @@
+[Unit]
+Description=Cost Data File Management System
+After=network.target
+
+[Service]
+Type=simple
+User=costdata
+Group=costdata
+WorkingDirectory=/opt/cost-data
+ExecStart=/usr/bin/java -jar /opt/cost-data/cost-data.jar
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cost-data
+
+# Environment variables
+Environment="SERVER_PORT=9999"
+Environment="JAVA_OPTS=-Xmx512m -Xms256m"
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
