@@ -26,10 +26,18 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/files/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/firewall/**").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            .httpBasic(basic -> {});
+            .httpBasic(basic -> {})
+            // Security headers for enhanced protection
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp
+                    .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self'"))
+                .frameOptions(frame -> frame.deny())
+                .contentTypeOptions(cto -> cto.disable())
+            );
         
         return http.build();
     }
