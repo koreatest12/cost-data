@@ -1,4 +1,4 @@
-name: 📱 Tax Web App Dev & Build
+name: 📱 Tax Web App Dev & Build (Fixed)
 
 on:
   workflow_dispatch:
@@ -33,8 +33,13 @@ jobs:
           mkdir -p webapp/templates
           mkdir -p webapp/uploads
 
-          # 1. Python 패키지 의존성
-          echo "flask\npandas\nopenpyxl\npdfplumber" > webapp/requirements.txt
+          # [수정됨] 1. Python 패키지 의존성 (줄바꿈 오류 해결을 위해 cat 방식 적용)
+          cat <<EOF > webapp/requirements.txt
+          flask
+          pandas
+          openpyxl
+          pdfplumber
+          EOF
 
           # 2. 백엔드 로직 (app.py)
           cat <<EOF > webapp/app.py
@@ -50,7 +55,7 @@ jobs:
           app.config['UPLOAD_FOLDER'] = 'uploads'
           app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
 
-          # --- 계산 엔진 (축약됨) ---
+          # --- 계산 엔진 ---
           def calculate_tax(salary, data):
               salary = int(salary)
               if salary <= 5000000: income_ded = salary * 0.7
@@ -262,7 +267,7 @@ jobs:
           FROM python:3.9-slim
           WORKDIR /app
           COPY requirements.txt .
-          RUN pip install -r requirements.txt
+          RUN pip install --no-cache-dir -r requirements.txt
           COPY . .
           RUN mkdir -p uploads
           EXPOSE 8080
