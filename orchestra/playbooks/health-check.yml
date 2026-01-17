@@ -1,0 +1,45 @@
+---
+# Simple System Health Check Playbook
+# AWX에서 서버 상태를 확인하는 간단한 플레이북
+
+- name: System Health Check
+  hosts: all
+  gather_facts: yes
+  
+  tasks:
+    - name: Check disk space
+      shell: df -h /
+      register: disk_space
+      changed_when: false
+    
+    - name: Display disk space
+      debug:
+        var: disk_space.stdout_lines
+    
+    - name: Display memory usage from facts
+      debug:
+        msg: |
+          Total Memory: {{ ansible_memtotal_mb }} MB
+          Free Memory: {{ ansible_memfree_mb }} MB
+          Used Memory: {{ ansible_memtotal_mb - ansible_memfree_mb }} MB
+    
+    - name: Check system uptime
+      shell: uptime
+      register: system_uptime
+      changed_when: false
+    
+    - name: Display system uptime
+      debug:
+        var: system_uptime.stdout
+    
+    - name: Gather and display system facts
+      debug:
+        msg: |
+          Hostname: {{ ansible_hostname }}
+          FQDN: {{ ansible_fqdn }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel: {{ ansible_kernel }}
+          Architecture: {{ ansible_architecture }}
+          CPU Cores: {{ ansible_processor_vcpus }}
+          Total Memory: {{ ansible_memtotal_mb }} MB
+          IP Address: {{ ansible_default_ipv4.address | default('N/A') }}
