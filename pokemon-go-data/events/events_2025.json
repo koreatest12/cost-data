@@ -1,0 +1,283 @@
+{
+  "events_2025": [
+    {
+      "event_name": "New Year Event 2025",
+      "korean_name": "2025 새해 이벤트",
+      "start_date": "2025-01-01T10:00:00Z",
+      "end_date": "2025-01-05T20:00:00Z",
+      "event_type": "Seasonal",
+      "features": [
+        "Increased shiny rates",
+        "Special raid bosses",
+        "Timed Research",
+        "New Year costume Pokemon"
+      ],
+      "bonuses": [
+        "2x Catch XP",
+        "2x Stardust from catches"
+      ],
+      "featured_pokemon": [
+        "Party Hat Pikachu",
+        "Party Hat Wurmple",
+        "Party Hat Ratatta"
+      ]
+    },
+    {
+      "event_name": "Community Day: Charmander",
+      "korean_name": "커뮤니티 데이: 파이리",
+      "start_date": "2025-01-20T14:00:00Z",
+      "end_date": "2025-01-20T17:00:00Z",
+      "event_type": "Community Day",
+      "features": [
+        "Increased Charmander spawns",
+        "Exclusive move: Blast Burn",
+        "3-hour Lure Modules",
+        "Special Research Story"
+      ],
+      "bonuses": [
+        "3x Catch Stardust",
+        "2x Catch Candy",
+        "Increased shiny rate (1/25)"
+      ],
+      "featured_pokemon": [
+        "Charmander"
+      ],
+      "exclusive_move": "Blast Burn"
+    },
+    {
+      "event_name": "Lunar New Year 2025",
+      "korean_name": "2025 설날 이벤트",
+      "start_date": "2025-01-28T10:00:00Z",
+      "end_date": "2025-02-03T20:00:00Z",
+      "event_type": "Cultural",
+      "features": [
+        "Red themed Pokemon spawns",
+        "Lucky Pokemon increased rate",
+        "Special Field Research",
+        "Lunar New Year themed avatar items"
+      ],
+      "bonuses": [
+        "Increased Lucky Friend chance",
+        "2x Transfer Candy"
+      ],
+      "featured_pokemon": [
+        "Darumaka",
+        "Goldeen",
+        "Magikarp",
+        "Octillery",
+        "Gyarados"
+      ]
+    },
+    {
+      "event_name": "Valentine's Day Event 2025",
+      "korean_name": "2025 발렌타인데이 이벤트",
+      "start_date": "2025-02-13T10:00:00Z",
+      "end_date": "2025-02-17T20:00:00Z",
+      "event_type": "Seasonal",
+      "features": [
+        "Pink Pokemon spawns",
+        "Love Cup in GO Battle League",
+        "Special Research",
+        "Increased Luvdisc spawns"
+      ],
+      "bonuses": [
+        "2x Catch Candy",
+        "Reduced egg hatch distance"
+      ],
+      "featured_pokemon": [
+        "Luvdisc",
+        "Chansey",
+        "Clefairy",
+        "Jigglypuff",
+        "Happiny"
+      ]
+    },
+    {
+      "event_name": "Pokemon GO Fest 2025",
+      "korean_name": "포켓몬고 페스트 2025",
+      "start_date": "2025-07-12T10:00:00Z",
+      "end_date": "2025-07-13T18:00:00Z",
+      "event_type": "GO Fest",
+      "features": [
+        "Rotating habitat hours",
+        "Special Research",
+        "Exclusive Pokemon debuts",
+        "GO Fest Special Trades",
+        "Ultra Beast encounters"
+      ],
+      "bonuses": [
+        "Increased shiny rates",
+        "9 free Raid Passes",
+        "Special move unlocks"
+      ],
+      "featured_pokemon": [
+        "Legendary Pokemon",
+        "Ultra Beasts",
+        "Regional exclusives",
+        "Shiny debuts"
+      ],
+      "ticket_required": true,
+      "ticket_price": "$14.99"
+    },
+    {
+      "event_name": "Community Day Classic: Eevee",
+      "korean_name": "커뮤니티 데이 클래식: 이브이",
+      "start_date": "2025-05-17T14:00:00Z",
+      "end_date": "2025-05-17T17:00:00Z",
+      "event_type": "Community Day Classic",
+      "features": [
+        "Increased Eevee spawns",
+        "All Eeveelutions available with special moves",
+        "3-hour Lure Modules"
+      ],
+      "bonuses": [
+        "3x Catch XP",
+        "2x Catch Candy"
+      ],
+      "featured_pokemon": [
+        "Eevee"
+      ]
+    },
+    {
+      "event_name": "Halloween 2025",
+      "korean_name": "2025 할로윈 이벤트",
+      "start_date": "2025-10-20T10:00:00Z",
+      "end_date": "2025-11-03T20:00:00Z",
+      "event_type": "Seasonal",
+      "features": [
+        "Dark and Ghost type spawns",
+        "Costume Pokemon",
+        "Special Research",
+        "Increased candy from catches"
+      ],
+      "bonuses": [
+        "2x Transfer Candy",
+        "2x Catch Candy"
+      ],
+      "featured_pokemon": [
+        "Gastly",
+        "Haunter",
+        "Gengar",
+        "Misdreavus",
+        "Sableye",
+        "Spiritomb"
+      ]
+    },
+    {
+      "event_name": "December Community Day 2025",
+      "korean_name": "12월 커뮤니티 데이 2025",
+      "start_date": "2025-12-20T14:00:00Z",
+      "end_date": "2025-12-21T17:00:00Z",
+      "event_type": "Community Day",
+      "features": [
+        "All 2025 Community Day Pokemon spawns",
+        "All 2025 exclusive moves available",
+        "Special Research",
+        "2-day event"
+      ],
+      "bonuses": [
+        "3x Catch Stardust",
+        "2x Catch Candy",
+        "2x Evolve XP"
+      ],
+      "featured_pokemon": [
+        "All 2025 Community Day Pokemon"
+      ]
+    }
+  ],
+  "raid_events": [
+    {
+      "event_name": "Primal Kyogre Raid Week",
+      "korean_name": "원시 가이오가 레이드 위크",
+      "start_date": "2025-03-15T10:00:00Z",
+      "end_date": "2025-03-22T20:00:00Z",
+      "raid_boss": "Primal Kyogre",
+      "raid_tier": "Mega/Primal",
+      "features": [
+        "Primal Kyogre in 5-star raids",
+        "Increased Primal Energy",
+        "Water-type spawns"
+      ]
+    },
+    {
+      "event_name": "Shadow Mewtwo Returns",
+      "korean_name": "그림자 뮤츠 재등장",
+      "start_date": "2025-06-01T10:00:00Z",
+      "end_date": "2025-06-08T20:00:00Z",
+      "raid_boss": "Shadow Mewtwo",
+      "raid_tier": "Shadow Legendary",
+      "features": [
+        "Shadow Mewtwo in special raids",
+        "Increased rewards",
+        "Team GO Rocket takeover"
+      ]
+    },
+    {
+      "event_name": "Mega Rayquaza Debut",
+      "korean_name": "메가 레쿠쟈 첫 등장",
+      "start_date": "2025-08-10T10:00:00Z",
+      "end_date": "2025-08-17T20:00:00Z",
+      "raid_boss": "Mega Rayquaza",
+      "raid_tier": "Mega",
+      "features": [
+        "Mega Rayquaza debut",
+        "Dragon and Flying type spawns",
+        "Mega Energy rewards"
+      ]
+    }
+  ],
+  "season_events": [
+    {
+      "season_name": "Season of Heritage",
+      "korean_name": "유산의 시즌",
+      "start_date": "2025-03-01T10:00:00Z",
+      "end_date": "2025-06-01T10:00:00Z",
+      "theme": "Ancient Pokemon and Fossils",
+      "featured_types": ["Rock", "Ground", "Dragon"],
+      "seasonal_bonuses": [
+        "Increased fossil Pokemon spawns",
+        "Special egg pool",
+        "GO Battle League season"
+      ]
+    },
+    {
+      "season_name": "Season of Adventure",
+      "korean_name": "모험의 시즌",
+      "start_date": "2025-06-01T10:00:00Z",
+      "end_date": "2025-09-01T10:00:00Z",
+      "theme": "Exploration and Discovery",
+      "featured_types": ["Flying", "Bug", "Normal"],
+      "seasonal_bonuses": [
+        "Increased adventure spawn Pokemon",
+        "Routes feature expansion",
+        "Explorer medals"
+      ]
+    },
+    {
+      "season_name": "Season of Mischief",
+      "korean_name": "장난의 시즌",
+      "start_date": "2025-09-01T10:00:00Z",
+      "end_date": "2025-12-01T10:00:00Z",
+      "theme": "Hoopa and Dimensional Travel",
+      "featured_types": ["Dark", "Psychic", "Ghost"],
+      "seasonal_bonuses": [
+        "Hoopa themed events",
+        "Dimension themed spawns",
+        "Special Research continuation"
+      ]
+    },
+    {
+      "season_name": "Season of Celebrations",
+      "korean_name": "축하의 시즌",
+      "start_date": "2025-12-01T10:00:00Z",
+      "end_date": "2026-03-01T10:00:00Z",
+      "theme": "Year-end celebrations",
+      "featured_types": ["Ice", "Fire", "Electric"],
+      "seasonal_bonuses": [
+        "Holiday events",
+        "Year-end Community Day",
+        "Special avatar items"
+      ]
+    }
+  ]
+}
