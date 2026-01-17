@@ -48,6 +48,10 @@ class YearEndSettlement:
         """
         for key, value in kwargs.items():
             if key in self.data:
+                # 음수 값 방지
+                if value < 0:
+                    print(f"경고: {key} 값이 음수입니다. 0으로 설정됩니다.")
+                    value = 0
                 self.data[key] = value
 
     def load_from_file(self, filename: str) -> bool:
@@ -136,8 +140,11 @@ class YearEndSettlement:
         
         card_deduction = 0
         if total_usage > min_usage:
+            # 실제로는 신용카드 15%, 직불/현금 30%로 순차 계산해야 하나,
+            # 시뮬레이션 목적으로 간소화하여 평균 30% 적용
+            # 정확한 계산은 국세청 홈택스를 이용하세요
             deductible_usage = total_usage - min_usage
-            card_deduction = deductible_usage * 0.30  # 대략적 계산
+            card_deduction = deductible_usage * 0.30  # 간소화된 계산
             card_deduction = min(card_deduction, 3_000_000)  # 공제 한도
         
         results['card_deduction'] = int(card_deduction)
@@ -145,7 +152,8 @@ class YearEndSettlement:
         print(f"    (총 사용액: {total_usage:,}원, 최저사용기준: {int(min_usage):,}원)")
 
         # 6. 의료비 세액공제
-        net_medical = self.data["medical_expense"] - self.data["medical_silson"]
+        # 실손보험 수령액이 의료비보다 클 수 없음 (음수 방지)
+        net_medical = max(0, self.data["medical_expense"] - self.data["medical_silson"])
         medical_threshold = self.total_salary * 0.03
         medical_credit = 0
         
@@ -287,16 +295,16 @@ def interactive_mode():
         print("\n공제 항목을 입력하세요 (없으면 0 입력):")
         
         deductions = {}
-        deductions['pension'] = int(input("국민연금: ").strip() or "0")
-        deductions['insurance_health'] = int(input("건강/고용보험: ").strip() or "0")
-        deductions['housing_saving'] = int(input("주택청약: ").strip() or "0")
-        deductions['credit_card'] = int(input("신용카드 사용액: ").strip() or "0")
-        deductions['debit_card'] = int(input("체크카드 사용액: ").strip() or "0")
-        deductions['cash_receipt'] = int(input("현금영수증: ").strip() or "0")
-        deductions['medical_expense'] = int(input("의료비 지출액: ").strip() or "0")
-        deductions['medical_silson'] = int(input("실손보험 수령액: ").strip() or "0")
-        deductions['insurance_guarantee'] = int(input("보장성 보험료: ").strip() or "0")
-        deductions['donation'] = int(input("기부금: ").strip() or "0")
+        deductions['pension'] = max(0, int(input("국민연금: ").strip() or "0"))
+        deductions['insurance_health'] = max(0, int(input("건강/고용보험: ").strip() or "0"))
+        deductions['housing_saving'] = max(0, int(input("주택청약: ").strip() or "0"))
+        deductions['credit_card'] = max(0, int(input("신용카드 사용액: ").strip() or "0"))
+        deductions['debit_card'] = max(0, int(input("체크카드 사용액: ").strip() or "0"))
+        deductions['cash_receipt'] = max(0, int(input("현금영수증: ").strip() or "0"))
+        deductions['medical_expense'] = max(0, int(input("의료비 지출액: ").strip() or "0"))
+        deductions['medical_silson'] = max(0, int(input("실손보험 수령액: ").strip() or "0"))
+        deductions['insurance_guarantee'] = max(0, int(input("보장성 보험료: ").strip() or "0"))
+        deductions['donation'] = max(0, int(input("기부금: ").strip() or "0"))
         
         settlement.set_data(**deductions)
         settlement.calculate()

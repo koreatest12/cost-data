@@ -51,13 +51,17 @@ repl-temp-*
 server_config.json
 demo_config.json
 
-# Year-end settlement result files (but keep example configs)
+# Year-end settlement result files
 yearend_result*.json
 
-# All other JSON files except yearend examples
+# Exclude all other JSON files first
 *.json
+
+# Then re-include specific yearend config files (but not result files)
 !yearend_example.json
-!yearend_*.json
+!yearend_김병권.json
+
+# Don't exclude pom.xml
 !pom.xml
 
 # Python cache

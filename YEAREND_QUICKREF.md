@@ -44,18 +44,34 @@ python3 yearend_settlement.py --config yearend_example.json
 ```json
 {
   "name": "이름",
-  "total_salary": 총급여액,
+  "total_salary": 0,
   "deductions": {
-    "pension": 국민연금,
-    "insurance_health": 건강보험_고용보험,
-    "housing_saving": 주택청약,
-    "credit_card": 신용카드,
-    "debit_card": 체크카드,
-    "cash_receipt": 현금영수증,
-    "medical_expense": 의료비,
-    "medical_silson": 실손보험,
-    "insurance_guarantee": 보장성보험,
-    "donation": 기부금
+    "pension": 0,
+    "insurance_health": 0,
+    "housing_saving": 0,
+    "credit_card": 0,
+    "debit_card": 0,
+    "cash_receipt": 0,
+    "medical_expense": 0,
+    "medical_silson": 0,
+    "insurance_guarantee": 0,
+    "donation": 0
+  }
+}
+```
+
+**주의**: 위 템플릿에서 숫자 값들을 실제 금액으로 교체하세요.
+
+**예시**:
+```json
+{
+  "name": "홍길동",
+  "total_salary": 40000000,
+  "deductions": {
+    "pension": 1236000,
+    "insurance_health": 1378730,
+    "housing_saving": 1200000,
+    ...
   }
 }
 ```
