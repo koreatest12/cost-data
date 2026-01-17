@@ -1,5 +1,41 @@
 
-# Cost Data - File Management System
+# Cost Data - Integrated Management System
+
+통합 관리 시스템으로 파일 관리, 서버 관리, 연말정산 시뮬레이션 기능을 제공합니다.
+
+Integrated management system providing file management, server management, and year-end tax settlement simulation.
+
+---
+
+## 📊 연말정산 시뮬레이션 프로그램 (Year-End Tax Settlement Simulator)
+
+한국의 연말정산 세금 계산을 시뮬레이션하는 전문 프로그램이 포함되어 있습니다.
+
+Professional program to simulate year-end tax settlement calculations for Korea.
+
+### 빠른 시작 (Quick Start)
+```bash
+# 간편 실행 스크립트 사용
+./run_yearend.sh
+
+# 또는 직접 실행
+python3 yearend_settlement.py
+
+# 설정 파일 사용
+python3 yearend_settlement.py --config yearend_example.json
+```
+
+### 주요 기능
+- ✅ 근로소득공제 자동 계산
+- ✅ 신용카드/체크카드 소득공제
+- ✅ 의료비/보험료/기부금 세액공제
+- ✅ 대화형 모드 및 JSON 설정 파일 지원
+
+**자세한 사용법은 [YEAREND_README.md](YEAREND_README.md)를 참조하세요.**
+
+---
+
+## 📁 파일 관리 시스템 (File Management System)
 
 Spring Boot 애플리케이션으로 파일 및 디렉토리 관리 기능과 권한 인증을 제공합니다.
 
