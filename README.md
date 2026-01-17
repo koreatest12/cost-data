@@ -3,6 +3,22 @@
 
 Spring Boot 애플리케이션으로 파일 및 디렉토리 관리 기능과 권한 인증을 제공합니다.
 
+## 🚀 Quick Start (빠른 시작)
+
+### Linux/MacOS:
+```bash
+./start-api-server.sh
+```
+
+### Windows:
+```batch
+start-api-server.bat
+```
+
+서버가 `http://localhost:8080`에서 시작됩니다.
+
+자세한 설치 가이드는 [API_SERVER_SETUP.md](API_SERVER_SETUP.md)를 참조하세요.
+
 ## 기능
 
 - 파일 생성 및 관리
