@@ -36,7 +36,6 @@ public class SecurityConfig {
                 .contentSecurityPolicy(csp -> csp
                     .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self'"))
                 .frameOptions(frame -> frame.deny())
-                .contentTypeOptions(cto -> cto.disable())
             );
         
         return http.build();

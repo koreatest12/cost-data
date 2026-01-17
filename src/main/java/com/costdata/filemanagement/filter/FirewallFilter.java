@@ -38,11 +38,12 @@ public class FirewallFilter implements Filter {
         
         String ipAddress = getClientIpAddress(httpRequest);
         
-        // IP-based firewall check
+        // IP-based firewall check - perform early to prevent information leakage
         if (!firewallConfig.isIpAllowed(ipAddress)) {
             logger.warn("Firewall blocked request from IP: {}", ipAddress);
             httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            httpResponse.getWriter().write("{\"error\":\"Access denied by firewall\"}");
+            httpResponse.setContentType("application/json");
+            httpResponse.getWriter().write("{\"error\":\"Access denied\"}");
             return;
         }
         
@@ -50,7 +51,8 @@ public class FirewallFilter implements Filter {
         if (!checkRateLimit(ipAddress)) {
             logger.warn("Rate limit exceeded for IP: {}", ipAddress);
             httpResponse.setStatus(429); // Too Many Requests
-            httpResponse.getWriter().write("{\"error\":\"Rate limit exceeded\"}");
+            httpResponse.setContentType("application/json");
+            httpResponse.getWriter().write("{\"error\":\"Too many requests\"}");
             return;
         }
         
@@ -72,11 +74,13 @@ public class FirewallFilter implements Filter {
     }
     
     private boolean checkRateLimit(String ipAddress) {
-        // Reset counters every minute
+        // Reset counters every minute with synchronized access to prevent race conditions
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastResetTime > 60000) {
-            requestCounts.clear();
-            lastResetTime = currentTime;
+        synchronized (this) {
+            if (currentTime - lastResetTime > 60000) {
+                requestCounts.clear();
+                lastResetTime = currentTime;
+            }
         }
         
         AtomicInteger count = requestCounts.computeIfAbsent(ipAddress, k -> new AtomicInteger(0));
