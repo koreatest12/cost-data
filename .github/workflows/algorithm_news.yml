@@ -1,0 +1,335 @@
+name: 🧮 Algorithm & Tech Intelligence
+
+on:
+  schedule:
+    - cron: '0 22 * * *' # ⏰ KST 07:00 (취업 브리핑 1시간 전 실행)
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  packages: write
+  actions: write
+
+jobs:
+  algo-engine:
+    name: 📐 Algorithm Engine
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 소스 코드 체크아웃
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # 🔄 데이터 복원 (이전 알고리즘 데이터 불러오기)
+      # ------------------------------------------------------------------
+      - name: 🔄 Smart Algo-Data Restore
+        run: |
+          echo "📡 Connecting to Algo Grid..."
+          IMAGE_URL="ghcr.io/${GITHUB_REPOSITORY,,}/algo-news-data:latest"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          if docker manifest inspect $IMAGE_URL > /dev/null 2>&1; then
+            echo "✅ Backup Image Found. Restoring..."
+            docker pull $IMAGE_URL
+            docker create --name restore_cnt $IMAGE_URL
+            if docker cp restore_cnt:/app/DB_ALGO ./DB_RESTORED; then
+              mkdir -p DB_ALGO
+              cp -r ./DB_RESTORED/* ./DB_ALGO/
+              rm -rf ./DB_RESTORED
+            fi
+            docker rm restore_cnt
+          else
+            echo "🆕 First Run: Initializing Algo Database."
+            mkdir -p DB_ALGO
+          fi
+
+      # ------------------------------------------------------------------
+      # 🛠️ 환경 구축
+      # ------------------------------------------------------------------
+      - name: 🛠️ Setup Infrastructure
+        run: |
+          echo "📂 Initializing Storage Sectors..."
+          # 카테고리별 폴더 생성
+          for c in ai_research cs_coding tech_blog search_engine; do
+            mkdir -p DB_ALGO/news/$c
+            mkdir -p DB_ALGO/archive/$c
+            mkdir -p DB_ALGO/backup
+          done
+          
+          cat <<EOF > requirements.txt
+          feedparser
+          aiohttp
+          asyncio
+          requests
+          beautifulsoup4
+          lxml
+          fake-useragent
+          pandas
+          tabulate
+          EOF
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: 📦 Install Dependencies
+        run: pip install -r requirements.txt
+
+      # ------------------------------------------------------------------
+      # 🔥 알고리즘 특화 대량 수집기 (Massive Algorithm Core)
+      # ------------------------------------------------------------------
+      - name: 🧬 Generate Algorithm Core
+        run: |
+          cat << 'EOF' > algo_core.py
+          import asyncio, aiohttp, feedparser, os, json, shutil, re, random
+          from datetime import datetime
+          from fake_useragent import UserAgent
+          from collections import Counter
+
+          # [설정]
+          DB_DIR = "DB_ALGO"
+          NEWS_DIR = os.path.join(DB_DIR, "news")
+          ARCHIVE_DIR = os.path.join(DB_DIR, "archive")
+          BACKUP_DIR = os.path.join(DB_DIR, "backup")
+          REPORT_FILE = "algorithm_briefing.md"
+          
+          # [전략] 알고리즘 4대 핵심 분야 정의
+          CATEGORIES = {
+              "ai_research": "🧠 AI & Research",
+              "cs_coding": "💻 CS & Coding Test",
+              "tech_blog": "🏢 Tech & Engineering",
+              "search_engine": "📉 Search & Optimization"
+          }
+
+          # [매트릭스 쿼리] 키워드 조합 (대량 수집용)
+          KEYWORDS = {
+              "ai_research": [
+                  "LLM Algorithm", "Transformer Architecture", "Diffusion Model", "Reinforcement Learning",
+                  "RAG Algorithm", "Fine-tuning", "Neural Network Optimization", "Google DeepMind", "OpenAI Research"
+              ],
+              "cs_coding": [
+                  "Algorithm Test", "Coding Interview", "Data Structure", "Dynamic Programming", 
+                  "Graph Theory", "LeetCode Solution", "Baekjoon", "Dijkstra", "DFS BFS", "Sorting Algorithm"
+              ],
+              "tech_blog": [
+                  "Netflix Engineering", "Uber Engineering", "Meta Tech Blog", "Naver D2", "Kakao Tech",
+                  "System Design", "Microservices Pattern", "Database Indexing", "Load Balancing Algorithm"
+              ],
+              "search_engine": [
+                  "Search Algorithm", "Recommendation System", "Ranking Algorithm", "SEO Update", 
+                  "Google Core Update", "YouTube Algorithm", "Instagram Algorithm"
+              ]
+          }
+          
+          # 타겟 소스 (검색 정확도 향상)
+          TARGET_SITES = ["site:github.com", "site:arxiv.org", "site:medium.com", "site:velog.io", "site:tistory.com", ""]
+
+          async def fetch(session, url, folder, category, keyword):
+              try:
+                  async with session.get(url, timeout=30) as r:
+                      if r.status != 200: return []
+                      p = feedparser.parse(await r.read())
+                      results = []
+                      for e in p.entries:
+                          title = e.title.strip()
+                          results.append({
+                              "folder": folder,
+                              "category": category,
+                              "title": title, 
+                              "link": e.link, 
+                              "keyword": keyword,
+                              "published": datetime.now().strftime('%Y-%m-%d')
+                          })
+                      return results
+              except: return []
+
+          def secure_save(folder_name, new_data):
+              active_path = os.path.join(NEWS_DIR, folder_name, "news.json")
+              backup_path = os.path.join(BACKUP_DIR, f"{folder_name}_mirror.json")
+              
+              existing = []
+              if os.path.exists(active_path):
+                  try:
+                      with open(active_path, 'r', encoding='utf-8') as f: existing = json.load(f)
+                  except: existing = []
+              
+              ex_links = {x['link'] for x in existing}
+              unique_new = [x for x in new_data if x['link'] not in ex_links]
+              merged = unique_new + existing
+              
+              # 아카이빙 (8888건 초과 시)
+              if len(merged) > 8888:
+                  snapshot = f"algo_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+                  arc_path = os.path.join(ARCHIVE_DIR, folder_name, snapshot)
+                  with open(arc_path, 'w', encoding='utf-8') as f: json.dump(merged, f, indent=2, ensure_ascii=False)
+                  merged = merged[:8888]
+
+              with open(active_path, 'w', encoding='utf-8') as f: json.dump(merged, f, indent=2, ensure_ascii=False)
+              shutil.copy2(active_path, backup_path)
+              return merged
+
+          def generate_dashboard(all_items, stats):
+              total_cnt = len(all_items)
+              now = datetime.now().strftime('%Y-%m-%d %H:%M')
+              
+              # Mermaid Pie Chart
+              mermaid = "```mermaid\npie title Algorithm News Share\n"
+              for k, v in stats.items():
+                  label = CATEGORIES.get(k, k).replace("&", "and")
+                  if v > 0: mermaid += f'    "{label}" : {v}\n'
+              mermaid += "```\n"
+
+              # 키워드 히트맵
+              keywords = [i['keyword'] for i in all_items]
+              kw_cnt = Counter(keywords).most_common(10)
+
+              md = f"# 🧮 Algorithm & Tech Intelligence\n\n"
+              
+              # 상태 패널
+              md += f"""
+              <table>
+                <tr>
+                    <td align="center"><b>🖥️ System Status</b></td>
+                    <td align="center"><b>💾 Total Data</b></td>
+                    <td align="center"><b>🔄 Sync</b></td>
+                </tr>
+                <tr>
+                    <td align="center">🟢 <b style="color:green">Online</b></td>
+                    <td align="center"><b>{total_cnt:,}</b></td>
+                    <td align="center">⚡ <b>{now}</b></td>
+                </tr>
+              </table>
+              """
+              
+              md += "\n### 📊 Category Distribution\n" + mermaid + "\n"
+              
+              md += "### 🔥 Hot Keywords (Top 10)\n"
+              for k, c in kw_cnt:
+                  bar = "█" * int((c/total_cnt)*50) if total_cnt > 0 else ""
+                  md += f"- **{k}**: `{bar}` ({c})\n"
+
+              md += "\n### 🏆 Top Tech & Algorithm News\n"
+              md += "| Category | Keyword | Title |\n|:---:|:---:|:---|\n"
+              
+              # 'Research'나 'Tech' 키워드 우선 정렬
+              sorted_items = sorted(all_items, key=lambda x: "Research" in x['category'], reverse=True)
+              
+              for item in sorted_items[:30]:
+                  cat_short = item['category'].split(" ")[0] # 이모지 가져오기
+                  title = item['title'][:40].replace("|", "-")
+                  md += f"| {cat_short} | {item['keyword']} | [{title}]({item['link']}) |\n"
+              
+              with open(REPORT_FILE, 'w', encoding='utf-8') as f: f.write(md)
+
+          async def main():
+              print("🚀 Algorithm Intelligence Engine Running...")
+              
+              sources = []
+              # 쿼리 매트릭스 생성: [폴더] x [키워드] x [타겟사이트]
+              for folder, display_name in CATEGORIES.items():
+                  kws = KEYWORDS.get(folder, [])
+                  for kw in kws:
+                      for site in TARGET_SITES:
+                          # 쿼리: "site:arxiv.org LLM Algorithm"
+                          query = f"{site} {kw}".strip()
+                          url = f"https://news.google.com/rss/search?q={query}+when:1d&hl=en-US&gl=US&ceid=US:en"
+                          sources.append({
+                              "url": url, "folder": folder, "category": display_name, "kw": kw
+                          })
+
+              print(f"📡 Generated {len(sources)} Algorithm Queries.")
+              
+              ua = UserAgent()
+              conn = aiohttp.TCPConnector(limit=150)
+              items = []
+              
+              async with aiohttp.ClientSession(headers={'User-Agent': ua.random}, connector=conn) as session:
+                  chunk_size = 50
+                  for i in range(0, len(sources), chunk_size):
+                      chunk = sources[i:i+chunk_size]
+                      tasks = [fetch(session, s['url'], s['folder'], s['category'], s['kw']) for s in chunk]
+                      
+                      results = await asyncio.gather(*tasks)
+                      for res in results: items.extend(res)
+                      
+                      if i % 200 == 0: print(f"⏳ Processed {i}/{len(sources)}...")
+                      await asyncio.sleep(0.5)
+
+              # 저장 및 통계
+              stats = {}
+              all_items_flat = []
+              
+              # 그룹화
+              grouped = {}
+              for item in items:
+                  f = item['folder']
+                  if f not in grouped: grouped[f] = []
+                  grouped[f].append(item)
+              
+              for folder, data_list in grouped.items():
+                  saved = secure_save(folder, data_list)
+                  stats[folder] = len(saved)
+                  all_items_flat.extend(saved)
+              
+              generate_dashboard(all_items_flat, stats)
+
+          if __name__ == "__main__":
+              asyncio.run(main())
+          EOF
+          python algo_core.py
+
+      # ------------------------------------------------------------------
+      # 🌿 Git 저장
+      # ------------------------------------------------------------------
+      - name: 🌿 Save to Git
+        run: |
+          git config --global user.name "Algo Bot"
+          git config --global user.email "bot@actions"
+          git add DB_ALGO/ requirements.txt
+          git commit -m "🧮 Algo Update: $(date +'%Y-%m-%d')" || exit 0
+          git push origin main
+
+      # ------------------------------------------------------------------
+      # 🐳 Docker 이미지 (알고리즘 데이터 백업용)
+      # ------------------------------------------------------------------
+      - name: 🔠 Docker Setup
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}/algo-news-data" >> $GITHUB_ENV
+
+      - name: 🔑 Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐳 Create Dockerfile
+        run: |
+          cat <<EOF > Dockerfile
+          FROM python:3.11-slim
+          WORKDIR /app
+          COPY . /app
+          RUN echo "📊 Checking Algo Data..." && ls -lh /app/DB_ALGO/news/
+          CMD ["python", "algo_core.py"]
+          EOF
+
+      - name: 🚀 Build & Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:latest
+
+      # ------------------------------------------------------------------
+      # 🖥️ 대시보드 출력
+      # ------------------------------------------------------------------
+      - name: 🖥️ Display Dashboard
+        if: always()
+        run: |
+          if [ -f algorithm_briefing.md ]; then
+            cat algorithm_briefing.md >> $GITHUB_STEP_SUMMARY
+          fi
