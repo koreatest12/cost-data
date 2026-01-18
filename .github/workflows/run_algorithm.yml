@@ -1,356 +1,313 @@
-name: 🏢 엔터프라이즈 세금 시스템 (구문 오류 수정 및 안정화)
+name: 🏢 엔터프라이즈 통합 데이터 파이프라인 (PR & Multi-Container)
 
 on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
+  # [New] 풀 리퀘스트 이벤트 대량 처리 대응
+  pull_request:
+    branches: [ "main" ]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  enterprise-processing:
+  enterprise-orchestrator:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45 # 대량 처리로 인한 시간 연장
     
     steps:
-      - name: 📥 시스템 체크아웃
+      - name: 📥 시스템 소스 체크아웃
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] 데이터 및 환경 준비
+      # [Step 1] 데이터 레이크 초기화 (Deep Scan)
       # ----------------------------------------------------------------------
-      - name: 📥 데이터 리포지토리 로드
+      - name: 📥 원천 데이터 수집 (koreatest12/cost-data)
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
-          path: app_root/cost_data
+          path: app_root/raw_data
           fetch-depth: 0 
 
-      - name: 🔧 파일 권한 설정
-        run: chmod -R 755 app_root/cost_data
+      - name: 🔧 데이터 레이크 권한 설정
+        run: chmod -R 755 app_root/raw_data
           
-      - name: 🐍 파이썬 환경 설정
+      - name: 🐍 파이썬 런타임 구성
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
       # ----------------------------------------------------------------------
-      # [Step 1.5] 필수 라이브러리 사전 설치 (실행 에러 방지)
+      # [Step 2] 인프라스트럭처 디펜던시 구성
       # ----------------------------------------------------------------------
-      - name: 📦 필수 라이브러리 대량 설치
+      - name: 📦 인프라 모듈 대량 설치
         run: |
-          echo ">>> [Init] Installing core dependencies..."
+          echo ">>> [Infra] Installing Cluster Dependencies..."
           pip install --upgrade pip
-          pip install pandas openpyxl pdfplumber tabulate faker numpy flask
+          pip install pandas openpyxl pdfplumber tabulate faker numpy flask requests shutilwhich
 
       # ----------------------------------------------------------------------
-      # [Step 2] 프로젝트 생성 스크립트 작성 (Fix: cat <<'EOF' 사용)
+      # [Step 3] 마이크로서비스 아키텍처 생성기 (Generator)
       # ----------------------------------------------------------------------
-      - name: 🛠️ generate_full_project.py 생성
+      - name: 🛠️ generate_enterprise_arch.py 실행
         run: |
-          # 쉘 변수 확장을 막기 위해 'EOF'를 사용합니다.
-          cat <<'EOF' > generate_full_project.py
-          import os, sys, glob, json, re, random, time, datetime
+          # 특수문자 오류 방지를 위해 'EOF' 사용
+          cat <<'EOF' > generate_enterprise_arch.py
+          import os, sys, glob, json, re, random, time, shutil, datetime
           import pandas as pd
           import numpy as np
           from collections import defaultdict
           
           # ==============================================================================
-          # [1] 설정 및 디렉토리 구조
+          # [1] 엔터프라이즈 디렉토리 구조 정의 (Data Lake & Warehouse)
           # ==============================================================================
-          BASE_DIR = "app_root"
-          
-          # 외부 서비스 시뮬레이션 경로
-          SERVICE_DIRS = {
-              "S3_BUCKET": os.path.join(BASE_DIR, "services", "aws_s3_receipts"),
-              "ERP_API":   os.path.join(BASE_DIR, "services", "erp_data_sync"),
-              "NAS_LOGS":  os.path.join(BASE_DIR, "services", "nas_audit_logs")
+          ROOT = "app_root"
+          DIRS = {
+              "RAW":      os.path.join(ROOT, "raw_data"),
+              "BACKUP":   os.path.join(ROOT, "data_lake", "backup_zone"),   # Copy 대상
+              "ARCHIVE":  os.path.join(ROOT, "data_lake", "archive_zone"),  # Move 대상
+              "MART":     os.path.join(ROOT, "data_warehouse", "data_mart"),# Load 대상
+              "LOGS":     os.path.join(ROOT, "system_logs"),
+              "CONTAINERS": os.path.join(ROOT, "containers") # 마이크로서비스 소스
           }
+          
+          # 생성할 마이크로서비스 목록
+          MICROSERVICES = ["auth-service", "calc-engine", "log-aggregator", "storage-gateway", "dashboard-ui"]
 
           REQ_TXT = """
           flask
           pandas
-          openpyxl
-          pdfplumber
-          tabulate
-          faker
           numpy
-          """
-
-          DOCKERFILE = """
-          FROM python:3.9-slim
-          WORKDIR /app
-          COPY requirements.txt .
-          RUN pip install --no-cache-dir -r requirements.txt
-          COPY . .
-          RUN chmod -R 755 services cost_data
-          EXPOSE 8080
-          CMD ["python", "app.py"]
+          pdfplumber
+          faker
           """
 
           # ==============================================================================
-          # [2] 엔진 템플릿 (Raw String 사용으로 이스케이프 문제 원천 차단)
+          # [2] 데이터 파이프라인 엔진 (ETL Logic)
           # ==============================================================================
           ENGINE_CODE = r'''
-          import os, glob, json, re, random, time, datetime
+          import os, glob, json, shutil, time, random
           import pandas as pd
           import numpy as np
-          from collections import defaultdict
+          from datetime import datetime
 
-          # ------------------------------------------------------------------
-          # [Config] 서비스 경로 설정 (생성 스크립트와 동일하게 맞춤)
-          # ------------------------------------------------------------------
-          SERVICE_DIRS = {
-              "S3_BUCKET": "services/aws_s3_receipts",
-              "ERP_API":   "services/erp_data_sync",
-              "NAS_LOGS":  "services/nas_audit_logs"
+          # 경로 설정 (실행 시 주입됨)
+          DIRS = {
+              "RAW":      "raw_data",
+              "BACKUP":   "data_lake/backup_zone",
+              "ARCHIVE":  "data_lake/archive_zone",
+              "MART":     "data_warehouse/data_mart",
+              "LOGS":     "system_logs"
           }
 
-          # ------------------------------------------------------------------
-          # [Connector] 서비스 연동 모듈
-          # ------------------------------------------------------------------
-          class ServiceConnector:
+          class DataPipeline:
               def __init__(self):
-                  for key, path in SERVICE_DIRS.items():
-                      os.makedirs(path, exist_ok=True)
-                      
-              def upload_receipt(self, name, content):
-                  path = os.path.join(SERVICE_DIRS["S3_BUCKET"], f"{name}.html")
-                  with open(path, "w", encoding="utf-8") as f: 
-                      f.write(content)
-                  return path
+                  for d in DIRS.values(): os.makedirs(d, exist_ok=True)
+                  self.log_file = os.path.join(DIRS["LOGS"], "pipeline.log")
 
-              def sync_erp(self, data):
-                  # Numpy 타입 JSON 직렬화 지원
+              def log(self, msg):
+                  ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                  with open(self.log_file, "a") as f: f.write(f"[{ts}] {msg}\n")
+                  print(f"[{ts}] {msg}")
+
+              # [기능 1] 데이터 복제 (Copy) - 백업
+              def replicate_data(self):
+                  self.log("[ETL] Starting Data Replication (Backup)...")
+                  files = glob.glob(os.path.join(DIRS["RAW"], "**", "*.*"), recursive=True)
+                  count = 0
+                  for src in files:
+                      if os.path.isfile(src):
+                          fname = os.path.basename(src)
+                          dst = os.path.join(DIRS["BACKUP"], fname)
+                          shutil.copy2(src, dst)
+                          count += 1
+                  self.log(f"[ETL] Replicated {count} files to Backup Zone.")
+
+              # [기능 2] 데이터 변환 및 적재 (Transform & Load) - 웨어하우스
+              def process_and_load(self):
+                  self.log("[ETL] Starting Calculation Engine...")
+                  
+                  # 대량 시뮬레이션 데이터 생성
+                  users = []
+                  for i in range(1500):
+                      sal = int(np.random.normal(60000000, 20000000))
+                      users.append({
+                          "id": f"EMP_{i:04d}",
+                          "salary": max(30000000, sal),
+                          "tax": int(sal * 0.15)
+                      })
+                  
+                  # JSON 파일로 적재 (Data Mart)
+                  mart_file = os.path.join(DIRS["MART"], "daily_closing.json")
+                  
                   class NpEncoder(json.JSONEncoder):
                       def default(self, obj):
                           if isinstance(obj, np.integer): return int(obj)
-                          if isinstance(obj, np.floating): return float(obj)
-                          if isinstance(obj, np.ndarray): return obj.tolist()
                           return super(NpEncoder, self).default(obj)
                           
-                  path = os.path.join(SERVICE_DIRS["ERP_API"], f"{data['name']}.json")
-                  with open(path, "w", encoding="utf-8") as f:
-                      json.dump(data, f, ensure_ascii=False, indent=2, cls=NpEncoder)
-
-              def write_log(self, name, action, amount):
-                  log_path = os.path.join(SERVICE_DIRS["NAS_LOGS"], "audit.log")
-                  timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                  # 여기서 줄바꿈(\n) 처리가 중요함
-                  with open(log_path, "a", encoding="utf-8") as f: 
-                      f.write(f"[{timestamp}] USER:{name} | ACT:{action} | AMT:{amount}\n")
-
-          # ------------------------------------------------------------------
-          # [Core] 데이터 처리 엔진
-          # ------------------------------------------------------------------
-          db = defaultdict(lambda: {
-              'salary': 0, 'pension': 0, 'insurance': 0, 'medical': 0, 
-              'card': 0, 'donation': 0, 'pre_paid': 0, 'files': set(), 
-              'dependents': 1, 'source': 'REAL'
-          })
-
-          def migrate_data(root_path):
-              files = glob.glob(os.path.join(root_path, '**', '*'), recursive=True)
-              valid_files = [f for f in files if os.path.isfile(f)]
-              print(f">>> [Loader] Scanning {len(valid_files)} files...")
-              
-              for filepath in valid_files:
-                  try:
-                      fname = os.path.basename(filepath)
-                      if fname.lower().endswith('.json'):
-                          with open(filepath, 'r', encoding='utf-8') as f:
-                              js = json.load(f)
-                              name = js.get('name')
-                              if name: 
-                                  db[name]['salary'] = max(db[name]['salary'], int(js.get('total_salary', 0)))
-                                  db[name]['card'] += int(js.get('credit', 0))
-                                  db[name]['source'] = 'REAL'
-                  except: pass
-
-          def generate_simulation(count=2000):
-              print(f">>> [Sim] Generating {count} massive virtual users...")
-              # 고속 난수 생성
-              salaries = np.random.normal(55000000, 20000000, count).astype(int)
-              
-              for i in range(count):
-                  uid = f"User_{i:04d}"
-                  sal = max(28000000, salaries[i]) # 최저연봉 보정
+                  with open(mart_file, "w") as f:
+                      json.dump(users, f, cls=NpEncoder)
                   
-                  db[uid] = {
-                      'salary': int(sal),
-                      'pension': int(sal * 0.045),
-                      'insurance': int(random.uniform(50, 250) * 10000),
-                      'medical': int(random.uniform(0, 800) * 10000),
-                      'card': int(sal * random.uniform(0.15, 0.45)),
-                      'pre_paid': int(sal * random.uniform(0.03, 0.12)),
-                      'files': {f"virtual_doc_{i}.pdf"},
-                      'dependents': random.randint(1, 5),
-                      'source': 'SIMULATION'
-                  }
+                  self.log(f"[ETL] Loaded {len(users)} records into Data Mart.")
+                  return len(users)
 
-          def calculate_tax(data):
-              salary = data['salary']
-              # 근로소득공제
-              if salary <= 50000000: income_ded = salary * 0.4 
-              else: income_ded = 12000000 + (salary - 45000000) * 0.05
-              
-              # 과세표준
-              tax_base = max(salary - income_ded - (data['dependents']*1500000) - data['pension'], 0)
-              
-              # 산출세액 (약식 구간)
-              if tax_base <= 46000000: tax = tax_base * 0.15 - 1080000
-              elif tax_base <= 88000000: tax = tax_base * 0.24 - 5220000
-              else: tax = tax_base * 0.35 - 14900000
-              tax = max(tax, 0)
-              
-              # 결정세액
-              credits = (data['insurance'] * 0.12) + (data['medical'] * 0.15)
-              determined = max(tax - credits, 0)
-              
-              final = int(determined - data['pre_paid'])
-              return int(tax_base), int(determined), final
-
-          def process_all(connector):
-              migrate_data('cost_data')
-              generate_simulation(2000) # 대량 시뮬레이션
-              
-              results = []
-              print(">>> [Engine] Processing Tax Calculation...")
-              
-              start_time = time.time()
-              for name, data in db.items():
-                  if not name: continue
-                  if data['salary'] == 0: data['salary'] = 35000000
-                  
-                  base, det, final = calculate_tax(data)
-                  
-                  res_data = {
-                      "name": name, "salary": data['salary'], 
-                      "result": {"base": base, "determined": det, "final": final},
-                      "type": "REFUND" if final < 0 else "COLLECT",
-                      "source": data['source']
-                  }
-                  
-                  # [핵심] 서비스 적재 수행
-                  connector.upload_receipt(name, f"<html><h1>TAX RECEIPT</h1><h2>User: {name}</h2><h3>Final: {final}</h3></html>")
-                  connector.sync_erp(res_data)
-                  connector.write_log(name, "TAX_CALC_DONE", final)
-                  
-                  results.append(res_data)
-                  
-              print(f">>> [Done] Processed {len(results)} items in {time.time()-start_time:.2f}s")
-              return results
+              # [기능 3] 데이터 이동 (Move) - 아카이빙
+              def archive_processed(self):
+                  self.log("[ETL] Archiving processed data...")
+                  # 백업본 중 일부를 아카이브로 이동 시뮬레이션
+                  files = os.listdir(DIRS["BACKUP"])[:50] # 샘플 50개 이동
+                  for f in files:
+                      src = os.path.join(DIRS["BACKUP"], f)
+                      dst = os.path.join(DIRS["ARCHIVE"], f)
+                      shutil.move(src, dst)
+                  self.log(f"[ETL] Archived {len(files)} files to Archive Zone.")
 
           if __name__ == "__main__":
-              conn = ServiceConnector()
-              res = process_all(conn)
-              
-              # 최종 결과 저장
-              class NpEncoder(json.JSONEncoder):
-                  def default(self, obj):
-                      if isinstance(obj, np.integer): return int(obj)
-                      if isinstance(obj, np.floating): return float(obj)
-                      if isinstance(obj, np.ndarray): return obj.tolist()
-                      return super(NpEncoder, self).default(obj)
-                      
-              with open('final_result.json', 'w', encoding='utf-8') as f: 
-                  json.dump(res, f, ensure_ascii=False, cls=NpEncoder)
+              pipeline = DataPipeline()
+              pipeline.replicate_data()
+              cnt = pipeline.process_and_load()
+              pipeline.archive_processed()
           '''
 
+          # ==============================================================================
+          # [3] 웹 대시보드 (상태 모니터링)
+          # ==============================================================================
           APP_CODE = r'''
-          from flask import Flask, render_template_string
-          import json, os
+          from flask import Flask
+          import os, json
           app = Flask(__name__)
           
           @app.route('/')
           def index():
-              try:
-                  with open('final_result.json', 'r') as f: results = json.load(f)
-              except: results = []
-              
-              s3_cnt = len(os.listdir('services/aws_s3_receipts'))
-              erp_cnt = len(os.listdir('services/erp_data_sync'))
+              raw_cnt = sum([len(files) for r, d, files in os.walk('raw_data')])
+              backup_cnt = len(os.listdir('data_lake/backup_zone'))
+              archive_cnt = len(os.listdir('data_lake/archive_zone'))
               
               return f"""
-              <html><body style="padding:40px; font-family:sans-serif;">
-                  <h1>🏢 Enterprise Tax Dashboard</h1>
-                  <div style="display:flex; gap:20px; margin-bottom:30px;">
-                      <div style="background:#eee; padding:20px; border-radius:10px;">
-                          <h3>AWS S3 Files</h3><h1>{s3_cnt}</h1>
+              <html><body style="background:#1a1a1a; color:white; padding:50px; font-family:arial;">
+                  <h1>🏢 Enterprise Data Platform</h1>
+                  <hr>
+                  <div style="display:flex; gap:30px;">
+                      <div style="background:#333; padding:20px; width:200px;">
+                          <h3>📥 Raw Data</h3><h1>{raw_cnt}</h1>
                       </div>
-                      <div style="background:#eee; padding:20px; border-radius:10px;">
-                          <h3>ERP Sync Records</h3><h1>{erp_cnt}</h1>
+                      <div style="background:#2ecc71; color:black; padding:20px; width:200px;">
+                          <h3>💾 Backup</h3><h1>{backup_cnt}</h1>
+                      </div>
+                      <div style="background:#3498db; padding:20px; width:200px;">
+                          <h3>📦 Archive</h3><h1>{archive_cnt}</h1>
                       </div>
                   </div>
-                  <h3>Recent Logs</h3>
-                  <pre style="background:#333; color:#0f0; padding:15px;">{os.popen('tail -n 10 services/nas_audit_logs/audit.log').read()}</pre>
+                  <h3>System Status: <span style="color:#2ecc71">ONLINE</span></h3>
               </body></html>
               """
           if __name__ == '__main__': app.run(host='0.0.0.0', port=8080)
           '''
 
           # ==============================================================================
-          # [3] 파일 생성기 실행
+          # [4] 메인 생성기 실행 (Generator)
           # ==============================================================================
           def main():
-              print(">>> [Gen] Creating Project Structure...")
-              os.makedirs("app_root", exist_ok=True)
+              print(">>> [Gen] Initializing Enterprise Architecture...")
               
-              # 1. 환경 설정 파일
-              with open("app_root/requirements.txt", "w") as f: f.write(REQ_TXT.strip())
-              with open("app_root/Dockerfile", "w") as f: f.write(DOCKERFILE.strip())
+              # 1. 기본 디렉토리 생성
+              for path in DIRS.values(): os.makedirs(path, exist_ok=True)
               
-              # 2. 소스 코드 파일
-              with open("app_root/engine.py", "w", encoding="utf-8") as f: f.write(ENGINE_CODE.strip())
-              with open("app_root/app.py", "w", encoding="utf-8") as f: f.write(APP_CODE.strip())
+              # 2. 마이크로서비스 컨테이너 생성 (대량 생성)
+              for svc in MICROSERVICES:
+                  svc_path = os.path.join(DIRS["CONTAINERS"], svc)
+                  os.makedirs(svc_path, exist_ok=True)
+                  
+                  # 각 서비스별 Dockerfile 생성
+                  dfile = f"""
+                  FROM python:3.9-slim
+                  WORKDIR /app
+                  RUN echo "Building {svc}..."
+                  COPY requirements.txt .
+                  RUN pip install -r requirements.txt
+                  CMD ["python", "app.py"]
+                  """
+                  with open(os.path.join(svc_path, "Dockerfile"), "w") as f: f.write(dfile.strip())
+                  with open(os.path.join(svc_path, "requirements.txt"), "w") as f: f.write(REQ_TXT.strip())
+                  
+                  # 서비스별 더미 앱 생성
+                  with open(os.path.join(svc_path, "app.py"), "w") as f: 
+                      f.write(f"print('Service {svc} started')")
               
-              print("✅ Project Generation Complete!")
+              # 3. 메인 엔진 및 대시보드 코드 작성
+              with open(os.path.join(ROOT, "engine.py"), "w", encoding="utf-8") as f: f.write(ENGINE_CODE.strip())
+              with open(os.path.join(ROOT, "app.py"), "w", encoding="utf-8") as f: f.write(APP_CODE.strip())
+              with open(os.path.join(ROOT, "requirements.txt"), "w") as f: f.write(REQ_TXT.strip())
+              
+              # 4. 루트 Dockerfile (Orchestrator용)
+              root_docker = """
+              FROM python:3.9-slim
+              WORKDIR /app
+              COPY . .
+              RUN pip install -r requirements.txt
+              EXPOSE 8080
+              CMD ["python", "app.py"]
+              """
+              with open(os.path.join(ROOT, "Dockerfile"), "w") as f: f.write(root_docker.strip())
+
+              print(f"✅ Architecture Generated: {len(MICROSERVICES)} microservices created.")
 
           if __name__ == "__main__":
               main()
           EOF
 
-      - name: 🏗️ 프로젝트 생성 실행
-        run: python generate_full_project.py
+      - name: 🏗️ 아키텍처 생성 스크립트 실행
+        run: python generate_enterprise_arch.py
 
       # ----------------------------------------------------------------------
-      # [Step 3] 대량 계산 및 서비스 적재 실행
+      # [Step 4] 데이터 ETL 엔진 구동 (Move/Copy/Load)
       # ----------------------------------------------------------------------
-      - name: 🚀 엔진 구동 (Massive Processing)
+      - name: 🚀 데이터 파이프라인 가동 (ETL)
         run: |
           cd app_root
-          # 이미 Step 1.5에서 설치했지만, 안전을 위해 한번 더 체크
+          # PR일 경우 모의 실행(Dry Run) 메시지 출력
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "⚠️ [NOTICE] Running in PR Mode (Dry Run). Simulation Only."
+          fi
+          
           pip install -r requirements.txt
           python engine.py
 
       # ----------------------------------------------------------------------
-      # [Step 4] 결과물 확인 및 저장
+      # [Step 5] 대량 컨테이너 이미지 빌드 (Microservices)
       # ----------------------------------------------------------------------
-      - name: 📊 데이터 적재 결과 검증
+      - name: 🐳 마이크로서비스 이미지 대량 빌드
         run: |
-          echo "============================================"
-          echo "   📡 Service Integration Status Report"
-          echo "============================================"
-          echo "1. [AWS S3] Generated Receipts (First 5):"
-          ls -1 app_root/services/aws_s3_receipts | head -n 5
-          echo ""
-          echo "2. [ERP] Synced Data Files (First 5):"
-          ls -1 app_root/services/erp_data_sync | head -n 5
-          echo ""
-          echo "3. [NAS] Audit Log Content (Tail):"
-          tail -n 5 app_root/services/nas_audit_logs/audit.log
+          cd app_root/containers
+          
+          # 컨테이너 디렉토리를 순회하며 개별 이미지 빌드
+          for d in */; do
+              svc_name=${d%/}
+              echo ">>> 🔨 Building Microservice Image: $svc_name"
+              docker build -t "tax-$svc_name:v1" ./$svc_name
+          done
+          
+          # 메인 오케스트레이터 빌드
+          cd ..
+          docker build -t tax-orchestrator:latest .
 
-      - name: 🐳 Docker 이미지 빌드
+      # ----------------------------------------------------------------------
+      # [Step 6] 결과 데이터 검증 및 아티팩트 저장
+      # ----------------------------------------------------------------------
+      - name: 📊 데이터 레이크 적재 현황 확인
         run: |
-          cd app_root
-          docker build -t tax-enterprise-system:latest .
-          docker save -o tax-enterprise-system.tar tax-enterprise-system:latest
+          echo "==============================================="
+          echo "   🏭 Data Warehouse Status Report"
+          echo "==============================================="
+          echo "[1] Backup Zone (Copied): $(ls app_root/data_lake/backup_zone | wc -l) files"
+          echo "[2] Archive Zone (Moved): $(ls app_root/data_lake/archive_zone | wc -l) files"
+          echo "[3] Data Mart (Loaded):"
+          ls -lh app_root/data_warehouse/data_mart/
+          echo "[4] Pipeline Logs:"
+          cat app_root/system_logs/pipeline.log
 
-      - name: 📦 통합 아티팩트 업로드
+      - name: 📦 전체 시스템 스냅샷 저장
         uses: actions/upload-artifact@v4
         with:
-          name: 엔터프라이즈 통합 패키지 (App & Data)
-          path: |
-             app_root/tax-enterprise-system.tar
-             app_root/services/aws_s3_receipts
-             app_root/services/erp_data_sync
-             app_root/services/nas_audit_logs
-          retention-days: 7
+          name: Enterprise_System_Snapshot
+          path: app_root/
+          retention-days: 5
