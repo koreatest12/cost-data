@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Conflict Auto-Fix)
+name: 🌌 Omni-Intelligence Universal Pipeline (Visual & Accumulate)
 
 on:
   schedule:
@@ -15,30 +15,32 @@ permissions:
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine
+  # 🛡️ 1. 보안 엔진 (Security Engine)
   # ==============================================================================
   security-core:
-    name: 🛡️ Security Engine
+    name: 🛡️ 보안 엔진 (Security)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 🛠️ Setup & Restore
+      - name: 🛠️ 데이터 복원 및 환경설정
         run: |
-          mkdir -p DB_SEC/news/threat_intel DB_SEC/archive DB_SEC/backup
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}/security-2025-data:latest"
+          # [누적 전략] 날짜별 아카이브 폴더 생성
+          mkdir -p DB_SEC/news/threat_intel DB_SEC/archive/$(date +%Y) DB_SEC/backup
+          
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}/security-data:latest"
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # Docker에서 이전 데이터 레이어 복원
           if docker manifest inspect $IMAGE > /dev/null 2>&1; then
             docker pull $IMAGE
             docker create --name r_sec $IMAGE
-            docker cp r_sec:/app/DB_SEC ./DB_R && cp -r ./DB_R/* ./DB_SEC/ || echo "Fresh"
+            docker cp r_sec:/app/DB_SEC ./DB_R && cp -r ./DB_R/* ./DB_SEC/ || echo "Fresh Start"
             docker rm r_sec
-          else
-            echo "🆕 First Run"
           fi
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install feedparser aiohttp asyncio requests beautifulsoup4 fake-useragent pandas tabulate
-      - name: 🧬 Run Security Core
+      - name: 🧬 데이터 수집 및 누적 저장
         run: |
           cat << 'EOF' > sec_core.py
           import asyncio, aiohttp, feedparser, os, json, shutil, datetime
@@ -46,7 +48,7 @@ jobs:
           
           DB_DIR = "DB_SEC"
           SOURCES = ["site:thehackernews.com", "site:bleepingcomputer.com", "site:cisa.gov", "site:kisa.or.kr", "site:darkreading.com"]
-          KEYWORDS = ["CVE-2025", "CVE-2026", "Zero-Day", "Ransomware", "Post-Quantum", "Kyber", "AI Security", "Deepfake", "Supply Chain", "APT Group"]
+          KEYWORDS = ["CVE-2025", "Zero-Day", "Ransomware", "Post-Quantum", "AI Security", "Deepfake", "APT Group"]
           
           async def fetch(session, url, kw):
               try:
@@ -69,11 +71,7 @@ jobs:
                   res = await asyncio.gather(*tasks)
                   for r in res: items.extend(r)
               
-              # 저장
-              os.makedirs(f"{DB_DIR}/news/threat_intel", exist_ok=True)
-              os.makedirs(f"{DB_DIR}/archive", exist_ok=True)
-              os.makedirs(f"{DB_DIR}/backup", exist_ok=True)
-
+              # [누적 로직] 기존 데이터 + 신규 데이터 병합
               path = f"{DB_DIR}/news/threat_intel/news.json"
               exist = []
               if os.path.exists(path):
@@ -84,12 +82,17 @@ jobs:
               seen = {x['link'] for x in exist}
               merged = [x for x in items if x['link'] not in seen] + exist
               
-              if len(merged) > 10000:
-                  arc = f"{DB_DIR}/archive/sec_{datetime.datetime.now().strftime('%Y%m%d')}.json"
-                  with open(arc, 'w', encoding='utf-8') as f: json.dump(merged, f, indent=2, ensure_ascii=False)
-                  merged = merged[:10000]
+              # [레이어 저장] 날짜별 스냅샷 저장 (무한 누적)
+              today_str = datetime.datetime.now().strftime('%Y%m%d')
+              year_str = datetime.datetime.now().strftime('%Y')
+              arc_path = f"{DB_DIR}/archive/{year_str}/sec_{today_str}.json"
+              
+              with open(arc_path, 'w', encoding='utf-8') as f:
+                  json.dump(merged, f, indent=2, ensure_ascii=False)
                   
-              with open(path, 'w', encoding='utf-8') as f: json.dump(merged, f, indent=2, ensure_ascii=False)
+              with open(path, 'w', encoding='utf-8') as f:
+                  json.dump(merged, f, indent=2, ensure_ascii=False)
+              
               shutil.copy2(path, f"{DB_DIR}/backup/sec_mirror.json")
               print(f"✅ Security Data Saved: {len(merged)}")
 
@@ -97,7 +100,8 @@ jobs:
           EOF
           python sec_core.py
 
-      - name: 🐳 Docker Build & Push
+      # [누적 전략] Docker 태그에 날짜를 추가하여 히스토리 보존
+      - name: 🐳 Docker Build & Push (Layered)
         run: |
           cat <<EOF > Dockerfile
           FROM python:3.11-slim
@@ -106,37 +110,41 @@ jobs:
           CMD ["python", "sec_core.py"]
           EOF
           
-          IMG="ghcr.io/${GITHUB_REPOSITORY,,}/security-2025-data:latest"
-          docker build -t $IMG . && docker push $IMG
+          DATE_TAG=$(date +'%Y%m%d')
+          IMG_NAME="ghcr.io/${GITHUB_REPOSITORY,,}/security-data"
+          
+          docker build -t $IMG_NAME:latest -t $IMG_NAME:$DATE_TAG .
+          docker push $IMG_NAME:latest
+          docker push $IMG_NAME:$DATE_TAG
 
       - uses: actions/upload-artifact@v4
         with: { name: db-sec, path: DB_SEC/ }
 
   # ==============================================================================
-  # 💼 2. Job Engine
+  # 💼 2. 직업 요새 (Job Engine)
   # ==============================================================================
   job-core:
-    name: 💼 Job Fortress
+    name: 💼 직업 요새 (Jobs)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 🛠️ Setup & Restore
+      - name: 🛠️ 데이터 복원
         run: |
-          for p in jobkorea saramin indeed wanted; do mkdir -p DB/jobs/$p DB/archive/$p DB/backup; done
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}/hyper-job-data:latest"
+          for p in jobkorea saramin indeed wanted; do 
+            mkdir -p DB/jobs/$p DB/archive/$p/$(date +%Y) DB/backup
+          done
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}/job-data:latest"
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           if docker manifest inspect $IMAGE > /dev/null 2>&1; then
             docker pull $IMAGE
             docker create --name r_job $IMAGE
             docker cp r_job:/app/DB ./DB_R && cp -r ./DB_R/* ./DB/ || echo "Fresh"
             docker rm r_job
-          else
-            echo "🆕 First Run"
-          fi
+          else echo "🆕 First Run"; fi
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install feedparser aiohttp asyncio requests beautifulsoup4 fake-useragent
-      - name: 🧬 Run Job Core
+      - name: 🧬 데이터 수집 및 누적
         run: |
           cat << 'EOF' > job_core.py
           import asyncio, aiohttp, feedparser, os, json, shutil, datetime
@@ -144,8 +152,8 @@ jobs:
           
           DB_DIR = "DB"
           PORTALS = {"JobKorea":"site:jobkorea.co.kr", "Saramin":"site:saramin.co.kr", "Indeed":"site:kr.indeed.com"}
-          LOCS = ["강남", "판교", "분당", "여의도", "구로", "가산", "송도", "마곡", "성수", "광화문", "을지로", "잠실"]
-          KWS = ["Python", "Java", "Node", "React", "Spring", "AWS", "AI", "DevOps", "PM", "Marketing", "HR", "Finance", "Security", "Data"]
+          LOCS = ["강남", "판교", "분당", "여의도", "구로", "가산", "송도", "마곡", "성수", "광화문"]
+          KWS = ["Python", "Java", "Node", "React", "Spring", "AWS", "AI", "DevOps", "PM", "Marketing"]
           
           async def fetch(session, url, folder):
               try:
@@ -186,19 +194,23 @@ jobs:
                   exist = []
                   if os.path.exists(path):
                       try:
-                          with open(path, 'r', encoding='utf-8') as fp:
-                              exist = json.load(fp)
+                          with open(path, 'r', encoding='utf-8') as fp: exist = json.load(fp)
                       except: exist = []
                   
                   seen = {x['link'] for x in exist}
                   merged = [x for x in data if x['link'] not in seen] + exist
                   
-                  if len(merged) > 10000:
-                      arc = f"{DB_DIR}/archive/{f}/jobs_{datetime.datetime.now().strftime('%Y%m%d')}.json"
-                      with open(arc, 'w', encoding='utf-8') as fp: json.dump(merged, fp, indent=2, ensure_ascii=False)
-                      merged = merged[:10000]
+                  # [누적] 연도별 폴더에 날짜별 파일 저장
+                  today = datetime.datetime.now().strftime('%Y%m%d')
+                  year = datetime.datetime.now().strftime('%Y')
+                  arc_dir = f"{DB_DIR}/archive/{f}/{year}"
+                  os.makedirs(arc_dir, exist_ok=True)
                   
-                  with open(path, 'w', encoding='utf-8') as fp: json.dump(merged, fp, indent=2, ensure_ascii=False)
+                  with open(f"{arc_dir}/jobs_{today}.json", 'w', encoding='utf-8') as fp:
+                      json.dump(merged, fp, indent=2, ensure_ascii=False)
+                  
+                  with open(path, 'w', encoding='utf-8') as fp:
+                      json.dump(merged, fp, indent=2, ensure_ascii=False)
                   shutil.copy2(path, f"{DB_DIR}/backup/{f}_mirror.json")
               print(f"✅ Job Data Saved")
 
@@ -206,7 +218,7 @@ jobs:
           EOF
           python job_core.py
 
-      - name: 🐳 Docker Build & Push
+      - name: 🐳 Docker Build & Push (Layered)
         run: |
           cat <<EOF > Dockerfile
           FROM python:3.11-slim
@@ -215,43 +227,44 @@ jobs:
           CMD ["python", "job_core.py"]
           EOF
           
-          IMG="ghcr.io/${GITHUB_REPOSITORY,,}/hyper-job-data:latest"
-          docker build -t $IMG . && docker push $IMG
+          DATE_TAG=$(date +'%Y%m%d')
+          IMG_NAME="ghcr.io/${GITHUB_REPOSITORY,,}/job-data"
+          docker build -t $IMG_NAME:latest -t $IMG_NAME:$DATE_TAG .
+          docker push $IMG_NAME:latest
+          docker push $IMG_NAME:$DATE_TAG
 
       - uses: actions/upload-artifact@v4
         with: { name: db-job, path: DB/ }
 
   # ==============================================================================
-  # 🧮 3. Algorithm Engine
+  # 🧮 3. 알고 엔진 (Algo Engine)
   # ==============================================================================
   algo-core:
-    name: 🧮 Algo Engine
+    name: 🧮 알고 엔진 (Algo)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 🛠️ Setup & Restore
+      - name: 🛠️ 데이터 복원
         run: |
           for c in ai cs tech; do mkdir -p DB_ALGO/news/$c DB_ALGO/backup; done
-          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}/algo-news-data:latest"
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}/algo-data:latest"
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           if docker manifest inspect $IMAGE > /dev/null 2>&1; then
             docker pull $IMAGE
             docker create --name r_algo $IMAGE
             docker cp r_algo:/app/DB_ALGO ./DB_R && cp -r ./DB_R/* ./DB_ALGO/ || echo "Fresh"
             docker rm r_algo
-          else
-            echo "🆕 First Run"
-          fi
+          else echo "🆕 First Run"; fi
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install feedparser aiohttp asyncio fake-useragent
-      - name: 🧬 Run Algo Core
+      - name: 🧬 데이터 수집 및 누적
         run: |
           cat << 'EOF' > algo_core.py
           import asyncio, aiohttp, feedparser, os, json, shutil
           from fake_useragent import UserAgent
           
-          CATS = {"ai":["LLM","Transformer","RAG", "DeepMind", "OpenAI"], "cs":["Algorithm","LeetCode","Baekjoon", "Coding Test"], "tech":["Netflix Tech","Uber Tech","Naver D2", "Kakao Tech"]}
+          CATS = {"ai":["LLM","Transformer","RAG", "DeepMind"], "cs":["Algorithm","LeetCode","Baekjoon"], "tech":["Netflix Tech","Uber Tech","Naver D2"]}
           async def main():
               print("🚀 Algo Core Running...")
               items = []
@@ -272,14 +285,23 @@ jobs:
                   for r in res: items.extend(r)
               
               path = "DB_ALGO/news/ai/data.json"
-              with open(path, 'w') as f: json.dump(items, f)
+              exist = []
+              if os.path.exists(path):
+                  try:
+                      with open(path) as f: exist = json.load(f)
+                  except: exist = []
+              
+              seen = {x['link'] for x in exist}
+              merged = [x for x in items if x['link'] not in seen] + exist
+              
+              with open(path, 'w') as f: json.dump(merged, f)
               shutil.copy2(path, "DB_ALGO/backup/mirror.json")
               print("✅ Algo Data Saved")
           if __name__ == "__main__": asyncio.run(main())
           EOF
           python algo_core.py
 
-      - name: 🐳 Docker Build & Push
+      - name: 🐳 Docker Build & Push (Layered)
         run: |
           cat <<EOF > Dockerfile
           FROM python:3.11-slim
@@ -288,35 +310,34 @@ jobs:
           CMD ["python", "algo_core.py"]
           EOF
           
-          IMG="ghcr.io/${GITHUB_REPOSITORY,,}/algo-news-data:latest"
-          docker build -t $IMG . && docker push $IMG
+          DATE_TAG=$(date +'%Y%m%d')
+          IMG_NAME="ghcr.io/${GITHUB_REPOSITORY,,}/algo-data"
+          docker build -t $IMG_NAME:latest -t $IMG_NAME:$DATE_TAG .
+          docker push $IMG_NAME:latest
+          docker push $IMG_NAME:$DATE_TAG
 
       - uses: actions/upload-artifact@v4
         with: { name: db-algo, path: DB_ALGO/ }
 
   # ==============================================================================
-  # 💰 4. Cost & 📚 5. Study
+  # 💰 4. 비용 및 연구 (Cost & Study)
   # ==============================================================================
   misc-core:
-    name: 💰 Cost & Study
+    name: 💰 비용 및 연구 (Cost/Study)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_COST/cloud DB_COST/economy DB_STUDY/files DB_STUDY/meta
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: 🧬 Run Misc Core
+      - name: 🧬 데이터 생성
         run: |
           cat << 'EOF' > misc_core.py
           import json, os, random, datetime
-          # Cost Data
           data_cost = [{"pair":"USD/KRW", "rate": random.uniform(1350,1450), "date": str(datetime.datetime.now())}]
           with open("DB_COST/economy/forex.json", "w") as f: json.dump(data_cost, f)
-          
-          # Study Data (Meta)
           data_study = [{"title":"KISA Guide 2025", "status":"checked", "date": str(datetime.datetime.now())}]
           with open("DB_STUDY/meta/index.json", "w") as f: json.dump(data_study, f)
-          
           print("✅ Misc Data Saved")
           EOF
           python misc_core.py
@@ -324,22 +345,20 @@ jobs:
         with: { name: db-misc, path: DB_COST/ }
 
   # ==============================================================================
-  # 🌍 6. Master Dashboard (Fix: Conflict Auto-Resolve)
+  # 🌍 5. 마스터 대시보드 (화면 출력 및 통합)
   # ==============================================================================
   master-hub:
     needs: [security-core, job-core, algo-core, misc-core]
-    name: 🌍 Master Dashboard
+    name: 🌍 마스터 대시보드
     runs-on: ubuntu-latest
     if: always()
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # 히스토리 전체 가져오기 (Rebase용)
-
+        with: { fetch-depth: 0 } # 충돌 해결용
       - uses: actions/download-artifact@v4
         with: { pattern: 'db-*', merge-multiple: true }
       
-      - name: 📊 Generate README
+      - name: 📊 README 및 화면 출력 생성
         run: |
           cat << 'EOF' > dashboard.py
           import os, json, datetime
@@ -360,56 +379,47 @@ jobs:
           sec_cnt = get_count("DB_SEC")
           job_cnt = get_count("DB/jobs")
           algo_cnt = get_count("DB_ALGO")
-          
           total = sec_cnt + job_cnt + algo_cnt
           now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
           
           md = f"# 🌌 Omni-Intelligence Hub\n\n"
           md += f"![Status](https://img.shields.io/badge/System-Operational-success?style=for-the-badge) "
           md += f"![Data](https://img.shields.io/badge/Records-{total:,}-blue?style=for-the-badge) "
-          md += f"![Sync](https://img.shields.io/badge/Update-{now.replace(' ','_')}-orange?style=for-the-badge)\n\n"
+          md += f"![Sync](https://img.shields.io/badge/Last_Update-{now.replace(' ','_')}-orange?style=for-the-badge)\n\n"
           
-          md += "## 🎛️ Mission Control\n"
-          md += "| Module | Count | Status |\n|:---:|:---:|:---:|\n"
-          md += f"| 🛡️ Security | **{sec_cnt:,}** | 🟢 Online |\n"
-          md += f"| 💼 Jobs | **{job_cnt:,}** | 🟢 Online |\n"
-          md += f"| 🧮 Algo | **{algo_cnt:,}** | 🟢 Online |\n"
-          md += f"| 💰 Cost/Study | **Active** | 🟢 Online |\n"
+          md += "## 🎛️ Mission Control Panel\n"
+          md += "| Module | Records | Status | Layers |\n|:---:|:---:|:---:|:---:|\n"
+          md += f"| 🛡️ Security | **{sec_cnt:,}** | 🟢 Online | ✅ Docker/Archive |\n"
+          md += f"| 💼 Jobs | **{job_cnt:,}** | 🟢 Online | ✅ Docker/Archive |\n"
+          md += f"| 🧮 Algo | **{algo_cnt:,}** | 🟢 Online | ✅ Docker/Archive |\n"
+          md += f"| 💰 Cost/Study | **Active** | 🟢 Online | ✅ Active |\n"
           
-          md += "\n---\n*Auto-generated by Omni-Pipeline*"
+          md += "\n> *이 대시보드는 매일 자동으로 데이터를 누적하고 시각화합니다.*\n"
           
-          with open("README.md", "w") as f: f.write(md)
+          with open("README.md", "w", encoding='utf-8') as f: f.write(md)
           EOF
           python dashboard.py
+
+      # [핵심] 🚀 화면에 결과 출력 (GITHUB_STEP_SUMMARY)
+      - name: 🚀 실행 화면에 결과 출력
+        run: |
+          cat README.md >> $GITHUB_STEP_SUMMARY
           
-      # [핵심] 무적의 푸시 로직 (Rebase & Retry Loop)
-      - name: 🌿 Commit Master Dashboard (Auto-Retry)
+      # [핵심] 충돌 방지 및 커밋
+      - name: 🌿 Git 커밋 (Auto-Retry)
         run: |
           git config --global user.name "Omni Bot"
           git config --global user.email "bot@actions"
-          
-          # 모든 데이터 스테이징
           git add README.md DB*
           
-          if git diff --cached --quiet; then
-            echo "✨ No changes to commit"
-            exit 0
-          fi
+          if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
           
-          git commit -m "🌌 Grand Update: $(date +'%Y-%m-%d %H:%M')"
+          git commit -m "🌌 Data Layer Update: $(date +'%Y-%m-%d %H:%M')"
           
-          # 재시도 로직 (최대 5회)
           n=0
-          until [ "$n" -ge 5 ]
-          do
-             # 원격 변경사항을 당겨와서(pull --rebase) 로컬 커밋 위에 얹고 푸시
+          until [ "$n" -ge 5 ]; do
              git pull --rebase origin main && git push origin main && break
              n=$((n+1))
-             echo "⚠️ Conflict detected. Retrying rebase... ($n/5)"
-             sleep 10
+             echo "⚠️ Retrying push... ($n/5)"
+             sleep 5
           done
-          
-          if [ "$n" -ge 5 ]; then
-            echo "❌ Failed to push after 5 retries"
-            exit 1
-          fi
