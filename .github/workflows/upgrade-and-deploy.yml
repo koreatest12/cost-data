@@ -1,4 +1,4 @@
-name: 🏢 세금 마스터 시스템 (업그레이드 및 배포)
+name: 🏢 세금 마스터 시스템 (전체 프로젝트 생성기 포함)
 
 on:
   workflow_dispatch:
@@ -14,38 +14,59 @@ jobs:
       - name: 📥 메인 시스템 체크아웃
         uses: actions/checkout@v4
 
-      - name: 📥 데이터 마이그레이션 (Deep Scan)
+      # ----------------------------------------------------------------------
+      # [Step 1] 데이터 준비 (Deep Scan용)
+      # ----------------------------------------------------------------------
+      - name: 📥 데이터 마이그레이션 (koreatest12/cost-data)
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
           path: app_root/cost_data
           fetch-depth: 0 
 
-      - name: 🔧 파일 권한 대량 수정
-        run: chmod -R 755 app_root/cost_data
-
+      - name: 🔧 파일 권한 및 환경 설정
+        run: |
+          chmod -R 755 app_root/cost_data
+          
       - name: 🐍 파이썬 환경 설정
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: 🏗️ 마스터 시스템 코드 생성 (영수증 기능 추가)
+      # ----------------------------------------------------------------------
+      # [Step 2] 프로젝트 생성 스크립트 작성 및 실행
+      # ----------------------------------------------------------------------
+      - name: 🛠️ generate_full_project.py 생성
         run: |
-          mkdir -p app_root/templates
-          mkdir -p app_root/static
-          mkdir -p app_root/receipts  # 영수증 저장소 생성
+          # 프로젝트 루트에 생성 스크립트 작성
+          cat <<EOF > generate_full_project.py
+          import os
 
-          # 1. 라이브러리 설정
-          cat <<EOF > app_root/requirements.txt
+          # ==============================================================================
+          # [1] 소스 코드 정의 (Engine, App, Configs)
+          # ==============================================================================
+          
+          REQ_TXT = """
           flask
           pandas
           openpyxl
           pdfplumber
           tabulate
-          EOF
+          """
 
-          # 2. [Core] 엔진 (영수증 대량 발급 로직 추가)
-          cat <<EOF > app_root/engine.py
+          DOCKERFILE = """
+          FROM python:3.9-slim
+          WORKDIR /app
+          COPY requirements.txt .
+          RUN pip install --no-cache-dir -r requirements.txt
+          COPY . .
+          RUN chmod -R 755 cost_data
+          EXPOSE 8080
+          CMD ["python", "app.py"]
+          """
+
+          # 엔진: 모든 폴더 스캔 + 영수증 발급 기능 포함
+          ENGINE_PY = r'''
           import os, glob, json, re
           import pandas as pd
           import pdfplumber
@@ -54,7 +75,7 @@ jobs:
 
           DATA_DIR = 'cost_data'
           RECEIPT_DIR = 'receipts'
-          
+
           db = defaultdict(lambda: {
               'salary': 0, 'pension': 0, 'insurance': 0,
               'medical': 0, 'card': 0, 'donation': 0,
@@ -73,9 +94,10 @@ jobs:
               return best_val
 
           def migrate_data():
-              # 모든 하위 폴더/파일 스캔
-              all_files = [f for f in glob.glob(os.path.join(DATA_DIR, '**', '*'), recursive=True) if os.path.isfile(f)]
-              print(f">>> [Migration] 총 {len(all_files)}개 파일 분석 중...")
+              # [기능] 모든 하위 디렉토리 재귀 검색
+              search_path = os.path.join(DATA_DIR, '**', '*')
+              all_files = [f for f in glob.glob(search_path, recursive=True) if os.path.isfile(f)]
+              print(f">>> [Migration] 총 {len(all_files)}개 파일 스캔 중...")
 
               for filepath in all_files:
                   try:
@@ -119,48 +141,23 @@ jobs:
                   except: pass
               return db
 
-          # [New] 영수증 생성기
           def generate_receipt_html(r):
+              # [기능] 영수증 HTML 생성
               color = "blue" if r['final_money'] < 0 else "red"
-              result_text = "환급 (돌려받을 세액)" if r['final_money'] < 0 else "징수 (추가 납부 세액)"
-              money_str = "{:,}".format(abs(r['final_money']))
+              res_txt = "환급 (받을 돈)" if r['final_money'] < 0 else "징수 (낼 돈)"
               
               html = f"""
-              <html>
-              <head>
-                  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                  <style>
-                      body {{ background: #eee; padding: 40px; }}
-                      .paper {{ background: white; width: 800px; margin: 0 auto; padding: 50px; border: 1px solid #ddd; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
-                      .title {{ text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }}
-                  </style>
-              </head>
-              <body>
-                  <div class="paper">
-                      <h2 class="title fw-bold">🧾 2024년 귀속 근로소득 원천징수 영수증</h2>
-                      <table class="table table-bordered">
-                          <tr><th class="bg-light" style="width:150px">성 명</th><td>{r['name']}</td><th class="bg-light">총 급 여</th><td>{r['salary']:,} 원</td></tr>
-                          <tr><th class="bg-light">참조 파일</th><td colspan="3">{r['files_count']} 건 확인됨</td></tr>
-                      </table>
-                      <h5 class="mt-4 border-bottom pb-2">📌 세액 계산 상세</h5>
-                      <table class="table table-sm">
-                          <tr><td>결정 세액 (내야할 세금)</td><td class="text-end">{r['tax']['determined']:,} 원</td></tr>
-                          <tr><td>기납부 세액 (이미 낸 세금)</td><td class="text-end">- {r['tax']['pre_paid']:,} 원</td></tr>
-                          <tr class="fw-bold fs-5 table-{color.replace('blue','primary').replace('red','danger')}">
-                              <td>최종 결과 ({result_text})</td>
-                              <td class="text-end" style="color:{color}">{money_str} 원</td>
-                          </tr>
-                      </table>
-                      <div class="mt-5 text-center text-muted">
-                          <p>위와 같이 정산되었음을 증명합니다.</p>
-                          <h4>Tax Master System 직인생략</h4>
-                      </div>
-                      <div class="text-center mt-4 d-print-none">
-                          <button onclick="window.print()" class="btn btn-dark">🖨️ 인쇄 / PDF 저장</button>
-                      </div>
-                  </div>
-              </body>
-              </html>
+              <html><head><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+              <style>body{{background:#eee;padding:40px}}.paper{{background:white;width:700px;margin:0 auto;padding:40px;box-shadow:0 0 10px rgba(0,0,0,0.1)}}</style>
+              </head><body><div class="paper">
+              <h2 class="text-center border-bottom pb-3">🧾 근로소득 원천징수 영수증</h2>
+              <table class="table mt-4">
+              <tr><th>성명</th><td>{r['name']}</td><th>총급여</th><td>{r['salary']:,} 원</td></tr>
+              <tr><th>결정세액</th><td>{r['tax']['determined']:,}</td><th>기납부</th><td>{r['tax']['pre_paid']:,}</td></tr>
+              <tr class="fs-4 fw-bold"><td colspan="2">최종 결과 ({res_txt})</td><td colspan="2" style="color:{color}">{abs(r['final_money']):,} 원</td></tr>
+              </table>
+              <div class="text-center mt-4"><button onclick="window.print()" class="btn btn-dark">🖨️ 인쇄</button></div>
+              </div></body></html>
               """
               with open(os.path.join(RECEIPT_DIR, f"{r['name']}.html"), "w", encoding="utf-8") as f:
                   f.write(html)
@@ -168,7 +165,7 @@ jobs:
           def run_simulation():
               migrate_data()
               results = []
-              print(">>> [Simulation] 정산 및 영수증 발행 시작...")
+              print(">>> [Simulation] 시뮬레이션 및 영수증 발급 시작...")
               
               for name, data in db.items():
                   if not name or len(name) < 2: continue
@@ -176,141 +173,138 @@ jobs:
                   salary = data['salary'] if data['salary'] > 0 else 40000000
                   is_estimated = (data['salary'] == 0)
                   
-                  # 간이 계산
+                  # 간이 세금 계산
                   if salary <= 5000000: income_ded = salary * 0.7
-                  elif salary <= 15000000: income_ded = 3500000 + (salary - 5000000) * 0.4
-                  elif salary <= 45000000: income_ded = 7500000 + (salary - 15000000) * 0.15
                   elif salary <= 100000000: income_ded = 12000000 + (salary - 45000000) * 0.05
                   else: income_ded = 14750000 + (salary - 100000000) * 0.02
                   
-                  basic_ded = 1500000
-                  card_ded = min(max((data['card'] - salary*0.25) * 0.15, 0), 3000000)
-                  tax_base = max(salary - (income_ded + basic_ded + data['pension'] + data['insurance'] + data['donation'] + card_ded), 0)
+                  tax_base = max(salary - (income_ded + 1500000 + data['pension'] + data['card']*0.15), 0)
+                  calc_tax = tax_base * 0.15 if tax_base > 14000000 else tax_base * 0.06
                   
-                  if tax_base <= 14000000: calc_tax = tax_base * 0.06
-                  elif tax_base <= 50000000: calc_tax = 840000 + (tax_base - 14000000) * 0.15
-                  elif tax_base <= 88000000: calc_tax = 6240000 + (tax_base - 50000000) * 0.24
-                  else: calc_tax = 15360000 + (tax_base - 88000000) * 0.35
-                  
-                  determined_tax = max(calc_tax - (min(data['insurance'], 1000000)*0.12), 0)
+                  determined = int(max(calc_tax - data['insurance']*0.12, 0))
                   pre_paid = data['pre_paid'] if data['pre_paid'] > 0 else int(salary * 0.045)
-                  final_money = int(determined_tax - pre_paid)
+                  final = determined - pre_paid
                   
-                  res_entry = {
-                      "name": name, "salary": int(salary), "salary_note": "(추정)" if is_estimated else "",
+                  entry = {
+                      "name": name, "salary": salary, "salary_note": "(추정)" if is_estimated else "",
                       "files_count": len(data['files']),
-                      "tax": { "determined": int(determined_tax), "pre_paid": int(pre_paid) },
-                      "final_money": final_money, "type": "환급" if final_money < 0 else "징수"
+                      "tax": {"determined": determined, "pre_paid": pre_paid},
+                      "final_money": final, "type": "환급" if final < 0 else "징수"
                   }
-                  
-                  # [핵심] 결과 계산 즉시 영수증 파일 생성
-                  generate_receipt_html(res_entry)
-                  results.append(res_entry)
-                  
-              print(f">>> [Simulation] 총 {len(results)}건의 영수증 발행 완료.")
+                  generate_receipt_html(entry)
+                  results.append(entry)
+              
               return results
 
           if __name__ == "__main__":
               res = run_simulation()
-              with open('final_result.json', 'w', encoding='utf-8') as f:
-                  json.dump(res, f, ensure_ascii=False)
+              with open('final_result.json', 'w', encoding='utf-8') as f: json.dump(res, f, ensure_ascii=False)
               
               table = [[r['name'], f"{r['salary']:,}", r['type'], f"{abs(r['final_money']):,}"] for r in res]
-              print(tabulate(table, headers=["이름", "급여", "결과", "금액"], tablefmt="grid"))
-          EOF
+              if res: print(tabulate(table, headers=["이름", "급여", "결과", "금액"], tablefmt="grid"))
+              else: print("데이터 없음")
+          '''
 
-          # 3. [UI] 웹 리포트 (영수증 보기 기능 추가)
-          cat <<EOF > app_root/app.py
+          # 웹 UI: 영수증 다운로드 기능 포함
+          APP_PY = r'''
           from flask import Flask, render_template_string, send_from_directory
           import json, os
-          
           app = Flask(__name__)
-          
+
           @app.route('/')
           def index():
               try:
                   with open('final_result.json', 'r', encoding='utf-8') as f: results = json.load(f)
               except: results = []
               
-              total_refund = sum([abs(r['final_money']) for r in results if r['final_money'] < 0])
-              total_collect = sum([r['final_money'] for r in results if r['final_money'] >= 0])
+              refund = sum([abs(r['final_money']) for r in results if r['final_money'] < 0])
+              collect = sum([r['final_money'] for r in results if r['final_money'] >= 0])
               
               html = """
-              <!DOCTYPE html>
-              <html>
-              <head>
-                  <title>Tax Master</title>
-                  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-              </head>
-              <body class="bg-light p-5">
-                  <div class="container bg-white p-5 shadow rounded">
-                      <div class="d-flex justify-content-between align-items-center mb-4">
-                          <h2 class="fw-bold">🏢 연말정산 마스터 리포트</h2>
-                          <span class="badge bg-secondary">자동 영수증 발급 시스템</span>
-                      </div>
-                      <div class="row text-center mb-4">
-                          <div class="col-6"><div class="card bg-primary text-white p-3"><h3>환급 총액</h3><h1>{{ "{:,}".format(total_refund) }} 원</h1></div></div>
-                          <div class="col-6"><div class="card bg-danger text-white p-3"><h3>징수 총액</h3><h1>{{ "{:,}".format(total_collect) }} 원</h1></div></div>
-                      </div>
-                      <table class="table table-hover align-middle">
-                          <thead class="table-light"><tr><th>성명</th><th>총급여</th><th>결과</th><th>금액</th><th>증빙</th></tr></thead>
-                          <tbody>
-                              {% for r in results %}
-                              <tr>
-                                  <td class="fw-bold">{{ r.name }}</td>
-                                  <td>{{ "{:,}".format(r.salary) }}</td>
-                                  <td><span class="badge bg-{{ 'primary' if r.final_money < 0 else 'danger' }}">{{ r.type }}</span></td>
-                                  <td class="fw-bold">{{ "{:,}".format(abs(r.final_money)) }} 원</td>
-                                  <td>
-                                      <a href="/receipt/{{ r.name }}" target="_blank" class="btn btn-sm btn-outline-dark">
-                                          📄 영수증 발급
-                                      </a>
-                                  </td>
-                              </tr>
-                              {% endfor %}
-                          </tbody>
-                      </table>
-                  </div>
-              </body>
-              </html>
+              <!DOCTYPE html><html><head><title>Tax Master</title>
+              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+              </head><body class="p-5 bg-light"><div class="container bg-white p-5 shadow rounded">
+              <h2 class="mb-4">🏢 연말정산 마스터 리포트 <span class="badge bg-dark">v3.0 Full Project</span></h2>
+              <div class="row mb-4 text-center text-white">
+                  <div class="col-6"><div class="card bg-primary p-3"><h3>환급 총액</h3><h1>{{ "{:,}".format(refund) }} 원</h1></div></div>
+                  <div class="col-6"><div class="card bg-danger p-3"><h3>징수 총액</h3><h1>{{ "{:,}".format(collect) }} 원</h1></div></div>
+              </div>
+              <table class="table table-hover align-middle">
+              <thead><tr><th>성명</th><th>급여</th><th>결과</th><th>금액</th><th>영수증</th></tr></thead>
+              <tbody>{% for r in results %}
+              <tr><td class="fw-bold">{{ r.name }}</td><td>{{ "{:,}".format(r.salary) }}</td>
+              <td><span class="badge bg-{{ 'primary' if r.final_money < 0 else 'danger' }}">{{ r.type }}</span></td>
+              <td class="fw-bold">{{ "{:,}".format(abs(r.final_money)) }}</td>
+              <td><a href="/receipt/{{ r.name }}" target="_blank" class="btn btn-sm btn-outline-dark">📄 조회</a></td>
+              </tr>{% endfor %}</tbody></table>
+              </div></body></html>
               """
-              return render_template_string(html, results=results, total_refund=total_refund, total_collect=total_collect)
-          
-          # 영수증 파일 서빙 라우트
+              return render_template_string(html, results=results, refund=refund, collect=collect)
+
           @app.route('/receipt/<name>')
           def get_receipt(name):
               return send_from_directory('receipts', f"{name}.html")
 
           if __name__ == '__main__': app.run(host='0.0.0.0', port=8080)
+          '''
+
+          # ==============================================================================
+          # [2] 프로젝트 생성 실행기 (File Writer)
+          # ==============================================================================
+          def create_full_project():
+              base_dir = "app_root"
+              
+              # 디렉토리 구조 생성
+              os.makedirs(os.path.join(base_dir, "templates"), exist_ok=True)
+              os.makedirs(os.path.join(base_dir, "static"), exist_ok=True)
+              os.makedirs(os.path.join(base_dir, "receipts"), exist_ok=True)
+              
+              # 파일 작성 헬퍼
+              def write_file(path, content):
+                  with open(os.path.join(base_dir, path), "w", encoding="utf-8") as f:
+                      f.write(content.strip())
+                  print(f"✅ Created: {path}")
+
+              # 각 파일 생성
+              write_file("requirements.txt", REQ_TXT)
+              write_file("Dockerfile", DOCKERFILE)
+              write_file("engine.py", ENGINE_PY)
+              write_file("app.py", APP_PY)
+              
+              print(f"\n🎉 프로젝트 생성 완료! ({os.path.abspath(base_dir)})")
+
+          if __name__ == "__main__":
+              create_full_project()
           EOF
 
-          # Dockerfile
-          cat <<EOF > app_root/Dockerfile
-          FROM python:3.9-slim
-          WORKDIR /app
-          COPY requirements.txt .
-          RUN pip install --no-cache-dir -r requirements.txt
-          COPY . .
-          RUN chmod -R 755 cost_data
-          EXPOSE 8080
-          CMD ["python", "app.py"]
-          EOF
+      - name: 🏗️ 프로젝트 생성기 실행
+        run: |
+          # 위에서 만든 generate_full_project.py를 실행하여 실제 파일들을 생성
+          python generate_full_project.py
 
-      - name: 🚀 엔진 구동 (데이터 처리 및 영수증 생성)
+      # ----------------------------------------------------------------------
+      # [Step 3] 생성된 시스템 구동
+      # ----------------------------------------------------------------------
+      - name: 🚀 엔진 구동 & 리포트 생성
         run: |
           cd app_root
           pip install -r requirements.txt
           python engine.py
 
-      - name: 🐳 이미지 빌드 및 아티팩트 저장
+      # ----------------------------------------------------------------------
+      # [Step 4] 결과물 패키징
+      # ----------------------------------------------------------------------
+      - name: 🐳 Docker 이미지 빌드
         run: |
           cd app_root
           docker build -t tax-master-system:latest .
           docker save -o tax-master-system.tar tax-master-system:latest
 
-      - name: 📦 실행 파일 저장
+      - name: 📦 실행 파일 및 생성기 저장
         uses: actions/upload-artifact@v4
         with:
           name: 세금 마스터 시스템 앱
-          path: app_root/tax-master-system.tar
+          path: |
+             app_root/tax-master-system.tar
+             generate_full_project.py
           retention-days: 7
