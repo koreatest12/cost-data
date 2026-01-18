@@ -1,4 +1,4 @@
-name: 🏢 엔터프라이즈 시스템 (가상환경 VENV 적용 및 경고 해결)
+name: 🏢 엔터프라이즈 컨테이너 설치 및 데이터 적재 시스템
 
 on:
   workflow_dispatch:
@@ -6,257 +6,275 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-    types: [opened, synchronize, reopened]
 
-# [핵심] 전역 환경 변수 설정 (Pip 경고 제어)
 env:
-  PIP_ROOT_USER_ACTION: ignore  # 루트 유저로 실행 시 경고 무시 (CI 환경 표준)
-  PYTHONUNBUFFERED: 1           # 로그 즉시 출력
+  PIP_ROOT_USER_ACTION: ignore
+  PYTHONUNBUFFERED: 1
 
 jobs:
-  enterprise-orchestrator:
+  container-orchestration:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     
     steps:
-      - name: 📥 시스템 소스 체크아웃
+      - name: 📥 소스 체크아웃
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] 데이터 레이크 초기화
+      # [Step 1] 데이터 준비
       # ----------------------------------------------------------------------
-      - name: 📥 원천 데이터 수집 (koreatest12/cost-data)
+      - name: 📥 데이터 수집 (koreatest12/cost-data)
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
           path: app_root/raw_data
           fetch-depth: 0 
 
-      - name: 🔧 데이터 레이크 권한 설정
+      - name: 🔧 권한 설정
         run: chmod -R 755 app_root/raw_data
           
-      - name: 🐍 파이썬 런타임 구성
+      - name: 🐍 파이썬 환경 설정
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      # ----------------------------------------------------------------------
-      # [Step 2] 인프라 모듈 설치 (가상환경 사용 권장 대응)
-      # ----------------------------------------------------------------------
-      - name: 📦 인프라 모듈 대량 설치
+      - name: 📦 의존성 패키지 설치
         run: |
-          echo ">>> [Infra] Setting up Python dependencies..."
-          # Pip 업그레이드 및 필수 패키지 설치
           python -m pip install --upgrade pip
-          pip install pandas openpyxl pdfplumber tabulate faker numpy flask requests
+          pip install pandas numpy pdfplumber faker flask pyyaml
 
       # ----------------------------------------------------------------------
-      # [Step 3] 아키텍처 생성기 (VENV 적용된 Dockerfile 생성)
+      # [Step 2] 아키텍처 및 Docker Compose 생성
       # ----------------------------------------------------------------------
-      - name: 🛠️ generate_enterprise_arch.py 실행
+      - name: 🛠️ 인프라 코드 생성 (docker-compose & loading scripts)
         run: |
-          cat <<'EOF' > generate_enterprise_arch.py
-          import os, sys, glob, json, re, random, time, shutil
-          import pandas as pd
-          import numpy as np
-          from datetime import datetime
+          cat <<'EOF' > generate_infrastructure.py
+          import os, sys, yaml, shutil
 
           # ==============================================================================
-          # [1] 디렉토리 구조 정의
+          # [1] 디렉토리 및 서비스 정의
           # ==============================================================================
           ROOT = "app_root"
-          DIRS = {
-              "RAW":      os.path.join(ROOT, "raw_data"),
-              "BACKUP":   os.path.join(ROOT, "data_lake", "backup_zone"),
-              "ARCHIVE":  os.path.join(ROOT, "data_lake", "archive_zone"),
-              "MART":     os.path.join(ROOT, "data_warehouse", "data_mart"),
-              "LOGS":     os.path.join(ROOT, "system_logs"),
-              "CONTAINERS": os.path.join(ROOT, "containers")
-          }
-          MICROSERVICES = ["auth-service", "calc-engine", "log-aggregator", "storage-gateway"]
-
-          REQ_TXT = """
-          flask
-          pandas
-          numpy
-          pdfplumber
-          faker
-          """
-
-          # ==============================================================================
-          # [2] ETL 파이프라인 엔진
-          # ==============================================================================
-          ENGINE_CODE = r'''
-          import os, glob, json, shutil, time, random
-          import pandas as pd
-          import numpy as np
-          from datetime import datetime
-
-          DIRS = {
-              "RAW":      "raw_data",
-              "BACKUP":   "data_lake/backup_zone",
-              "ARCHIVE":  "data_lake/archive_zone",
-              "MART":     "data_warehouse/data_mart",
-              "LOGS":     "system_logs"
+          SERVICES = ["auth-server", "calc-engine", "storage-node", "log-aggregator", "dashboard-ui"]
+          
+          # 호스트 측 데이터 경로 (여기에 데이터가 준비되면 컨테이너로 마운트됨)
+          HOST_VOLUMES = {
+              "auth_data":    os.path.join(ROOT, "volumes", "auth_db"),
+              "calc_input":   os.path.join(ROOT, "volumes", "calc_input"),
+              "storage_data": os.path.join(ROOT, "volumes", "receipts"),
+              "log_data":     os.path.join(ROOT, "volumes", "audit_logs")
           }
 
-          class DataPipeline:
-              def __init__(self):
-                  for d in DIRS.values(): os.makedirs(d, exist_ok=True)
-                  self.log_file = os.path.join(DIRS["LOGS"], "pipeline.log")
-
-              def log(self, msg):
-                  ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                  with open(self.log_file, "a") as f: f.write(f"[{ts}] {msg}\n")
-                  print(f"[{ts}] {msg}")
-
-              def replicate_data(self):
-                  self.log("[ETL] Starting Backup Replication...")
-                  files = glob.glob(os.path.join(DIRS["RAW"], "**", "*.*"), recursive=True)
-                  for src in files:
-                      if os.path.isfile(src):
-                          shutil.copy2(src, os.path.join(DIRS["BACKUP"], os.path.basename(src)))
-                  self.log(f"[ETL] Backup complete: {len(files)} files.")
-
-              def process_and_load(self):
-                  self.log("[ETL] Generating Mart Data...")
-                  users = [{"id": f"U{i}", "amt": int(np.random.normal(5000,1000))} for i in range(1000)]
+          # ==============================================================================
+          # [2] Docker Compose 생성 (컨테이너 설치 명세서)
+          # ==============================================================================
+          def generate_docker_compose():
+              compose = {
+                  "version": "3.8",
+                  "services": {},
+                  "networks": {"tax-net": {"driver": "bridge"}},
+                  "volumes": {
+                      "auth-vol": {}, "calc-vol": {}, "storage-vol": {}, "log-vol": {}
+                  }
+              }
+              
+              for svc in SERVICES:
+                  # 각 서비스별 설정
+                  service_def = {
+                      "build": f"./containers/{svc}",
+                      "container_name": f"tax-{svc}",
+                      "networks": ["tax-net"],
+                      "restart": "always",
+                      "environment": ["ENV=PRODUCTION"]
+                  }
                   
-                  class NpEncoder(json.JSONEncoder):
-                      def default(self, o):
-                          return int(o) if isinstance(o, np.integer) else super().default(o)
-                          
-                  with open(os.path.join(DIRS["MART"], "daily.json"), "w") as f:
-                      json.dump(users, f, cls=NpEncoder)
-                  return len(users)
+                  # 볼륨 마운트 (데이터 적재 포인트)
+                  if svc == "auth-server":
+                      service_def["volumes"] = [f"{os.path.abspath(HOST_VOLUMES['auth_data'])}:/app/data"]
+                      service_def["ports"] = ["5001:5000"]
+                  elif svc == "calc-engine":
+                      service_def["volumes"] = [f"{os.path.abspath(HOST_VOLUMES['calc_input'])}:/app/input"]
+                  elif svc == "storage-node":
+                      service_def["volumes"] = [f"{os.path.abspath(HOST_VOLUMES['storage_data'])}:/app/storage"]
+                  elif svc == "log-aggregator":
+                      service_def["volumes"] = [f"{os.path.abspath(HOST_VOLUMES['log_data'])}:/app/logs"]
+                  elif svc == "dashboard-ui":
+                      service_def["ports"] = ["8080:8080"]
+                      service_def["depends_on"] = ["auth-server", "calc-engine"]
+                  
+                  compose["services"][svc] = service_def
+              
+              with open(os.path.join(ROOT, "docker-compose.yml"), "w") as f:
+                  yaml.dump(compose, f, default_flow_style=False)
+              print("✅ docker-compose.yml Generated.")
 
-              def archive_processed(self):
-                  self.log("[ETL] Archiving...")
-                  for f in os.listdir(DIRS["BACKUP"])[:20]:
-                      shutil.move(os.path.join(DIRS["BACKUP"], f), os.path.join(DIRS["ARCHIVE"], f))
-
-          if __name__ == "__main__":
-              p = DataPipeline()
-              p.replicate_data()
-              p.process_and_load()
-              p.archive_processed()
-          '''
-
-          APP_CODE = r'''
+          # ==============================================================================
+          # [3] 컨테이너 소스 코드 생성 (가상환경 VENV 적용)
+          # ==============================================================================
+          def generate_containers():
+              base_dockerfile = """
+          FROM python:3.9-slim
+          ENV VIRTUAL_ENV=/opt/venv
+          RUN python3 -m venv $VIRTUAL_ENV
+          ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+          WORKDIR /app
+          COPY requirements.txt .
+          RUN pip install --no-cache-dir -r requirements.txt
+          COPY . .
+          CMD ["python", "app.py"]
+          """
+              
+              for svc in SERVICES:
+                  path = os.path.join(ROOT, "containers", svc)
+                  os.makedirs(path, exist_ok=True)
+                  
+                  # Dockerfile
+                  with open(os.path.join(path, "Dockerfile"), "w") as f: f.write(base_dockerfile.strip())
+                  
+                  # Requirements
+                  with open(os.path.join(path, "requirements.txt"), "w") as f: f.write("flask\nwatchdog")
+                  
+                  # App Code (데이터 감지 로직 포함)
+                  app_code = f"""
+          import os, time
           from flask import Flask
-          import os
           app = Flask(__name__)
+          
+          SERVICE_NAME = "{svc}"
+          DATA_DIR = "/app/data" if "auth" in SERVICE_NAME else "/app/input" if "calc" in SERVICE_NAME else "/app/storage"
+          
           @app.route('/')
           def index():
-              return "<h1>Enterprise System Online</h1>"
-          if __name__ == '__main__': app.run(host='0.0.0.0', port=8080)
-          '''
-
-          def main():
-              print(">>> [Gen] Generating Enterprise Architecture with VENV Support...")
-              for path in DIRS.values(): os.makedirs(path, exist_ok=True)
-
-              # [핵심] 가상환경(VENV)이 적용된 Dockerfile 생성
-              for svc in MICROSERVICES:
-                  svc_path = os.path.join(DIRS["CONTAINERS"], svc)
-                  os.makedirs(svc_path, exist_ok=True)
-                  
-                  # VIRTUAL_ENV 환경변수와 PATH 설정을 통해 가상환경 활성화
-                  dfile = f"""
-                  FROM python:3.9-slim
-                  
-                  # 1. 가상환경 설정
-                  ENV VIRTUAL_ENV=/opt/venv
-                  RUN python3 -m venv $VIRTUAL_ENV
-                  ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
-                  # 2. 작업 디렉토리 설정
-                  WORKDIR /app
-                  
-                  # 3. 의존성 설치 (가상환경 내부에 설치됨)
-                  COPY requirements.txt .
-                  RUN pip install --no-cache-dir -r requirements.txt
-                  
-                  # 4. 앱 실행
-                  COPY app.py .
-                  CMD ["python", "app.py"]
-                  """
-                  with open(os.path.join(svc_path, "Dockerfile"), "w") as f: f.write(dfile.strip())
-                  with open(os.path.join(svc_path, "requirements.txt"), "w") as f: f.write(REQ_TXT.strip())
-                  with open(os.path.join(svc_path, "app.py"), "w") as f: f.write(f"print('{svc} running in venv')")
-
-              # 메인 루트 파일 생성
-              with open(os.path.join(ROOT, "engine.py"), "w", encoding="utf-8") as f: f.write(ENGINE_CODE.strip())
-              with open(os.path.join(ROOT, "app.py"), "w", encoding="utf-8") as f: f.write(APP_CODE.strip())
-              with open(os.path.join(ROOT, "requirements.txt"), "w") as f: f.write(REQ_TXT.strip())
-
-              # 오케스트레이터 Dockerfile (VENV 적용)
-              root_docker = """
-              FROM python:3.9-slim
-              ENV VIRTUAL_ENV=/opt/venv
-              RUN python3 -m venv $VIRTUAL_ENV
-              ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-              
-              WORKDIR /app
-              COPY . .
-              RUN pip install --no-cache-dir -r requirements.txt
-              EXPOSE 8080
-              CMD ["python", "app.py"]
-              """
-              with open(os.path.join(ROOT, "Dockerfile"), "w") as f: f.write(root_docker.strip())
-              
-              print("✅ Architecture Generation Complete.")
+              # 적재된 데이터 확인
+              files = os.listdir(DATA_DIR) if os.path.exists(DATA_DIR) else []
+              return f"<h1>{{SERVICE_NAME}} Online</h1><p>Loaded Files: {{len(files)}}</p>"
 
           if __name__ == "__main__":
-              main()
+              print(f"Starting {{SERVICE_NAME}}...")
+              app.run(host='0.0.0.0', port=5000)
+          """
+                  with open(os.path.join(path, "app.py"), "w") as f: f.write(app_code.strip())
+
+          # ==============================================================================
+          # [4] 데이터 적재 스크립트 (Loader Logic)
+          # ==============================================================================
+          def generate_loader():
+              loader_code = r'''
+          import os, shutil, glob, time, json
+          import numpy as np
+
+          # 호스트 경로 설정 (이 경로에 파일을 넣으면 컨테이너 내부로 마운트됨)
+          VOLUMES = {
+              "AUTH":    "app_root/volumes/auth_db",
+              "CALC":    "app_root/volumes/calc_input",
+              "STORAGE": "app_root/volumes/receipts",
+              "LOGS":    "app_root/volumes/audit_logs"
+          }
+
+          def inject_data():
+              print(">>> [Loader] Starting Data Injection to Containers...")
+              
+              # 1. Auth Service 적재 (사용자 DB 생성)
+              users = [{"id": f"user_{i}", "role": "admin" if i<5 else "user"} for i in range(100)]
+              with open(os.path.join(VOLUMES["AUTH"], "users.json"), "w") as f:
+                  json.dump(users, f)
+              print(f"✅ Loaded {len(users)} users into [Auth Container]")
+
+              # 2. Calc Service 적재 (Raw Data 이동)
+              raw_files = glob.glob("app_root/raw_data/**/*.json", recursive=True)
+              for i, src in enumerate(raw_files[:50]): # 샘플 50개
+                  dst = os.path.join(VOLUMES["CALC"], f"tax_data_{i}.json")
+                  shutil.copy(src, dst)
+              print(f"✅ Loaded {len(raw_files[:50])} tax records into [Calc Container]")
+
+              # 3. Storage Service 적재 (영수증 생성)
+              for i in range(20):
+                  with open(os.path.join(VOLUMES["STORAGE"], f"receipt_{i}.html"), "w") as f:
+                      f.write("<html>Receipt</html>")
+              print(f"✅ Loaded 20 receipts into [Storage Container]")
+
+              # 4. Logs 적재
+              with open(os.path.join(VOLUMES["LOGS"], "startup.log"), "w") as f:
+                  f.write(f"System started at {time.ctime()}")
+              print("✅ Initialized Logs in [Log Container]")
+
+          if __name__ == "__main__":
+              # 디렉토리 초기화
+              for p in VOLUMES.values(): os.makedirs(p, exist_ok=True)
+              inject_data()
+          '''
+              with open("data_loader.py", "w") as f: f.write(loader_code.strip())
+
+          if __name__ == "__main__":
+              for p in HOST_VOLUMES.values(): os.makedirs(p, exist_ok=True)
+              generate_docker_compose()
+              generate_containers()
+              generate_loader()
+              print(">>> Infrastructure Generation Complete.")
           EOF
 
-      - name: 🏗️ 아키텍처 생성 실행
-        run: python generate_enterprise_arch.py
+      - name: 🏗️ 인프라 및 컨테이너 코드 생성
+        run: python generate_infrastructure.py
 
       # ----------------------------------------------------------------------
-      # [Step 4] ETL 파이프라인 구동
+      # [Step 3] 컨테이너 설치 및 구동 (Docker Compose)
       # ----------------------------------------------------------------------
-      - name: 🚀 데이터 파이프라인 가동
+      - name: 🚀 컨테이너 스택 설치 (Install & Up)
         run: |
           cd app_root
-          # PR Dry Run 체크
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "⚠️ [DRY RUN] PR Event detected. Simulating logic only."
-          fi
           
-          # 로컬 실행 시에도 의존성 설치 (Runner 환경)
-          pip install -r requirements.txt
-          python engine.py
-
-      # ----------------------------------------------------------------------
-      # [Step 5] 컨테이너 대량 빌드 (VENV 내장 이미지)
-      # ----------------------------------------------------------------------
-      - name: 🐳 마이크로서비스 이미지 빌드
-        run: |
-          cd app_root/containers
-          for d in */; do
-              svc_name=${d%/}
-              echo ">>> Building $svc_name with Virtual Environment..."
-              docker build -t "tax-$svc_name:v1" ./$svc_name
-          done
+          echo ">>> [Install] Pulling & Building Services..."
+          docker-compose build
           
-          cd ..
-          docker build -t tax-orchestrator:latest .
+          echo ">>> [Deploy] Starting Container Stack..."
+          docker-compose up -d
+          
+          echo ">>> [Check] Waiting for services..."
+          sleep 10
+          docker-compose ps
 
       # ----------------------------------------------------------------------
-      # [Step 6] 결과 검증 및 저장
+      # [Step 4] 서비스별 데이터 적재 (Data Injection)
       # ----------------------------------------------------------------------
-      - name: 📊 데이터 현황 보고
+      - name: 🚚 데이터 적재 실행 (Inject to Volumes)
         run: |
-          echo ">>> Data Lake Status:"
-          echo "Backup Zone: $(ls app_root/data_lake/backup_zone | wc -l) files"
-          echo "Archive Zone: $(ls app_root/data_lake/archive_zone | wc -l) files"
-          echo "Data Mart Size: $(du -sh app_root/data_warehouse/data_mart)"
+          echo ">>> [ETL] Injecting data into running containers..."
+          python data_loader.py
 
-      - name: 📦 전체 시스템 스냅샷 저장
+      # ----------------------------------------------------------------------
+      # [Step 5] 적재 결과 검증
+      # ----------------------------------------------------------------------
+      - name: 🔍 컨테이너 내부 데이터 검증 (Verification)
+        run: |
+          echo "================================================="
+          echo "   🕵️ Container Data Verification Report"
+          echo "================================================="
+          
+          echo "[1] Auth Service Data (User DB):"
+          ls -lh app_root/volumes/auth_db/
+          
+          echo "[2] Calc Service Data (Input Files):"
+          ls -1 app_root/volumes/calc_input/ | head -n 5
+          echo "... (Total $(ls app_root/volumes/calc_input/ | wc -l) files)"
+          
+          echo "[3] Storage Service (Receipts):"
+          ls -1 app_root/volumes/receipts/ | head -n 5
+          
+          echo "[4] Log Aggregator:"
+          cat app_root/volumes/audit_logs/startup.log
+
+      - name: 🐳 컨테이너 로그 및 볼륨 백업
+        if: always()
+        run: |
+          cd app_root
+          docker-compose logs > system_wide.log
+
+      - name: 📦 전체 시스템 아티팩트 저장
         uses: actions/upload-artifact@v4
         with:
-          name: VENV_Enabled_Enterprise_System
-          path: app_root/
-          retention-days: 5
+          name: Installed_Container_System
+          path: |
+             app_root/docker-compose.yml
+             app_root/volumes/
+             app_root/system_wide.log
+          retention-days: 7
