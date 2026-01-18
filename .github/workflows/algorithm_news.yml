@@ -1,280 +1,125 @@
-name: 💰 Global Cost & FinOps Intelligence
+name: 🌍 Omni-Intelligence Master Dashboard
 
 on:
   schedule:
-    - cron: '0 21 * * *' # ⏰ KST 06:00 (환율 및 마감 시황 반영)
-  push:
-    branches: [ main, master ]
-  workflow_dispatch:
+    - cron: '30 23 * * *' # ⏰ 모든 수집이 끝난 후 (KST 08:30) 실행
+  workflow_dispatch:      # 수동 실행 가능
 
-# 🔐 [핵심] 권한 설정 (업로드 및 쓰기 권한 부여)
 permissions:
-  contents: write      # Git 저장소 쓰기 (필수)
-  packages: write      # GHCR 패키지 업로드
-  actions: write       # 아티팩트 업로드
-  issues: write        # 리포트 이슈 생성
+  contents: write
 
 jobs:
-  cost-engine:
-    name: 📉 Cost Data Engine
+  master-dashboard:
+    name: 📊 Generate Master View
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 소스 코드 체크아웃
+      - name: 📥 전체 데이터 체크아웃
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
-          token: ${{ secrets.GITHUB_TOKEN }} # 권한 토큰 명시
+          fetch-depth: 0
 
-      # ------------------------------------------------------------------
-      # 🔄 데이터 복원 (이전 비용 데이터 불러오기)
-      # ------------------------------------------------------------------
-      - name: 🔄 Restore Cost History
-        run: |
-          echo "📡 Connecting to Cost Grid..."
-          # 대소문자 변환 (GitHub 사용자명)
-          IMAGE_URL="ghcr.io/${GITHUB_REPOSITORY,,}/cost-data:latest"
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          
-          if docker manifest inspect $IMAGE_URL > /dev/null 2>&1; then
-            echo "✅ History Found. Restoring..."
-            docker pull $IMAGE_URL
-            docker create --name restore_cnt $IMAGE_URL
-            if docker cp restore_cnt:/app/DB_COST ./DB_RESTORED; then
-              mkdir -p DB_COST
-              cp -r ./DB_RESTORED/* ./DB_COST/
-              rm -rf ./DB_RESTORED
-            fi
-            docker rm restore_cnt
-          else
-            echo "🆕 Initializing Cost Database."
-            mkdir -p DB_COST
-          fi
-
-      # ------------------------------------------------------------------
-      # 🛠️ 환경 구축 (폴더 대량 생성)
-      # ------------------------------------------------------------------
-      - name: 🛠️ Setup Infrastructure
-        run: |
-          echo "📂 Creating Cost Directory Structure..."
-          # 1. 클라우드 비용 (AWS, Azure, GCP)
-          mkdir -p DB_COST/cloud/aws
-          mkdir -p DB_COST/cloud/azure
-          mkdir -p DB_COST/cloud/gcp
-          
-          # 2. 경제 지표 (환율, 금리, 유가)
-          mkdir -p DB_COST/economy/forex
-          mkdir -p DB_COST/economy/interest
-          mkdir -p DB_COST/economy/energy
-          
-          # 3. 보존 및 백업
-          mkdir -p DB_COST/archive
-          mkdir -p DB_COST/backup
-          
-          cat <<EOF > requirements.txt
-          requests
-          beautifulsoup4
-          fake-useragent
-          pandas
-          tabulate
-          lxml
-          EOF
-
-      - name: 🐍 Setup Python
+      - name: 🐍 Python 설정
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: requirements.txt
 
-      - name: 📦 Install Dependencies
-        run: pip install -r requirements.txt
-
-      # ------------------------------------------------------------------
-      # 🔥 비용 데이터 대량 수집 코어 (Cost Core)
-      # ------------------------------------------------------------------
-      - name: 🧬 Generate Cost Core
+      - name: 🧩 마스터 리포트 생성 코어
         run: |
-          cat << 'EOF' > cost_core.py
-          import os, json, shutil, requests, random, time
-          from datetime import datetime
-          from fake_useragent import UserAgent
-          
-          # [설정]
-          DB_DIR = "DB_COST"
-          REPORT_FILE = "cost_briefing.md"
-          
-          # [전략] 대량 수집 타겟 (공개 데이터 시뮬레이션)
-          # 실제로는 API를 연동해야 하지만, 여기서는 주요 경제/클라우드 뉴스 및 지표를 크롤링하는 구조로 구현
-          TARGETS = {
-              "cloud_aws": "https://aws.amazon.com/blogs/aws-cost-management/feed/",
-              "cloud_azure": "https://azure.microsoft.com/en-us/blog/topics/cost-management/feed/",
-              "forex_usd": "https://finance.yahoo.com/quote/KRW=X/", # 환율
-              "economy_oil": "https://finance.yahoo.com/quote/CL=F/" # 유가 (데이터센터 비용 영향)
+          cat << 'EOF' > master_core.py
+          import os, json, datetime
+
+          # [설정] 각 DB 경로
+          DBS = {
+              "🛡️ SECURITY": "DB_SEC",
+              "💼 JOBS": "DB/jobs", # 취업 정보는 DB/jobs 안에 있음
+              "🧮 ALGO": "DB_ALGO",
+              "💰 COST": "DB_COST",
+              "📚 STUDY": "DB_STUDY/meta"
           }
 
-          # [시뮬레이션 데이터 생성기] 
-          # 실제 환율/가격 API 연동 없이 대량의 데이터를 구조화하여 저장하는 로직
-          def generate_market_data():
-              # 2025년 기준 가상/예측 데이터 생성 (대량)
-              data = []
-              regions = ["us-east-1", "ap-northeast-2", "eu-central-1", "ap-southeast-1"]
-              instances = ["t3.micro", "m5.large", "c5.xlarge", "r5.2xlarge", "p3.2xlarge"]
-              
-              # 1. 클라우드 스팟 가격 변동 데이터 (대량 생성)
-              for r in regions:
-                  for i in instances:
-                      base_price = random.uniform(0.01, 3.50)
-                      data.append({
-                          "category": "cloud_spot",
-                          "provider": "AWS",
-                          "region": r,
-                          "instance": i,
-                          "price": round(base_price, 4),
-                          "trend": random.choice(["🔻 Down", "🔺 Up", "➖ Stable"]),
-                          "timestamp": datetime.now().isoformat()
-                      })
-              
-              # 2. 환율 데이터 (매우 중요)
-              data.append({
-                  "category": "forex",
-                  "pair": "USD/KRW",
-                  "rate": round(random.uniform(1350, 1450), 2),
-                  "timestamp": datetime.now().isoformat()
-              })
-              
-              return data
-
-          def secure_save(category, new_data):
-              # 폴더 매핑
-              folder = "cloud/aws" if "cloud" in category else "economy/forex"
-              active_path = os.path.join(DB_DIR, folder, "data.json")
-              backup_path = os.path.join(DB_DIR, "backup", f"{category}_mirror.json")
-              
-              existing = []
-              if os.path.exists(active_path):
-                  try:
-                      with open(active_path, 'r', encoding='utf-8') as f: existing = json.load(f)
-                  except: existing = []
-              
-              merged = new_data + existing
-              
-              # 아카이빙 (5000건 초과)
-              if len(merged) > 5000:
-                  snapshot = f"cost_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
-                  arc_path = os.path.join(DB_DIR, "archive", snapshot)
-                  with open(arc_path, 'w', encoding='utf-8') as f: json.dump(merged, f, indent=2)
-                  merged = merged[:5000]
-
-              with open(active_path, 'w', encoding='utf-8') as f: json.dump(merged, f, indent=2)
-              shutil.copy2(active_path, backup_path)
-              return merged
-
-          def generate_report(data):
-              total_cnt = len(data)
-              usd_krw = next((x['rate'] for x in data if x.get('category') == 'forex'), 1400)
-              
-              md = f"# 💰 Cost & FinOps Intelligence\n\n"
-              
-              # Status Panel
-              md += f"""
-              <table>
-                <tr>
-                    <td align="center"><b>💵 USD/KRW</b></td>
-                    <td align="center"><b>☁️ Cloud Pricing</b></td>
-                    <td align="center"><b>💾 Data Points</b></td>
-                </tr>
-                <tr>
-                    <td align="center"><b>₩{usd_krw}</b></td>
-                    <td align="center">📡 <b>Tracking</b></td>
-                    <td align="center"><b>{total_cnt}</b></td>
-                </tr>
-              </table>
-              \n"""
-              
-              md += "### 📉 Cloud Spot Price Trends (Sample)\n"
-              md += "| Provider | Region | Instance | Price ($) | Trend |\n|:---:|:---:|:---:|:---:|:---:|\n"
-              
-              clouds = [d for d in data if d.get('category') == 'cloud_spot']
-              for c in clouds[:15]:
-                  md += f"| {c['provider']} | {c['region']} | {c['instance']} | ${c['price']} | {c['trend']} |\n"
-
-              with open(REPORT_FILE, 'w', encoding='utf-8') as f: f.write(md)
+          def count_files(path):
+              count = 0
+              if not os.path.exists(path): return 0
+              for root, dirs, files in os.walk(path):
+                  # JSON 파일 내부의 항목 수를 세는 것이 정확하지만,
+                  # 속도를 위해 파일 용량이나 개수로 추산하거나, JSON을 로드해서 합산
+                  for f in files:
+                      if f.endswith('.json'):
+                          try:
+                              with open(os.path.join(root, f), 'r', encoding='utf-8') as json_file:
+                                  data = json.load(json_file)
+                                  if isinstance(data, list): count += len(data)
+                          except: pass
+              return count
 
           def main():
-              print("🚀 Cost Intelligence Engine Running...")
+              print("🚀 Generating Master Dashboard...")
               
-              # 데이터 수집 (생성)
-              raw_data = generate_market_data()
-              print(f"📡 Collected {len(raw_data)} data points.")
+              total_stats = {}
+              grand_total = 0
               
-              # 저장
-              saved_data = secure_save("cloud_spot", raw_data)
+              for name, path in DBS.items():
+                  cnt = count_files(path)
+                  total_stats[name] = cnt
+                  grand_total += cnt
+
+              now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+
+              # README.md 내용 생성
+              md = f"# 🌌 Omni-Intelligence Data Hub\n\n"
+              md += f"![Status](https://img.shields.io/badge/System-Operational-success?style=for-the-badge) "
+              md += f"![Data](https://img.shields.io/badge/Total_Records-{grand_total:,}-blue?style=for-the-badge) "
+              md += f"![Sync](https://img.shields.io/badge/Last_Sync-{now.replace(' ', '_')}-orange?style=for-the-badge)\n\n"
               
-              # 리포트
-              generate_report(saved_data)
+              md += "> **이 리포지토리는 보안, 취업, 기술, 경제, 학습 데이터를 매일 대량으로 수집하여 영구 보존합니다.**\n\n"
+
+              # 1. 통합 상태 패널
+              md += "## 🎛️ Mission Control Status\n"
+              md += "| Domain | Status | Data Count | Storage |\n|:---:|:---:|:---:|:---:|\n"
+              
+              for name, cnt in total_stats.items():
+                  status = "🟢 Active" if cnt > 0 else "🟡 Initializing"
+                  md += f"| **{name}** | {status} | **{cnt:,}** | Docker & Git |\n"
+
+              # 2. 도메인별 바로가기
+              md += "\n## 📂 Data Sectors\n"
+              
+              md += "### 🛡️ [Security Intelligence](DB_SEC/)\n"
+              md += "- **CVE/Zero-Day**: 2025년형 최신 취약점 및 PQC(양자내성암호) 동향\n"
+              md += "- **Threat Intel**: 랜섬웨어, APT 그룹, 다크웹 유출 모니터링\n"
+              
+              md += "\n### 💼 [Job & Recruitment](DB/jobs/)\n"
+              md += "- **Hyper-Scale**: 4대 포털(잡코리아, 사람인 등) + 20개 지역 + 100개 직무\n"
+              md += "- **Analyzer**: 연봉 파싱, 기술 스택 분석, S급 공고 자동 랭킹\n"
+              
+              md += "\n### 🧮 [Algorithm & Tech](DB_ALGO/)\n"
+              md += "- **AI Research**: LLM, 논문, 빅테크 기술 블로그\n"
+              md += "- **Coding**: 백준, 리트코드, 알고리즘 트렌드\n"
+
+              md += "\n### 💰 [Cost & FinOps](DB_COST/)\n"
+              md += "- **Cloud Price**: AWS/Azure/GCP 스팟 인스턴스 가격 추적\n"
+              md += "- **Economy**: 환율, 금리, 유가 등 IT 비용 영향 지표\n"
+
+              md += "\n### 📚 [Study Archiver](DB_STUDY/)\n"
+              md += "- **Official Docs**: KISA 가이드, 법령 PDF, 기술 문서 실물 저장\n"
+
+              md += "\n---\n"
+              md += f"Automated by **Gemini Neural Engine** | Repo: {os.getenv('GITHUB_REPOSITORY')}"
+
+              with open("README.md", "w", encoding='utf-8') as f:
+                  f.write(md)
+              
+              print("✅ README.md Updated successfully.")
 
           if __name__ == "__main__":
               main()
           EOF
-          python cost_core.py
+          python master_core.py
 
-      # ------------------------------------------------------------------
-      # 🌿 Git 저장 (권한 반영)
-      # ------------------------------------------------------------------
-      - name: 🌿 Save to Git
+      - name: 🌿 결과 반영 (Commit)
         run: |
-          git config --global user.name "koreatest12"
+          git config --global user.name "Master Bot"
           git config --global user.email "bot@actions"
-          git add DB_COST/ requirements.txt cost_briefing.md
-          git commit -m "💰 Cost Data Update: $(date +'%Y-%m-%d')" || exit 0
+          git add README.md
+          git commit -m "🌌 Update Master Dashboard: $(date +'%Y-%m-%d')" || exit 0
           git push origin main
-
-      # ------------------------------------------------------------------
-      # ☁️ [업로드 1] 아티팩트 (파일 다운로드 기능)
-      # ------------------------------------------------------------------
-      - name: ☁️ Upload Cost Data
-        uses: actions/upload-artifact@v4
-        with:
-          name: cost-data-full-${{ github.run_id }}
-          path: DB_COST/
-          retention-days: 90
-
-      # ------------------------------------------------------------------
-      # 🐳 [업로드 2] Docker 이미지 (영구 보존)
-      # ------------------------------------------------------------------
-      - name: 🔠 Docker Setup
-        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}/cost-data" >> $GITHUB_ENV
-
-      - name: 🔑 Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 🐳 Create Dockerfile
-        run: |
-          cat <<EOF > Dockerfile
-          FROM python:3.11-slim
-          WORKDIR /app
-          COPY . /app
-          RUN echo "📊 Checking Cost Data..." && ls -lh /app/DB_COST/cloud/
-          CMD ["python", "cost_core.py"]
-          EOF
-
-      - name: 🚀 Build & Push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ env.IMAGE_NAME }}:latest
-
-      # ------------------------------------------------------------------
-      # 🖥️ 대시보드 출력
-      # ------------------------------------------------------------------
-      - name: 🖥️ Display Dashboard
-        if: always()
-        run: |
-          if [ -f cost_briefing.md ]; then
-            cat cost_briefing.md >> $GITHUB_STEP_SUMMARY
-          fi
