@@ -1,4 +1,4 @@
-name: 🏢 엔터프라이즈 메가 클러스터 (Docker Compose Fix & Massive Scale)
+name: 📱 Pokemon GO 데이터 및 엔터프라이즈 통합 시스템
 
 on:
   workflow_dispatch:
@@ -12,76 +12,66 @@ env:
   PYTHONUNBUFFERED: 1
 
 jobs:
-  mega-cluster-deploy:
+  pokemon-cluster-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     
     steps:
-      - name: 📥 소스 체크아웃
+      - name: 📥 시스템 소스 체크아웃
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] Docker Compose V2 강제 설치 (에러 해결 핵심)
+      # [Step 1] Docker Compose V2 설치
       # ----------------------------------------------------------------------
-      - name: 🔧 Docker Compose V2 설치 및 설정
+      - name: 🔧 Docker Compose V2 설정
         run: |
-          echo ">>> [Fix] Installing Docker Compose V2..."
           mkdir -p ~/.docker/cli-plugins/
           curl -SL https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
-          
-          echo ">>> [Check] Version Confirmation"
-          docker compose version || echo "Docker Compose Install Failed"
+          docker compose version
 
       # ----------------------------------------------------------------------
-      # [Step 2] 데이터 및 환경 준비
+      # [Step 2] 데이터 리포지토리 수집 (Cost Data + Pokemon Data 시뮬레이션)
       # ----------------------------------------------------------------------
-      - name: 📥 데이터 수집 (Deep Scan)
+      - name: 📥 데이터 수집
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
           path: app_root/raw_data
           fetch-depth: 0 
 
-      - name: 🔧 권한 설정
-        run: chmod -R 755 app_root/raw_data
-          
-      - name: 🐍 파이썬 환경 설정
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: 📦 파이썬 의존성 설치
+      - name: 🔧 권한 및 환경 설정
         run: |
+          chmod -R 755 app_root/raw_data
           python -m pip install --upgrade pip
           pip install pandas numpy pdfplumber faker flask pyyaml requests
 
       # ----------------------------------------------------------------------
-      # [Step 3] 대규모 인프라 생성기 (8개 서비스 + Nginx)
+      # [Step 3] 메가 클러스터 생성 (Pokemon Service 추가)
       # ----------------------------------------------------------------------
       - name: 🛠️ 인프라 코드 생성 (generate_mega_structure.py)
         run: |
           cat <<'EOF' > generate_mega_structure.py
-          import os, sys, yaml, shutil, json, random
+          import os, sys, yaml, shutil, json, random, time
           
           ROOT = "app_root"
           
-          # [1] 마이크로서비스 정의 (8개 서비스)
+          # [1] 서비스 정의 (Pokemon Service 추가됨!)
           SERVICES = [
-              "gateway-nginx",      # 진입점
+              "gateway-nginx",      # API Gateway
               "auth-server",        # 인증
-              "calc-engine",        # 계산
+              "calc-engine",        # 정산
+              "pokemon-game-svc",   # [NEW] 포켓몬 데이터 처리
               "storage-node",       # 저장소
               "log-aggregator",     # 로그
-              "noti-service",       # 알림 (New)
-              "analytics-core",     # 분석 (New)
-              "payment-proc"        # 결제 (New)
+              "analytics-core",     # 분석
+              "noti-service"        # 알림
           ]
           
-          # [2] 호스트 볼륨 경로 (데이터 적재소)
+          # [2] 볼륨 정의
           VOLUMES = {svc: os.path.join(ROOT, "volumes", svc) for svc in SERVICES}
 
-          # [3] Docker Compose 생성 로직
+          # [3] Docker Compose 생성
           def generate_docker_compose():
               compose = {
                   "version": "3.8",
@@ -91,29 +81,31 @@ jobs:
               }
               
               for svc in SERVICES:
-                  # 기본 설정
                   svc_def = {
                       "build": f"./containers/{svc}",
-                      "container_name": f"tax-{svc}",
+                      "container_name": f"ent-{svc}",
                       "networks": ["enterprise-net"],
                       "restart": "always",
                       "environment": [f"SERVICE_NAME={svc}", "ENV=PROD"],
                       "volumes": [f"{os.path.abspath(VOLUMES[svc])}:/app/data"]
                   }
                   
-                  # 서비스별 특화 설정
                   if svc == "gateway-nginx":
                       svc_def["ports"] = ["80:80"]
                       svc_def["depends_on"] = [s for s in SERVICES if s != "gateway-nginx"]
+                  elif svc == "pokemon-game-svc":
+                      # 포켓몬 서비스는 분석 코어와 연동
+                      svc_def["depends_on"] = ["analytics-core"]
                   
                   compose["services"][svc] = svc_def
               
               with open(os.path.join(ROOT, "docker-compose.yml"), "w") as f:
                   yaml.dump(compose, f)
-              print(f"✅ Generated docker-compose.yml with {len(SERVICES)} services.")
+              print(f"✅ Docker Compose Generated with {len(SERVICES)} services (Includes Pokemon-GO).")
 
-          # [4] 컨테이너 소스 생성 (가상환경 적용)
+          # [4] 컨테이너 소스 생성
           def generate_containers():
+              # Python Base (VENV 적용)
               dockerfile_py = """
           FROM python:3.9-slim
           ENV VIRTUAL_ENV=/opt/venv
@@ -121,13 +113,13 @@ jobs:
           ENV PATH="$VIRTUAL_ENV/bin:$PATH"
           WORKDIR /app
           COPY . .
-          RUN pip install flask
+          RUN pip install flask numpy faker
           CMD ["python", "app.py"]
           """
-              # Nginx용 Dockerfile
+              # Nginx Base
               dockerfile_nginx = """
           FROM nginx:alpine
-          RUN echo "server { listen 80; location / { return 200 'Gateway Online'; } }" > /etc/nginx/conf.d/default.conf
+          RUN echo "server { listen 80; location / { return 200 'Enterprise Gateway w/ Pokemon Support'; } }" > /etc/nginx/conf.d/default.conf
           """
 
               for svc in SERVICES:
@@ -138,36 +130,86 @@ jobs:
                       with open(os.path.join(path, "Dockerfile"), "w") as f: f.write(dockerfile_nginx.strip())
                   else:
                       with open(os.path.join(path, "Dockerfile"), "w") as f: f.write(dockerfile_py.strip())
-                      app_code = f"""
+                      
+                      # 서비스별 로직 (포켓몬 서비스 특화)
+                      if svc == "pokemon-game-svc":
+                          app_code = r'''
+          from flask import Flask, jsonify
+          import os, json, random
+          app = Flask(__name__)
+          
+          @app.route('/')
+          def status():
+              files = os.listdir('/app/data')
+              count = len([f for f in files if f.endswith('.json')])
+              return jsonify({"status": "Pokemon Service Online", "captured_pokemon": count})
+              
+          @app.route('/scan')
+          def scan():
+              # 데이터 갱신 시뮬레이션
+              return "Scanning for wild pokemon..."
+              
+          if __name__ == '__main__': app.run(host='0.0.0.0', port=5000)
+          '''
+                      else:
+                          app_code = f"""
           from flask import Flask
           import os
           app = Flask(__name__)
           @app.route('/')
-          def i(): return "<h1>{svc} Running</h1>Data Count: " + str(len(os.listdir('/app/data')))
+          def i(): return "<h1>{svc} Online</h1>Data: " + str(len(os.listdir('/app/data')))
           if __name__ == '__main__': app.run(host='0.0.0.0', port=5000)
           """
                       with open(os.path.join(path, "app.py"), "w") as f: f.write(app_code.strip())
 
-          # [5] 대량 데이터 생성 및 적재 (Data Injection)
+          # [5] 대량 데이터 생성 (Pokemon Data Injection)
           def inject_massive_data():
-              print(">>> [Loader] Injecting MASSIVE data into volumes...")
+              print(">>> [Loader] Injecting MASSIVE Pokemon & Enterprise Data...")
+              
+              # 포켓몬 데이터베이스
+              POKEMON_DB = ["Pikachu", "Charizard", "Bulbasaur", "Mewtwo", "Eevee", "Snorlax", "Gengar", "Dragonite"]
+              TEAMS = ["Mystic", "Valor", "Instinct"]
+              
               for svc, vol_path in VOLUMES.items():
                   os.makedirs(vol_path, exist_ok=True)
                   
-                  # 서비스 성격에 따라 다른 데이터 생성
-                  count = 1000 # 서비스당 1000개 파일
-                  if "calc" in svc:
-                      for i in range(count):
-                          with open(os.path.join(vol_path, f"tax_case_{i}.json"), "w") as f:
-                              json.dump({"id": i, "salary": random.randint(3000,9000)}, f)
-                  elif "log" in svc:
-                      with open(os.path.join(vol_path, "audit.log"), "w") as f:
-                          f.write("LOG START\n" * 5000)
+                  # 1. Pokemon Service: 포획 데이터 5,000건 생성
+                  if svc == "pokemon-game-svc":
+                      print(f"  - Generating Pokemon Data in {vol_path}...")
+                      for i in range(5000):
+                          p_data = {
+                              "capture_id": f"C_{i:06d}",
+                              "trainer_id": f"T_{random.randint(1000,9999)}",
+                              "pokemon": random.choice(POKEMON_DB),
+                              "cp": random.randint(10, 4000),
+                              "iv": {
+                                  "attack": random.randint(0, 15),
+                                  "defense": random.randint(0, 15),
+                                  "stamina": random.randint(0, 15)
+                              },
+                              "team": random.choice(TEAMS),
+                              "shiny": random.random() < 0.05, # 5% 확률 이로치
+                              "timestamp": time.time()
+                          }
+                          with open(os.path.join(vol_path, f"catch_{i}.json"), "w") as f:
+                              json.dump(p_data, f)
+                              
+                  # 2. Analytics Core: 레이드 배틀 로그 생성
+                  elif svc == "analytics-core":
+                      for i in range(1000):
+                          raid_log = f"RAID_BATTLE | BOSS: {random.choice(POKEMON_DB)} | PLAYERS: {random.randint(5,20)} | RESULT: WIN\n"
+                          with open(os.path.join(vol_path, f"raid_log_{i}.txt"), "w") as f: f.write(raid_log)
+                          
+                  # 3. Calc Engine: 기존 세금 데이터
+                  elif svc == "calc-engine":
+                      for i in range(1000):
+                          with open(os.path.join(vol_path, f"tax_{i}.json"), "w") as f:
+                              json.dump({"id": i, "amt": random.randint(100,10000)}, f)
+                              
+                  # 4. 기타 서비스 더미 데이터
                   else:
-                      # 일반 더미 데이터
-                      for i in range(100):
-                          with open(os.path.join(vol_path, f"data_{i}.dat"), "w") as f: f.write("DATA")
-              
+                      with open(os.path.join(vol_path, "status.dat"), "w") as f: f.write("ONLINE")
+                      
               print("✅ Data Injection Complete.")
 
           if __name__ == "__main__":
@@ -176,64 +218,63 @@ jobs:
               inject_massive_data()
           EOF
 
-      - name: 🏗️ 인프라 생성기 실행
+      - name: 🏗️ 인프라 생성 실행
         run: python generate_mega_structure.py
 
       # ----------------------------------------------------------------------
-      # [Step 4] 컨테이너 클러스터 실행 (Fix: docker compose 사용)
+      # [Step 4] 컨테이너 클러스터 구동
       # ----------------------------------------------------------------------
-      - name: 🚀 메가 클러스터 구동 (Docker Compose Up)
+      - name: 🚀 클러스터 배포 (Docker Compose)
         run: |
           cd app_root
-          
-          echo ">>> [Build] Building 8 Microservices..."
-          # docker-compose (구버전) 대신 docker compose (신버전) 사용
+          echo ">>> [Deploy] Building & Starting Services..."
           docker compose build --parallel
-          
-          echo ">>> [Deploy] Starting Cluster..."
           docker compose up -d
           
-          echo ">>> [Wait] Stabilizing services..."
+          echo ">>> [Wait] Waiting for Pokemon Service initialization..."
           sleep 15
-          
-          echo ">>> [Status] Checking Service Health"
-          docker compose ps -a
+          docker compose ps
 
       # ----------------------------------------------------------------------
-      # [Step 5] 결과 검증 및 리포트
+      # [Step 5] 데이터 검증 및 분석
       # ----------------------------------------------------------------------
-      - name: 📊 클러스터 상태 및 데이터 검증
+      - name: 🔍 Pokemon 데이터 검증
         run: |
           echo "================================================="
-          echo "   🏙️ Mega Cluster Status Report"
+          echo "   📱 Pokemon GO Service Status"
           echo "================================================="
           
-          # 컨테이너 실행 상태 확인
-          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          VOL_PATH="app_root/volumes/pokemon-game-svc"
+          COUNT=$(ls $VOL_PATH/*.json | wc -l)
+          
+          echo "Total Captured Pokemon: $COUNT"
+          echo ""
+          echo "[Sample Data - Top 5 Catches]"
+          head -n 5 $VOL_PATH/catch_0.json
           
           echo ""
-          echo ">>> [Data Check] Volume Mount Inspection:"
-          echo "1. Calc Engine Inputs: $(ls app_root/volumes/calc-engine | wc -l) files"
-          echo "2. Auth Server DB: $(ls app_root/volumes/auth-server | wc -l) files"
-          echo "3. Log Aggregator Size: $(du -sh app_root/volumes/log-aggregator)"
-          
-          echo ""
-          echo ">>> [Network] Gateway Connectivity Check:"
-          # Nginx Gateway 응답 확인
-          curl -I http://localhost:80 || echo "Gateway might be initializing..."
+          echo ">>> Shiny Pokemon Check (Sample):"
+          grep -l '"shiny": true' $VOL_PATH/*.json | head -n 3 || echo "No Shiny found in sample"
 
-      - name: 🐳 전체 시스템 로그 덤프
+          echo ""
+          echo "================================================="
+          echo "   🏢 Enterprise Services Status"
+          echo "================================================="
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+      - name: 🐳 전체 시스템 로그 저장
         if: always()
         run: |
           cd app_root
-          docker compose logs > cluster_full_logs.txt
+          docker compose logs > cluster_logs.txt
 
-      - name: 📦 아티팩트 저장 (Logs & Configs)
+      - name: 📦 아티팩트 업로드 (Pokemon Data 포함)
         uses: actions/upload-artifact@v4
         with:
-          name: Mega_Cluster_Artifacts
+          name: Pokemon_Enterprise_System
           path: |
              app_root/docker-compose.yml
-             app_root/cluster_full_logs.txt
-             app_root/volumes/
+             app_root/cluster_logs.txt
+             app_root/volumes/pokemon-game-svc/
+             app_root/volumes/analytics-core/
           retention-days: 7
