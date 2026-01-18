@@ -1,213 +1,192 @@
-name: 🔄 매시간/매주 대량 데이터 생성 및 적재 파이프라인
+name: 🔄 리포지토리 데이터 동기화 및 대량 생성/반영 시스템
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:        # 수동 실행
   push:
     branches: [ "main" ]
-  # [핵심] 스케줄러 적용
   schedule:
-    - cron: '0 * * * *'   # 매시간 실행 (Hourly Batch)
-    - cron: '0 0 * * 0'   # 매주 일요일 자정 실행 (Weekly Full Batch)
+    - cron: '0 */4 * * *'   # 4시간마다 최신 데이터 생성 및 반영
 
 env:
   PIP_ROOT_USER_ACTION: ignore
   PYTHONUNBUFFERED: 1
-  TZ: 'Asia/Seoul' # 한국 시간 기준
+  TZ: 'Asia/Seoul'
 
 jobs:
-  data-factory-pipeline:
+  massive-data-sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 120 # 대량 데이터 처리를 위해 시간 넉넉히 설정
+    timeout-minutes: 60
     
     steps:
       - name: 📥 시스템 체크아웃
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] 원천 데이터 수집
+      # [Step 1] 타겟 리포지토리 데이터 다운로드 (Source Download)
       # ----------------------------------------------------------------------
-      - name: 📥 원천 데이터 가져오기 (koreatest12/cost-data)
+      - name: 📥 koreatest12/cost-data 다운로드
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
-          path: app_root/source_data
+          path: app_root/source_repo
           fetch-depth: 0 
 
-      - name: 🔧 환경 설정
+      - name: 🔧 환경 및 권한 설정
         run: |
-          chmod -R 755 app_root/source_data
+          echo ">>> [Init] Setting up directories..."
+          chmod -R 755 app_root/source_repo
           python -m pip install --upgrade pip
-          pip install pandas numpy faker pyyaml tabulate
+          pip install pandas numpy faker openpyxl tabulate
 
       # ----------------------------------------------------------------------
-      # [Step 2] 데이터 팩토리 및 적재 엔진 생성
+      # [Step 2] 데이터 증식 및 반영 엔진 생성 (Python Engine)
       # ----------------------------------------------------------------------
-      - name: 🛠️ generate_data_factory.py 생성
+      - name: 🛠️ mass_generator.py 생성
         run: |
-          cat <<'EOF' > generate_data_factory.py
-          import os, sys, json, random, time, shutil, glob
+          cat <<'EOF' > mass_generator.py
+          import os, glob, json, random, shutil, uuid
           import pandas as pd
           import numpy as np
-          from datetime import datetime
+          from datetime import datetime, timedelta
           from faker import Faker
           
+          # 한국어 더미 데이터 생성기
           fake = Faker('ko_KR')
           
           # ==============================================================================
-          # [1] 데이터 레이크 디렉토리 구조 정의 (Smart Partitioning)
+          # [1] 디렉토리 구조 정의 (Data Lake Architecture)
           # ==============================================================================
           ROOT = "app_root"
-          NOW = datetime.now()
-          PARTITION_PATH = f"{NOW.year}/{NOW.month:02d}/{NOW.day:02d}/{NOW.hour:02d}"
+          SOURCE_DIR = os.path.join(ROOT, "source_repo")
+          
+          # 날짜별 파티셔닝
+          TODAY = datetime.now().strftime("%Y-%m-%d")
           
           DIRS = {
-              "SOURCE":   os.path.join(ROOT, "source_data"),
-              "LAKE_RAW": os.path.join(ROOT, "data_lake", "raw", PARTITION_PATH),       # 원천 데이터 적재
-              "LAKE_PROC": os.path.join(ROOT, "data_lake", "processed", PARTITION_PATH), # 가공 데이터 적재
-              "WAREHOUSE": os.path.join(ROOT, "data_warehouse", "mart"),                 # 최종 마트
-              "ARCHIVE":  os.path.join(ROOT, "archive_storage")                          # 장기 보관
+              "RAW":      os.path.join(ROOT, "data_lake", "raw", TODAY),
+              "PROCESSED": os.path.join(ROOT, "data_lake", "processed", TODAY),
+              "ANALYTICS": os.path.join(ROOT, "data_warehouse", "analytics"),
+              "LATEST":   os.path.join(ROOT, "latest_sync_data")
           }
-
+          
           # ==============================================================================
-          # [2] 데이터 생성기 (Massive Data Generator)
+          # [2] 데이터 분석 및 증식 로직
           # ==============================================================================
-          class DataFactory:
+          class DataExpander:
               def __init__(self):
                   for d in DIRS.values(): os.makedirs(d, exist_ok=True)
-                  print(f">>> [Init] Data Lake Initialized at {PARTITION_PATH}")
+                  print(f">>> [Init] Data Pipeline ready for date: {TODAY}")
 
-              def analyze_source(self):
-                  """기존 리포지토리의 데이터 패턴 분석"""
-                  files = glob.glob(os.path.join(DIRS["SOURCE"], "**", "*.json"), recursive=True)
-                  print(f">>> [Source] Found {len(files)} reference files.")
+              def load_source_patterns(self):
+                  """기존 리포지토리 데이터 읽기"""
+                  print(">>> [Step 1] Analyze Source Data...")
+                  files = glob.glob(os.path.join(SOURCE_DIR, "**", "*.json"), recursive=True)
+                  print(f"    - Found {len(files)} JSON source files.")
+                  # 패턴 학습 로직 (여기서는 단순 카운트만 활용)
                   return len(files)
 
-              def generate_massive_batch(self, count=10000):
-                  """대량의 시뮬레이션 데이터 생성"""
-                  print(f">>> [Gen] Generating {count} massive records...")
+              def generate_massive_data(self, base_count):
+                  """최신 데이터 대량 생성 (Massive Generation)"""
+                  target_count = max(1000, base_count * 100) # 최소 1000건, 원본의 100배
+                  print(f">>> [Step 2] Generating {target_count} NEW records based on source...")
                   
-                  data_batch = []
-                  for i in range(count):
-                      # Faker를 이용한 고품질 더미 데이터
-                      record = {
-                          "transaction_id": fake.uuid4(),
-                          "timestamp": fake.iso8601(),
-                          "user_info": {
-                              "name": fake.name(),
-                              "email": fake.email(),
-                              "company": fake.company(),
-                              "job": fake.job()
-                          },
-                          "cost_data": {
-                              "salary": np.random.randint(30000000, 150000000),
-                              "expense": np.random.randint(100000, 5000000),
-                              "tax_rate": round(random.uniform(0.03, 0.35), 2)
-                          },
-                          "meta": {
-                              "source": "koreatest12/cost-data",
-                              "batch_type": "HOURLY"
-                          }
+                  generated_data = []
+                  
+                  for i in range(target_count):
+                      # 비용 데이터 시뮬레이션
+                      cost_item = {
+                          "id": str(uuid.uuid4()),
+                          "created_at": datetime.now().isoformat(),
+                          "category": random.choice(["Development", "Marketing", "Server", "Labor", "Tax"]),
+                          "amount": int(np.random.normal(5000000, 2000000)), # 평균 500만원
+                          "currency": "KRW",
+                          "vendor": fake.company(),
+                          "requester": fake.name(),
+                          "description": fake.bs(),
+                          "is_processed": False
                       }
-                      data_batch.append(record)
-                  return data_batch
-
-              def load_to_lake(self, data):
-                  """데이터 레이크 적재 (Load)"""
-                  print(">>> [Load] Loading data into Data Lake (Raw Zone)...")
+                      generated_data.append(cost_item)
                   
-                  # 1000개씩 쪼개서 파일 저장 (Partitioning)
-                  chunk_size = 1000
+                  return generated_data
+
+              def reflect_and_load(self, data):
+                  """데이터 반영 및 적재 (Load & Partition)"""
+                  print(">>> [Step 3] Reflecting & Loading Data...")
+                  
+                  # 1. Raw Zone 적재 (JSON 분할 저장)
+                  chunk_size = 500
                   for i in range(0, len(data), chunk_size):
-                      chunk = data[i:i + chunk_size]
-                      filename = f"batch_data_{i//chunk_size:03d}.json"
-                      path = os.path.join(DIRS["LAKE_RAW"], filename)
-                      
-                      class NpEncoder(json.JSONEncoder):
-                          def default(self, o):
-                              return int(o) if isinstance(o, np.integer) else super().default(o)
-
-                      with open(path, "w", encoding="utf-8") as f:
-                          json.dump(chunk, f, ensure_ascii=False, cls=NpEncoder)
+                      chunk = data[i:i+chunk_size]
+                      fname = f"cost_batch_{i//chunk_size:04d}.json"
+                      with open(os.path.join(DIRS["RAW"], fname), "w", encoding='utf-8') as f:
+                          json.dump(chunk, f, ensure_ascii=False, indent=2)
                   
-                  print(f"✅ Saved {len(data)} records to {DIRS['LAKE_RAW']}")
-
-          # ==============================================================================
-          # [3] ETL 프로세서 (Extract -> Transform -> Load)
-          # ==============================================================================
-          def run_etl_pipeline():
-              factory = DataFactory()
-              
-              # 1. Source 분석
-              ref_count = factory.analyze_source()
-              
-              # 2. 대량 생성 (참조 파일 수에 비례하여 생성량 조절)
-              # 기본 5,000건 + 참조파일 * 100건
-              gen_count = 5000 + (ref_count * 100)
-              raw_data = factory.generate_massive_batch(gen_count)
-              
-              # 3. Raw Zone 적재
-              factory.load_to_lake(raw_data)
-              
-              # 4. Transform & Load to Mart (간단한 요약 집계)
-              print(">>> [Transform] Aggregating Data for Warehouse...")
-              df = pd.DataFrame([
-                  {
-                      "company": d['user_info']['company'],
-                      "salary": d['cost_data']['salary']
-                  } for d in raw_data
-              ])
-              
-              summary = df.groupby("company")['salary'].mean().reset_index()
-              summary.columns = ['Company', 'Avg_Salary']
-              
-              mart_path = os.path.join(DIRS["WAREHOUSE"], f"salary_summary_{int(time.time())}.csv")
-              summary.to_csv(mart_path, index=False)
-              print(f"✅ Data Mart Updated: {mart_path}")
-
-              # 5. Archiving (디렉토리 구조 복사)
-              print(">>> [Archive] creating backup snapshot...")
-              shutil.make_archive(
-                  os.path.join(DIRS["ARCHIVE"], f"backup_{NOW.strftime('%Y%m%d_%H')}"),
-                  'zip',
-                  DIRS["LAKE_RAW"]
-              )
+                  # 2. Processed Zone 적재 (CSV 변환)
+                  df = pd.DataFrame(data)
+                  csv_path = os.path.join(DIRS["PROCESSED"], "daily_cost_summary.csv")
+                  df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                  
+                  # 3. Analytics Zone 적재 (요약 통계)
+                  summary = df.groupby('category')['amount'].sum().reset_index()
+                  summary['updated_at'] = TODAY
+                  
+                  analytics_path = os.path.join(DIRS["ANALYTICS"], f"report_{TODAY}.json")
+                  summary.to_json(analytics_path, orient='records', force_ascii=False)
+                  
+                  # 4. Latest Sync 폴더로 최신본 복사
+                  shutil.copy(csv_path, os.path.join(DIRS["LATEST"], "latest_full_data.csv"))
+                  
+                  print(f"✅ Data Loaded: {len(data)} records processed.")
+                  print(f"    - Raw Path: {DIRS['RAW']}")
+                  print(f"    - Processed: {csv_path}")
 
           if __name__ == "__main__":
-              run_etl_pipeline()
+              expander = DataExpander()
+              count = expander.load_source_patterns()
+              new_data = expander.generate_massive_data(count)
+              expander.reflect_and_load(new_data)
           EOF
 
-      - name: 🏗️ 데이터 팩토리 가동
-        run: python generate_data_factory.py
+      # ----------------------------------------------------------------------
+      # [Step 3] 파이프라인 가동
+      # ----------------------------------------------------------------------
+      - name: 🚀 데이터 생성 및 반영 실행
+        run: python mass_generator.py
 
       # ----------------------------------------------------------------------
-      # [Step 3] 데이터 적재 결과 검증
+      # [Step 4] 결과 확인 (Verification)
       # ----------------------------------------------------------------------
-      - name: 📊 적재 현황 리포트
+      - name: 📊 생성된 데이터 현황 리포트
         run: |
           echo "======================================================="
-          echo "   🏭 Data Lake & Warehouse Status Report"
+          echo "   🏭 Massive Data Generation Report"
           echo "======================================================="
           
-          echo "1. [Data Lake - Raw Zone] Partition Structure:"
-          tree app_root/data_lake/raw | head -n 20
+          echo "[1] Source Data (koreatest12/cost-data):"
+          find app_root/source_repo -type f | wc -l
           
           echo ""
-          echo "2. [Data Warehouse - Mart] Generated Reports:"
-          ls -lh app_root/data_warehouse/mart/
+          echo "[2] Raw Data Lake (Generated JSON Batches):"
+          ls -1 app_root/data_lake/raw/$(date +%Y-%m-%d)/ | head -n 10
+          echo "... and many more files."
           
           echo ""
-          echo "3. [Archive] Backup Files:"
-          ls -lh app_root/archive_storage/
+          echo "[3] Processed Data (Latest CSV):"
+          ls -lh app_root/latest_sync_data/
+          
+          echo ""
+          echo "[4] Analytics Report:"
+          ls -lh app_root/data_warehouse/analytics/
 
       # ----------------------------------------------------------------------
-      # [Step 4] 결과물 업로드 (적재된 데이터 전체)
+      # [Step 5] 전체 데이터 아티팩트 저장 (다운로드 가능하도록)
       # ----------------------------------------------------------------------
-      - name: 📦 데이터 레이크 스냅샷 저장
+      - name: 📦 최신 데이터 패키지 업로드
         uses: actions/upload-artifact@v4
         with:
-          name: Hourly_Data_Lake_Snapshot
+          name: Latest_Massive_Cost_Data
           path: |
              app_root/data_lake/
              app_root/data_warehouse/
-             app_root/archive_storage/
-          retention-days: 30 # 장기 보관
+             app_root/latest_sync_data/
+          retention-days: 7
