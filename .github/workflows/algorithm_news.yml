@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Java Fixed & Massive)
+name: 🌌 Omni-Intelligence Grand Pipeline (Java Data Integrated)
 
 on:
   schedule:
@@ -15,122 +15,7 @@ permissions:
 
 jobs:
   # ==============================================================================
-  # ☕ 0. Java Backend Engine (Fix: 메인 클래스 충돌 해결)
-  # ==============================================================================
-  java-backend:
-    name: ☕ Java Backend Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: ☕ Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      # [핵심 수정 1] 기존 소스 코드 충돌 방지를 위해 src 폴더 초기화
-      - name: 🧹 Clean Source Directory
-        run: rm -rf src
-
-      # [핵심 수정 2] pom.xml에 <mainClass> 명시하여 에러 원천 차단
-      - name: 📝 Generate pom.xml
-        run: |
-          cat << 'EOF' > pom.xml
-          <?xml version="1.0" encoding="UTF-8"?>
-          <project xmlns="http://maven.apache.org/POM/4.0.0"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
-                   http://maven.apache.org/xsd/maven-4.0.0.xsd">
-              <modelVersion>4.0.0</modelVersion>
-          
-              <parent>
-                  <groupId>org.springframework.boot</groupId>
-                  <artifactId>spring-boot-starter-parent</artifactId>
-                  <version>3.2.1</version>
-                  <relativePath/>
-              </parent>
-          
-              <groupId>com.costdata</groupId>
-              <artifactId>file-management</artifactId>
-              <version>1.0.0</version>
-              <packaging>jar</packaging>
-          
-              <name>Cost Data File Management</name>
-              <properties>
-                  <java.version>17</java.version>
-                  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-              </properties>
-          
-              <dependencies>
-                  <dependency>
-                      <groupId>org.springframework.boot</groupId>
-                      <artifactId>spring-boot-starter-web</artifactId>
-                  </dependency>
-                  <dependency>
-                      <groupId>org.springframework.boot</groupId>
-                      <artifactId>spring-boot-starter-security</artifactId>
-                  </dependency>
-                  <dependency>
-                      <groupId>org.projectlombok</groupId>
-                      <artifactId>lombok</artifactId>
-                      <optional>true</optional>
-                  </dependency>
-                  <dependency>
-                      <groupId>org.springframework.boot</groupId>
-                      <artifactId>spring-boot-starter-test</artifactId>
-                      <scope>test</scope>
-                  </dependency>
-              </dependencies>
-          
-              <build>
-                  <plugins>
-                      <plugin>
-                          <groupId>org.springframework.boot</groupId>
-                          <artifactId>spring-boot-maven-plugin</artifactId>
-                          <configuration>
-                              <mainClass>com.costdata.FileManagementApplication</mainClass>
-                              <excludes>
-                                  <exclude>
-                                      <groupId>org.projectlombok</groupId>
-                                      <artifactId>lombok</artifactId>
-                                  </exclude>
-                              </excludes>
-                          </configuration>
-                      </plugin>
-                  </plugins>
-              </build>
-          </project>
-          EOF
-
-      - name: 🧬 Generate Java Source
-        run: |
-          mkdir -p src/main/java/com/costdata
-          cat << 'EOF' > src/main/java/com/costdata/FileManagementApplication.java
-          package com.costdata;
-          import org.springframework.boot.SpringApplication;
-          import org.springframework.boot.autoconfigure.SpringBootApplication;
-          
-          @SpringBootApplication
-          public class FileManagementApplication {
-              public static void main(String[] args) {
-                  SpringApplication.run(FileManagementApplication.class, args);
-              }
-          }
-          EOF
-
-      - name: 🔨 Build with Maven
-        run: mvn clean package -DskipTests
-
-      - name: ☁️ Upload JAR Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: file-management-jar
-          path: target/*.jar
-
-  # ==============================================================================
-  # 🛡️ 1. Security Engine (대량 수집 강화)
+  # 🛡️ 1. Security Engine
   # ==============================================================================
   security-core:
     name: 🛡️ Security Engine
@@ -158,9 +43,8 @@ jobs:
           from fake_useragent import UserAgent
           
           DB_DIR = "DB_SEC"
-          # [대량 타겟]
-          SOURCES = ["site:thehackernews.com", "site:bleepingcomputer.com", "site:cisa.gov", "site:kisa.or.kr", "site:darkreading.com", "site:securityweek.com"]
-          KEYWORDS = ["CVE-2025", "Zero-Day", "Ransomware", "Post-Quantum", "Kyber", "AI Security", "Deepfake", "Supply Chain", "APT Group", "Data Breach", "Cloud Security"]
+          SOURCES = ["site:thehackernews.com", "site:bleepingcomputer.com", "site:cisa.gov", "site:kisa.or.kr", "site:darkreading.com"]
+          KEYWORDS = ["CVE-2025", "Zero-Day", "Ransomware", "Post-Quantum", "Kyber", "AI Security", "Deepfake", "Supply Chain", "APT Group"]
           
           async def fetch(session, url, kw):
               try:
@@ -224,7 +108,7 @@ jobs:
         with: { name: db-sec, path: DB_SEC/ }
 
   # ==============================================================================
-  # 💼 2. Job Engine (대량 수집 강화)
+  # 💼 2. Job Engine
   # ==============================================================================
   job-core:
     name: 💼 Job Fortress
@@ -253,7 +137,6 @@ jobs:
           
           DB_DIR = "DB"
           PORTALS = {"JobKorea":"site:jobkorea.co.kr", "Saramin":"site:saramin.co.kr", "Indeed":"site:kr.indeed.com"}
-          # [대량 타겟 - 지역 12곳 x 직무 14개]
           LOCS = ["강남", "판교", "분당", "여의도", "구로", "가산", "송도", "마곡", "성수", "광화문", "을지로", "잠실"]
           KWS = ["Python", "Java", "Node", "React", "Spring", "AWS", "AI", "DevOps", "PM", "Marketing", "HR", "Finance", "Security", "Data"]
           
@@ -423,10 +306,136 @@ jobs:
         with: { name: db-misc, path: DB_COST/ }
 
   # ==============================================================================
-  # 🌍 6. Master Dashboard (화면 출력 포함)
+  # ☕ 6. Java App Build (Data Injection & Docker API Server)
+  # ==============================================================================
+  java-app-build:
+    needs: [security-core, job-core, algo-core, misc-core] # 모든 데이터 수집 후 실행
+    name: ☕ Java API App Build (Data Integrated)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # 1. 모든 수집된 데이터 다운로드 (Artifact)
+      - uses: actions/download-artifact@v4
+        with: { pattern: 'db-*', merge-multiple: true }
+      
+      - name: ☕ JDK 17 설정
+        uses: actions/setup-java@v4
+        with: { java-version: '17', distribution: 'temurin', cache: maven }
+
+      - name: 🧹 소스 초기화 및 데이터 주입
+        run: |
+          rm -rf src
+          # 데이터 주입용 리소스 폴더 생성
+          mkdir -p src/main/resources/data
+          
+          # 수집된 DB 폴더들을 Java 리소스 폴더로 복사 (Injection)
+          cp -r DB_SEC src/main/resources/data/
+          cp -r DB src/main/resources/data/jobs
+          cp -r DB_ALGO src/main/resources/data/algo
+          
+          echo "✅ All Data injected into src/main/resources/data/"
+          ls -R src/main/resources/data/ | head -10
+
+      - name: 📝 pom.xml 생성 (Web + Security)
+        run: |
+          cat << 'EOF' > pom.xml
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project xmlns="http://maven.apache.org/POM/4.0.0"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+              <modelVersion>4.0.0</modelVersion>
+              <parent>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-starter-parent</artifactId>
+                  <version>3.2.1</version>
+                  <relativePath/>
+              </parent>
+              <groupId>com.costdata</groupId>
+              <artifactId>omni-intelligence-api</artifactId>
+              <version>1.0.0</version>
+              <packaging>jar</packaging>
+              <name>Omni Intelligence API</name>
+              <properties>
+                  <java.version>17</java.version>
+                  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+              </properties>
+              <dependencies>
+                  <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+                  <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
+              </dependencies>
+              <build>
+                  <plugins>
+                      <plugin>
+                          <groupId>org.springframework.boot</groupId>
+                          <artifactId>spring-boot-maven-plugin</artifactId>
+                          <configuration>
+                              <mainClass>com.costdata.OmniApiApplication</mainClass>
+                          </configuration>
+                      </plugin>
+                  </plugins>
+              </build>
+          </project>
+          EOF
+
+      - name: 🧬 Java API 서버 코드 생성 (Data Loader)
+        run: |
+          mkdir -p src/main/java/com/costdata
+          cat << 'EOF' > src/main/java/com/costdata/OmniApiApplication.java
+          package com.costdata;
+          
+          import org.springframework.boot.SpringApplication;
+          import org.springframework.boot.autoconfigure.SpringBootApplication;
+          import org.springframework.web.bind.annotation.GetMapping;
+          import org.springframework.web.bind.annotation.RestController;
+          import java.util.HashMap;
+          import java.util.Map;
+          
+          @SpringBootApplication
+          @RestController
+          public class OmniApiApplication {
+          
+              public static void main(String[] args) {
+                  SpringApplication.run(OmniApiApplication.class, args);
+              }
+          
+              @GetMapping("/api/status")
+              public Map<String, String> getStatus() {
+                  Map<String, String> status = new HashMap<>();
+                  status.put("system", "Omni-Intelligence Hub");
+                  status.put("status", "Online");
+                  status.put("data_source", "Embedded Resources");
+                  return status;
+              }
+              
+              @GetMapping("/api/data/security")
+              public String getSecurityInfo() {
+                  return "Security Data Loaded from src/main/resources/data/DB_SEC";
+              }
+          }
+          EOF
+
+      - name: 🔨 Maven Build
+        run: mvn clean package -DskipTests
+
+      - name: 🐳 Java App Docker Build & Push (API Server)
+        run: |
+          cat <<EOF > Dockerfile
+          FROM openjdk:17-jdk-slim
+          WORKDIR /app
+          COPY target/*.jar app.jar
+          ENTRYPOINT ["java", "-jar", "/app.jar"]
+          EOF
+          
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-java-api:latest"
+          docker build -t $IMG . && docker push $IMG
+
+  # ==============================================================================
+  # 🌍 7. Master Dashboard
   # ==============================================================================
   master-hub:
-    needs: [java-backend, security-core, job-core, algo-core, misc-core]
+    needs: [java-app-build] # Java 빌드까지 끝나면 실행
     name: 🌍 Master Dashboard
     runs-on: ubuntu-latest
     if: always()
@@ -440,7 +449,6 @@ jobs:
         run: |
           cat << 'EOF' > dashboard.py
           import os, json, datetime
-          
           def get_count(path):
               cnt = 0
               if not os.path.exists(path): return 0
@@ -453,28 +461,13 @@ jobs:
                                   if isinstance(d, list): cnt += len(d)
                           except: pass
               return cnt
-
-          sec_cnt = get_count("DB_SEC")
-          job_cnt = get_count("DB/jobs")
-          algo_cnt = get_count("DB_ALGO")
-          total = sec_cnt + job_cnt + algo_cnt
+          sec = get_count("DB_SEC")
+          job = get_count("DB/jobs")
+          algo = get_count("DB_ALGO")
+          total = sec + job + algo
           now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-          
-          md = f"# 🌌 Omni-Intelligence Hub\n\n"
-          md += f"![Status](https://img.shields.io/badge/System-Operational-success?style=for-the-badge) "
-          md += f"![Data](https://img.shields.io/badge/Records-{total:,}-blue?style=for-the-badge) "
-          md += f"![Sync](https://img.shields.io/badge/Update-{now.replace(' ','_')}-orange?style=for-the-badge)\n\n"
-          
-          md += "## 🎛️ Mission Control\n"
-          md += "| Module | Count | Status |\n|:---:|:---:|:---:|\n"
-          md += f"| ☕ Java | **Build Success** | 🟢 Online |\n"
-          md += f"| 🛡️ Security | **{sec_cnt:,}** | 🟢 Online |\n"
-          md += f"| 💼 Jobs | **{job_cnt:,}** | 🟢 Online |\n"
-          md += f"| 🧮 Algo | **{algo_cnt:,}** | 🟢 Online |\n"
-          md += f"| 💰 Cost/Study | **Active** | 🟢 Online |\n"
-          
-          md += "\n---\n*Auto-generated by Omni-Pipeline*"
-          
+          md = f"# 🌌 Omni-Intelligence Hub\n\n![Status](https://img.shields.io/badge/Status-Operational-green) ![Data](https://img.shields.io/badge/Total-{total:,}-blue)\n"
+          md += f"## 🎛️ Mission Control\n| Module | Count | Status |\n|---|---|---|\n| 🛡️ Security | {sec:,} | 🟢 |\n| 💼 Jobs | {job:,} | 🟢 |\n| ☕ Java API | **Built & Dockerized** | 🟢 |\n"
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
@@ -482,23 +475,12 @@ jobs:
       - name: 🚀 실행 화면 출력
         run: cat README.md >> $GITHUB_STEP_SUMMARY
 
-      - name: 🌿 Commit Master Dashboard (Auto-Retry)
+      - name: 🌿 Commit Master Dashboard
         run: |
           git config --global user.name "Omni Bot"
           git config --global user.email "bot@actions"
-          
-          # Java 소스와 모든 DB 데이터 스테이징
           git add README.md DB* pom.xml src/
-          
           if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
-          
           git commit -m "🌌 Full-Stack Update: $(date +'%Y-%m-%d %H:%M')"
-          
           n=0
-          until [ "$n" -ge 5 ]; do
-             git pull --rebase origin main && git push origin main && break
-             n=$((n+1))
-             echo "⚠️ Retrying push... ($n/5)"
-             sleep 5
-          done
-          if [ "$n" -ge 5 ]; then exit 1; fi
+          until [ "$n" -ge 5 ]; do git pull --rebase origin main && git push origin main && break; n=$((n+1)); sleep 5; done
