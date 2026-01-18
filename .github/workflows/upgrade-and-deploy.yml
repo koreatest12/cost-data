@@ -25,11 +25,12 @@ jobs:
         with:
           repository: koreatest12/cost-data
           path: app_root/cost_data
-          fetch-depth: 0 # 전체 히스토리 및 파일 가져오기
+          fetch-depth: 0 # 전체 히스토리 및 모든 브랜치/태그 가져오기 (Deep Scan)
 
       - name: 🔧 파일 권한 대량 수정 (Permission Fix)
         run: |
-          echo ">>> 데이터 접근 권한을 수정합니다..."
+          echo ">>> 데이터 접근 권한을 수정합니다 (재귀적 적용)..."
+          # 모든 하위 디렉토리 및 파일에 대해 권한 부여
           chmod -R 755 app_root/cost_data
 
       - name: 🐍 파이썬 환경 설정
@@ -68,7 +69,6 @@ jobs:
           DATA_DIR = 'cost_data'
           
           # [A] 데이터 저장소 (In-Memory DB)
-          # 사람별로 데이터를 통합(Aggregation)합니다.
           db = defaultdict(lambda: {
               'salary': 0,        # 총급여
               'pension': 0,       # 국민연금
@@ -84,26 +84,33 @@ jobs:
           def extract_number(text, keywords, min_value=0):
               best_val = 0
               for key in keywords:
-                  # 키워드 뒤에 오는 숫자 탐색 (예: "총급여 50,000,000")
-                  # 콤마(,) 포함 숫자를 찾고 정수로 변환
                   matches = re.finditer(key + r'[^0-9\n]*([0-9,]+)', text)
                   for match in matches:
                       try:
                           val = int(match.group(1).replace(',', ''))
                           if val >= min_value:
-                              best_val = max(best_val, val) # 가장 큰 금액을 선택 (오탐지 방지)
+                              best_val = max(best_val, val)
                       except: pass
               return best_val
 
           # [C] 데이터 마이그레이션 (모든 파일 스캔 -> 통합)
           def migrate_data():
-              # 재귀적으로 모든 파일 탐색
-              all_files = glob.glob(os.path.join(DATA_DIR, '**', '*.*'), recursive=True)
-              print(f">>> [Migration] 총 {len(all_files)}개의 파일을 분석합니다.")
+              # [핵심 수정] 모든 하위 디렉토리(**)의 모든 파일(*)을 검색 (확장자 없는 파일 포함)
+              search_path = os.path.join(DATA_DIR, '**', '*')
+              all_entries = glob.glob(search_path, recursive=True)
+              
+              # 디렉토리가 아닌 실제 파일만 필터링
+              all_files = [f for f in all_entries if os.path.isfile(f)]
+              
+              print(f">>> [Migration] 검색 경로: {os.path.abspath(DATA_DIR)}")
+              print(f">>> [Migration] 총 {len(all_files)}개의 파일을 발견하여 분석을 시작합니다.")
 
               for filepath in all_files:
                   filename = os.path.basename(filepath)
-                  ext = os.path.splitext(filepath)[1].lower()
+                  # 확장자가 없는 파일도 처리하기 위해 lower() 처리 시 주의
+                  _, ext = os.path.splitext(filepath)
+                  ext = ext.lower()
+                  
                   name = None
                   
                   try:
@@ -117,10 +124,9 @@ jobs:
                                   db[name]['card'] += int(js.get('credit', 0)) + int(js.get('debit', 0))
 
                       # 2. Excel 처리
-                      elif ext == '.xlsx':
+                      elif ext in ['.xlsx', '.xls']:
                           df = pd.read_excel(filepath)
-                          row = df.iloc[0] # 첫 줄 기준
-                          # 이름 컬럼 찾기
+                          row = df.iloc[0]
                           for col in ['name', '성명', '이름']:
                               if col in df.columns:
                                   name = row[col]
@@ -129,36 +135,34 @@ jobs:
                               if 'total_salary' in row: db[name]['salary'] = max(db[name]['salary'], int(row['total_salary']))
                               if 'credit' in row: db[name]['card'] += int(row['credit'])
 
-                      # 3. PDF 처리 (핵심)
+                      # 3. PDF 처리
                       elif ext == '.pdf':
                           with pdfplumber.open(filepath) as pdf:
                               text = "".join([p.extract_text() or "" for p in pdf.pages])
-                              
-                              # 이름 추출 (성명 : 홍길동)
                               nm_match = re.search(r'성\s*명\s*[:]?\s*([가-힣]{2,4})', text)
                               if nm_match: name = nm_match.group(1)
-                              else: 
-                                  # 파일명에서 이름 추측 (예: 김병권_자료.pdf)
+                              else:
+                                  # 파일명 매칭 시도
                                   nm_file = re.match(r'([가-힣]{2,4})', filename)
                                   if nm_file: name = nm_file.group(1)
-
+                              
                               if name:
-                                  # 급여 (100만원 이상만 유효)
                                   salary = extract_number(text, ['총급여', '급여계', '소득월액'], 1000000)
                                   if salary > 0: db[name]['salary'] = max(db[name]['salary'], salary)
-
-                                  # 공제 항목 합산
                                   db[name]['insurance'] += extract_number(text, ['보장성', '보험료'])
                                   db[name]['pension'] += extract_number(text, ['국민연금', '연금'])
                                   db[name]['medical'] += extract_number(text, ['의료비', '진료비'])
                                   db[name]['card'] += extract_number(text, ['신용카드', '직불카드', '현금영수증'])
                                   db[name]['donation'] += extract_number(text, ['기부금'])
-
-                      # 파일 기록
-                      if name: db[name]['files'].add(filename)
-
+                      
+                      # 파일 기록 (성공적으로 이름을 찾은 경우)
+                      if name: 
+                          db[name]['files'].add(filename)
+                          # 디버깅용 로그 (필요시 주석 해제)
+                          # print(f"  - Parsed: {filename} -> {name}")
+                          
                   except Exception as e:
-                      print(f"Skipping {filename}: {e}")
+                      print(f"⚠️ Skipping {filename}: {e}")
               
               return db
 
@@ -166,15 +170,11 @@ jobs:
           def run_simulation():
               migrate_data()
               results = []
-
               for name, data in db.items():
-                  # 유효한 데이터만 처리
                   if not name or len(name) < 2: continue
                   
                   salary = data['salary']
                   is_estimated = False
-                  
-                  # 급여 정보가 없으면 기본값 적용 (시뮬레이션 모드)
                   if salary == 0:
                       salary = 40000000
                       is_estimated = True
@@ -186,26 +186,21 @@ jobs:
                   elif salary <= 100000000: income_ded = 12000000 + (salary - 45000000) * 0.05
                   else: income_ded = 14750000 + (salary - 100000000) * 0.02
                   
-                  basic_ded = 1500000 # 본인 공제
+                  basic_ded = 1500000
                   
                   # 2. 특별/그밖의 공제
-                  # 카드공제 (간이: 급여 25% 초과분의 15%)
                   card_threshold = salary * 0.25
                   card_ded = 0
                   if data['card'] > card_threshold:
                       card_ded = (data['card'] - card_threshold) * 0.15
-                      card_ded = min(card_ded, 3000000) # 한도 300
-
-                  # 의료비공제 (간이: 급여 3% 초과분의 15%)
+                      card_ded = min(card_ded, 3000000)
+                  
                   medi_threshold = salary * 0.03
-                  medi_ded = 0 # 의료비는 세액공제지만 편의상 여기서 계산 흐름 설명
                   medi_credit = 0
                   if data['medical'] > medi_threshold:
                       medi_credit = (data['medical'] - medi_threshold) * 0.15
                       medi_credit = min(medi_credit, 7000000)
-
-                  # 과세표준 계산
-                  # (소득공제 항목 합산)
+                  
                   total_income_deductions = income_ded + basic_ded + data['pension'] + data['insurance'] + data['donation'] + card_ded
                   tax_base = max(salary - total_income_deductions, 0)
                   
@@ -216,13 +211,11 @@ jobs:
                   else: calc_tax = 15360000 + (tax_base - 88000000) * 0.35
                   
                   # 4. 세액공제 반영
-                  # (의료비, 보험료 세액공제 등)
                   insurance_credit = min(data['insurance'], 1000000) * 0.12
                   total_credits = medi_credit + insurance_credit
-                  
                   determined_tax = max(calc_tax - total_credits, 0)
                   
-                  # 5. 기납부세액 (데이터 없으면 급여의 4~5% 가정)
+                  # 5. 기납부세액
                   pre_paid = data['pre_paid']
                   if pre_paid == 0: pre_paid = int(salary * 0.045)
                   
@@ -247,16 +240,13 @@ jobs:
                       "final_money": final_money,
                       "type": "환급" if final_money < 0 else "징수"
                   })
-                  
               return results
 
           if __name__ == "__main__":
               res = run_simulation()
-              # JSON으로 결과 저장 (Web UI 연동용)
               with open('final_result.json', 'w', encoding='utf-8') as f:
                   json.dump(res, f, ensure_ascii=False)
               
-              # 콘솔 출력 (Log 확인용)
               print("\n" + "="*80)
               print("   🚀 [Master] 연말정산 마이그레이션 및 시뮬레이션 결과")
               print("="*80)
@@ -285,7 +275,6 @@ jobs:
           
           @app.route('/')
           def index():
-              # 엔진이 생성한 결과 로드
               try:
                   with open('final_result.json', 'r', encoding='utf-8') as f:
                       results = json.load(f)
@@ -370,11 +359,11 @@ jobs:
               </html>
               """
               return render_template_string(html, results=results, total_refund=total_refund, total_collect=total_collect)
-
+          
           if __name__ == '__main__':
               app.run(host='0.0.0.0', port=8080)
           EOF
-          
+
           # Dockerfile
           cat <<EOF > app_root/Dockerfile
           FROM python:3.9-slim
