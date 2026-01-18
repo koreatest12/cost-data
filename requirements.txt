@@ -1,9 +1,6 @@
-feedparser
-aiohttp
-asyncio
 requests
 beautifulsoup4
-lxml
 fake-useragent
 pandas
 tabulate
+lxml
