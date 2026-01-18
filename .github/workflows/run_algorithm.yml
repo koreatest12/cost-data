@@ -1,280 +1,213 @@
-name: 📱 Pokemon GO 데이터 및 엔터프라이즈 통합 시스템
+name: 🔄 매시간/매주 대량 데이터 생성 및 적재 파이프라인
 
 on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  # [핵심] 스케줄러 적용
+  schedule:
+    - cron: '0 * * * *'   # 매시간 실행 (Hourly Batch)
+    - cron: '0 0 * * 0'   # 매주 일요일 자정 실행 (Weekly Full Batch)
 
 env:
   PIP_ROOT_USER_ACTION: ignore
   PYTHONUNBUFFERED: 1
+  TZ: 'Asia/Seoul' # 한국 시간 기준
 
 jobs:
-  pokemon-cluster-deploy:
+  data-factory-pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120 # 대량 데이터 처리를 위해 시간 넉넉히 설정
     
     steps:
-      - name: 📥 시스템 소스 체크아웃
+      - name: 📥 시스템 체크아웃
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] Docker Compose V2 설치
+      # [Step 1] 원천 데이터 수집
       # ----------------------------------------------------------------------
-      - name: 🔧 Docker Compose V2 설정
-        run: |
-          mkdir -p ~/.docker/cli-plugins/
-          curl -SL https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
-          docker compose version
-
-      # ----------------------------------------------------------------------
-      # [Step 2] 데이터 리포지토리 수집 (Cost Data + Pokemon Data 시뮬레이션)
-      # ----------------------------------------------------------------------
-      - name: 📥 데이터 수집
+      - name: 📥 원천 데이터 가져오기 (koreatest12/cost-data)
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
-          path: app_root/raw_data
+          path: app_root/source_data
           fetch-depth: 0 
 
-      - name: 🔧 권한 및 환경 설정
+      - name: 🔧 환경 설정
         run: |
-          chmod -R 755 app_root/raw_data
+          chmod -R 755 app_root/source_data
           python -m pip install --upgrade pip
-          pip install pandas numpy pdfplumber faker flask pyyaml requests
+          pip install pandas numpy faker pyyaml tabulate
 
       # ----------------------------------------------------------------------
-      # [Step 3] 메가 클러스터 생성 (Pokemon Service 추가)
+      # [Step 2] 데이터 팩토리 및 적재 엔진 생성
       # ----------------------------------------------------------------------
-      - name: 🛠️ 인프라 코드 생성 (generate_mega_structure.py)
+      - name: 🛠️ generate_data_factory.py 생성
         run: |
-          cat <<'EOF' > generate_mega_structure.py
-          import os, sys, yaml, shutil, json, random, time
+          cat <<'EOF' > generate_data_factory.py
+          import os, sys, json, random, time, shutil, glob
+          import pandas as pd
+          import numpy as np
+          from datetime import datetime
+          from faker import Faker
           
+          fake = Faker('ko_KR')
+          
+          # ==============================================================================
+          # [1] 데이터 레이크 디렉토리 구조 정의 (Smart Partitioning)
+          # ==============================================================================
           ROOT = "app_root"
+          NOW = datetime.now()
+          PARTITION_PATH = f"{NOW.year}/{NOW.month:02d}/{NOW.day:02d}/{NOW.hour:02d}"
           
-          # [1] 서비스 정의 (Pokemon Service 추가됨!)
-          SERVICES = [
-              "gateway-nginx",      # API Gateway
-              "auth-server",        # 인증
-              "calc-engine",        # 정산
-              "pokemon-game-svc",   # [NEW] 포켓몬 데이터 처리
-              "storage-node",       # 저장소
-              "log-aggregator",     # 로그
-              "analytics-core",     # 분석
-              "noti-service"        # 알림
-          ]
-          
-          # [2] 볼륨 정의
-          VOLUMES = {svc: os.path.join(ROOT, "volumes", svc) for svc in SERVICES}
+          DIRS = {
+              "SOURCE":   os.path.join(ROOT, "source_data"),
+              "LAKE_RAW": os.path.join(ROOT, "data_lake", "raw", PARTITION_PATH),       # 원천 데이터 적재
+              "LAKE_PROC": os.path.join(ROOT, "data_lake", "processed", PARTITION_PATH), # 가공 데이터 적재
+              "WAREHOUSE": os.path.join(ROOT, "data_warehouse", "mart"),                 # 최종 마트
+              "ARCHIVE":  os.path.join(ROOT, "archive_storage")                          # 장기 보관
+          }
 
-          # [3] Docker Compose 생성
-          def generate_docker_compose():
-              compose = {
-                  "version": "3.8",
-                  "services": {},
-                  "networks": {"enterprise-net": {"driver": "bridge"}},
-                  "volumes": {f"{s}-vol": {} for s in SERVICES}
-              }
-              
-              for svc in SERVICES:
-                  svc_def = {
-                      "build": f"./containers/{svc}",
-                      "container_name": f"ent-{svc}",
-                      "networks": ["enterprise-net"],
-                      "restart": "always",
-                      "environment": [f"SERVICE_NAME={svc}", "ENV=PROD"],
-                      "volumes": [f"{os.path.abspath(VOLUMES[svc])}:/app/data"]
-                  }
-                  
-                  if svc == "gateway-nginx":
-                      svc_def["ports"] = ["80:80"]
-                      svc_def["depends_on"] = [s for s in SERVICES if s != "gateway-nginx"]
-                  elif svc == "pokemon-game-svc":
-                      # 포켓몬 서비스는 분석 코어와 연동
-                      svc_def["depends_on"] = ["analytics-core"]
-                  
-                  compose["services"][svc] = svc_def
-              
-              with open(os.path.join(ROOT, "docker-compose.yml"), "w") as f:
-                  yaml.dump(compose, f)
-              print(f"✅ Docker Compose Generated with {len(SERVICES)} services (Includes Pokemon-GO).")
+          # ==============================================================================
+          # [2] 데이터 생성기 (Massive Data Generator)
+          # ==============================================================================
+          class DataFactory:
+              def __init__(self):
+                  for d in DIRS.values(): os.makedirs(d, exist_ok=True)
+                  print(f">>> [Init] Data Lake Initialized at {PARTITION_PATH}")
 
-          # [4] 컨테이너 소스 생성
-          def generate_containers():
-              # Python Base (VENV 적용)
-              dockerfile_py = """
-          FROM python:3.9-slim
-          ENV VIRTUAL_ENV=/opt/venv
-          RUN python3 -m venv $VIRTUAL_ENV
-          ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-          WORKDIR /app
-          COPY . .
-          RUN pip install flask numpy faker
-          CMD ["python", "app.py"]
-          """
-              # Nginx Base
-              dockerfile_nginx = """
-          FROM nginx:alpine
-          RUN echo "server { listen 80; location / { return 200 'Enterprise Gateway w/ Pokemon Support'; } }" > /etc/nginx/conf.d/default.conf
-          """
+              def analyze_source(self):
+                  """기존 리포지토리의 데이터 패턴 분석"""
+                  files = glob.glob(os.path.join(DIRS["SOURCE"], "**", "*.json"), recursive=True)
+                  print(f">>> [Source] Found {len(files)} reference files.")
+                  return len(files)
 
-              for svc in SERVICES:
-                  path = os.path.join(ROOT, "containers", svc)
-                  os.makedirs(path, exist_ok=True)
+              def generate_massive_batch(self, count=10000):
+                  """대량의 시뮬레이션 데이터 생성"""
+                  print(f">>> [Gen] Generating {count} massive records...")
                   
-                  if "nginx" in svc:
-                      with open(os.path.join(path, "Dockerfile"), "w") as f: f.write(dockerfile_nginx.strip())
-                  else:
-                      with open(os.path.join(path, "Dockerfile"), "w") as f: f.write(dockerfile_py.strip())
-                      
-                      # 서비스별 로직 (포켓몬 서비스 특화)
-                      if svc == "pokemon-game-svc":
-                          app_code = r'''
-          from flask import Flask, jsonify
-          import os, json, random
-          app = Flask(__name__)
-          
-          @app.route('/')
-          def status():
-              files = os.listdir('/app/data')
-              count = len([f for f in files if f.endswith('.json')])
-              return jsonify({"status": "Pokemon Service Online", "captured_pokemon": count})
-              
-          @app.route('/scan')
-          def scan():
-              # 데이터 갱신 시뮬레이션
-              return "Scanning for wild pokemon..."
-              
-          if __name__ == '__main__': app.run(host='0.0.0.0', port=5000)
-          '''
-                      else:
-                          app_code = f"""
-          from flask import Flask
-          import os
-          app = Flask(__name__)
-          @app.route('/')
-          def i(): return "<h1>{svc} Online</h1>Data: " + str(len(os.listdir('/app/data')))
-          if __name__ == '__main__': app.run(host='0.0.0.0', port=5000)
-          """
-                      with open(os.path.join(path, "app.py"), "w") as f: f.write(app_code.strip())
-
-          # [5] 대량 데이터 생성 (Pokemon Data Injection)
-          def inject_massive_data():
-              print(">>> [Loader] Injecting MASSIVE Pokemon & Enterprise Data...")
-              
-              # 포켓몬 데이터베이스
-              POKEMON_DB = ["Pikachu", "Charizard", "Bulbasaur", "Mewtwo", "Eevee", "Snorlax", "Gengar", "Dragonite"]
-              TEAMS = ["Mystic", "Valor", "Instinct"]
-              
-              for svc, vol_path in VOLUMES.items():
-                  os.makedirs(vol_path, exist_ok=True)
-                  
-                  # 1. Pokemon Service: 포획 데이터 5,000건 생성
-                  if svc == "pokemon-game-svc":
-                      print(f"  - Generating Pokemon Data in {vol_path}...")
-                      for i in range(5000):
-                          p_data = {
-                              "capture_id": f"C_{i:06d}",
-                              "trainer_id": f"T_{random.randint(1000,9999)}",
-                              "pokemon": random.choice(POKEMON_DB),
-                              "cp": random.randint(10, 4000),
-                              "iv": {
-                                  "attack": random.randint(0, 15),
-                                  "defense": random.randint(0, 15),
-                                  "stamina": random.randint(0, 15)
-                              },
-                              "team": random.choice(TEAMS),
-                              "shiny": random.random() < 0.05, # 5% 확률 이로치
-                              "timestamp": time.time()
+                  data_batch = []
+                  for i in range(count):
+                      # Faker를 이용한 고품질 더미 데이터
+                      record = {
+                          "transaction_id": fake.uuid4(),
+                          "timestamp": fake.iso8601(),
+                          "user_info": {
+                              "name": fake.name(),
+                              "email": fake.email(),
+                              "company": fake.company(),
+                              "job": fake.job()
+                          },
+                          "cost_data": {
+                              "salary": np.random.randint(30000000, 150000000),
+                              "expense": np.random.randint(100000, 5000000),
+                              "tax_rate": round(random.uniform(0.03, 0.35), 2)
+                          },
+                          "meta": {
+                              "source": "koreatest12/cost-data",
+                              "batch_type": "HOURLY"
                           }
-                          with open(os.path.join(vol_path, f"catch_{i}.json"), "w") as f:
-                              json.dump(p_data, f)
-                              
-                  # 2. Analytics Core: 레이드 배틀 로그 생성
-                  elif svc == "analytics-core":
-                      for i in range(1000):
-                          raid_log = f"RAID_BATTLE | BOSS: {random.choice(POKEMON_DB)} | PLAYERS: {random.randint(5,20)} | RESULT: WIN\n"
-                          with open(os.path.join(vol_path, f"raid_log_{i}.txt"), "w") as f: f.write(raid_log)
-                          
-                  # 3. Calc Engine: 기존 세금 데이터
-                  elif svc == "calc-engine":
-                      for i in range(1000):
-                          with open(os.path.join(vol_path, f"tax_{i}.json"), "w") as f:
-                              json.dump({"id": i, "amt": random.randint(100,10000)}, f)
-                              
-                  # 4. 기타 서비스 더미 데이터
-                  else:
-                      with open(os.path.join(vol_path, "status.dat"), "w") as f: f.write("ONLINE")
+                      }
+                      data_batch.append(record)
+                  return data_batch
+
+              def load_to_lake(self, data):
+                  """데이터 레이크 적재 (Load)"""
+                  print(">>> [Load] Loading data into Data Lake (Raw Zone)...")
+                  
+                  # 1000개씩 쪼개서 파일 저장 (Partitioning)
+                  chunk_size = 1000
+                  for i in range(0, len(data), chunk_size):
+                      chunk = data[i:i + chunk_size]
+                      filename = f"batch_data_{i//chunk_size:03d}.json"
+                      path = os.path.join(DIRS["LAKE_RAW"], filename)
                       
-              print("✅ Data Injection Complete.")
+                      class NpEncoder(json.JSONEncoder):
+                          def default(self, o):
+                              return int(o) if isinstance(o, np.integer) else super().default(o)
+
+                      with open(path, "w", encoding="utf-8") as f:
+                          json.dump(chunk, f, ensure_ascii=False, cls=NpEncoder)
+                  
+                  print(f"✅ Saved {len(data)} records to {DIRS['LAKE_RAW']}")
+
+          # ==============================================================================
+          # [3] ETL 프로세서 (Extract -> Transform -> Load)
+          # ==============================================================================
+          def run_etl_pipeline():
+              factory = DataFactory()
+              
+              # 1. Source 분석
+              ref_count = factory.analyze_source()
+              
+              # 2. 대량 생성 (참조 파일 수에 비례하여 생성량 조절)
+              # 기본 5,000건 + 참조파일 * 100건
+              gen_count = 5000 + (ref_count * 100)
+              raw_data = factory.generate_massive_batch(gen_count)
+              
+              # 3. Raw Zone 적재
+              factory.load_to_lake(raw_data)
+              
+              # 4. Transform & Load to Mart (간단한 요약 집계)
+              print(">>> [Transform] Aggregating Data for Warehouse...")
+              df = pd.DataFrame([
+                  {
+                      "company": d['user_info']['company'],
+                      "salary": d['cost_data']['salary']
+                  } for d in raw_data
+              ])
+              
+              summary = df.groupby("company")['salary'].mean().reset_index()
+              summary.columns = ['Company', 'Avg_Salary']
+              
+              mart_path = os.path.join(DIRS["WAREHOUSE"], f"salary_summary_{int(time.time())}.csv")
+              summary.to_csv(mart_path, index=False)
+              print(f"✅ Data Mart Updated: {mart_path}")
+
+              # 5. Archiving (디렉토리 구조 복사)
+              print(">>> [Archive] creating backup snapshot...")
+              shutil.make_archive(
+                  os.path.join(DIRS["ARCHIVE"], f"backup_{NOW.strftime('%Y%m%d_%H')}"),
+                  'zip',
+                  DIRS["LAKE_RAW"]
+              )
 
           if __name__ == "__main__":
-              generate_docker_compose()
-              generate_containers()
-              inject_massive_data()
+              run_etl_pipeline()
           EOF
 
-      - name: 🏗️ 인프라 생성 실행
-        run: python generate_mega_structure.py
+      - name: 🏗️ 데이터 팩토리 가동
+        run: python generate_data_factory.py
 
       # ----------------------------------------------------------------------
-      # [Step 4] 컨테이너 클러스터 구동
+      # [Step 3] 데이터 적재 결과 검증
       # ----------------------------------------------------------------------
-      - name: 🚀 클러스터 배포 (Docker Compose)
+      - name: 📊 적재 현황 리포트
         run: |
-          cd app_root
-          echo ">>> [Deploy] Building & Starting Services..."
-          docker compose build --parallel
-          docker compose up -d
+          echo "======================================================="
+          echo "   🏭 Data Lake & Warehouse Status Report"
+          echo "======================================================="
           
-          echo ">>> [Wait] Waiting for Pokemon Service initialization..."
-          sleep 15
-          docker compose ps
-
-      # ----------------------------------------------------------------------
-      # [Step 5] 데이터 검증 및 분석
-      # ----------------------------------------------------------------------
-      - name: 🔍 Pokemon 데이터 검증
-        run: |
-          echo "================================================="
-          echo "   📱 Pokemon GO Service Status"
-          echo "================================================="
-          
-          VOL_PATH="app_root/volumes/pokemon-game-svc"
-          COUNT=$(ls $VOL_PATH/*.json | wc -l)
-          
-          echo "Total Captured Pokemon: $COUNT"
-          echo ""
-          echo "[Sample Data - Top 5 Catches]"
-          head -n 5 $VOL_PATH/catch_0.json
+          echo "1. [Data Lake - Raw Zone] Partition Structure:"
+          tree app_root/data_lake/raw | head -n 20
           
           echo ""
-          echo ">>> Shiny Pokemon Check (Sample):"
-          grep -l '"shiny": true' $VOL_PATH/*.json | head -n 3 || echo "No Shiny found in sample"
-
+          echo "2. [Data Warehouse - Mart] Generated Reports:"
+          ls -lh app_root/data_warehouse/mart/
+          
           echo ""
-          echo "================================================="
-          echo "   🏢 Enterprise Services Status"
-          echo "================================================="
-          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          echo "3. [Archive] Backup Files:"
+          ls -lh app_root/archive_storage/
 
-      - name: 🐳 전체 시스템 로그 저장
-        if: always()
-        run: |
-          cd app_root
-          docker compose logs > cluster_logs.txt
-
-      - name: 📦 아티팩트 업로드 (Pokemon Data 포함)
+      # ----------------------------------------------------------------------
+      # [Step 4] 결과물 업로드 (적재된 데이터 전체)
+      # ----------------------------------------------------------------------
+      - name: 📦 데이터 레이크 스냅샷 저장
         uses: actions/upload-artifact@v4
         with:
-          name: Pokemon_Enterprise_System
+          name: Hourly_Data_Lake_Snapshot
           path: |
-             app_root/docker-compose.yml
-             app_root/cluster_logs.txt
-             app_root/volumes/pokemon-game-svc/
-             app_root/volumes/analytics-core/
-          retention-days: 7
+             app_root/data_lake/
+             app_root/data_warehouse/
+             app_root/archive_storage/
+          retention-days: 30 # 장기 보관
