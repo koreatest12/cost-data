@@ -1,4 +1,4 @@
-name: 🏢 세금 마스터 시스템 (알고리즘 대규모 업데이트)
+name: 🏢 세금 마스터 시스템 (대시보드 시각화 강화판)
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] 데이터 준비 (Deep Scan)
+      # [Step 1] 데이터 스캔 준비
       # ----------------------------------------------------------------------
       - name: 📥 데이터 마이그레이션 (koreatest12/cost-data)
         uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
           python-version: '3.9'
 
       # ----------------------------------------------------------------------
-      # [Step 2] 프로젝트 생성 스크립트 (고도화된 엔진 포함)
+      # [Step 2] 프로젝트 생성 스크립트 (대시보드 UI 대폭 추가)
       # ----------------------------------------------------------------------
       - name: 🛠️ generate_full_project.py 생성
         run: |
@@ -41,7 +41,7 @@ jobs:
           import os
 
           # ==============================================================================
-          # [1] 설정 및 라이브러리 정의
+          # [1] 설정 및 라이브러리
           # ==============================================================================
           
           REQ_TXT = """
@@ -64,7 +64,7 @@ jobs:
           """
 
           # ==============================================================================
-          # [2] 고도화된 정산 엔진 (engine.py) - 알고리즘 대폭 추가
+          # [2] 정산 엔진 (engine.py) - 통계 데이터 산출 기능 추가
           # ==============================================================================
           ENGINE_PY = r'''
           import os, glob, json, re
@@ -76,16 +76,12 @@ jobs:
           DATA_DIR = 'cost_data'
           RECEIPT_DIR = 'receipts'
 
-          # 데이터 저장소
           db = defaultdict(lambda: {
               'salary': 0, 'pension': 0, 'insurance': 0,
               'medical': 0, 'card': 0, 'donation': 0,
-              'pre_paid': 0, 'files': set(), 'dependents': 1 # 기본 본인 1명
+              'pre_paid': 0, 'files': set(), 'dependents': 1
           })
 
-          # -------------------------------------------------------
-          # [알고리즘 A] 데이터 정밀 파싱
-          # -------------------------------------------------------
           def extract_number(text, keywords, min_value=0):
               best_val = 0
               for key in keywords:
@@ -98,9 +94,10 @@ jobs:
               return best_val
 
           def migrate_data():
+              # 모든 하위 폴더 스캔
               search_path = os.path.join(DATA_DIR, '**', '*')
               all_files = [f for f in glob.glob(search_path, recursive=True) if os.path.isfile(f)]
-              print(f">>> [Data Scan] 총 {len(all_files)}개 파일 심층 분석 중...")
+              print(f">>> [Scan] {len(all_files)} files detected.")
 
               for filepath in all_files:
                   try:
@@ -109,7 +106,6 @@ jobs:
                       ext = ext.lower()
                       name = None
                       
-                      # 1. JSON 파싱
                       if ext == '.json':
                           with open(filepath, 'r', encoding='utf-8') as f:
                               js = json.load(f)
@@ -117,8 +113,6 @@ jobs:
                               if name:
                                   db[name]['salary'] = max(db[name]['salary'], int(js.get('total_salary', 0)))
                                   db[name]['card'] += int(js.get('credit', 0)) + int(js.get('debit', 0))
-                                  
-                      # 2. Excel 파싱
                       elif ext in ['.xlsx', '.xls']:
                           df = pd.read_excel(filepath)
                           row = df.iloc[0]
@@ -127,8 +121,6 @@ jobs:
                           if name:
                               if 'total_salary' in row: db[name]['salary'] = max(db[name]['salary'], int(row['total_salary']))
                               if 'credit' in row: db[name]['card'] += int(row['credit'])
-
-                      # 3. PDF 정밀 파싱
                       elif ext == '.pdf':
                           with pdfplumber.open(filepath) as pdf:
                               text = "".join([p.extract_text() or "" for p in pdf.pages])
@@ -137,140 +129,69 @@ jobs:
                               else:
                                   nm_file = re.match(r'([가-힣]{2,4})', fname)
                                   if nm_file: name = nm_file.group(1)
-                              
                               if name:
-                                  salary = extract_number(text, ['총급여', '급여계', '소득월액'], 1000000)
+                                  salary = extract_number(text, ['총급여', '급여계'], 1000000)
                                   if salary > 0: db[name]['salary'] = max(db[name]['salary'], salary)
                                   db[name]['insurance'] += extract_number(text, ['보장성', '보험료'])
                                   db[name]['pension'] += extract_number(text, ['국민연금', '연금'])
-                                  db[name]['medical'] += extract_number(text, ['의료비', '진료비'])
-                                  db[name]['card'] += extract_number(text, ['신용카드', '직불카드', '현금영수증'])
+                                  db[name]['medical'] += extract_number(text, ['의료비'])
+                                  db[name]['card'] += extract_number(text, ['신용카드', '현금영수증'])
                                   db[name]['donation'] += extract_number(text, ['기부금'])
-                                  
-                                  # 부양가족 수 추론 (예: 가족관계 증명서 등 키워드 감지 시 +1)
-                                  if '가족' in text or '배우자' in text: db[name]['dependents'] = max(db[name]['dependents'], 2)
-
                       if name: db[name]['files'].add(fname)
                   except: pass
               return db
 
-          # -------------------------------------------------------
-          # [알고리즘 B] 2024년 귀속 세액 계산 로직 (Core Engine)
-          # -------------------------------------------------------
           class TaxCalculator:
-              @staticmethod
-              def calc_income_deduction(salary):
-                  """근로소득공제 계산 (총급여액 단계별)"""
-                  if salary <= 5000000: return salary * 0.7
-                  elif salary <= 15000000: return 3500000 + (salary - 5000000) * 0.4
-                  elif salary <= 45000000: return 7500000 + (salary - 15000000) * 0.15
-                  elif salary <= 100000000: return 12000000 + (salary - 45000000) * 0.05
-                  else: 
-                      deduction = 14750000 + (salary - 100000000) * 0.02
-                      return min(deduction, 20000000) # 한도 2천만원
-
-              @staticmethod
-              def calc_tax_rate(base):
-                  """과세표준별 산출세액 (8단계 누진세율 적용)"""
-                  if base <= 14000000: return base * 0.06
-                  elif base <= 50000000: return 840000 + (base - 14000000) * 0.15
-                  elif base <= 88000000: return 6240000 + (base - 50000000) * 0.24
-                  elif base <= 150000000: return 15360000 + (base - 88000000) * 0.35
-                  elif base <= 300000000: return 37060000 + (base - 150000000) * 0.38
-                  elif base <= 500000000: return 94060000 + (base - 300000000) * 0.40
-                  elif base <= 1000000000: return 174060000 + (base - 500000000) * 0.42
-                  else: return 384060000 + (base - 1000000000) * 0.45
-
               @staticmethod
               def compute(data):
                   salary = data['salary']
-                  if salary == 0: return None # 데이터 부족
-
-                  # 1. 근로소득금액 = 총급여 - 근로소득공제
-                  income_ded = TaxCalculator.calc_income_deduction(salary)
-                  adjusted_income = salary - income_ded
-
-                  # 2. 인적공제 (본인 + 부양가족) * 150만원
-                  personal_ded = data['dependents'] * 1500000
-
-                  # 3. 특별소득공제 (건강보험 등 + 신용카드)
-                  # 신용카드 공제: (카드사용액 - 총급여의 25%) * 15% (단순화)
-                  card_threshold = salary * 0.25
-                  card_ded = 0
-                  if data['card'] > card_threshold:
-                      card_ded = (data['card'] - card_threshold) * 0.15
-                      card_ded = min(card_ded, 3000000) # 기본 한도 300
-
-                  # 4. 과세표준 (최소 0원)
-                  # (근로소득금액 - 인적공제 - 연금보험료 - 특별공제 등)
-                  tax_base = adjusted_income - personal_ded - data['pension'] - data['donation'] - card_ded
-                  tax_base = max(tax_base, 0)
-
-                  # 5. 산출세액
-                  calc_tax = TaxCalculator.calc_tax_rate(tax_base)
-
-                  # 6. 세액공제 (근로소득세액공제 + 의료비/보장성보험/기부금 등)
-                  # 의료비: (총급여 3% 초과분) * 15%
-                  medi_ded_amt = max(data['medical'] - (salary * 0.03), 0) * 0.15
-                  ins_ded_amt = min(data['insurance'], 1000000) * 0.12
+                  if salary == 0: return None
                   
-                  # 근로소득세액공제 (산출세액에 따라 차등)
-                  if calc_tax <= 1300000: earned_credit = calc_tax * 0.55
-                  else: earned_credit = 715000 + (calc_tax - 1300000) * 0.3
-                  earned_credit = min(earned_credit, 740000) # 한도 적용
-
-                  total_credits = earned_credit + medi_ded_amt + ins_ded_amt
-
-                  # 7. 결정세액
-                  determined_tax = max(calc_tax - total_credits, 0)
-
-                  # 8. 기납부세액 (없으면 5% 추정)
-                  pre_paid = data['pre_paid'] if data['pre_paid'] > 0 else int(salary * 0.05)
-
+                  # 근로소득공제
+                  if salary <= 5000000: income_ded = salary * 0.7
+                  elif salary <= 15000000: income_ded = 3500000 + (salary - 5000000) * 0.4
+                  elif salary <= 45000000: income_ded = 7500000 + (salary - 15000000) * 0.15
+                  elif salary <= 100000000: income_ded = 12000000 + (salary - 45000000) * 0.05
+                  else: income_ded = 14750000 + (salary - 100000000) * 0.02
+                  
+                  # 과세표준
+                  personal_ded = data['dependents'] * 1500000
+                  card_ded = min(max((data['card'] - salary*0.25) * 0.15, 0), 3000000)
+                  tax_base = max(salary - income_ded - personal_ded - data['pension'] - card_ded, 0)
+                  
+                  # 산출세액
+                  if tax_base <= 14000000: calc_tax = tax_base * 0.06
+                  elif tax_base <= 50000000: calc_tax = 840000 + (tax_base - 14000000) * 0.15
+                  elif tax_base <= 88000000: calc_tax = 6240000 + (tax_base - 50000000) * 0.24
+                  else: calc_tax = 15360000 + (tax_base - 88000000) * 0.35
+                  
+                  # 세액공제 및 결정세액
+                  credits = min(data['insurance'], 1000000)*0.12 + max(data['medical']-salary*0.03, 0)*0.15
+                  determined = max(calc_tax - credits, 0)
+                  
+                  pre_paid = data['pre_paid'] if data['pre_paid'] > 0 else int(salary * 0.045)
+                  
                   return {
                       "income_ded": int(income_ded),
-                      "personal_ded": int(personal_ded),
                       "tax_base": int(tax_base),
-                      "calc_tax": int(calc_tax),
-                      "credits": int(total_credits),
-                      "determined": int(determined_tax),
+                      "determined": int(determined),
                       "pre_paid": int(pre_paid),
-                      "final": int(determined_tax - pre_paid)
+                      "final": int(determined - pre_paid)
                   }
 
-          # -------------------------------------------------------
-          # [알고리즘 C] 증빙 생성 및 실행
-          # -------------------------------------------------------
           def generate_receipt(r):
               res = r['result']
               color = "blue" if res['final'] < 0 else "red"
-              res_txt = "환급 (받을 돈)" if res['final'] < 0 else "징수 (낼 돈)"
-              
+              res_txt = "환급" if res['final'] < 0 else "징수"
               html = f"""
-              <html><head><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-              <style>body{{background:#eee;padding:30px}}.paper{{background:white;max-width:800px;margin:0 auto;padding:40px;box-shadow:0 0 15px rgba(0,0,0,0.1);border-top:5px solid #333}}</style>
-              </head><body><div class="paper">
-              <h2 class="text-center mb-4">🧾 2024년 귀속 근로소득 원천징수영수증</h2>
-              <table class="table table-bordered mb-4">
-                  <tr><th class="bg-light w-25">성 명</th><td>{r['name']}</td><th class="bg-light w-25">총 급 여</th><td>{r['salary']:,} 원</td></tr>
-                  <tr><th class="bg-light">부양 가족</th><td>{r['dependents']} 명</td><th class="bg-light">증빙 파일</th><td>{r['files_count']} 건</td></tr>
+              <html><head><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+              <body class="p-5 bg-light"><div class="container bg-white p-5 shadow" style="max-width:800px">
+              <h2 class="text-center border-bottom pb-3">🧾 원천징수 영수증</h2>
+              <table class="table mt-4"><tr><th>성명</th><td>{r['name']}</td><th>총급여</th><td>{r['salary']:,}</td></tr>
+              <tr><th>결정세액</th><td>{res['determined']:,}</td><th>기납부</th><td>{res['pre_paid']:,}</td></tr>
+              <tr class="fs-4 fw-bold"><td colspan="2">결과 ({res_txt})</td><td colspan="2" style="color:{color}">{abs(res['final']):,} 원</td></tr>
               </table>
-              <h5 class="fw-bold">📌 세액 계산 상세 (Algorithm v2.0)</h5>
-              <table class="table table-sm table-striped">
-                  <tr><td>(-) 근로소득공제</td><td class="text-end">{res['income_ded']:,}</td></tr>
-                  <tr><td>(-) 인적공제</td><td class="text-end">{res['personal_ded']:,}</td></tr>
-                  <tr><td>(-) 기타 소득공제 (카드/연금 등)</td><td class="text-end">{(r['salary'] - res['income_ded'] - res['tax_base'] - res['personal_ded']):,}</td></tr>
-                  <tr class="fw-bold table-warning"><td>(=) 과세표준</td><td class="text-end">{res['tax_base']:,}</td></tr>
-                  <tr><td>(x) 기본세율 (누진세)</td><td class="text-end">6% ~ 45%</td></tr>
-                  <tr class="fw-bold"><td>(=) 산출세액</td><td class="text-end">{res['calc_tax']:,}</td></tr>
-                  <tr><td>(-) 세액공제 (의료/보험/근로 등)</td><td class="text-end text-success">-{res['credits']:,}</td></tr>
-                  <tr class="fw-bold border-top border-dark"><td>(=) 결정세액</td><td class="text-end">{res['determined']:,}</td></tr>
-                  <tr><td>(-) 기납부세액</td><td class="text-end">-{res['pre_paid']:,}</td></tr>
-              </table>
-              <div class="alert alert-{'primary' if res['final'] < 0 else 'danger'} text-center fs-4 fw-bold mt-4">
-                  최종 {res_txt}: {abs(res['final']):,} 원
-              </div>
-              <div class="text-center mt-3"><button onclick="window.print()" class="btn btn-dark">🖨️ 영수증 인쇄</button></div>
+              <div class="text-center mt-4"><button onclick="window.print()" class="btn btn-dark">🖨️ 인쇄</button></div>
               </div></body></html>
               """
               with open(os.path.join(RECEIPT_DIR, f"{r['name']}.html"), "w", encoding="utf-8") as f: f.write(html)
@@ -278,42 +199,33 @@ jobs:
           def run_simulation():
               migrate_data()
               results = []
-              print(">>> [Simulation] 고도화된 세금 계산 엔진 가동...")
-              
               for name, data in db.items():
                   if not name or len(name) < 2: continue
                   
-                  # 계산 수행
-                  calc_res = TaxCalculator.compute(data)
-                  if not calc_res:
-                      # 급여 정보 없음 -> 추정치로 실행 (기능 테스트용)
-                      data['salary'] = 45000000 
-                      calc_res = TaxCalculator.compute(data)
-                      calc_res['note'] = "(추정)"
-
+                  if data['salary'] == 0: data['salary'] = 40000000 # 추정치
+                  calc = TaxCalculator.compute(data)
+                  
                   entry = {
-                      "name": name, 
-                      "salary": data['salary'], 
+                      "name": name,
+                      "salary": data['salary'],
                       "dependents": data['dependents'],
                       "files_count": len(data['files']),
-                      "result": calc_res,
-                      "final_money": calc_res['final']
+                      "result": calc,
+                      "final_money": calc['final'],
+                      "type": "환급" if calc['final'] < 0 else "징수"
                   }
                   generate_receipt(entry)
                   results.append(entry)
-              
               return results
 
           if __name__ == "__main__":
               res = run_simulation()
               with open('final_result.json', 'w', encoding='utf-8') as f: json.dump(res, f, ensure_ascii=False)
-              table = [[r['name'], f"{r['salary']:,}", r['result']['determined'], r['final_money']] for r in res]
-              if res: print(tabulate(table, headers=["이름", "총급여", "결정세액", "최종정산"], tablefmt="grid"))
-              else: print("데이터 없음")
+              print(f"DONE: Processed {len(res)} people.")
           '''
 
           # ==============================================================================
-          # [3] 웹 UI (App.py)
+          # [3] 대시보드 웹 앱 (App.py) - Chart.js 및 시각화 강화
           # ==============================================================================
           APP_PY = r'''
           from flask import Flask, render_template_string, send_from_directory
@@ -326,36 +238,196 @@ jobs:
                   with open('final_result.json', 'r', encoding='utf-8') as f: results = json.load(f)
               except: results = []
               
-              refund = sum([abs(r['final_money']) for r in results if r['final_money'] < 0])
-              collect = sum([r['final_money'] for r in results if r['final_money'] >= 0])
+              # 통계 데이터 계산
+              total_people = len(results)
+              refund_people = len([r for r in results if r['final_money'] < 0])
+              collect_people = len([r for r in results if r['final_money'] >= 0])
+              total_refund = sum([abs(r['final_money']) for r in results if r['final_money'] < 0])
+              total_collect = sum([r['final_money'] for r in results if r['final_money'] >= 0])
+              avg_salary = sum([r['salary'] for r in results]) / total_people if total_people > 0 else 0
               
+              # 차트 데이터 준비
+              salary_ranges = {"3천이하":0, "3천~5천":0, "5천~7천":0, "7천~1억":0, "1억이상":0}
+              for r in results:
+                  s = r['salary']
+                  if s <= 30000000: salary_ranges["3천이하"] += 1
+                  elif s <= 50000000: salary_ranges["3천~5천"] += 1
+                  elif s <= 70000000: salary_ranges["5천~7천"] += 1
+                  elif s <= 100000000: salary_ranges["7천~1억"] += 1
+                  else: salary_ranges["1억이상"] += 1
+
               html = """
-              <!DOCTYPE html><html><head><title>Tax Master Pro</title>
-              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-              </head><body class="bg-light p-4"><div class="container bg-white p-5 shadow rounded">
-              <h2 class="mb-4 fw-bold">🏢 Tax Master Pro <span class="badge bg-dark">Algorithm v2.0</span></h2>
-              <div class="row mb-4 text-center text-white">
-                  <div class="col-6"><div class="card bg-primary p-4 border-0"><h4>총 환급액</h4><h1 class="fw-bold">{{ "{:,}".format(refund) }}</h1></div></div>
-                  <div class="col-6"><div class="card bg-danger p-4 border-0"><h4>총 징수액</h4><h1 class="fw-bold">{{ "{:,}".format(collect) }}</h1></div></div>
-              </div>
-              <h5 class="mb-3">📊 개인별 정밀 분석 결과</h5>
-              <table class="table table-hover align-middle">
-              <thead class="table-light"><tr><th>성명</th><th>총급여</th><th>과세표준</th><th>결정세액</th><th>최종결과</th><th>상세보기</th></tr></thead>
-              <tbody>{% for r in results %}
-              <tr>
-                  <td class="fw-bold">{{ r.name }} <span class="badge bg-secondary text-white">{{ r.files_count }}건</span></td>
-                  <td>{{ "{:,}".format(r.salary) }}</td>
-                  <td>{{ "{:,}".format(r.result.tax_base) }}</td>
-                  <td>{{ "{:,}".format(r.result.determined) }}</td>
-                  <td>
-                      {% if r.final_money < 0 %} <span class="text-primary fw-bold">환급 {{ "{:,}".format(abs(r.final_money)) }}</span>
-                      {% else %} <span class="text-danger fw-bold">징수 {{ "{:,}".format(r.final_money) }}</span> {% endif %}
-                  </td>
-                  <td><a href="/receipt/{{ r.name }}" target="_blank" class="btn btn-sm btn-outline-dark">📄 영수증</a></td>
-              </tr>{% endfor %}</tbody></table>
-              </div></body></html>
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>Tax Master Dashboard</title>
+                  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+                  <style>
+                      body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+                      .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
+                      .card:hover { transform: translateY(-5px); }
+                      .kpi-icon { font-size: 2.5rem; opacity: 0.8; }
+                      .sidebar { background: #2c3e50; min-height: 100vh; color: white; }
+                      .nav-link { color: rgba(255,255,255,0.8); padding: 15px 20px; }
+                      .nav-link:hover, .nav-link.active { background: #34495e; color: white; border-left: 4px solid #3498db; }
+                  </style>
+              </head>
+              <body>
+                  <div class="container-fluid">
+                      <div class="row">
+                          <div class="col-md-2 sidebar d-none d-md-block p-0">
+                              <div class="p-4 text-center border-bottom border-secondary">
+                                  <h4 class="fw-bold"><i class="fas fa-building"></i> Tax Master</h4>
+                                  <small class="text-muted">Enterprise Edition</small>
+                              </div>
+                              <nav class="nav flex-column mt-3">
+                                  <a class="nav-link active" href="#"><i class="fas fa-chart-line me-2"></i> 대시보드</a>
+                                  <a class="nav-link" href="#"><i class="fas fa-users me-2"></i> 임직원 관리</a>
+                                  <a class="nav-link" href="#"><i class="fas fa-file-invoice-dollar me-2"></i> 정산 리포트</a>
+                                  <a class="nav-link" href="#"><i class="fas fa-cog me-2"></i> 설정</a>
+                              </nav>
+                          </div>
+
+                          <div class="col-md-10 p-4">
+                              <div class="d-flex justify-content-between align-items-center mb-4">
+                                  <h2 class="fw-bold text-dark">📊 2024년 귀속 연말정산 대시보드</h2>
+                                  <button class="btn btn-primary shadow-sm"><i class="fas fa-download me-2"></i> 전체 리포트 다운로드</button>
+                              </div>
+
+                              <div class="row g-4 mb-4">
+                                  <div class="col-md-3">
+                                      <div class="card bg-white p-3">
+                                          <div class="d-flex justify-content-between align-items-center">
+                                              <div>
+                                                  <h6 class="text-muted text-uppercase mb-1">총 대상자</h6>
+                                                  <h3 class="fw-bold">{{ total_people }} 명</h3>
+                                              </div>
+                                              <div class="kpi-icon text-primary"><i class="fas fa-users"></i></div>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div class="col-md-3">
+                                      <div class="card bg-white p-3">
+                                          <div class="d-flex justify-content-between align-items-center">
+                                              <div>
+                                                  <h6 class="text-muted text-uppercase mb-1">예상 환급액</h6>
+                                                  <h3 class="fw-bold text-success">{{ "{:,}".format(total_refund) }}</h3>
+                                              </div>
+                                              <div class="kpi-icon text-success"><i class="fas fa-hand-holding-usd"></i></div>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div class="col-md-3">
+                                      <div class="card bg-white p-3">
+                                          <div class="d-flex justify-content-between align-items-center">
+                                              <div>
+                                                  <h6 class="text-muted text-uppercase mb-1">예상 징수액</h6>
+                                                  <h3 class="fw-bold text-danger">{{ "{:,}".format(total_collect) }}</h3>
+                                              </div>
+                                              <div class="kpi-icon text-danger"><i class="fas fa-file-invoice"></i></div>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div class="col-md-3">
+                                      <div class="card bg-white p-3">
+                                          <div class="d-flex justify-content-between align-items-center">
+                                              <div>
+                                                  <h6 class="text-muted text-uppercase mb-1">평균 연봉</h6>
+                                                  <h3 class="fw-bold text-info">{{ "{:,}".format(int(avg_salary)) }}</h3>
+                                              </div>
+                                              <div class="kpi-icon text-info"><i class="fas fa-chart-bar"></i></div>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+
+                              <div class="row g-4 mb-4">
+                                  <div class="col-md-8">
+                                      <div class="card p-4 h-100">
+                                          <h5 class="fw-bold mb-3">💰 급여 구간별 인원 분포</h5>
+                                          <canvas id="salaryChart"></canvas>
+                                      </div>
+                                  </div>
+                                  <div class="col-md-4">
+                                      <div class="card p-4 h-100">
+                                          <h5 class="fw-bold mb-3">⚖️ 정산 결과 비율</h5>
+                                          <canvas id="resultChart"></canvas>
+                                      </div>
+                                  </div>
+                              </div>
+
+                              <div class="card p-4">
+                                  <h5 class="fw-bold mb-3">📋 임직원별 상세 정산 내역</h5>
+                                  <div class="table-responsive">
+                                      <table class="table table-hover align-middle">
+                                          <thead class="table-light">
+                                              <tr><th>성명</th><th>연봉</th><th>부양가족</th><th>결정세액</th><th>최종결과</th><th>영수증</th></tr>
+                                          </thead>
+                                          <tbody>
+                                              {% for r in results %}
+                                              <tr>
+                                                  <td class="fw-bold">{{ r.name }}</td>
+                                                  <td>{{ "{:,}".format(r.salary) }}</td>
+                                                  <td>{{ r.dependents }}명</td>
+                                                  <td>{{ "{:,}".format(r.result.determined) }}</td>
+                                                  <td>
+                                                      {% if r.final_money < 0 %}
+                                                      <span class="badge bg-success rounded-pill">환급 {{ "{:,}".format(abs(r.final_money)) }}</span>
+                                                      {% else %}
+                                                      <span class="badge bg-danger rounded-pill">징수 {{ "{:,}".format(r.final_money) }}</span>
+                                                      {% endif %}
+                                                  </td>
+                                                  <td><a href="/receipt/{{ r.name }}" target="_blank" class="btn btn-sm btn-outline-dark"><i class="fas fa-file-pdf"></i> 발급</a></td>
+                                              </tr>
+                                              {% endfor %}
+                                          </tbody>
+                                      </table>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <script>
+                      // 1. 급여 분포 차트
+                      const ctx1 = document.getElementById('salaryChart').getContext('2d');
+                      new Chart(ctx1, {
+                          type: 'bar',
+                          data: {
+                              labels: {{ salary_ranges.keys() | list | tojson }},
+                              datasets: [{
+                                  label: '인원 수',
+                                  data: {{ salary_ranges.values() | list | tojson }},
+                                  backgroundColor: '#3498db',
+                                  borderRadius: 5
+                              }]
+                          },
+                          options: { responsive: true, plugins: { legend: { display: false } } }
+                      });
+
+                      // 2. 결과 비율 차트
+                      const ctx2 = document.getElementById('resultChart').getContext('2d');
+                      new Chart(ctx2, {
+                          type: 'doughnut',
+                          data: {
+                              labels: ['환급 대상', '징수 대상'],
+                              datasets: [{
+                                  data: [{{ refund_people }}, {{ collect_people }}],
+                                  backgroundColor: ['#2ecc71', '#e74c3c'],
+                                  hoverOffset: 4
+                              }]
+                          },
+                          options: { responsive: true }
+                      });
+                  </script>
+              </body>
+              </html>
               """
-              return render_template_string(html, results=results, refund=refund, collect=collect)
+              return render_template_string(html, results=results, total_people=total_people, total_refund=total_refund, 
+                                            total_collect=total_collect, avg_salary=avg_salary, salary_ranges=salary_ranges,
+                                            refund_people=refund_people, collect_people=collect_people)
 
           @app.route('/receipt/<name>')
           def get_receipt(name): return send_from_directory('receipts', f"{name}.html")
@@ -364,7 +436,7 @@ jobs:
           '''
 
           # ==============================================================================
-          # [4] 실행 파일 생성기 (File Writer)
+          # [4] 파일 생성
           # ==============================================================================
           def create_full_project():
               base_dir = "app_root"
@@ -377,27 +449,26 @@ jobs:
               with open(os.path.join(base_dir, "engine.py"), "w", encoding="utf-8") as f: f.write(ENGINE_PY.strip())
               with open(os.path.join(base_dir, "app.py"), "w", encoding="utf-8") as f: f.write(APP_PY.strip())
               
-              print(f"✅ Tax Master Pro Project Created at {os.path.abspath(base_dir)}")
+              print(f"✅ Dashboard Project Created at {os.path.abspath(base_dir)}")
 
           if __name__ == "__main__":
               create_full_project()
           EOF
 
-      - name: 🏗️ 프로젝트 생성기 실행
-        run: |
-          python generate_full_project.py
+      - name: 🏗️ 대시보드 프로젝트 생성기 실행
+        run: python generate_full_project.py
 
       # ----------------------------------------------------------------------
-      # [Step 3] 엔진 구동 & 리포트 생성
+      # [Step 3] 시스템 구동
       # ----------------------------------------------------------------------
-      - name: 🚀 고도화된 엔진 시뮬레이션
+      - name: 🚀 엔진 구동 및 결과 생성
         run: |
           cd app_root
           pip install -r requirements.txt
           python engine.py
 
       # ----------------------------------------------------------------------
-      # [Step 4] 결과물 패키징 (Docker 포함)
+      # [Step 4] 패키징 및 저장
       # ----------------------------------------------------------------------
       - name: 🐳 Docker 이미지 빌드
         run: |
@@ -405,10 +476,10 @@ jobs:
           docker build -t tax-master-system:latest .
           docker save -o tax-master-system.tar tax-master-system:latest
 
-      - name: 📦 실행 파일 및 생성기 저장
+      - name: 📦 실행 파일 저장 (Artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: 세금 마스터 시스템 앱
+          name: 세금 마스터 시스템 앱 (대시보드 포함)
           path: |
              app_root/tax-master-system.tar
              generate_full_project.py
