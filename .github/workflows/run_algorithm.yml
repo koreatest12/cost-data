@@ -1,25 +1,29 @@
-name: 🏢 엔터프라이즈 통합 데이터 파이프라인 (PR & Multi-Container)
+name: 🏢 엔터프라이즈 시스템 (가상환경 VENV 적용 및 경고 해결)
 
 on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
-  # [New] 풀 리퀘스트 이벤트 대량 처리 대응
   pull_request:
     branches: [ "main" ]
     types: [opened, synchronize, reopened]
 
+# [핵심] 전역 환경 변수 설정 (Pip 경고 제어)
+env:
+  PIP_ROOT_USER_ACTION: ignore  # 루트 유저로 실행 시 경고 무시 (CI 환경 표준)
+  PYTHONUNBUFFERED: 1           # 로그 즉시 출력
+
 jobs:
   enterprise-orchestrator:
     runs-on: ubuntu-latest
-    timeout-minutes: 45 # 대량 처리로 인한 시간 연장
+    timeout-minutes: 45
     
     steps:
       - name: 📥 시스템 소스 체크아웃
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] 데이터 레이크 초기화 (Deep Scan)
+      # [Step 1] 데이터 레이크 초기화
       # ----------------------------------------------------------------------
       - name: 📥 원천 데이터 수집 (koreatest12/cost-data)
         uses: actions/checkout@v4
@@ -37,41 +41,39 @@ jobs:
           python-version: '3.9'
 
       # ----------------------------------------------------------------------
-      # [Step 2] 인프라스트럭처 디펜던시 구성
+      # [Step 2] 인프라 모듈 설치 (가상환경 사용 권장 대응)
       # ----------------------------------------------------------------------
       - name: 📦 인프라 모듈 대량 설치
         run: |
-          echo ">>> [Infra] Installing Cluster Dependencies..."
-          pip install --upgrade pip
-          pip install pandas openpyxl pdfplumber tabulate faker numpy flask requests shutilwhich
+          echo ">>> [Infra] Setting up Python dependencies..."
+          # Pip 업그레이드 및 필수 패키지 설치
+          python -m pip install --upgrade pip
+          pip install pandas openpyxl pdfplumber tabulate faker numpy flask requests
 
       # ----------------------------------------------------------------------
-      # [Step 3] 마이크로서비스 아키텍처 생성기 (Generator)
+      # [Step 3] 아키텍처 생성기 (VENV 적용된 Dockerfile 생성)
       # ----------------------------------------------------------------------
       - name: 🛠️ generate_enterprise_arch.py 실행
         run: |
-          # 특수문자 오류 방지를 위해 'EOF' 사용
           cat <<'EOF' > generate_enterprise_arch.py
-          import os, sys, glob, json, re, random, time, shutil, datetime
+          import os, sys, glob, json, re, random, time, shutil
           import pandas as pd
           import numpy as np
-          from collections import defaultdict
-          
+          from datetime import datetime
+
           # ==============================================================================
-          # [1] 엔터프라이즈 디렉토리 구조 정의 (Data Lake & Warehouse)
+          # [1] 디렉토리 구조 정의
           # ==============================================================================
           ROOT = "app_root"
           DIRS = {
               "RAW":      os.path.join(ROOT, "raw_data"),
-              "BACKUP":   os.path.join(ROOT, "data_lake", "backup_zone"),   # Copy 대상
-              "ARCHIVE":  os.path.join(ROOT, "data_lake", "archive_zone"),  # Move 대상
-              "MART":     os.path.join(ROOT, "data_warehouse", "data_mart"),# Load 대상
+              "BACKUP":   os.path.join(ROOT, "data_lake", "backup_zone"),
+              "ARCHIVE":  os.path.join(ROOT, "data_lake", "archive_zone"),
+              "MART":     os.path.join(ROOT, "data_warehouse", "data_mart"),
               "LOGS":     os.path.join(ROOT, "system_logs"),
-              "CONTAINERS": os.path.join(ROOT, "containers") # 마이크로서비스 소스
+              "CONTAINERS": os.path.join(ROOT, "containers")
           }
-          
-          # 생성할 마이크로서비스 목록
-          MICROSERVICES = ["auth-service", "calc-engine", "log-aggregator", "storage-gateway", "dashboard-ui"]
+          MICROSERVICES = ["auth-service", "calc-engine", "log-aggregator", "storage-gateway"]
 
           REQ_TXT = """
           flask
@@ -82,7 +84,7 @@ jobs:
           """
 
           # ==============================================================================
-          # [2] 데이터 파이프라인 엔진 (ETL Logic)
+          # [2] ETL 파이프라인 엔진
           # ==============================================================================
           ENGINE_CODE = r'''
           import os, glob, json, shutil, time, random
@@ -90,7 +92,6 @@ jobs:
           import numpy as np
           from datetime import datetime
 
-          # 경로 설정 (실행 시 주입됨)
           DIRS = {
               "RAW":      "raw_data",
               "BACKUP":   "data_lake/backup_zone",
@@ -109,205 +110,153 @@ jobs:
                   with open(self.log_file, "a") as f: f.write(f"[{ts}] {msg}\n")
                   print(f"[{ts}] {msg}")
 
-              # [기능 1] 데이터 복제 (Copy) - 백업
               def replicate_data(self):
-                  self.log("[ETL] Starting Data Replication (Backup)...")
+                  self.log("[ETL] Starting Backup Replication...")
                   files = glob.glob(os.path.join(DIRS["RAW"], "**", "*.*"), recursive=True)
-                  count = 0
                   for src in files:
                       if os.path.isfile(src):
-                          fname = os.path.basename(src)
-                          dst = os.path.join(DIRS["BACKUP"], fname)
-                          shutil.copy2(src, dst)
-                          count += 1
-                  self.log(f"[ETL] Replicated {count} files to Backup Zone.")
+                          shutil.copy2(src, os.path.join(DIRS["BACKUP"], os.path.basename(src)))
+                  self.log(f"[ETL] Backup complete: {len(files)} files.")
 
-              # [기능 2] 데이터 변환 및 적재 (Transform & Load) - 웨어하우스
               def process_and_load(self):
-                  self.log("[ETL] Starting Calculation Engine...")
-                  
-                  # 대량 시뮬레이션 데이터 생성
-                  users = []
-                  for i in range(1500):
-                      sal = int(np.random.normal(60000000, 20000000))
-                      users.append({
-                          "id": f"EMP_{i:04d}",
-                          "salary": max(30000000, sal),
-                          "tax": int(sal * 0.15)
-                      })
-                  
-                  # JSON 파일로 적재 (Data Mart)
-                  mart_file = os.path.join(DIRS["MART"], "daily_closing.json")
+                  self.log("[ETL] Generating Mart Data...")
+                  users = [{"id": f"U{i}", "amt": int(np.random.normal(5000,1000))} for i in range(1000)]
                   
                   class NpEncoder(json.JSONEncoder):
-                      def default(self, obj):
-                          if isinstance(obj, np.integer): return int(obj)
-                          return super(NpEncoder, self).default(obj)
+                      def default(self, o):
+                          return int(o) if isinstance(o, np.integer) else super().default(o)
                           
-                  with open(mart_file, "w") as f:
+                  with open(os.path.join(DIRS["MART"], "daily.json"), "w") as f:
                       json.dump(users, f, cls=NpEncoder)
-                  
-                  self.log(f"[ETL] Loaded {len(users)} records into Data Mart.")
                   return len(users)
 
-              # [기능 3] 데이터 이동 (Move) - 아카이빙
               def archive_processed(self):
-                  self.log("[ETL] Archiving processed data...")
-                  # 백업본 중 일부를 아카이브로 이동 시뮬레이션
-                  files = os.listdir(DIRS["BACKUP"])[:50] # 샘플 50개 이동
-                  for f in files:
-                      src = os.path.join(DIRS["BACKUP"], f)
-                      dst = os.path.join(DIRS["ARCHIVE"], f)
-                      shutil.move(src, dst)
-                  self.log(f"[ETL] Archived {len(files)} files to Archive Zone.")
+                  self.log("[ETL] Archiving...")
+                  for f in os.listdir(DIRS["BACKUP"])[:20]:
+                      shutil.move(os.path.join(DIRS["BACKUP"], f), os.path.join(DIRS["ARCHIVE"], f))
 
           if __name__ == "__main__":
-              pipeline = DataPipeline()
-              pipeline.replicate_data()
-              cnt = pipeline.process_and_load()
-              pipeline.archive_processed()
+              p = DataPipeline()
+              p.replicate_data()
+              p.process_and_load()
+              p.archive_processed()
           '''
 
-          # ==============================================================================
-          # [3] 웹 대시보드 (상태 모니터링)
-          # ==============================================================================
           APP_CODE = r'''
           from flask import Flask
-          import os, json
+          import os
           app = Flask(__name__)
-          
           @app.route('/')
           def index():
-              raw_cnt = sum([len(files) for r, d, files in os.walk('raw_data')])
-              backup_cnt = len(os.listdir('data_lake/backup_zone'))
-              archive_cnt = len(os.listdir('data_lake/archive_zone'))
-              
-              return f"""
-              <html><body style="background:#1a1a1a; color:white; padding:50px; font-family:arial;">
-                  <h1>🏢 Enterprise Data Platform</h1>
-                  <hr>
-                  <div style="display:flex; gap:30px;">
-                      <div style="background:#333; padding:20px; width:200px;">
-                          <h3>📥 Raw Data</h3><h1>{raw_cnt}</h1>
-                      </div>
-                      <div style="background:#2ecc71; color:black; padding:20px; width:200px;">
-                          <h3>💾 Backup</h3><h1>{backup_cnt}</h1>
-                      </div>
-                      <div style="background:#3498db; padding:20px; width:200px;">
-                          <h3>📦 Archive</h3><h1>{archive_cnt}</h1>
-                      </div>
-                  </div>
-                  <h3>System Status: <span style="color:#2ecc71">ONLINE</span></h3>
-              </body></html>
-              """
+              return "<h1>Enterprise System Online</h1>"
           if __name__ == '__main__': app.run(host='0.0.0.0', port=8080)
           '''
 
-          # ==============================================================================
-          # [4] 메인 생성기 실행 (Generator)
-          # ==============================================================================
           def main():
-              print(">>> [Gen] Initializing Enterprise Architecture...")
-              
-              # 1. 기본 디렉토리 생성
+              print(">>> [Gen] Generating Enterprise Architecture with VENV Support...")
               for path in DIRS.values(): os.makedirs(path, exist_ok=True)
-              
-              # 2. 마이크로서비스 컨테이너 생성 (대량 생성)
+
+              # [핵심] 가상환경(VENV)이 적용된 Dockerfile 생성
               for svc in MICROSERVICES:
                   svc_path = os.path.join(DIRS["CONTAINERS"], svc)
                   os.makedirs(svc_path, exist_ok=True)
                   
-                  # 각 서비스별 Dockerfile 생성
+                  # VIRTUAL_ENV 환경변수와 PATH 설정을 통해 가상환경 활성화
                   dfile = f"""
                   FROM python:3.9-slim
+                  
+                  # 1. 가상환경 설정
+                  ENV VIRTUAL_ENV=/opt/venv
+                  RUN python3 -m venv $VIRTUAL_ENV
+                  ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+                  # 2. 작업 디렉토리 설정
                   WORKDIR /app
-                  RUN echo "Building {svc}..."
+                  
+                  # 3. 의존성 설치 (가상환경 내부에 설치됨)
                   COPY requirements.txt .
-                  RUN pip install -r requirements.txt
+                  RUN pip install --no-cache-dir -r requirements.txt
+                  
+                  # 4. 앱 실행
+                  COPY app.py .
                   CMD ["python", "app.py"]
                   """
                   with open(os.path.join(svc_path, "Dockerfile"), "w") as f: f.write(dfile.strip())
                   with open(os.path.join(svc_path, "requirements.txt"), "w") as f: f.write(REQ_TXT.strip())
-                  
-                  # 서비스별 더미 앱 생성
-                  with open(os.path.join(svc_path, "app.py"), "w") as f: 
-                      f.write(f"print('Service {svc} started')")
-              
-              # 3. 메인 엔진 및 대시보드 코드 작성
+                  with open(os.path.join(svc_path, "app.py"), "w") as f: f.write(f"print('{svc} running in venv')")
+
+              # 메인 루트 파일 생성
               with open(os.path.join(ROOT, "engine.py"), "w", encoding="utf-8") as f: f.write(ENGINE_CODE.strip())
               with open(os.path.join(ROOT, "app.py"), "w", encoding="utf-8") as f: f.write(APP_CODE.strip())
               with open(os.path.join(ROOT, "requirements.txt"), "w") as f: f.write(REQ_TXT.strip())
-              
-              # 4. 루트 Dockerfile (Orchestrator용)
+
+              # 오케스트레이터 Dockerfile (VENV 적용)
               root_docker = """
               FROM python:3.9-slim
+              ENV VIRTUAL_ENV=/opt/venv
+              RUN python3 -m venv $VIRTUAL_ENV
+              ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+              
               WORKDIR /app
               COPY . .
-              RUN pip install -r requirements.txt
+              RUN pip install --no-cache-dir -r requirements.txt
               EXPOSE 8080
               CMD ["python", "app.py"]
               """
               with open(os.path.join(ROOT, "Dockerfile"), "w") as f: f.write(root_docker.strip())
-
-              print(f"✅ Architecture Generated: {len(MICROSERVICES)} microservices created.")
+              
+              print("✅ Architecture Generation Complete.")
 
           if __name__ == "__main__":
               main()
           EOF
 
-      - name: 🏗️ 아키텍처 생성 스크립트 실행
+      - name: 🏗️ 아키텍처 생성 실행
         run: python generate_enterprise_arch.py
 
       # ----------------------------------------------------------------------
-      # [Step 4] 데이터 ETL 엔진 구동 (Move/Copy/Load)
+      # [Step 4] ETL 파이프라인 구동
       # ----------------------------------------------------------------------
-      - name: 🚀 데이터 파이프라인 가동 (ETL)
+      - name: 🚀 데이터 파이프라인 가동
         run: |
           cd app_root
-          # PR일 경우 모의 실행(Dry Run) 메시지 출력
+          # PR Dry Run 체크
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "⚠️ [NOTICE] Running in PR Mode (Dry Run). Simulation Only."
+            echo "⚠️ [DRY RUN] PR Event detected. Simulating logic only."
           fi
           
+          # 로컬 실행 시에도 의존성 설치 (Runner 환경)
           pip install -r requirements.txt
           python engine.py
 
       # ----------------------------------------------------------------------
-      # [Step 5] 대량 컨테이너 이미지 빌드 (Microservices)
+      # [Step 5] 컨테이너 대량 빌드 (VENV 내장 이미지)
       # ----------------------------------------------------------------------
-      - name: 🐳 마이크로서비스 이미지 대량 빌드
+      - name: 🐳 마이크로서비스 이미지 빌드
         run: |
           cd app_root/containers
-          
-          # 컨테이너 디렉토리를 순회하며 개별 이미지 빌드
           for d in */; do
               svc_name=${d%/}
-              echo ">>> 🔨 Building Microservice Image: $svc_name"
+              echo ">>> Building $svc_name with Virtual Environment..."
               docker build -t "tax-$svc_name:v1" ./$svc_name
           done
           
-          # 메인 오케스트레이터 빌드
           cd ..
           docker build -t tax-orchestrator:latest .
 
       # ----------------------------------------------------------------------
-      # [Step 6] 결과 데이터 검증 및 아티팩트 저장
+      # [Step 6] 결과 검증 및 저장
       # ----------------------------------------------------------------------
-      - name: 📊 데이터 레이크 적재 현황 확인
+      - name: 📊 데이터 현황 보고
         run: |
-          echo "==============================================="
-          echo "   🏭 Data Warehouse Status Report"
-          echo "==============================================="
-          echo "[1] Backup Zone (Copied): $(ls app_root/data_lake/backup_zone | wc -l) files"
-          echo "[2] Archive Zone (Moved): $(ls app_root/data_lake/archive_zone | wc -l) files"
-          echo "[3] Data Mart (Loaded):"
-          ls -lh app_root/data_warehouse/data_mart/
-          echo "[4] Pipeline Logs:"
-          cat app_root/system_logs/pipeline.log
+          echo ">>> Data Lake Status:"
+          echo "Backup Zone: $(ls app_root/data_lake/backup_zone | wc -l) files"
+          echo "Archive Zone: $(ls app_root/data_lake/archive_zone | wc -l) files"
+          echo "Data Mart Size: $(du -sh app_root/data_warehouse/data_mart)"
 
       - name: 📦 전체 시스템 스냅샷 저장
         uses: actions/upload-artifact@v4
         with:
-          name: Enterprise_System_Snapshot
+          name: VENV_Enabled_Enterprise_System
           path: app_root/
           retention-days: 5
