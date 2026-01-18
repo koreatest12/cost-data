@@ -1,4 +1,4 @@
-name: 🏢 엔터프라이즈 컨테이너 설치 및 데이터 적재 시스템
+name: 🏢 엔터프라이즈 메가 클러스터 (Docker Compose Fix & Massive Scale)
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ env:
   PYTHONUNBUFFERED: 1
 
 jobs:
-  container-orchestration:
+  mega-cluster-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     
@@ -21,9 +21,22 @@ jobs:
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] 데이터 준비
+      # [Step 1] Docker Compose V2 강제 설치 (에러 해결 핵심)
       # ----------------------------------------------------------------------
-      - name: 📥 데이터 수집 (koreatest12/cost-data)
+      - name: 🔧 Docker Compose V2 설치 및 설정
+        run: |
+          echo ">>> [Fix] Installing Docker Compose V2..."
+          mkdir -p ~/.docker/cli-plugins/
+          curl -SL https://github.com/docker/compose/releases/download/v2.24.1/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+          
+          echo ">>> [Check] Version Confirmation"
+          docker compose version || echo "Docker Compose Install Failed"
+
+      # ----------------------------------------------------------------------
+      # [Step 2] 데이터 및 환경 준비
+      # ----------------------------------------------------------------------
+      - name: 📥 데이터 수집 (Deep Scan)
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
@@ -38,243 +51,189 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: 📦 의존성 패키지 설치
+      - name: 📦 파이썬 의존성 설치
         run: |
           python -m pip install --upgrade pip
-          pip install pandas numpy pdfplumber faker flask pyyaml
+          pip install pandas numpy pdfplumber faker flask pyyaml requests
 
       # ----------------------------------------------------------------------
-      # [Step 2] 아키텍처 및 Docker Compose 생성
+      # [Step 3] 대규모 인프라 생성기 (8개 서비스 + Nginx)
       # ----------------------------------------------------------------------
-      - name: 🛠️ 인프라 코드 생성 (docker-compose & loading scripts)
+      - name: 🛠️ 인프라 코드 생성 (generate_mega_structure.py)
         run: |
-          cat <<'EOF' > generate_infrastructure.py
-          import os, sys, yaml, shutil
-
-          # ==============================================================================
-          # [1] 디렉토리 및 서비스 정의
-          # ==============================================================================
-          ROOT = "app_root"
-          SERVICES = ["auth-server", "calc-engine", "storage-node", "log-aggregator", "dashboard-ui"]
+          cat <<'EOF' > generate_mega_structure.py
+          import os, sys, yaml, shutil, json, random
           
-          # 호스트 측 데이터 경로 (여기에 데이터가 준비되면 컨테이너로 마운트됨)
-          HOST_VOLUMES = {
-              "auth_data":    os.path.join(ROOT, "volumes", "auth_db"),
-              "calc_input":   os.path.join(ROOT, "volumes", "calc_input"),
-              "storage_data": os.path.join(ROOT, "volumes", "receipts"),
-              "log_data":     os.path.join(ROOT, "volumes", "audit_logs")
-          }
+          ROOT = "app_root"
+          
+          # [1] 마이크로서비스 정의 (8개 서비스)
+          SERVICES = [
+              "gateway-nginx",      # 진입점
+              "auth-server",        # 인증
+              "calc-engine",        # 계산
+              "storage-node",       # 저장소
+              "log-aggregator",     # 로그
+              "noti-service",       # 알림 (New)
+              "analytics-core",     # 분석 (New)
+              "payment-proc"        # 결제 (New)
+          ]
+          
+          # [2] 호스트 볼륨 경로 (데이터 적재소)
+          VOLUMES = {svc: os.path.join(ROOT, "volumes", svc) for svc in SERVICES}
 
-          # ==============================================================================
-          # [2] Docker Compose 생성 (컨테이너 설치 명세서)
-          # ==============================================================================
+          # [3] Docker Compose 생성 로직
           def generate_docker_compose():
               compose = {
                   "version": "3.8",
                   "services": {},
-                  "networks": {"tax-net": {"driver": "bridge"}},
-                  "volumes": {
-                      "auth-vol": {}, "calc-vol": {}, "storage-vol": {}, "log-vol": {}
-                  }
+                  "networks": {"enterprise-net": {"driver": "bridge"}},
+                  "volumes": {f"{s}-vol": {} for s in SERVICES}
               }
               
               for svc in SERVICES:
-                  # 각 서비스별 설정
-                  service_def = {
+                  # 기본 설정
+                  svc_def = {
                       "build": f"./containers/{svc}",
                       "container_name": f"tax-{svc}",
-                      "networks": ["tax-net"],
+                      "networks": ["enterprise-net"],
                       "restart": "always",
-                      "environment": ["ENV=PRODUCTION"]
+                      "environment": [f"SERVICE_NAME={svc}", "ENV=PROD"],
+                      "volumes": [f"{os.path.abspath(VOLUMES[svc])}:/app/data"]
                   }
                   
-                  # 볼륨 마운트 (데이터 적재 포인트)
-                  if svc == "auth-server":
-                      service_def["volumes"] = [f"{os.path.abspath(HOST_VOLUMES['auth_data'])}:/app/data"]
-                      service_def["ports"] = ["5001:5000"]
-                  elif svc == "calc-engine":
-                      service_def["volumes"] = [f"{os.path.abspath(HOST_VOLUMES['calc_input'])}:/app/input"]
-                  elif svc == "storage-node":
-                      service_def["volumes"] = [f"{os.path.abspath(HOST_VOLUMES['storage_data'])}:/app/storage"]
-                  elif svc == "log-aggregator":
-                      service_def["volumes"] = [f"{os.path.abspath(HOST_VOLUMES['log_data'])}:/app/logs"]
-                  elif svc == "dashboard-ui":
-                      service_def["ports"] = ["8080:8080"]
-                      service_def["depends_on"] = ["auth-server", "calc-engine"]
+                  # 서비스별 특화 설정
+                  if svc == "gateway-nginx":
+                      svc_def["ports"] = ["80:80"]
+                      svc_def["depends_on"] = [s for s in SERVICES if s != "gateway-nginx"]
                   
-                  compose["services"][svc] = service_def
+                  compose["services"][svc] = svc_def
               
               with open(os.path.join(ROOT, "docker-compose.yml"), "w") as f:
-                  yaml.dump(compose, f, default_flow_style=False)
-              print("✅ docker-compose.yml Generated.")
+                  yaml.dump(compose, f)
+              print(f"✅ Generated docker-compose.yml with {len(SERVICES)} services.")
 
-          # ==============================================================================
-          # [3] 컨테이너 소스 코드 생성 (가상환경 VENV 적용)
-          # ==============================================================================
+          # [4] 컨테이너 소스 생성 (가상환경 적용)
           def generate_containers():
-              base_dockerfile = """
+              dockerfile_py = """
           FROM python:3.9-slim
           ENV VIRTUAL_ENV=/opt/venv
           RUN python3 -m venv $VIRTUAL_ENV
           ENV PATH="$VIRTUAL_ENV/bin:$PATH"
           WORKDIR /app
-          COPY requirements.txt .
-          RUN pip install --no-cache-dir -r requirements.txt
           COPY . .
+          RUN pip install flask
           CMD ["python", "app.py"]
           """
-              
+              # Nginx용 Dockerfile
+              dockerfile_nginx = """
+          FROM nginx:alpine
+          RUN echo "server { listen 80; location / { return 200 'Gateway Online'; } }" > /etc/nginx/conf.d/default.conf
+          """
+
               for svc in SERVICES:
                   path = os.path.join(ROOT, "containers", svc)
                   os.makedirs(path, exist_ok=True)
                   
-                  # Dockerfile
-                  with open(os.path.join(path, "Dockerfile"), "w") as f: f.write(base_dockerfile.strip())
-                  
-                  # Requirements
-                  with open(os.path.join(path, "requirements.txt"), "w") as f: f.write("flask\nwatchdog")
-                  
-                  # App Code (데이터 감지 로직 포함)
-                  app_code = f"""
-          import os, time
+                  if "nginx" in svc:
+                      with open(os.path.join(path, "Dockerfile"), "w") as f: f.write(dockerfile_nginx.strip())
+                  else:
+                      with open(os.path.join(path, "Dockerfile"), "w") as f: f.write(dockerfile_py.strip())
+                      app_code = f"""
           from flask import Flask
+          import os
           app = Flask(__name__)
-          
-          SERVICE_NAME = "{svc}"
-          DATA_DIR = "/app/data" if "auth" in SERVICE_NAME else "/app/input" if "calc" in SERVICE_NAME else "/app/storage"
-          
           @app.route('/')
-          def index():
-              # 적재된 데이터 확인
-              files = os.listdir(DATA_DIR) if os.path.exists(DATA_DIR) else []
-              return f"<h1>{{SERVICE_NAME}} Online</h1><p>Loaded Files: {{len(files)}}</p>"
-
-          if __name__ == "__main__":
-              print(f"Starting {{SERVICE_NAME}}...")
-              app.run(host='0.0.0.0', port=5000)
+          def i(): return "<h1>{svc} Running</h1>Data Count: " + str(len(os.listdir('/app/data')))
+          if __name__ == '__main__': app.run(host='0.0.0.0', port=5000)
           """
-                  with open(os.path.join(path, "app.py"), "w") as f: f.write(app_code.strip())
+                      with open(os.path.join(path, "app.py"), "w") as f: f.write(app_code.strip())
 
-          # ==============================================================================
-          # [4] 데이터 적재 스크립트 (Loader Logic)
-          # ==============================================================================
-          def generate_loader():
-              loader_code = r'''
-          import os, shutil, glob, time, json
-          import numpy as np
-
-          # 호스트 경로 설정 (이 경로에 파일을 넣으면 컨테이너 내부로 마운트됨)
-          VOLUMES = {
-              "AUTH":    "app_root/volumes/auth_db",
-              "CALC":    "app_root/volumes/calc_input",
-              "STORAGE": "app_root/volumes/receipts",
-              "LOGS":    "app_root/volumes/audit_logs"
-          }
-
-          def inject_data():
-              print(">>> [Loader] Starting Data Injection to Containers...")
+          # [5] 대량 데이터 생성 및 적재 (Data Injection)
+          def inject_massive_data():
+              print(">>> [Loader] Injecting MASSIVE data into volumes...")
+              for svc, vol_path in VOLUMES.items():
+                  os.makedirs(vol_path, exist_ok=True)
+                  
+                  # 서비스 성격에 따라 다른 데이터 생성
+                  count = 1000 # 서비스당 1000개 파일
+                  if "calc" in svc:
+                      for i in range(count):
+                          with open(os.path.join(vol_path, f"tax_case_{i}.json"), "w") as f:
+                              json.dump({"id": i, "salary": random.randint(3000,9000)}, f)
+                  elif "log" in svc:
+                      with open(os.path.join(vol_path, "audit.log"), "w") as f:
+                          f.write("LOG START\n" * 5000)
+                  else:
+                      # 일반 더미 데이터
+                      for i in range(100):
+                          with open(os.path.join(vol_path, f"data_{i}.dat"), "w") as f: f.write("DATA")
               
-              # 1. Auth Service 적재 (사용자 DB 생성)
-              users = [{"id": f"user_{i}", "role": "admin" if i<5 else "user"} for i in range(100)]
-              with open(os.path.join(VOLUMES["AUTH"], "users.json"), "w") as f:
-                  json.dump(users, f)
-              print(f"✅ Loaded {len(users)} users into [Auth Container]")
-
-              # 2. Calc Service 적재 (Raw Data 이동)
-              raw_files = glob.glob("app_root/raw_data/**/*.json", recursive=True)
-              for i, src in enumerate(raw_files[:50]): # 샘플 50개
-                  dst = os.path.join(VOLUMES["CALC"], f"tax_data_{i}.json")
-                  shutil.copy(src, dst)
-              print(f"✅ Loaded {len(raw_files[:50])} tax records into [Calc Container]")
-
-              # 3. Storage Service 적재 (영수증 생성)
-              for i in range(20):
-                  with open(os.path.join(VOLUMES["STORAGE"], f"receipt_{i}.html"), "w") as f:
-                      f.write("<html>Receipt</html>")
-              print(f"✅ Loaded 20 receipts into [Storage Container]")
-
-              # 4. Logs 적재
-              with open(os.path.join(VOLUMES["LOGS"], "startup.log"), "w") as f:
-                  f.write(f"System started at {time.ctime()}")
-              print("✅ Initialized Logs in [Log Container]")
+              print("✅ Data Injection Complete.")
 
           if __name__ == "__main__":
-              # 디렉토리 초기화
-              for p in VOLUMES.values(): os.makedirs(p, exist_ok=True)
-              inject_data()
-          '''
-              with open("data_loader.py", "w") as f: f.write(loader_code.strip())
-
-          if __name__ == "__main__":
-              for p in HOST_VOLUMES.values(): os.makedirs(p, exist_ok=True)
               generate_docker_compose()
               generate_containers()
-              generate_loader()
-              print(">>> Infrastructure Generation Complete.")
+              inject_massive_data()
           EOF
 
-      - name: 🏗️ 인프라 및 컨테이너 코드 생성
-        run: python generate_infrastructure.py
+      - name: 🏗️ 인프라 생성기 실행
+        run: python generate_mega_structure.py
 
       # ----------------------------------------------------------------------
-      # [Step 3] 컨테이너 설치 및 구동 (Docker Compose)
+      # [Step 4] 컨테이너 클러스터 실행 (Fix: docker compose 사용)
       # ----------------------------------------------------------------------
-      - name: 🚀 컨테이너 스택 설치 (Install & Up)
+      - name: 🚀 메가 클러스터 구동 (Docker Compose Up)
         run: |
           cd app_root
           
-          echo ">>> [Install] Pulling & Building Services..."
-          docker-compose build
+          echo ">>> [Build] Building 8 Microservices..."
+          # docker-compose (구버전) 대신 docker compose (신버전) 사용
+          docker compose build --parallel
           
-          echo ">>> [Deploy] Starting Container Stack..."
-          docker-compose up -d
+          echo ">>> [Deploy] Starting Cluster..."
+          docker compose up -d
           
-          echo ">>> [Check] Waiting for services..."
-          sleep 10
-          docker-compose ps
+          echo ">>> [Wait] Stabilizing services..."
+          sleep 15
+          
+          echo ">>> [Status] Checking Service Health"
+          docker compose ps -a
 
       # ----------------------------------------------------------------------
-      # [Step 4] 서비스별 데이터 적재 (Data Injection)
+      # [Step 5] 결과 검증 및 리포트
       # ----------------------------------------------------------------------
-      - name: 🚚 데이터 적재 실행 (Inject to Volumes)
-        run: |
-          echo ">>> [ETL] Injecting data into running containers..."
-          python data_loader.py
-
-      # ----------------------------------------------------------------------
-      # [Step 5] 적재 결과 검증
-      # ----------------------------------------------------------------------
-      - name: 🔍 컨테이너 내부 데이터 검증 (Verification)
+      - name: 📊 클러스터 상태 및 데이터 검증
         run: |
           echo "================================================="
-          echo "   🕵️ Container Data Verification Report"
+          echo "   🏙️ Mega Cluster Status Report"
           echo "================================================="
           
-          echo "[1] Auth Service Data (User DB):"
-          ls -lh app_root/volumes/auth_db/
+          # 컨테이너 실행 상태 확인
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
           
-          echo "[2] Calc Service Data (Input Files):"
-          ls -1 app_root/volumes/calc_input/ | head -n 5
-          echo "... (Total $(ls app_root/volumes/calc_input/ | wc -l) files)"
+          echo ""
+          echo ">>> [Data Check] Volume Mount Inspection:"
+          echo "1. Calc Engine Inputs: $(ls app_root/volumes/calc-engine | wc -l) files"
+          echo "2. Auth Server DB: $(ls app_root/volumes/auth-server | wc -l) files"
+          echo "3. Log Aggregator Size: $(du -sh app_root/volumes/log-aggregator)"
           
-          echo "[3] Storage Service (Receipts):"
-          ls -1 app_root/volumes/receipts/ | head -n 5
-          
-          echo "[4] Log Aggregator:"
-          cat app_root/volumes/audit_logs/startup.log
+          echo ""
+          echo ">>> [Network] Gateway Connectivity Check:"
+          # Nginx Gateway 응답 확인
+          curl -I http://localhost:80 || echo "Gateway might be initializing..."
 
-      - name: 🐳 컨테이너 로그 및 볼륨 백업
+      - name: 🐳 전체 시스템 로그 덤프
         if: always()
         run: |
           cd app_root
-          docker-compose logs > system_wide.log
+          docker compose logs > cluster_full_logs.txt
 
-      - name: 📦 전체 시스템 아티팩트 저장
+      - name: 📦 아티팩트 저장 (Logs & Configs)
         uses: actions/upload-artifact@v4
         with:
-          name: Installed_Container_System
+          name: Mega_Cluster_Artifacts
           path: |
              app_root/docker-compose.yml
+             app_root/cluster_full_logs.txt
              app_root/volumes/
-             app_root/system_wide.log
           retention-days: 7
