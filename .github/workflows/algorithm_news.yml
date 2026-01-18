@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Fixed)
+name: 🌌 Omni-Intelligence Grand Pipeline (Conflict Auto-Fix)
 
 on:
   schedule:
@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine (Fix: Dockerfile Heredoc 적용)
+  # 🛡️ 1. Security Engine
   # ==============================================================================
   security-core:
     name: 🛡️ Security Engine
@@ -33,7 +33,7 @@ jobs:
             docker cp r_sec:/app/DB_SEC ./DB_R && cp -r ./DB_R/* ./DB_SEC/ || echo "Fresh"
             docker rm r_sec
           else
-            echo "🆕 First Run: Fresh Start"
+            echo "🆕 First Run"
           fi
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
@@ -45,7 +45,6 @@ jobs:
           from fake_useragent import UserAgent
           
           DB_DIR = "DB_SEC"
-          # [대량 타겟팅]
           SOURCES = ["site:thehackernews.com", "site:bleepingcomputer.com", "site:cisa.gov", "site:kisa.or.kr", "site:darkreading.com"]
           KEYWORDS = ["CVE-2025", "CVE-2026", "Zero-Day", "Ransomware", "Post-Quantum", "Kyber", "AI Security", "Deepfake", "Supply Chain", "APT Group"]
           
@@ -70,7 +69,7 @@ jobs:
                   res = await asyncio.gather(*tasks)
                   for r in res: items.extend(r)
               
-              # 저장 로직
+              # 저장
               os.makedirs(f"{DB_DIR}/news/threat_intel", exist_ok=True)
               os.makedirs(f"{DB_DIR}/archive", exist_ok=True)
               os.makedirs(f"{DB_DIR}/backup", exist_ok=True)
@@ -79,7 +78,7 @@ jobs:
               exist = []
               if os.path.exists(path):
                   try:
-                      with open(path) as f: exist = json.load(f)
+                      with open(path, 'r', encoding='utf-8') as f: exist = json.load(f)
                   except: exist = []
               
               seen = {x['link'] for x in exist}
@@ -87,10 +86,10 @@ jobs:
               
               if len(merged) > 10000:
                   arc = f"{DB_DIR}/archive/sec_{datetime.datetime.now().strftime('%Y%m%d')}.json"
-                  with open(arc, 'w') as f: json.dump(merged, f)
+                  with open(arc, 'w', encoding='utf-8') as f: json.dump(merged, f, indent=2, ensure_ascii=False)
                   merged = merged[:10000]
                   
-              with open(path, 'w') as f: json.dump(merged, f)
+              with open(path, 'w', encoding='utf-8') as f: json.dump(merged, f, indent=2, ensure_ascii=False)
               shutil.copy2(path, f"{DB_DIR}/backup/sec_mirror.json")
               print(f"✅ Security Data Saved: {len(merged)}")
 
@@ -98,7 +97,6 @@ jobs:
           EOF
           python sec_core.py
 
-      # [수정됨] Dockerfile 생성 방식 변경 (echo -> cat <<EOF)
       - name: 🐳 Docker Build & Push
         run: |
           cat <<EOF > Dockerfile
@@ -115,7 +113,7 @@ jobs:
         with: { name: db-sec, path: DB_SEC/ }
 
   # ==============================================================================
-  # 💼 2. Job Engine (Fix: Dockerfile Heredoc 적용)
+  # 💼 2. Job Engine
   # ==============================================================================
   job-core:
     name: 💼 Job Fortress
@@ -146,7 +144,6 @@ jobs:
           
           DB_DIR = "DB"
           PORTALS = {"JobKorea":"site:jobkorea.co.kr", "Saramin":"site:saramin.co.kr", "Indeed":"site:kr.indeed.com"}
-          # [대량 타겟팅]
           LOCS = ["강남", "판교", "분당", "여의도", "구로", "가산", "송도", "마곡", "성수", "광화문", "을지로", "잠실"]
           KWS = ["Python", "Java", "Node", "React", "Spring", "AWS", "AI", "DevOps", "PM", "Marketing", "HR", "Finance", "Security", "Data"]
           
@@ -169,7 +166,7 @@ jobs:
               
               items = []
               ua = UserAgent()
-              conn = aiohttp.TCPConnector(limit=200) # 연결 한도 증가
+              conn = aiohttp.TCPConnector(limit=200)
               async with aiohttp.ClientSession(headers={'User-Agent': ua.random}, connector=conn) as session:
                   for i in range(0, len(sources), 50):
                       chunk = sources[i:i+50]
@@ -178,7 +175,6 @@ jobs:
                       for r in res: items.extend(r)
                       await asyncio.sleep(0.5)
               
-              # 저장
               grouped = {}
               for i in items:
                   f = i['folder']
@@ -189,7 +185,9 @@ jobs:
                   path = f"{DB_DIR}/jobs/{f}/jobs.json"
                   exist = []
                   if os.path.exists(path):
-                      try: with open(path) as fp: exist = json.load(fp)
+                      try:
+                          with open(path, 'r', encoding='utf-8') as fp:
+                              exist = json.load(fp)
                       except: exist = []
                   
                   seen = {x['link'] for x in exist}
@@ -197,10 +195,10 @@ jobs:
                   
                   if len(merged) > 10000:
                       arc = f"{DB_DIR}/archive/{f}/jobs_{datetime.datetime.now().strftime('%Y%m%d')}.json"
-                      with open(arc, 'w') as fp: json.dump(merged, fp)
+                      with open(arc, 'w', encoding='utf-8') as fp: json.dump(merged, fp, indent=2, ensure_ascii=False)
                       merged = merged[:10000]
                   
-                  with open(path, 'w') as fp: json.dump(merged, fp)
+                  with open(path, 'w', encoding='utf-8') as fp: json.dump(merged, fp, indent=2, ensure_ascii=False)
                   shutil.copy2(path, f"{DB_DIR}/backup/{f}_mirror.json")
               print(f"✅ Job Data Saved")
 
@@ -208,7 +206,6 @@ jobs:
           EOF
           python job_core.py
 
-      # [수정됨] Dockerfile 생성 방식 변경
       - name: 🐳 Docker Build & Push
         run: |
           cat <<EOF > Dockerfile
@@ -225,7 +222,7 @@ jobs:
         with: { name: db-job, path: DB/ }
 
   # ==============================================================================
-  # 🧮 3. Algorithm Engine (Fix: Dockerfile Heredoc 적용)
+  # 🧮 3. Algorithm Engine
   # ==============================================================================
   algo-core:
     name: 🧮 Algo Engine
@@ -274,7 +271,6 @@ jobs:
                   res = await asyncio.gather(*tasks)
                   for r in res: items.extend(r)
               
-              # Simple Save
               path = "DB_ALGO/news/ai/data.json"
               with open(path, 'w') as f: json.dump(items, f)
               shutil.copy2(path, "DB_ALGO/backup/mirror.json")
@@ -283,7 +279,6 @@ jobs:
           EOF
           python algo_core.py
 
-      # [수정됨] Dockerfile 생성 방식 변경
       - name: 🐳 Docker Build & Push
         run: |
           cat <<EOF > Dockerfile
@@ -300,7 +295,7 @@ jobs:
         with: { name: db-algo, path: DB_ALGO/ }
 
   # ==============================================================================
-  # 💰 4. Cost & 📚 5. Study (간소화 및 통합)
+  # 💰 4. Cost & 📚 5. Study
   # ==============================================================================
   misc-core:
     name: 💰 Cost & Study
@@ -326,10 +321,10 @@ jobs:
           EOF
           python misc_core.py
       - uses: actions/upload-artifact@v4
-        with: { name: db-misc, path: DB_COST/ } # DB_STUDY는 구조상 여기서 같이 처리 가능
+        with: { name: db-misc, path: DB_COST/ }
 
   # ==============================================================================
-  # 🌍 6. Master Dashboard (수정: 에러 없이 데이터 집계)
+  # 🌍 6. Master Dashboard (Fix: Conflict Auto-Resolve)
   # ==============================================================================
   master-hub:
     needs: [security-core, job-core, algo-core, misc-core]
@@ -338,6 +333,9 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 히스토리 전체 가져오기 (Rebase용)
+
       - uses: actions/download-artifact@v4
         with: { pattern: 'db-*', merge-multiple: true }
       
@@ -384,10 +382,34 @@ jobs:
           EOF
           python dashboard.py
           
-      - name: 🌿 Commit Master Dashboard
+      # [핵심] 무적의 푸시 로직 (Rebase & Retry Loop)
+      - name: 🌿 Commit Master Dashboard (Auto-Retry)
         run: |
           git config --global user.name "Omni Bot"
           git config --global user.email "bot@actions"
+          
+          # 모든 데이터 스테이징
           git add README.md DB*
-          git commit -m "🌌 Grand Update: $(date +'%Y-%m-%d %H:%M')" || exit 0
-          git push origin main
+          
+          if git diff --cached --quiet; then
+            echo "✨ No changes to commit"
+            exit 0
+          fi
+          
+          git commit -m "🌌 Grand Update: $(date +'%Y-%m-%d %H:%M')"
+          
+          # 재시도 로직 (최대 5회)
+          n=0
+          until [ "$n" -ge 5 ]
+          do
+             # 원격 변경사항을 당겨와서(pull --rebase) 로컬 커밋 위에 얹고 푸시
+             git pull --rebase origin main && git push origin main && break
+             n=$((n+1))
+             echo "⚠️ Conflict detected. Retrying rebase... ($n/5)"
+             sleep 10
+          done
+          
+          if [ "$n" -ge 5 ]; then
+            echo "❌ Failed to push after 5 retries"
+            exit 1
+          fi
