@@ -6,4 +6,4 @@
 |---|---|---|
 | 🛡️ Security | 0 | 🟢 |
 | 💼 Jobs | 0 | 🟢 |
-| ☕ Java API | **Built & Dockerized** | 🟢 |
+| ☕ Java API | **Built** | 🟢 |
