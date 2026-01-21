@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate Service-Oriented Massive Edition
+name: Cost Data Agent - Ultimate Service Patch & Massive Edition
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (Multi-Service Data & Stable Build)
+  # [JOB 1] Windows Agent (Massive Data + Patch Operations)
   # ==================================================================================
   agent-windows:
-    name: Windows Service Agent (50k+ Records)
+    name: Windows Service Agent (Patch & Build)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -24,7 +24,7 @@ jobs:
       - name: 작업 설정
         uses: actions/checkout@v4
 
-      # 2. 실행기 환경 검증
+      # 2. 실행기 및 보안 검증
       - name: 실행기 및 보안 모듈 검증
         shell: powershell
         run: |
@@ -62,78 +62,81 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 5. [핵심] 서비스별 데이터 디렉토리 생성
-      - name: 서비스별 디렉토리 구성
+      # 5. [기반 데이터] 서비스별 디렉토리 및 데이터 생성 (50k)
+      - name: 서비스별 대량 데이터 생성 (Base Data)
         shell: powershell
         run: |
+          Write-Host "Generating Base Service Data..."
           $base = "src/main/resources/services"
-          New-Item -ItemType Directory -Force -Path "$base/auth/users" | Out-Null
-          New-Item -ItemType Directory -Force -Path "$base/auth/logs" | Out-Null
-          New-Item -ItemType Directory -Force -Path "$base/payment/transactions" | Out-Null
-          New-Item -ItemType Directory -Force -Path "$base/notification/emails" | Out-Null
-          Write-Host "Service Directories Created: Auth, Payment, Notification"
-
-      # 6. [대량 생성] 각 서비스별 데이터 50,000건 (StreamWriter 사용)
-      - name: 서비스별 대량 데이터 생성 (50,000건)
-        shell: powershell
-        run: |
-          Write-Host "Generating Multi-Service Data (50k Records)..."
-          $base = "src/main/resources/services"
+          $dirs = "$base/auth/users", "$base/payment/tx", "$base/noti/logs", "$base/patches"
+          foreach ($d in $dirs) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
+          
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          # 1. 인증 서비스 (Auth Service) - 사용자 정보 및 로그인 로그
-          $swUser = New-Object System.IO.StreamWriter("$base/auth/users/user_db.csv", $false, $utf8NoBom)
-          $swLog  = New-Object System.IO.StreamWriter("$base/auth/logs/login_attempts.log", $false, $utf8NoBom)
-          $swUser.WriteLine("USER_ID,USERNAME,ROLE,STATUS,LAST_LOGIN")
+          # 인증 사용자 20,000명
+          $swUser = New-Object System.IO.StreamWriter("$base/auth/users/users.csv", $false, $utf8NoBom)
+          $swUser.WriteLine("UID,NAME,STATUS")
+          1..20000 | ForEach-Object { $swUser.WriteLine("$_,user_$_,ACTIVE") }
+          $swUser.Close()
           
-          # 2. 결제 서비스 (Payment Service) - 트랜잭션 기록
-          $swTx = New-Object System.IO.StreamWriter("$base/payment/transactions/tx_history.csv", $false, $utf8NoBom)
-          $swTx.WriteLine("TX_ID,USER_ID,AMOUNT,CURRENCY,STATUS,TS")
+          # 결제 내역 20,000건
+          $swTx = New-Object System.IO.StreamWriter("$base/payment/tx/transactions.csv", $false, $utf8NoBom)
+          $swTx.WriteLine("TXID,AMOUNT,STATUS")
+          1..20000 | ForEach-Object { $swTx.WriteLine("tx_$_,$(Get-Random -Min 100 -Max 9000),DONE") }
+          $swTx.Close()
           
-          # 3. 알림 서비스 (Notification Service) - 발송 로그
-          $swNoti = New-Object System.IO.StreamWriter("$base/notification/emails/send_log.txt", $false, $utf8NoBom)
-          
-          # 통합 루프 (50,000건)
-          1..50000 | ForEach-Object {
-            $uid = $_
-            $uuid = [guid]::NewGuid()
-            
-            # Auth Data Write
-            $swUser.WriteLine("$uid,user_$uid,USER,ACTIVE,$(Get-Date -Format 'yyyy-MM-dd')")
-            $swLog.WriteLine("[AUTH] User $uid login success at $(Get-Date)")
-            
-            # Payment Data Write (랜덤 결제 내역)
-            if ($uid % 2 -eq 0) {
-                $amount = Get-Random -Min 1000 -Max 50000
-                $swTx.WriteLine("$uuid,$uid,$amount,KRW,COMPLETED,$(Get-Date)")
-            }
-            
-            # Notification Data Write
-            $swNoti.WriteLine("To: user_$uid@koreatest12.com | Subject: Welcome | Status: SENT")
-            
-            if ($uid % 10000 -eq 0) { Write-Host " -> Generated $uid / 50000 records across services..." }
-          }
-          
-          $swUser.Close(); $swLog.Close(); $swTx.Close(); $swNoti.Close()
-          Write-Host "Multi-Service Data Generation Completed."
+          Write-Host "Base Data Generation Completed."
 
-      # 7. [대량 생성] Java 비즈니스 로직 동적 생성
-      - name: 서비스별 처리 로직 동적 생성
+      # 6. [신규 기능] 서비스별 패치(Patch) 파일 대량 생성
+      - name: 서비스별 패치 파일 자동 생성 (Patch Generation)
         shell: powershell
         run: |
-          Write-Host "Generating Dynamic Service Logic..."
-          $sourcePath = "src/main/java/com/koreatest12/services"
-          New-Item -ItemType Directory -Force -Path $sourcePath | Out-Null
+          Write-Host "Generating Service Patch Files..."
+          $patchBase = "src/main/resources/services/patches"
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          1..200 | ForEach-Object {
-            $className = "ServiceProcessor_$_"
-            $code = "package com.koreatest12.services;`r`npublic class $className {`r`n  public void execute() { System.out.println(`"Processing Service $_`"); }`r`n}"
-            $sw = New-Object System.IO.StreamWriter("$sourcePath/$className.java", $false, $utf8NoBom)
-            $sw.Write($code)
-            $sw.Close()
+          # 서비스 목록
+          $services = "AuthService", "PaymentService", "NotiService"
+          
+          foreach ($svc in $services) {
+              $svcPath = "$patchBase/$svc"
+              New-Item -ItemType Directory -Force -Path $svcPath | Out-Null
+              
+              # 서비스당 500개의 패치 SQL/Script 생성
+              1..500 | ForEach-Object {
+                  $version = "v1.$_"
+                  $patchFile = "$svcPath/patch_$version.sql"
+                  $content = "-- PATCH for $svc $version`r`nALTER TABLE ${svc}_table ADD COLUMN patch_col_$_ VARCHAR(50);`r`nUPDATE ${svc}_config SET version='$version';"
+                  
+                  $sw = New-Object System.IO.StreamWriter($patchFile, $false, $utf8NoBom)
+                  $sw.Write($content)
+                  $sw.Close()
+              }
           }
-          Write-Host "Service Logic Generated."
+          Write-Host "Generated 1,500 Patch Files across services."
+
+      # 7. [신규 기능] 패치 적용 시뮬레이션 및 로그 기록
+      - name: 패치 적용 작업 시뮬레이션 (Patch Execution)
+        shell: powershell
+        run: |
+          Write-Host "Simulating Patch Application..."
+          $logPath = "patch_execution_report.log"
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+          $swLog = New-Object System.IO.StreamWriter($logPath, $false, $utf8NoBom)
+          
+          $swLog.WriteLine("TIMESTAMP | SERVICE | PATCH_FILE | STATUS | DURATION_MS")
+          
+          $services = "AuthService", "PaymentService", "NotiService"
+          foreach ($svc in $services) {
+              Write-Host " -> Patching $svc..."
+              1..500 | ForEach-Object {
+                  $status = if ($_ % 50 -eq 0) { "SKIPPED (Already Applied)" } else { "APPLIED" }
+                  $duration = Get-Random -Min 10 -Max 300
+                  $swLog.WriteLine("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | $svc | patch_v1.$_.sql | $status | $duration")
+              }
+          }
+          $swLog.Close()
+          Write-Host "Patch Simulation Completed. Log: $logPath"
 
       # 8. Maven 빌드
       - name: 통합 빌드
@@ -142,40 +145,20 @@ jobs:
           mvn dependency:go-offline -B
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           
-          Write-Host "Building Multi-Service Application..."
+          Write-Host "Building Application with Patches..."
           mvn clean package -DskipTests -B -q
           Write-Host "Build Successful."
 
-      # 9. 시뮬레이션
-      - name: 서비스 처리 시뮬레이션
-        shell: powershell
-        run: |
-          Write-Host "Simulating Service Processing..."
-          $reportPath = "service_simulation_report.csv"
-          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
-          $swReport = New-Object System.IO.StreamWriter($reportPath, $false, $utf8NoBom)
-          $swReport.WriteLine("SERVICE,TX_COUNT,STATUS,LATENCY_MS")
-          
-          # 가상의 서비스 처리 결과 리포팅
-          $services = "AuthService", "PaymentService", "NotiService"
-          foreach ($svc in $services) {
-             1..100 | ForEach-Object {
-                 $latency = Get-Random -Min 5 -Max 200
-                 $swReport.WriteLine("$svc,$_,SUCCESS,$latency")
-             }
-          }
-          $swReport.Close()
-          Write-Host "Simulation Report Generated."
-
-      # 10. 패키징 및 업로드
+      # 9. 패키징 및 업로드
       - name: 통합 아티팩트 패키징
         shell: powershell
         run: |
           $date = Get-Date -Format 'yyyyMMdd'
-          $packageName = "korea-service-windows-$date.zip"
+          $packageName = "korea-patch-windows-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
-          Compress-Archive -Path "target/*.jar", "src/main/resources/services", "src/main/java", "service_simulation_report.csv" -DestinationPath $packageName -Force
+          # 패치 파일 및 로그 포함 압축
+          Compress-Archive -Path "target/*.jar", "src/main/resources/services", "patch_execution_report.log" -DestinationPath $packageName -Force
           Write-Host "Package Created: $packageName"
 
       - name: 정리 및 업로드
@@ -186,14 +169,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-service-package
+          name: windows-patch-package
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (Python Optimized Multi-Service Gen)
+  # [JOB 2] Linux Agent (Python Optimized Patching)
   # ==================================================================================
   agent-linux:
-    name: Linux Service Agent (50k+ Records)
+    name: Linux Service Agent (Patch & Build)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -219,81 +202,69 @@ jobs:
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      # [Python 사용] 서비스별 대량 데이터 생성 (안정성 확보)
-      - name: 서비스별 대량 데이터 생성 (Python)
+      # [Python 사용] 서비스별 패치 데이터 생성 (안정성 확보)
+      - name: 서비스별 패치 데이터 생성 (Python)
         run: |
-          echo "Generating Multi-Service Data using Python..."
-          mkdir -p src/main/resources/services/{auth,payment,notification}
+          echo "Generating Patch Data using Python..."
+          mkdir -p src/main/resources/services/{auth,payment,notification}/patches
           
           python3 -c "
-          import os, uuid, random, time
-
+          import os
+          
+          services = ['auth', 'payment', 'notification']
           base_dir = 'src/main/resources/services'
-          total_records = 50000
           
-          print(f'Starting generation of {total_records} records per service...')
-          
-          # 파일 핸들 열기
-          with open(f'{base_dir}/auth/users.csv', 'w') as f_auth, \
-               open(f'{base_dir}/payment/transactions.csv', 'w') as f_pay, \
-               open(f'{base_dir}/notification/logs.txt', 'w') as f_noti:
-               
-               f_auth.write('UID,NAME,ROLE\n')
-               f_pay.write('TX_ID,UID,AMOUNT\n')
-               
-               for i in range(1, total_records + 1):
-                   # Auth Data
-                   f_auth.write(f'{i},user_{i},USER\n')
-                   
-                   # Payment Data
-                   if i % 2 == 0:
-                       tx_id = str(uuid.uuid4())
-                       amount = random.randint(1000, 100000)
-                       f_pay.write(f'{tx_id},{i},{amount}\n')
-                   
-                   # Notification Data
-                   f_noti.write(f'Email sent to user_{i}\n')
-                   
-                   if i % 10000 == 0:
-                       print(f' -> Generated {i} records...')
-                       
-          print('All Service Data Generated Successfully.')
+          for svc in services:
+              print(f'Generating patches for {svc}...')
+              patch_dir = f'{base_dir}/{svc}/patches'
+              
+              # 1,000개의 패치 파일 생성
+              for i in range(1, 1001):
+                  with open(f'{patch_dir}/update_v{i}.sh', 'w') as f:
+                      f.write(f'#!/bin/bash\n# Patch {svc} v{i}\necho \"Updating {svc} to v{i}\"\n')
+                      
+          print('All Patch Files Generated.')
           "
 
       - name: 통합 빌드
         run: mvn clean package -DskipTests -B -q
 
-      # [Python 사용] 처리 시뮬레이션 및 리포트
-      - name: 서비스 처리 시뮬레이션
+      # [Python 사용] 패치 적용 및 롤백 시뮬레이션
+      - name: 패치 적용 및 롤백 시뮬레이션
         run: |
-          echo "Running Simulation..."
+          echo "Running Patch Simulation..."
           python3 -c "
           import random, time
           
-          report_file = 'linux_service_report.csv'
+          report_file = 'linux_patch_report.log'
           services = ['Auth', 'Payment', 'Notification']
           
           with open(report_file, 'w') as f:
-              f.write('TIMESTAMP,SERVICE,PROCESSED_ITEMS,STATUS\n')
+              f.write('TIMESTAMP,SERVICE,ACTION,RESULT\n')
               
               for svc in services:
-                  print(f'Simulating {svc} Service...')
-                  processed = 0
-                  for _ in range(50): # 50 batches
-                      batch_size = random.randint(500, 1000)
-                      processed += batch_size
+                  print(f'Patching {svc} Service...')
+                  # 100개의 배포 작업 시뮬레이션
+                  for i in range(1, 101):
                       ts = int(time.time())
-                      f.write(f'{ts},{svc},{batch_size},OK\n')
-                  print(f' -> {svc} processed total {processed} items.')
+                      
+                      # 10% 확률로 패치 실패 및 롤백 시나리오
+                      if random.random() < 0.1:
+                          f.write(f'{ts},{svc},PATCH_v{i},FAILED\n')
+                          f.write(f'{ts+1},{svc},ROLLBACK_v{i},SUCCESS\n')
+                      else:
+                          f.write(f'{ts},{svc},PATCH_v{i},SUCCESS\n')
+                          
+                  print(f' -> {svc} patching completed.')
           "
 
       - name: 패키징 및 업로드
         run: |
-          VERSION="v1.0.svc.$(date +%Y%m%d)"
-          PKG_NAME="korea-service-linux-$VERSION.tar.gz"
+          VERSION="v1.0.patch.$(date +%Y%m%d)"
+          PKG_NAME="korea-patch-linux-$VERSION.tar.gz"
           mkdir -p target
           
-          tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_service_report.csv
+          tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_patch_report.log
           
           echo "Package Created: $PKG_NAME"
 
@@ -301,5 +272,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: linux-service-package
+          name: linux-patch-package
           path: '*.tar.gz'
