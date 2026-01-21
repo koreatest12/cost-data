@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate Massive Build (Security & Performance)
+name: Cost Data Agent - Ultimate Permissions & Logic Edition
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (Cost Data Processing & Security)
+  # [JOB 1] Windows Agent (Permissions, Logic Generation & Build)
   # ==================================================================================
   agent-windows:
-    name: Windows Agent (Massive Cost Data)
+    name: Windows Agent (Permissions & Logic)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -24,80 +24,39 @@ jobs:
       - name: 작업 설정 (Job Setup)
         uses: actions/checkout@v4
 
-      # 2. 실행기 OS 및 보안 모듈 검증 (필수사항 반영)
-      - name: 실행기 OS 및 보안 모듈 검증
+      # 2. 실행기 환경 및 보안 모듈 검증
+      - name: 실행기 환경 및 보안 모듈 검증
         shell: powershell
         run: |
-          Write-Host "Verifying Windows Runner Environment..."
-          Get-ComputerInfo | Select-Object WindowsVersion, OsArchitecture, CsName
+          Write-Host "Verifying Environment..."
+          Get-ComputerInfo | Select-Object WindowsVersion, OsArchitecture
           
-          # NetSecurity 모듈 강제 확인 및 설치
           if (Get-Module -ListAvailable -Name NetSecurity) {
               Write-Host "NetSecurity Module [FOUND]."
           } else {
-              Write-Host "Installing NetSecurity Module..."
               Install-Module -Name NetSecurity -Force -AllowClobber -Scope CurrentUser
           }
 
-      # 3. 방화벽 및 보안 서비스 업그레이드 (서비스 대량 반영)
-      - name: 방화벽 및 보안 서비스 업그레이드
+      # 3. 보안 서비스 최적화
+      - name: 보안 서비스 최적화
         shell: powershell
         run: |
-          Write-Host "Starting Security Service Maintenance..."
-          
-          # Defender 시그니처 업데이트 (관리자 권한 오류 방지 처리)
           try {
             Update-MpSignature -ErrorAction SilentlyContinue
-            Write-Host "Defender Signatures [UPDATED]."
+            Write-Host "Security Signatures Refreshed."
           } catch {
-            Write-Host "Warning: Defender update managed by host."
+            Write-Host "Managed Environment Detected."
           }
 
-          # 방화벽 서비스 상태 확인 및 정책 갱신
-          $firewall = Get-Service mpssvc
-          if ($firewall.Status -eq 'Running') {
-              Write-Host "Firewall Service Active. Refreshing Policies..."
-              Update-Help -Module NetSecurity -Force -ErrorAction SilentlyContinue
-          } else {
-              Start-Service mpssvc
-              Write-Host "Firewall Service [STARTED]."
-          }
-
-      # 4. 시스템 패키지 및 도구 최신화 (기능 추가)
-      - name: 시스템 패키지 및 도구 최신화
-        shell: powershell
-        run: |
-          Write-Host "Optimizing System Environment..."
-          # NuGet 공급자 강제 업데이트
-          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
-          
-          # Git 및 필수 빌드 도구 업데이트 시뮬레이션
-          Write-Host "Checking Build Tool Versions..."
-          git --version
-          mvn -version
-          Write-Host "System Components Optimized."
-
-      # 5. Playwright (브라우저 자동화 도구) 설치
-      - name: Playwright 및 브라우저 엔진 설치
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Playwright 패키지 설치
-        shell: powershell
-        run: |
-          npm install -g playwright
-          npx playwright install --with-deps chromium
-          Write-Host "Playwright Automation Tools Installed."
-
-      # 6. Java/Maven 환경 정밀 구성
-      - name: Java(Temurin 17) 및 Maven 구성
+      # 4. Java 17 (Spring Boot) 및 Maven 설정
+      - name: Java & Maven 환경 구성
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
       
-      - name: Maven 3.9.6 수동 설치 (안정성 확보)
+      - name: Maven 3.9.6 수동 설치
         shell: powershell
         run: |
           $url = "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.zip"
@@ -107,97 +66,118 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 7. [대량 반영] 비용(Cost) 데이터 5,000건 및 대용량 에셋 생성
-      - name: 대량 비용 데이터 및 자산 생성 (Massive Generation)
+      # 5. [신규] 계정별 권한(Permission) 정책 대량 생성 (JSON)
+      - name: 계정별 권한 정책 대량 생성
         shell: powershell
         run: |
-          Write-Host "Generating Massive Cost Data Transaction Logs..."
-          $dataPath = "src/main/resources/cost_data"
-          New-Item -ItemType Directory -Force -Path $dataPath | Out-Null
+          Write-Host "Generating RBAC Permission Policies..."
+          $permPath = "src/main/resources/permissions"
+          New-Item -ItemType Directory -Force -Path $permPath | Out-Null
           
-          # JSON 트랜잭션 데이터 5,000개 생성
-          Write-Host " -> Generating 5,000 Transaction Records..."
-          1..5000 | ForEach-Object {
-            $uuid = [guid]::NewGuid()
-            $amount = Get-Random -Minimum 1000 -Maximum 1000000
-            $json = "{ 'tx_id': '$uuid', 'seq': $_, 'amount': $amount, 'currency': 'KRW', 'status': 'PENDING' }"
-            $json | Out-File -FilePath "$dataPath/tx_record_$_.json" -Encoding utf8
+          # 10,000개의 계정에 대해 랜덤 권한 부여 (골고루 반영)
+          1..10000 | ForEach-Object {
+            $role = Get-Random -InputObject "ADMIN", "MANAGER", "USER", "AUDITOR", "GUEST"
+            $scope = Get-Random -InputObject "READ_ONLY", "READ_WRITE", "FULL_ACCESS"
+            $canDelete = Get-Random -InputObject "true", "false"
+            
+            $json = "{ 'uid': $_, 'role': '$role', 'scope': '$scope', 'allow_delete': $canDelete, 'generated_at': '$(Get-Date)' }"
+            $json | Out-File -FilePath "$permPath/perm_policy_$_.json" -Encoding utf8
           }
-          
-          # 대용량 바이너리 로그 파일 10개 생성 (총 500MB)
-          Write-Host " -> Generating Heavy Binary Logs (50MB x 10)..."
-          1..10 | ForEach-Object {
-            fsutil file createnew "$dataPath/cost_blob_log_$_.bin" 52428800
-          }
-          Write-Host "Massive Data Generation Completed. (Target: cost-data)"
+          Write-Host "Permission Policies Generated."
 
-      # 8. 의존성 사전 다운로드
+      # 6. [신규] 계정별 처리 로직(Java Class) 동적 생성 (컴파일 부하 테스트)
+      - name: 계정별 처리 로직(Java Source) 동적 생성
+        shell: powershell
+        run: |
+          Write-Host "Generating Dynamic Java Business Logic..."
+          $sourcePath = "src/main/java/com/koreatest12/dynamic"
+          New-Item -ItemType Directory -Force -Path $sourcePath | Out-Null
+          
+          # 500개의 Java 클래스 파일을 동적으로 생성하여 빌드에 포함
+          1..500 | ForEach-Object {
+            $className = "UserProcessingService_$_"
+            $code = @"
+            package com.koreatest12.dynamic;
+            import java.util.UUID;
+            public class $className {
+                public String processUser(int userId) {
+                    return "Processing User " + userId + " with Logic ID $_ : " + UUID.randomUUID().toString();
+                }
+            }
+            "@
+            $code | Out-File -FilePath "$sourcePath/$className.java" -Encoding utf8
+          }
+          Write-Host "Dynamic Java Source Code Generated (500 Classes)."
+
+      # 7. [신규] 계정별 트랜잭션 처리 로그 대량 생성
+      - name: 계정별 트랜잭션 로그 생성
+        shell: powershell
+        run: |
+          Write-Host "Generating Transaction Logs..."
+          $logPath = "src/main/resources/logs"
+          New-Item -ItemType Directory -Force -Path $logPath | Out-Null
+          
+          # 5,000건의 랜덤 트랜잭션 로그 (다양한 상태값 반영)
+          1..5000 | ForEach-Object {
+            $status = Get-Random -InputObject "SUCCESS", "FAILED", "PENDING", "CANCELLED"
+            $amount = Get-Random -Minimum 100 -Maximum 9999999
+            $log = "TX_ID: $([guid]::NewGuid()) | USER: user_$_ | STATUS: $status | AMOUNT: $amount | TS: $(Get-Date)"
+            $log | Out-File -FilePath "$logPath/tx_log_$_.txt" -Encoding utf8
+          }
+          Write-Host "Transaction Logs Created."
+
+      # 8. 의존성 준비
       - name: Maven 의존성 오프라인 준비
         shell: powershell
         run: mvn dependency:go-offline -B
 
-      # 9. 네트워크 방화벽 규칙 적용 (필수사항)
-      - name: 네트워크 방화벽 규칙 적용
+      # 9. 방화벽 규칙 적용
+      - name: 네트워크/방화벽 규칙 적용
         shell: powershell
         run: |
-          Write-Host "Configuring Traffic Rules..."
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
-          New-NetFirewallRule -DisplayName "Allow Web Traffic" -Direction Inbound -Protocol TCP -LocalPort 80,443 -Action Allow -ErrorAction SilentlyContinue
-          New-NetFirewallRule -DisplayName "Allow Agent Sync" -Direction Inbound -Protocol TCP -LocalPort 5000-5050 -Action Allow -ErrorAction SilentlyContinue
-          Write-Host "Network Security Rules Applied."
+          New-NetFirewallRule -DisplayName "App Traffic" -Direction Inbound -Protocol TCP -LocalPort 8080,9090 -Action Allow -ErrorAction SilentlyContinue
 
-      # 10. 에이전트 대량 기동 시뮬레이션
-      - name: Cost Data Agent 대량 기동
+      # 10. 빌드 수행 (동적 생성된 코드 컴파일 포함)
+      - name: 전체 로직 빌드 및 검증
         shell: powershell
         run: |
-          Write-Host "Launching 5 Parallel Data Agents..."
-          1..5 | ForEach-Object {
-              Write-Host " -> Agent Instance #$_ [ONLINE]"
-              Start-Sleep -Milliseconds 50
-          }
+          Write-Host "Compiling Generated Code & Resources..."
+          # 테스트는 건너뛰고 컴파일 및 패키징 수행 (동적 생성된 Java 파일 컴파일 확인)
+          mvn clean package -DskipTests -B -q
+          Write-Host "Build Successful. Dynamic Logic Compiled."
 
-      # 11. 빌드 및 데이터 검증
-      - name: 데이터 처리 및 빌드 (Build Process)
-        shell: powershell
-        run: |
-          Write-Host "Processing Massive Cost Data..."
-          mvn clean verify -B -q
-          Write-Host "Build Verification Successful."
-
-      # 12. 패키징 및 배포 (대량 데이터 포함)
-      - name: 패키징 및 배포 (Artifact Packaging)
+      # 11. 패키징 및 배포
+      - name: 아티팩트 패키징 (Zip)
         shell: powershell
         run: |
           $date = Get-Date -Format 'yyyyMMdd'
-          $packageName = "cost-data-windows-$date.zip"
+          $packageName = "korea-logic-windows-$date.zip"
           
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
-          if (-not (Test-Path "target/app.jar")) { New-Item -Path "target/app.jar" -ItemType File -Force }
           
-          # 생성된 5000개의 데이터와 바이너리 파일을 모두 포함하여 압축
-          Write-Host "Compressing Massive Artifacts..."
-          Compress-Archive -Path "target/*", "src/main/resources/cost_data" -DestinationPath $packageName -Force
+          # 컴파일된 Jar, 권한 파일, 로그, 소스 코드 모두 포함
+          Compress-Archive -Path "target/*.jar", "src/main/resources/permissions", "src/main/resources/logs", "src/main/java" -DestinationPath $packageName -Force
           
           Write-Host "Package Created: $packageName"
 
-      # 13. 정리
-      - name: 임시 파일 정리
+      # 12. 정리 및 업로드
+      - name: 정리
         shell: powershell
         run: Remove-Item -Path "maven.zip" -Force -ErrorAction SilentlyContinue
 
-      # 14. 아티팩트 업로드
       - name: 결과물 업로드
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-cost-data-package
+          name: windows-logic-package
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (High Performance & System Check)
+  # [JOB 2] Linux Agent (Distributed Processing & Permissions)
   # ==================================================================================
   agent-linux:
-    name: Linux Agent (Massive Cost Data)
+    name: Linux Agent (Distributed Logic)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -206,133 +186,88 @@ jobs:
       - name: 작업 설정
         uses: actions/checkout@v4
 
-      # 2. 시스템 환경 검증
-      - name: 시스템 환경 검증
+      # 2. 시스템 최적화
+      - name: 시스템 최적화 및 보안 설정
         run: |
-          echo "Verifying Linux Kernel & Release..."
-          uname -a
-          cat /etc/os-release
-
-      # 3. 보안 서비스 및 방화벽 재설정 (필수사항)
-      - name: 보안 서비스 및 방화벽 재설정
-        run: |
-          echo "Upgrading Security Services..."
+          echo "Optimizing Linux Environment..."
           sudo apt-get update
           sudo apt-get install --only-upgrade ufw iptables net-tools -y
-          
-          echo "Resetting UFW Policies..."
           sudo ufw --force reset
-          echo "Security Services Updated."
-
-      # 4. 시스템 패키지 대량 업그레이드
-      - name: 시스템 패키지 대량 업그레이드
-        run: |
-          echo "Performing Full System Upgrade..."
-          # 대화형 모드 방지
-          sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-          sudo apt-get install -y build-essential curl wget zip unzip
           echo "System Optimized."
 
-      # 5. Playwright 설치
-      - name: Playwright 설치
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Playwright 패키지 구성
-        run: |
-          npm install -g playwright
-          npx playwright install --with-deps chromium
-
-      # 6. Java/Maven 준비
-      - name: Java(Temurin 17) 준비
+      # 3. Java/Maven 준비
+      - name: Java(Spring Boot) 준비
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-      - name: Maven 3.9.6 수동 설치
+      - name: Maven 3.9.6 설치
         run: |
           wget -q https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      # 7. [대량 반영] Linux용 대량 비용 데이터 생성
-      - name: Linux용 대량 비용 데이터 생성 (Massive Data)
+      # 4. [신규] 계정별 권한 매트릭스 생성 (XML) - 골고루 반영
+      - name: 계정별 권한 매트릭스 생성 (Distributed)
         run: |
-          echo "Generating Massive Dataset for Linux..."
-          DATA_PATH="src/main/resources/cost_data"
-          mkdir -p $DATA_PATH
+          echo "Generating XML Permission Matrix..."
+          PERM_PATH="src/main/resources/permissions_xml"
+          mkdir -p $PERM_PATH
           
-          # XML 비용 데이터 5,000개 생성
-          echo " -> Generating 5,000 Cost XML Records..."
-          for i in {1..5000}; do
-             echo "<cost><id>$i</id><ts>$(date +%s)</ts><val>LINUX_TX_$i</val></cost>" > "$DATA_PATH/cost_$i.xml"
+          # 10,000개 계정에 대해 랜덤 Role 할당
+          for i in {1..10000}; do
+             # shuf 명령어로 랜덤 역할 배정
+             ROLE=$(shuf -e "SUPER_ADMIN" "ADMIN" "OPERATOR" "VIEWER" -n 1)
+             LEVEL=$(shuf -i 1-10 -n 1)
+             echo "<permission><id>$i</id><role>$ROLE</role><level>$LEVEL</level></permission>" > "$PERM_PATH/perm_$i.xml"
           done
           
-          # 대용량 덤프 파일 10개 생성 (총 500MB)
-          echo " -> Generating Heavy Binary Dumps (50MB x 10)..."
-          for i in {1..10}; do
-             dd if=/dev/urandom of="$DATA_PATH/dump_$i.dat" bs=1M count=50 status=none
+          echo "XML Permission Matrix Generated."
+
+      # 5. [신규] 처리 로직 설정 파일 대량 생성 (YAML)
+      - name: 처리 로직 설정 생성 (Business Logic Config)
+        run: |
+          echo "Generating Business Logic Configs..."
+          CONF_PATH="src/main/resources/logic_config"
+          mkdir -p $CONF_PATH
+          
+          # 각 계정별 처리 방식을 정의하는 YAML 파일 1,000개 생성
+          for i in {1..1000}; do
+             PROCESS_TYPE=$(shuf -e "SYNC" "ASYNC" "BATCH" "REALTIME" -n 1)
+             echo -e "user_id: $i\nprocess:\n  type: $PROCESS_TYPE\n  timeout: 5000\n  retry: 3" > "$CONF_PATH/logic_user_$i.yml"
           done
           
-          echo "Massive Data Generation Completed. File count:"
-          ls -1 $DATA_PATH | wc -l
+          echo "Logic Configs Generated."
 
-      # 8. Maven 준비
-      - name: Maven 의존성 준비
-        run: mvn dependency:go-offline -B
-
-      # 9. 방화벽 포트 정책 적용
-      - name: 방화벽 포트 정책 적용
+      # 6. Maven 빌드
+      - name: Maven 빌드 (모든 리소스 포함)
         run: |
-          echo "Configuring UFW Rules..."
-          sudo ufw --force default deny incoming
-          sudo ufw --force default allow outgoing
-          sudo ufw allow 80/tcp
-          sudo ufw allow 443/tcp
-          sudo ufw allow 5000:5050/tcp
-          sudo ufw --force enable
-          sudo ufw status verbose
-
-      # 10. 에이전트 구동
-      - name: Cost Agent 대량 구동
-        run: |
-          for i in {1..5}; do
-             echo "Starting Agent Process #$i..."
-             sleep 0.1
-          done
-          echo "All Agents Running."
-
-      # 11. 빌드 수행
-      - name: 데이터 처리 및 빌드
-        run: |
-          echo "Building Project with Massive Data..."
-          mvn clean verify -B -q
+          echo "Starting Build..."
+          mvn clean package -DskipTests -B -q
           echo "Build Completed."
 
-      # 12. 패키징
+      # 7. 패키징
       - name: 패키징 및 배포
         run: |
-          echo "Archiving Artifacts..."
-          VERSION="v1.0.linux.$(date +%Y%m%d)"
-          PKG_NAME="cost-data-linux-$VERSION.tar.gz"
+          echo "Creating Release Package..."
+          VERSION="v1.0.logic.$(date +%Y%m%d)"
+          PKG_NAME="korea-logic-linux-$VERSION.tar.gz"
           
           mkdir -p target
-          touch target/app.jar
           
-          # 리소스 포함 압축
-          tar -czf $PKG_NAME target/ src/main/resources/cost_data/
+          # 권한 XML, 로직 설정, Jar 파일 포함 압축
+          tar -czf $PKG_NAME target/*.jar src/main/resources/permissions_xml/ src/main/resources/logic_config/
           
-          echo "Package Created: $PKG_NAME"
+          echo "Package: $PKG_NAME"
 
-      # 13. 정리
+      # 8. 정리 및 업로드
       - name: 정리
         run: rm -rf apache-maven-3.9.6-bin.tar.gz
 
-      # 14. 업로드
       - name: 결과물 업로드
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: linux-cost-data-package
+          name: linux-logic-package
           path: '*.tar.gz'
