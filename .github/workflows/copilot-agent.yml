@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate 1M Records & Job Summary Fixed
+name: Cost Data Agent - Ultimate 1M Records (Stability Fix)
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (1 Million Records + Visual Summary Fix)
+  # [JOB 1] Windows Agent (1 Million Records & Stable Summary)
   # ==================================================================================
   agent-windows:
-    name: Windows Agent (1M Records & Summary)
+    name: Windows Agent (1M Records)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -62,7 +62,7 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 5. [데이터 생성] 가상 계좌 50만 건 (초대형 규모 확장)
+      # 5. [데이터 생성] 가상 계좌 50만 건 (대량 생성)
       - name: 가상 계좌 50만 건 생성 (Massive Scale)
         shell: powershell
         run: |
@@ -106,7 +106,7 @@ jobs:
           $swEmail.Close()
           Write-Host "Marketing Email DB Generated."
 
-      # 7. [시뮬레이션] 처리 결과 로그 생성 (대량 트랜잭션)
+      # 7. [시뮬레이션] 대량 트랜잭션 처리 (3만 건)
       - name: 통합 처리 시뮬레이션
         shell: powershell
         run: |
@@ -116,7 +116,7 @@ jobs:
           $swLog = New-Object System.IO.StreamWriter($logPath, $false, $utf8NoBom)
           $swLog.WriteLine("TIMESTAMP | TYPE | ID | RESULT")
           
-          # 입금 10,000건, 이메일 발송 20,000건
+          # 입금 10,000건, 이메일 발송 20,000건 -> 총 30,000건 시뮬레이션
           1..10000 | ForEach-Object { $swLog.WriteLine("$(Get-Date) | DEPOSIT | VA_$_ | SUCCESS") }
           1..20000 | ForEach-Object { $swLog.WriteLine("$(Get-Date) | EMAIL_SEND | customer.$_ | SENT") }
           
@@ -131,32 +131,26 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           mvn clean package -DskipTests -B -q
 
-      # 9. [수정됨] GitHub 요약 보고서 (배열 방식 사용으로 오류 해결)
+      # 9. [수정됨] GitHub 요약 보고서 (안정성 확보 - 이모지 제거)
       - name: 실행 결과 요약 보고서 생성 (Job Summary Fixed)
         shell: powershell
         run: |
           $summaryFile = $env:GITHUB_STEP_SUMMARY
           
-          # 배열(Array)을 사용하여 문자열 터미네이터 오류 방지
-          $summaryContent = @(
-              "## 🚀 Windows Agent Execution Report",
-              "",
-              "| Category | Count | Status |",
-              "|---|---|---|",
-              "| **Virtual Accounts** | 500,000 | ✅ Created |",
-              "| **Marketing Emails** | 1,000,000 | ✅ Created |",
-              "| **Deposits Sim** | 10,000 | ✅ Processed |",
-              "| **Emails Sim** | 20,000 | ✅ Processed |",
-              "| **Maven Build** | Build Success | ✅ Completed |",
-              "",
-              "### 📊 System Performance",
-              "- **OS:** Windows Server 2022",
-              "- **Java:** Temurin 17",
-              "- **Timestamp:** $(Get-Date)"
-          )
-          
-          # 파일에 안전하게 쓰기
-          $summaryContent | Out-File -FilePath $summaryFile -Encoding utf8 -Append
+          # 배열 대신 직접 파일에 쓰기 (인코딩 오류 방지)
+          "## Windows Agent Execution Report" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "| Category | Count | Status |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "|---|---|---|" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "| Virtual Accounts | 500,000 | Created |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "| Marketing Emails | 1,000,000 | Created |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "| Simulation Tx | 30,000 | Processed |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "| Maven Build | Success | Completed |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "### System Info" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "- OS: Windows Server 2022" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "- Java: Temurin 17" | Out-File -FilePath $summaryFile -Append -Encoding utf8
+          "- Timestamp: $(Get-Date)" | Out-File -FilePath $summaryFile -Append -Encoding utf8
           
           Write-Host "Job Summary Successfully Generated."
 
@@ -259,7 +253,7 @@ jobs:
           # 시뮬레이션 로그
           with open('linux_simulation.log', 'w') as f:
               f.write('TS,ACTION,RESULT\n')
-              for i in range(10000):
+              for i in range(30000):
                   f.write(f'{time.time()},PROCESS_TX_{i},SUCCESS\n')
           
           # HTML 이메일 리포트
@@ -270,18 +264,18 @@ jobs:
       # [신규 기능] GitHub 요약 보고서 (Job Summary) 생성
       - name: 실행 결과 요약 보고서 생성 (Job Summary)
         run: |
-          echo "## 🐧 Linux Agent Execution Report" >> $GITHUB_STEP_SUMMARY
+          echo "## Linux Agent Execution Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Virtual Accounts** | 500,000 | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Marketing DB** | 1,000,000 | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Simulation Tx** | 10,000 | ✅ Processed |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Build Artifacts** | Included | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+          echo "| Virtual Accounts | 500,000 | Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| Marketing DB | 1,000,000 | Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| Simulation Tx | 30,000 | Processed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Artifacts | Included | Ready |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📧 Email Notification Status" >> $GITHUB_STEP_SUMMARY
-          echo "- **Recipient:** team@koreatest12.com" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** Sent (Simulated)" >> $GITHUB_STEP_SUMMARY
+          echo "### Email Notification Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Recipient: team@koreatest12.com" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: Sent (Simulated)" >> $GITHUB_STEP_SUMMARY
 
       - name: 패키징 및 업로드
         run: |
