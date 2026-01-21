@@ -257,7 +257,7 @@ jobs:
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      - name: [통합] 데이터 대량 생성
+      - name: 데이터 대량 생성
         run: |
           echo "Generating Massive Data..."
           mkdir -p src/main/resources/{accounts,products,config}
@@ -276,7 +276,7 @@ jobs:
       - name: 빌드 수행
         run: mvn clean package -DskipTests -B -q
 
-      - name: [신규] 계정 처리 시뮬레이션 (Linux)
+      - name: 계정 처리 시뮬레이션 (Linux)
         run: |
           echo "Starting Batch Processing Simulation..."
           REPORT="linux_simulation_report.log"
