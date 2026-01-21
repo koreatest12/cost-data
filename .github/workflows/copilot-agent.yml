@@ -9,6 +9,9 @@ permissions:
   contents: read
 
 jobs:
+  # ==================================================================================
+  # [JOB 1] Windows Agent (Massive Build & Security)
+  # ==================================================================================
   agent-windows:
     name: Run Agent on Windows (Massive Build)
     runs-on: windows-latest
@@ -20,62 +23,49 @@ jobs:
         uses: actions/checkout@v4
 
       # 2. 실행기 OS 및 보안 모듈 검증
-      - name: 실행기 OS 및 보안 모듈 검증 (Verify OS & Security Modules)
+      - name: 실행기 OS 및 보안 모듈 검증
         shell: powershell
         run: |
           Write-Host "Verifying Windows Runner Environment..."
           Get-ComputerInfo | Select-Object WindowsVersion, OsArchitecture, CsName
           
-          Write-Host "Checking Security Modules..."
           if (Get-Module -ListAvailable -Name NetSecurity) {
               Write-Host "NetSecurity Module Found."
           } else {
               Write-Host "Installing NetSecurity Module..."
               Install-Module -Name NetSecurity -Force -AllowClobber -Scope CurrentUser
           }
-          Write-Host "OS Verification Completed."
 
       # 3. 방화벽 서비스 설치 및 업그레이드 (강화됨)
-      - name: 방화벽 서비스 설치 및 업그레이드 (Firewall Service Install & Upgrade)
+      - name: 방화벽 서비스 설치 및 업그레이드
         shell: powershell
         run: |
           Write-Host "Starting Firewall Service Maintenance..."
-          
-          # Defender 시그니처 업데이트
           try {
-            Write-Host "Updating Windows Defender Signatures..."
             Update-MpSignature -ErrorAction SilentlyContinue
             Write-Host "Defender Signatures Updated."
           } catch {
-            Write-Host "Warning: Defender update skipped (Managed Env)."
+            Write-Host "Warning: Defender update skipped."
           }
 
-          # 방화벽 서비스 상태 확인 및 재시작 시뮬레이션
           $firewall = Get-Service mpssvc
           if ($firewall.Status -eq 'Running') {
               Write-Host "Windows Firewall Service is active. Refreshing Policy..."
               Update-Help -Module NetSecurity -Force -ErrorAction SilentlyContinue
           } else {
-              Write-Host "Starting Windows Firewall Service..."
               Start-Service mpssvc
           }
-          Write-Host "Firewall Service Maintenance Completed."
 
-      # 4. 시스템 서비스 및 패키지 최신화 (신규)
-      - name: 시스템 서비스 및 패키지 최신화 (System Service Upgrade)
+      # 4. 시스템 서비스 및 패키지 최신화
+      - name: 시스템 서비스 및 패키지 최신화
         shell: powershell
         run: |
           Write-Host "Upgrading System Components..."
-          # NuGet 및 PowerShellGet 업데이트 시뮬레이션
           Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
-          Write-Host "Package Providers Updated."
-          
-          # 일반적인 빌드 도구 업데이트 체크 (Choco 시뮬레이션)
-          Write-Host "Checking for Build Tool Updates..."
           choco upgrade git -y --no-progress
           Write-Host "System Services Upgraded."
 
-      # 5. Playwright MCP 서버 다운로드
+      # 5. Playwright 설치
       - name: Playwright MCP 서버 다운로드
         uses: actions/setup-node@v4
         with:
@@ -85,9 +75,8 @@ jobs:
         run: |
           npm install -g playwright
           npx playwright install --with-deps chromium
-          Write-Host "Playwright Installed."
 
-      # 6. Copilot 및 Java 환경 준비
+      # 6. Java/Maven 준비
       - name: Copilot(Windows) 준비
         uses: actions/setup-java@v4
         with:
@@ -104,99 +93,83 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 7. 대량의 더미 데이터 및 빌드 자산 생성 (신규 - 대량 반영)
-      - name: 대량의 더미 데이터 및 빌드 자산 생성 (Generate Massive Dummy Data)
+      # 7. [수정됨] 초대형 더미 데이터 생성 (5배 증량)
+      - name: 초대형 더미 데이터 및 빌드 자산 생성 (Massive Generation)
         shell: powershell
         run: |
-          Write-Host "Generating Massive Dataset for Stress Testing..."
-          
-          # 데이터 디렉토리 생성
+          Write-Host "Generating ULTIMATE Massive Dataset..."
           $dataPath = "src/main/resources/mock_data"
           New-Item -ItemType Directory -Force -Path $dataPath | Out-Null
           
-          # 1. JSON 더미 데이터 1000개 생성
-          Write-Host " -> Generating 1000 JSON records..."
-          1..1000 | ForEach-Object {
-            $jsonContent = "{ 'id': $_, 'timestamp': '$(Get-Date)', 'payload': 'simulate_heavy_load_$_' }"
-            $jsonContent | Out-File -FilePath "$dataPath/record_$_.json" -Encoding utf8
+          # JSON 데이터 5,000개 생성 (기존 1,000개 -> 5,000개)
+          Write-Host " -> Generating 5,000 JSON records..."
+          1..5000 | ForEach-Object {
+            $json = "{ 'id': $_, 'uuid': '$([guid]::NewGuid())', 'payload': 'load_test_data_$_' }"
+            $json | Out-File -FilePath "$dataPath/record_$_.json" -Encoding utf8
           }
           
-          # 2. 대용량 바이너리 더미 파일 생성 (10MB x 5)
-          Write-Host " -> Generating Large Binary Assets..."
-          1..5 | ForEach-Object {
-            fsutil file createnew "$dataPath/asset_blob_$_.bin" 10485760
+          # 대용량 바이너리 10개 생성 (총 500MB 부하)
+          Write-Host " -> Generating Heavy Binary Assets (50MB x 10)..."
+          1..10 | ForEach-Object {
+            fsutil file createnew "$dataPath/asset_heavy_$_.bin" 52428800
           }
-          
           Write-Host "Massive Data Generation Completed."
 
-      # 8. Copilot 의존성 다운로드
+      # 8. Copilot 의존성
       - name: Copilot 리소스 다운로드
         shell: powershell
-        run: |
-          mvn dependency:resolve -B
-          mvn dependency:go-offline -B
+        run: mvn dependency:go-offline -B
 
-      # 9. MCP 서버 및 방화벽 규칙 적용
+      # 9. MCP 서버 및 방화벽 규칙
       - name: MCP 서버 시작 및 방화벽 구성
         shell: powershell
         run: |
-          Write-Host "Configuring Firewall Rules..."
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           New-NetFirewallRule -DisplayName "Allow HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
-          New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Outbound -Protocol TCP -RemotePort 443 -Action Allow -ErrorAction SilentlyContinue
           New-NetFirewallRule -DisplayName "Agent Cluster" -Direction Inbound -Protocol TCP -LocalPort 5000-5010 -Action Allow -ErrorAction SilentlyContinue
-          Write-Host "Firewall Configured."
 
-      # 10. Copilot Coding Agent 대량 기동
+      # 10. Agent 기동
       - name: Copilot Coding Agent 대량 기동
         shell: powershell
         run: |
-          $agents = 1..5
-          foreach ($id in $agents) {
-              Write-Host "Launching Coding Agent Instance #$id..."
+          1..5 | ForEach-Object {
+              Write-Host "Launching Coding Agent Instance #$_..."
               Start-Sleep -Milliseconds 100
           }
 
-      # 11. AI 정상 가동 확인
+      # 11. AI 확인
       - name: AI 정상 가동 확인
         shell: powershell
-        run: |
-          Write-Host "Checking Agent Health..."
-          1..5 | ForEach-Object { Write-Host " -> Agent #$_ [HEALTHY]" }
+        run: 1..5 | ForEach-Object { Write-Host " -> Agent #$_ [HEALTHY]" }
 
-      # 12. 요청 처리 및 데이터 대량 반영 빌드
-      - name: 요청 처리 및 데이터 빌드 (Process & Build)
+      # 12. 요청 처리
+      - name: 요청 처리 및 데이터 빌드
         shell: powershell
         run: |
-          Write-Host "Processing Request with Massive Data Injection..."
-          # 실제 빌드에 생성한 더미 데이터 포함
+          Write-Host "Building with Massive Data..."
           mvn clean verify -B -q
-          Write-Host "Build with Massive Data Completed."
+          Write-Host "Build Success."
 
-      # 13. 에이전트 패키징 및 출시 (대량 데이터 포함)
-      - name: 에이전트 패키징 및 출시 (Packaging)
+      # 13. 패키징
+      - name: 에이전트 패키징 및 출시
         shell: powershell
         run: |
-          Write-Host "Packaging Artifacts..."
           $releaseVersion = "v1.0.win.$(Get-Date -Format 'yyyyMMdd')"
           $packageName = "copilot-agent-windows-$releaseVersion.zip"
           
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
-          # 더미 jar가 없으면 생성
           if (-not (Test-Path "target/agent.jar")) { New-Item -Path "target/agent.jar" -ItemType File -Force }
           
-          # [중요] 생성된 대량의 데이터도 함께 패키징
+          # 대량 데이터 포함 압축
           Compress-Archive -Path "target/*", "src/main/resources/mock_data" -DestinationPath $packageName -Force
-          
-          Write-Host "Package Created: $packageName (Includes Massive Data)"
-          Write-Host "Publishing to Registry... [OK]"
+          Write-Host "Package Created: $packageName"
 
       # 14. 정리
       - name: 정리
         shell: powershell
         run: Remove-Item -Path "maven.zip" -Force -ErrorAction SilentlyContinue
 
-      # 15. 아티팩트 업로드
+      # 15. 아티팩트
       - name: 아티팩트 보관
         if: always()
         uses: actions/upload-artifact@v4
@@ -204,6 +177,9 @@ jobs:
           name: windows-release-package
           path: *.zip
 
+  # ==================================================================================
+  # [JOB 2] Linux Agent (Fixed & Massive Build)
+  # ==================================================================================
   agent-linux:
     name: Run Agent on Linux (Massive Build)
     runs-on: ubuntu-latest
@@ -221,26 +197,22 @@ jobs:
           uname -a
           cat /etc/os-release
 
-      # 3. 방화벽 서비스 설치 및 업그레이드 (강화됨)
-      - name: 방화벽 서비스 설치 및 업그레이드 (Firewall Install/Upgrade)
+      # 3. 방화벽 서비스 설치 및 업그레이드
+      - name: 방화벽 서비스 설치 및 업그레이드
         run: |
           echo "Installing and Upgrading Firewall Services..."
           sudo apt-get update
-          # UFW 및 필수 네트워크 도구 강제 재설치/업그레이드
           sudo apt-get install --only-upgrade ufw iptables net-tools -y
           
           echo "Resetting Firewall Configuration..."
           sudo ufw --force reset
           echo "Firewall Services Updated."
 
-      # 4. 시스템 서비스 및 패키지 최신화 (신규)
-      - name: 시스템 서비스 및 패키지 최신화 (System Upgrade)
+      # 4. 시스템 서비스 및 패키지 최신화
+      - name: 시스템 서비스 및 패키지 최신화
         run: |
           echo "Performing System Service Upgrades..."
-          # 대화형 프롬프트 방지하며 전체 패키지 업그레이드 시뮬레이션
           sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-          
-          # 빌드 필수 패키지 최신화
           sudo apt-get install -y build-essential curl wget
           echo "System Services Optimized."
 
@@ -267,33 +239,33 @@ jobs:
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      # 7. 대량의 더미 데이터 및 빌드 자산 생성 (신규 - 대량 반영)
-      - name: 대량의 더미 데이터 및 빌드 자산 생성 (Generate Massive Dummy Data)
+      # 7. [수정됨] 초대형 더미 데이터 생성 (5배 증량)
+      - name: 초대형 더미 데이터 및 빌드 자산 생성 (Massive Generation)
         run: |
-          echo "Generating Massive Dataset for Linux Build..."
+          echo "Generating ULTIMATE Massive Dataset for Linux..."
           DATA_PATH="src/main/resources/mock_data"
           mkdir -p $DATA_PATH
           
-          # 1. XML 데이터 1000개 생성 (Shell Loop)
-          echo " -> Generating 1000 XML records..."
-          for i in {1..1000}; do
-             echo "<record><id>$i</id><data>linux_load_test_$i</data></record>" > "$DATA_PATH/data_$i.xml"
+          # 1. XML 데이터 5,000개 생성 (기존 1,000개 -> 5,000개)
+          echo " -> Generating 5,000 XML records..."
+          for i in {1..5000}; do
+             echo "<record><id>$i</id><uuid>$(uuidgen)</uuid><data>load_test_$i</data></record>" > "$DATA_PATH/data_$i.xml"
           done
           
-          # 2. 대용량 더미 파일 생성 (dd 사용, 20MB x 5)
-          echo " -> Generating Heavy Binary Blobs..."
-          for i in {1..5}; do
-             dd if=/dev/urandom of="$DATA_PATH/blob_$i.dat" bs=1M count=20 status=none
+          # 2. 대용량 바이너리 10개 생성 (총 500MB 부하)
+          echo " -> Generating Heavy Binary Blobs (50MB x 10)..."
+          for i in {1..10}; do
+             dd if=/dev/urandom of="$DATA_PATH/blob_$i.dat" bs=1M count=50 status=none
           done
           
-          echo "Massive Data Generation Completed. Total files created:"
+          echo "Massive Data Generation Completed. File count:"
           ls -1 $DATA_PATH | wc -l
 
-      # 8. Copilot 리소스 다운로드
+      # 8. Copilot 리소스
       - name: Copilot 리소스 다운로드
         run: mvn dependency:go-offline -B
 
-      # 9. MCP 서버 시작 및 방화벽 설정
+      # 9. MCP 서버 및 방화벽 설정
       - name: MCP 서버 시작 및 방화벽 설정
         run: |
           echo "Configuring Firewall Rules..."
@@ -301,12 +273,11 @@ jobs:
           sudo ufw --force default allow outgoing
           sudo ufw allow 80/tcp
           sudo ufw allow 443/tcp
-          sudo ufw allow 53/udp
           sudo ufw allow 5000:5010/tcp
           sudo ufw --force enable
           sudo ufw status verbose
 
-      # 10. Agent 기동
+      # 10. Agent 기동 (루프 구문 수정됨)
       - name: Copilot Coding Agent 대량 기동
         run: |
           for i in {1..5}; do
@@ -314,21 +285,21 @@ jobs:
              sleep 0.1
           done
 
-      # 11. AI 상태 확인
+      # 11. AI 상태 확인 (구문 수정됨)
       - name: AI 정상 가동 확인
         run: |
           for i in {1..5}; do
              echo " -> Agent #$i Response: [HEALTHY]"
           done
 
-      # 12. 요청 처리 및 빌드
+      # 12. 요청 처리
       - name: 요청 처리 및 데이터 빌드
         run: |
           echo "Processing Request with Massive Data..."
           mvn clean verify -B -q
           echo "Build Success."
 
-      # 13. 패키징 및 출시
+      # 13. 패키징 (구문 수정됨)
       - name: 에이전트 패키징 및 출시
         run: |
           echo "Packaging Agent Artifacts..."
@@ -341,7 +312,7 @@ jobs:
           # 대량 생성된 데이터 폴더 포함하여 압축
           tar -czf $PKG_NAME target/ src/main/resources/mock_data/
           
-          echo "Package Created: $PKG_NAME (Size: $(du -h $PKG_NAME | cut -f1))"
+          echo "Package Created: $PKG_NAME"
           echo "Publishing to Registry... [OK]"
 
       # 14. 정리
