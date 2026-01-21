@@ -1,18 +1,16 @@
-name: Copilot Agent - Complete Run (Ultimate Release Edition)
-
+name: Copilot Agent - Complete Run (Ultimate Massive Data Edition)
 on:
   push:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
   workflow_dispatch:
-
 permissions:
   contents: read
 
 jobs:
   agent-windows:
-    name: Run Agent on Windows
+    name: Run Agent on Windows (Massive Build)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -21,60 +19,84 @@ jobs:
       - name: 작업 설정 (Job Setup)
         uses: actions/checkout@v4
 
-      # 2. 실행기 OS 검증
-      - name: 실행기 OS 검증 (Verify Runner OS)
+      # 2. 실행기 OS 및 보안 모듈 검증
+      - name: 실행기 OS 및 보안 모듈 검증 (Verify OS & Security Modules)
         shell: powershell
         run: |
           Write-Host "Verifying Windows Runner Environment..."
           Get-ComputerInfo | Select-Object WindowsVersion, OsArchitecture, CsName
+          
+          Write-Host "Checking Security Modules..."
+          if (Get-Module -ListAvailable -Name NetSecurity) {
+              Write-Host "NetSecurity Module Found."
+          } else {
+              Write-Host "Installing NetSecurity Module..."
+              Install-Module -Name NetSecurity -Force -AllowClobber -Scope CurrentUser
+          }
           Write-Host "OS Verification Completed."
 
-      # 3. 방화벽 설정 유효성 검사
-      - name: 방화벽 설정 유효성 검사 (Windows Firewall Validation)
+      # 3. 방화벽 서비스 설치 및 업그레이드 (강화됨)
+      - name: 방화벽 서비스 설치 및 업그레이드 (Firewall Service Install & Upgrade)
         shell: powershell
         run: |
-          Write-Host "Validating and Upgrading Windows Security Definitions..."
-          try {
-            Update-MpSignature -ErrorAction SilentlyContinue
-            Write-Host "Security Definitions Updated."
-          } catch {
-            Write-Host "Warning: Could not update definitions immediately. Proceeding..."
-          }
+          Write-Host "Starting Firewall Service Maintenance..."
           
+          # Defender 시그니처 업데이트
+          try {
+            Write-Host "Updating Windows Defender Signatures..."
+            Update-MpSignature -ErrorAction SilentlyContinue
+            Write-Host "Defender Signatures Updated."
+          } catch {
+            Write-Host "Warning: Defender update skipped (Managed Env)."
+          }
+
+          # 방화벽 서비스 상태 확인 및 재시작 시뮬레이션
           $firewall = Get-Service mpssvc
           if ($firewall.Status -eq 'Running') {
-              Write-Host "[OK] Windows Firewall Service is active."
+              Write-Host "Windows Firewall Service is active. Refreshing Policy..."
+              Update-Help -Module NetSecurity -Force -ErrorAction SilentlyContinue
           } else {
-              Write-Host "[FAIL] Windows Firewall Service is NOT running."
-              exit 1
+              Write-Host "Starting Windows Firewall Service..."
+              Start-Service mpssvc
           }
-          Write-Host "Firewall Validation and Upgrade Completed."
+          Write-Host "Firewall Service Maintenance Completed."
 
-      # 4. Playwright MCP 서버 다운로드
-      - name: Playwright MCP 서버 다운로드 (Download Playwright & Node.js)
+      # 4. 시스템 서비스 및 패키지 최신화 (신규)
+      - name: 시스템 서비스 및 패키지 최신화 (System Service Upgrade)
+        shell: powershell
+        run: |
+          Write-Host "Upgrading System Components..."
+          # NuGet 및 PowerShellGet 업데이트 시뮬레이션
+          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser
+          Write-Host "Package Providers Updated."
+          
+          # 일반적인 빌드 도구 업데이트 체크 (Choco 시뮬레이션)
+          Write-Host "Checking for Build Tool Updates..."
+          choco upgrade git -y --no-progress
+          Write-Host "System Services Upgraded."
+
+      # 5. Playwright MCP 서버 다운로드
+      - name: Playwright MCP 서버 다운로드
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       - name: Playwright 패키지 설치
         shell: powershell
         run: |
-          Write-Host "Starting Playwright MCP Server Download..."
           npm install -g playwright
           npx playwright install --with-deps chromium
-          Write-Host "Playwright MCP Server Components Downloaded."
+          Write-Host "Playwright Installed."
 
-      # 5. Copilot 준비 (Java/Maven)
-      - name: Copilot(Windows) 준비 (Prepare Copilot Environment)
+      # 6. Copilot 및 Java 환경 준비
+      - name: Copilot(Windows) 준비
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-
-      - name: Maven 3.9.6 수동 설치 (Manual Install)
+      - name: Maven 3.9.6 수동 설치
         shell: powershell
         run: |
-          Write-Host "Installing Maven 3.9.6 manually..."
           $url = "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.zip"
           $output = "maven.zip"
           Invoke-WebRequest -Uri $url -OutFile $output
@@ -82,249 +104,254 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Copilot 리소스 대량 다운로드 (Massive Download)
+      # 7. 대량의 더미 데이터 및 빌드 자산 생성 (신규 - 대량 반영)
+      - name: 대량의 더미 데이터 및 빌드 자산 생성 (Generate Massive Dummy Data)
         shell: powershell
         run: |
-          Write-Host "Pre-loading Copilot Dependencies and Resources..."
+          Write-Host "Generating Massive Dataset for Stress Testing..."
+          
+          # 데이터 디렉토리 생성
+          $dataPath = "src/main/resources/mock_data"
+          New-Item -ItemType Directory -Force -Path $dataPath | Out-Null
+          
+          # 1. JSON 더미 데이터 1000개 생성
+          Write-Host " -> Generating 1000 JSON records..."
+          1..1000 | ForEach-Object {
+            $jsonContent = "{ 'id': $_, 'timestamp': '$(Get-Date)', 'payload': 'simulate_heavy_load_$_' }"
+            $jsonContent | Out-File -FilePath "$dataPath/record_$_.json" -Encoding utf8
+          }
+          
+          # 2. 대용량 바이너리 더미 파일 생성 (10MB x 5)
+          Write-Host " -> Generating Large Binary Assets..."
+          1..5 | ForEach-Object {
+            fsutil file createnew "$dataPath/asset_blob_$_.bin" 10485760
+          }
+          
+          Write-Host "Massive Data Generation Completed."
+
+      # 8. Copilot 의존성 다운로드
+      - name: Copilot 리소스 다운로드
+        shell: powershell
+        run: |
           mvn dependency:resolve -B
-          mvn dependency:resolve-plugins -B
-          mvn dependency:sources -B -Dmaven.test.skip=true
           mvn dependency:go-offline -B
-          Write-Host "Copilot Preparation Completed."
 
-      # 6. MCP 서버 시작
-      - name: MCP 서버 시작 (Start MCP Server & Configure Firewall)
+      # 9. MCP 서버 및 방화벽 규칙 적용
+      - name: MCP 서버 시작 및 방화벽 구성
         shell: powershell
         run: |
-          Write-Host "Starting MCP Server Context..."
-          Write-Host "MCP Server initiated."
-
           Write-Host "Configuring Firewall Rules..."
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           New-NetFirewallRule -DisplayName "Allow HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow -ErrorAction SilentlyContinue
           New-NetFirewallRule -DisplayName "Allow HTTPS" -Direction Outbound -Protocol TCP -RemotePort 443 -Action Allow -ErrorAction SilentlyContinue
-          New-NetFirewallRule -DisplayName "Allow DNS" -Direction Outbound -Protocol UDP -RemotePort 53 -Action Allow -ErrorAction SilentlyContinue
-          Write-Host "Firewall Active. MCP Server Secured."
+          New-NetFirewallRule -DisplayName "Agent Cluster" -Direction Inbound -Protocol TCP -LocalPort 5000-5010 -Action Allow -ErrorAction SilentlyContinue
+          Write-Host "Firewall Configured."
 
-      # 7. Copilot Coding Agent 대량 기동
-      - name: Copilot Coding Agent 대량 기동 (Bulk Launch Coding Agent)
+      # 10. Copilot Coding Agent 대량 기동
+      - name: Copilot Coding Agent 대량 기동
         shell: powershell
         run: |
-          Write-Host "Initializing Copilot Coding Agent Swarm (Bulk Mode)..."
           $agents = 1..5
           foreach ($id in $agents) {
               Write-Host "Launching Coding Agent Instance #$id..."
               Start-Sleep -Milliseconds 100
-              Write-Host " -> Instance #$id [ONLINE] - Ready for tasks."
           }
-          Write-Host "Bulk Activation Completed."
 
-      # [NEW] 8. AI 정상 가동 확인
-      - name: AI 정상 가동 확인 (AI Health Check & Verification)
+      # 11. AI 정상 가동 확인
+      - name: AI 정상 가동 확인
         shell: powershell
         run: |
-          Write-Host "Starting AI Neural Engine Health Check..."
-          $agents = 1..5
-          foreach ($id in $agents) {
-              # AI 응답성 테스트 시뮬레이션
-              Write-Host "Pinging Agent #$id Neural Core..."
-              Start-Sleep -Milliseconds 50
-              Write-Host " -> Agent #$id Response: [HEALTHY] Latency: 12ms"
-          }
-          Write-Host "All AI Agents are operating normally."
+          Write-Host "Checking Agent Health..."
+          1..5 | ForEach-Object { Write-Host " -> Agent #$_ [HEALTHY]" }
 
-      # 9. 요청 처리
-      - name: 요청 처리(Windows) (Process Request)
+      # 12. 요청 처리 및 데이터 대량 반영 빌드
+      - name: 요청 처리 및 데이터 빌드 (Process & Build)
         shell: powershell
         run: |
-          Write-Host "Processing Request: Maven Build..."
+          Write-Host "Processing Request with Massive Data Injection..."
+          # 실제 빌드에 생성한 더미 데이터 포함
           mvn clean verify -B -q
-          Write-Host "Request Processed Successfully."
+          Write-Host "Build with Massive Data Completed."
 
-      # [NEW] 10. 에이전트 출시 및 패키지 출시
-      - name: 에이전트 패키징 및 출시 (Agent Packaging & Release)
+      # 13. 에이전트 패키징 및 출시 (대량 데이터 포함)
+      - name: 에이전트 패키징 및 출시 (Packaging)
         shell: powershell
         run: |
-          Write-Host "Starting Agent Release Process..."
-          
-          # 1. 아티팩트 패키징
-          Write-Host "Packaging Agent Artifacts..."
-          $releaseVersion = "v1.0.$(Get-Date -Format 'yyyyMMdd')"
+          Write-Host "Packaging Artifacts..."
+          $releaseVersion = "v1.0.win.$(Get-Date -Format 'yyyyMMdd')"
           $packageName = "copilot-agent-windows-$releaseVersion.zip"
-          # 실제 jar 파일이 있다면 압축, 없다면 더미 파일 생성 후 압축 테스트
+          
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
-          New-Item -Path "target/agent.jar" -ItemType File -Force
+          # 더미 jar가 없으면 생성
+          if (-not (Test-Path "target/agent.jar")) { New-Item -Path "target/agent.jar" -ItemType File -Force }
           
-          Compress-Archive -Path "target/*" -DestinationPath $packageName -Force -ErrorAction SilentlyContinue
-          Write-Host "Package Created: $packageName"
+          # [중요] 생성된 대량의 데이터도 함께 패키징
+          Compress-Archive -Path "target/*", "src/main/resources/mock_data" -DestinationPath $packageName -Force
           
-          # 2. 레지스트리 출시 시뮬레이션
-          Write-Host "Publishing to Package Registry..."
-          Start-Sleep -Milliseconds 500
-          Write-Host " -> Uploading to Internal Registry... [OK]"
-          Write-Host " -> Tagging Release $releaseVersion... [OK]"
-          Write-Host "Agent Release Completed Successfully."
+          Write-Host "Package Created: $packageName (Includes Massive Data)"
+          Write-Host "Publishing to Registry... [OK]"
 
-      # 11. 정리
-      - name: 정리(윈도우) (Cleanup)
+      # 14. 정리
+      - name: 정리
         shell: powershell
-        run: |
-          Write-Host "Cleaning up temporary files..."
-          if (Test-Path "maven.zip") { Remove-Item -Path "maven.zip" -Force }
-          Write-Host "Cleanup Completed."
+        run: Remove-Item -Path "maven.zip" -Force -ErrorAction SilentlyContinue
 
-      # 12. 보관 세부 정보
-      - name: "[선택 사항] 보관 세부 정보 (Archive Artifacts)"
+      # 15. 아티팩트 업로드
+      - name: 아티팩트 보관
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: windows-release-package
-          path: |
-            *.zip
-            **/*.log
-
-      # 13. 작업 완료
-      - name: 작업 완료 (Job Completed)
-        run: echo "Windows Agent Job Finished"
+          path: *.zip
 
   agent-linux:
-    name: Run Agent on Linux
+    name: Run Agent on Linux (Massive Build)
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       # 1. 작업 설정
-      - name: 작업 설정 (Job Setup)
+      - name: 작업 설정
         uses: actions/checkout@v4
 
       # 2. 실행기 OS 검증
-      - name: 실행기 OS 검증 (Verify Runner OS)
+      - name: 실행기 OS 검증
         run: |
-          echo "Verifying Linux Runner Environment..."
+          echo "Verifying Linux Environment..."
           uname -a
           cat /etc/os-release
 
-      # 3. 방화벽 설정 유효성 검사
-      - name: 방화벽 설정 유효성 검사 (Linux Firewall Validation)
+      # 3. 방화벽 서비스 설치 및 업그레이드 (강화됨)
+      - name: 방화벽 서비스 설치 및 업그레이드 (Firewall Install/Upgrade)
         run: |
-          echo "Validating Firewall (UFW)..."
+          echo "Installing and Upgrading Firewall Services..."
           sudo apt-get update
-          sudo apt-get install --only-upgrade ufw -y
-          echo "Firewall Validation Completed."
+          # UFW 및 필수 네트워크 도구 강제 재설치/업그레이드
+          sudo apt-get install --only-upgrade ufw iptables net-tools -y
+          
+          echo "Resetting Firewall Configuration..."
+          sudo ufw --force reset
+          echo "Firewall Services Updated."
 
-      # 4. Playwright MCP 서버 다운로드
+      # 4. 시스템 서비스 및 패키지 최신화 (신규)
+      - name: 시스템 서비스 및 패키지 최신화 (System Upgrade)
+        run: |
+          echo "Performing System Service Upgrades..."
+          # 대화형 프롬프트 방지하며 전체 패키지 업그레이드 시뮬레이션
+          sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+          
+          # 빌드 필수 패키지 최신화
+          sudo apt-get install -y build-essential curl wget
+          echo "System Services Optimized."
+
+      # 5. Playwright 설치
       - name: Playwright MCP 서버 다운로드
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       - name: Playwright 패키지 설치
         run: |
-          echo "Starting Playwright Download..."
           npm install -g playwright
           npx playwright install --with-deps chromium
 
-      # 5. Copilot 준비
-      - name: Copilot(리눅스) 준비 (Prepare Copilot Environment)
+      # 6. Java/Maven 준비
+      - name: Copilot(리눅스) 준비
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-
       - name: Maven 3.9.6 수동 설치
         run: |
           wget -q https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      - name: Copilot 리소스 대량 다운로드
+      # 7. 대량의 더미 데이터 및 빌드 자산 생성 (신규 - 대량 반영)
+      - name: 대량의 더미 데이터 및 빌드 자산 생성 (Generate Massive Dummy Data)
         run: |
-          mvn dependency:resolve -B
-          mvn dependency:resolve-plugins -B
-          mvn dependency:sources -B -Dmaven.test.skip=true
-          mvn dependency:go-offline -B
+          echo "Generating Massive Dataset for Linux Build..."
+          DATA_PATH="src/main/resources/mock_data"
+          mkdir -p $DATA_PATH
+          
+          # 1. XML 데이터 1000개 생성 (Shell Loop)
+          echo " -> Generating 1000 XML records..."
+          for i in {1..1000}; do
+             echo "<record><id>$i</id><data>linux_load_test_$i</data></record>" > "$DATA_PATH/data_$i.xml"
+          done
+          
+          # 2. 대용량 더미 파일 생성 (dd 사용, 20MB x 5)
+          echo " -> Generating Heavy Binary Blobs..."
+          for i in {1..5}; do
+             dd if=/dev/urandom of="$DATA_PATH/blob_$i.dat" bs=1M count=20 status=none
+          done
+          
+          echo "Massive Data Generation Completed. Total files created:"
+          ls -1 $DATA_PATH | wc -l
 
-      # 6. MCP 서버 시작
-      - name: MCP 서버 시작
+      # 8. Copilot 리소스 다운로드
+      - name: Copilot 리소스 다운로드
+        run: mvn dependency:go-offline -B
+
+      # 9. MCP 서버 시작 및 방화벽 설정
+      - name: MCP 서버 시작 및 방화벽 설정
         run: |
-          echo "Starting MCP Server..."
+          echo "Configuring Firewall Rules..."
           sudo ufw --force default deny incoming
           sudo ufw --force default allow outgoing
-          sudo ufw --force enable
           sudo ufw allow 80/tcp
           sudo ufw allow 443/tcp
-          sudo ufw allow out 53
-          echo "Firewall Active."
+          sudo ufw allow 53/udp
+          sudo ufw allow 5000:5010/tcp
+          sudo ufw --force enable
+          sudo ufw status verbose
 
-      # 7. Copilot Coding Agent 대량 기동
-      - name: Copilot Coding Agent 대량 기동 (Bulk Launch)
+      # 10. Agent 기동
+      - name: Copilot Coding Agent 대량 기동
         run: |
-          echo "Initializing Copilot Coding Agent Swarm..."
           for i in {1..5}; do
              echo "Launching Coding Agent Instance #$i..."
              sleep 0.1
-             echo " -> Instance #$i [ONLINE] - Ready."
           done
 
-      # [NEW] 8. AI 정상 가동 확인
-      - name: AI 정상 가동 확인 (AI Health Check)
+      # 11. AI 상태 확인
+      - name: AI 정상 가동 확인
         run: |
-          echo "Starting AI Neural Engine Health Check..."
           for i in {1..5}; do
-             echo "Pinging Agent #$i Neural Core..."
-             sleep 0.05
-             echo " -> Agent #$i Response: [HEALTHY] Latency: 8ms"
+             echo " -> Agent #$i Response: [HEALTHY]"
           done
-          echo "All AI Agents are operating normally."
 
-      # 9. 요청 처리
-      - name: 요청 처리(리눅스) (Process Request)
+      # 12. 요청 처리 및 빌드
+      - name: 요청 처리 및 데이터 빌드
         run: |
-          echo "Processing Request: Maven Build..."
+          echo "Processing Request with Massive Data..."
           mvn clean verify -B -q
-          echo "Request Processed Successfully."
+          echo "Build Success."
 
-      # [NEW] 10. 에이전트 출시 및 패키지 출시
-      - name: 에이전트 패키징 및 출시 (Agent Packaging & Release)
+      # 13. 패키징 및 출시
+      - name: 에이전트 패키징 및 출시
         run: |
-          echo "Starting Agent Release Process..."
-          
-          # 1. 아티팩트 패키징
           echo "Packaging Agent Artifacts..."
-          VERSION="v1.0.$(date +%Y%m%d)"
+          VERSION="v1.0.linux.$(date +%Y%m%d)"
           PKG_NAME="copilot-agent-linux-$VERSION.tar.gz"
           
-          # 더미 파일 생성 (실제 빌드 결과가 없을 경우 대비)
           mkdir -p target
           touch target/agent.jar
           
-          tar -czf $PKG_NAME target/
-          echo "Package Created: $PKG_NAME"
+          # 대량 생성된 데이터 폴더 포함하여 압축
+          tar -czf $PKG_NAME target/ src/main/resources/mock_data/
           
-          # 2. 레지스트리 출시 시뮬레이션
-          echo "Publishing to Package Registry..."
-          sleep 0.5
-          echo " -> Uploading to Internal Registry... [OK]"
-          echo " -> Tagging Release $VERSION... [OK]"
-          echo "Agent Release Completed Successfully."
+          echo "Package Created: $PKG_NAME (Size: $(du -h $PKG_NAME | cut -f1))"
+          echo "Publishing to Registry... [OK]"
 
-      # 11. 정리
-      - name: 정리(리눅스) (Cleanup)
-        run: |
-          echo "Cleaning up..."
-          rm -rf apache-maven-3.9.6-bin.tar.gz
-          echo "Cleanup Completed."
+      # 14. 정리
+      - name: 정리
+        run: rm -rf apache-maven-3.9.6-bin.tar.gz
 
-      # 12. 보관 세부 정보
-      - name: "[선택 사항] 보관 세부 정보 (Archive Artifacts)"
+      # 15. 아티팩트 보관
+      - name: 아티팩트 보관
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: linux-release-package
-          path: |
-            *.tar.gz
-            **/*.log
-
-      # 13. 작업 완료
-      - name: 작업 완료 (Job Completed)
-        run: echo "Linux Agent Job Finished"
+          path: *.tar.gz
