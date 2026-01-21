@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate Reporting & Email Edition
+name: Cost Data Agent - Ultimate Visibility & Reporting Edition
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (Massive Data + Email Reporting)
+  # [JOB 1] Windows Agent (Massive Data + Visual Job Summary)
   # ==================================================================================
   agent-windows:
-    name: Windows Agent (Report & Email)
+    name: Windows Agent (Report & Visual Summary)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -129,58 +129,51 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           mvn clean package -DskipTests -B -q
 
-      # 9. [신규 기능] 통합 결과 이메일 리포트 생성 및 전송 시뮬레이션
-      - name: 통합 결과 이메일 생성 및 전송 (Email Reporting)
+      # 9. [신규 기능] GitHub 요약 보고서 (Job Summary) 생성 - 화면에 바로 출력
+      - name: 실행 결과 요약 보고서 생성 (Job Summary)
         shell: powershell
         run: |
-          Write-Host "Generating Comprehensive Email Report..."
+          $summaryFile = $env:GITHUB_STEP_SUMMARY
+          
+          # 마크다운 형식으로 요약 작성
+          Add-Content -Path $summaryFile -Value "## 🚀 Windows Agent Execution Report"
+          Add-Content -Path $summaryFile -Value ""
+          Add-Content -Path $summaryFile -Value "| Category | Count | Status |"
+          Add-Content -Path $summaryFile -Value "|---|---|---|"
+          Add-Content -Path $summaryFile -Value "| **Virtual Accounts** | 300,000 | ✅ Created |"
+          Add-Content -Path $summaryFile -Value "| **Marketing Emails** | 500,000 | ✅ Created |"
+          Add-Content -Path $summaryFile -Value "| **Deposits Processed** | 2,000 | ✅ Simulated |"
+          Add-Content -Path $summaryFile -Value "| **Emails Sent** | 3,000 | ✅ Simulated |"
+          Add-Content -Path $summaryFile -Value "| **Maven Build** | Build Success | ✅ Completed |"
+          Add-Content -Path $summaryFile -Value ""
+          Add-Content -Path $summaryFile -Value "### 📊 System Performance"
+          Add-Content -Path $summaryFile -Value "- **OS:** Windows Server 2022"
+          Add-Content -Path $summaryFile -Value "- **Java:** Temurin 17"
+          Add-Content -Path $summaryFile -Value "- **Timestamp:** $(Get-Date)"
+          
+          Write-Host "Job Summary Updated."
+
+      # 10. 통합 결과 이메일 생성
+      - name: 통합 결과 이메일 생성 및 전송 시뮬레이션
+        shell: powershell
+        run: |
           $reportFile = "FINAL_EXECUTION_REPORT_EMAIL.html"
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           $sw = New-Object System.IO.StreamWriter($reportFile, $false, $utf8NoBom)
           
-          # HTML 이메일 본문 작성
-          $sw.WriteLine("<html><body>")
-          $sw.WriteLine("<h1>[Notification] Deployment & Simulation Report</h1>")
-          $sw.WriteLine("<p><b>Date:</b> $(Get-Date)</p>")
-          $sw.WriteLine("<hr>")
-          $sw.WriteLine("<h2>1. Data Generation Results</h2>")
-          $sw.WriteLine("<ul>")
-          $sw.WriteLine("<li>Virtual Accounts: <b>300,000</b> records created.</li>")
-          $sw.WriteLine("<li>Marketing Emails: <b>500,000</b> records created.</li>")
-          $sw.WriteLine("</ul>")
-          $sw.WriteLine("<h2>2. Simulation Summary</h2>")
-          $sw.WriteLine("<ul>")
-          $sw.WriteLine("<li>Deposits Processed: <b>2,000</b> txns</li>")
-          $sw.WriteLine("<li>Emails Sent: <b>3,000</b> mails</li>")
-          $sw.WriteLine("<li>Status: <span style='color:green'>SUCCESS</span></li>")
-          $sw.WriteLine("</ul>")
-          $sw.WriteLine("<h2>3. Build Status</h2>")
-          $sw.WriteLine("<p>Maven Build: <b>COMPLETED</b></p>")
-          $sw.WriteLine("<hr>")
-          $sw.WriteLine("<p><i>This is an automated message from GitHub Actions.</i></p>")
-          $sw.WriteLine("</body></html>")
+          $sw.WriteLine("<html><body><h1>[Windows] Execution Report</h1><ul><li>Status: Success</li><li>Data: 800k Records</li></ul></body></html>")
           $sw.Close()
           
-          Write-Host "Email Content Generated: $reportFile"
-          
-          # 이메일 전송 시뮬레이션
-          Write-Host "Sending Email to Admin Group..."
-          Start-Sleep -Seconds 2
-          Write-Host " -> SMTP Server: smtp.internal.koreatest12.com"
-          Write-Host " -> Sender: bot@koreatest12.com"
-          Write-Host " -> Recipient: admin@koreatest12.com"
-          Write-Host " -> Attachment: $reportFile"
-          Write-Host "Email Sent Successfully [OK]"
+          Write-Host "Email Content Generated."
 
-      # 10. 패키징 및 업로드 (리포트 포함)
+      # 11. 패키징 및 업로드
       - name: 통합 아티팩트 패키징
         shell: powershell
         run: |
           $date = Get-Date -Format 'yyyyMMdd'
-          $packageName = "korea-fintech-report-windows-$date.zip"
+          $packageName = "windows-result-package-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
-          # HTML 리포트 및 로그 포함
           Compress-Archive -Path "target/*.jar", "src/main/resources/services", "simulation_results.log", "FINAL_EXECUTION_REPORT_EMAIL.html" -DestinationPath $packageName -Force
           Write-Host "Package Created: $packageName"
 
@@ -188,18 +181,18 @@ jobs:
         shell: powershell
         run: Remove-Item -Path "maven.zip" -Force -ErrorAction SilentlyContinue
       
-      - name: 결과물 업로드
+      - name: 결과물 업로드 (화면 표시용)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-report-package
+          name: windows-result-package
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (Python Reporting & Mega Data)
+  # [JOB 2] Linux Agent (Python Reporting & Visual Summary)
   # ==================================================================================
   agent-linux:
-    name: Linux Agent (Report & Email)
+    name: Linux Agent (Report & Visual Summary)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -232,17 +225,13 @@ jobs:
           mkdir -p src/main/resources/services/{virtual_accounts,marketing}
           
           python3 -c "
-          import random
-          
           # 1. 300k VA Data
-          print('Generating 300k VA Records...')
           with open('src/main/resources/services/virtual_accounts/va.csv', 'w') as f:
               f.write('ID,BANK,ACC,EMAIL,STATUS\n')
               for i in range(300000):
                   f.write(f'VA_{i},004,999{i},user.{i}@mail.com,ACTIVE\n')
           
           # 2. 500k Marketing Data
-          print('Generating 500k Marketing Records...')
           with open('src/main/resources/services/marketing/email.csv', 'w') as f:
               f.write('EMAIL,OPT_IN\n')
               for i in range(500000):
@@ -255,62 +244,49 @@ jobs:
       # [Python] 시뮬레이션 및 이메일 리포트 생성
       - name: 시뮬레이션 및 이메일 리포트 생성
         run: |
-          echo "Running Logic & Generating Email Report..."
           python3 -c "
           import time
           
-          # 1. 시뮬레이션 로그 생성
+          # 시뮬레이션 로그
           with open('linux_simulation.log', 'w') as f:
               f.write('TS,ACTION,RESULT\n')
               for i in range(5000):
                   f.write(f'{time.time()},PROCESS_TX_{i},SUCCESS\n')
           
-          # 2. HTML 이메일 리포트 생성
-          html_content = '''
-          <html><body>
-          <h1>Linux Agent Execution Report</h1>
-          <p><b>Status:</b> Success</p>
-          <hr>
-          <h3>Summary</h3>
-          <ul>
-            <li>VA Records: 300,000</li>
-            <li>Emails: 500,000</li>
-            <li>Transactions: 5,000 (Simulated)</li>
-          </ul>
-          <p>Generated by GitHub Actions Runner.</p>
-          </body></html>
-          '''
-          
+          # HTML 이메일 리포트
           with open('FINAL_REPORT_EMAIL.html', 'w') as f:
-              f.write(html_content)
-              
-          print('Email Report Generated.')
+              f.write('<html><body><h1>Linux Report</h1><p>Success</p></body></html>')
           "
 
-      # [신규] 이메일 발송 로그 출력
-      - name: 이메일 발송 (시뮬레이션)
+      # [신규 기능] GitHub 요약 보고서 (Job Summary) 생성 - 화면에 바로 출력
+      - name: 실행 결과 요약 보고서 생성 (Job Summary)
         run: |
-          echo "Connecting to SMTP Gateway..."
-          sleep 1
-          echo "Sending 'FINAL_REPORT_EMAIL.html' to stakeholders..."
-          echo " -> To: team@koreatest12.com"
-          echo " -> Subject: [Report] Linux Massive Build Complete"
-          echo " -> Status: Sent [250 OK]"
+          echo "## 🐧 Linux Agent Execution Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Virtual Accounts** | 300,000 | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Marketing DB** | 500,000 | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Simulation Tx** | 5,000 | ✅ Processed |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Build Artifacts** | Included | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📧 Email Notification Status" >> $GITHUB_STEP_SUMMARY
+          echo "- **Recipient:** team@koreatest12.com" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** Sent (Simulated)" >> $GITHUB_STEP_SUMMARY
 
       - name: 패키징 및 업로드
         run: |
           VERSION="v1.0.rpt.$(date +%Y%m%d)"
-          PKG_NAME="korea-fintech-report-linux-$VERSION.tar.gz"
+          PKG_NAME="linux-result-package-$VERSION.tar.gz"
           mkdir -p target
           
-          # 리포트 파일 포함 압축
           tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_simulation.log FINAL_REPORT_EMAIL.html
           
           echo "Package Created: $PKG_NAME"
 
-      - name: 결과물 업로드
+      - name: 결과물 업로드 (화면 표시용)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: linux-report-package
+          name: linux-result-package
           path: '*.tar.gz'
