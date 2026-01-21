@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate Combined Massive Edition
+name: Cost Data Agent - Ultimate Simulation & Massive Build
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (All-in-One Massive Data & Build)
+  # [JOB 1] Windows Agent (Gen -> Build -> Simulate -> Package)
   # ==================================================================================
   agent-windows:
-    name: Windows Agent (Mega Build)
+    name: Windows Agent (Simulation & Build)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -30,7 +30,6 @@ jobs:
         run: |
           Write-Host "Verifying Environment..."
           Get-ComputerInfo | Select-Object WindowsVersion, OsArchitecture
-          
           if (Get-Module -ListAvailable -Name NetSecurity) {
               Write-Host "NetSecurity Module [FOUND]."
           } else {
@@ -41,11 +40,9 @@ jobs:
       - name: 보안 서비스 최적화
         shell: powershell
         run: |
-          try {
-            Update-MpSignature -ErrorAction SilentlyContinue
-            Write-Host "Security Signatures Refreshed."
-          } catch {
-            Write-Host "Managed Environment Detected."
+          try { Update-MpSignature -ErrorAction SilentlyContinue } catch { }
+          if ((Get-Service mpssvc).Status -eq 'Running') {
+              Update-Help -Module NetSecurity -Force -ErrorAction SilentlyContinue
           }
 
       # 4. Java 17 & Maven 설정
@@ -66,7 +63,7 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 5. [통합] 계정 정보(Account) 10,000건 대량 생성
+      # 5. [데이터 생성] 계정 정보 10,000건 (BOM 제거)
       - name: 계정 정보 대량 생성 (Massive Accounts)
         shell: powershell
         run: |
@@ -74,45 +71,46 @@ jobs:
           $accPath = "src/main/resources/accounts"
           New-Item -ItemType Directory -Force -Path $accPath | Out-Null
           
-          # 1만 건의 계정 JSON 데이터 생성
+          # [중요] BOM 없는 UTF-8 인코딩 객체
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+          
           1..10000 | ForEach-Object {
             $uuid = [guid]::NewGuid()
             $role = if ($_ % 10 -eq 0) { "ADMIN" } else { "USER" }
-            $json = "{ 'user_id': $_, 'uuid': '$uuid', 'username': 'user_$_', 'email': 'user_$_@koreatest12.com', 'role': '$role', 'active': true }"
-            $json | Out-File -FilePath "$accPath/user_$_.json" -Encoding utf8
+            $json = "{ 'user_id': $_, 'uuid': '$uuid', 'username': 'user_$_', 'email': 'user_$_@koreatest12.com', 'role': '$role', 'status': 'ACTIVE' }"
+            [System.IO.File]::WriteAllText("$accPath/user_$_.json", $json, $utf8NoBom)
           }
-          Write-Host "Account Data Generation Completed."
+          Write-Host "Account Data Generation Completed (Clean UTF-8)."
 
-      # 6. [통합] Spring Boot 설정 파일 500개 및 자산 생성
+      # 6. [데이터 생성] Spring Boot 리소스
       - name: Spring Boot 리소스 대량 생성
         shell: powershell
         run: |
           Write-Host "Generating Massive Spring Boot Resources..."
           $configPath = "src/main/resources/config"
           New-Item -ItemType Directory -Force -Path $configPath | Out-Null
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          # 500개의 프로퍼티 파일 생성 (멀티 테넌트 시뮬레이션)
           1..500 | ForEach-Object {
             $prop = "server.port=80$_\nspring.application.name=service-$_\nlogging.level.root=INFO"
-            $prop | Out-File -FilePath "$configPath/application-tenant-$_.properties" -Encoding utf8
+            [System.IO.File]::WriteAllText("$configPath/application-tenant-$_.properties", $prop, $utf8NoBom)
           }
           
-          # 대용량 정적 자산(Static Assets) 생성 (250MB)
-          Write-Host "Generating Static Assets..."
+          # 정적 자산 생성
           1..5 | ForEach-Object {
             fsutil file createnew "$configPath/asset_blob_$_.dat" 52428800
           }
-          Write-Host "Spring Boot Resource Preparation Done."
+          Write-Host "Spring Boot Resources Ready."
 
-      # 7. [통합] Java 비즈니스 로직 동적 생성 (구문 오류 수정 적용됨)
-      - name: 비즈니스 로직 동적 생성 (Safe Logic)
+      # 7. [데이터 생성] Java 비즈니스 로직 (BOM 제거 필수)
+      - name: 비즈니스 로직 동적 생성 (Java Source)
         shell: powershell
         run: |
-          Write-Host "Generating Dynamic Java Business Logic..."
+          Write-Host "Generating Dynamic Java Business Logic (No BOM)..."
           $sourcePath = "src/main/java/com/koreatest12/dynamic"
           New-Item -ItemType Directory -Force -Path $sourcePath | Out-Null
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          # 500개의 Java 클래스 파일 생성 (배열 방식 사용으로 구문 오류 방지)
           1..500 | ForEach-Object {
             $className = "UserProcessingService_$_"
             $codeLines = @(
@@ -124,62 +122,100 @@ jobs:
                 "    }",
                 "}"
             )
-            $codeLines -join "`r`n" | Out-File -FilePath "$sourcePath/$className.java" -Encoding utf8
+            $finalCode = $codeLines -join "`r`n"
+            [System.IO.File]::WriteAllText("$sourcePath/$className.java", $finalCode, $utf8NoBom)
           }
-          Write-Host "Dynamic Java Source Code Generated."
+          Write-Host "Java Source Code Generated."
 
-      # 8. [통합] 급여(Payroll) 및 감사(Audit) 로그 생성
-      - name: 급여 및 감사 데이터 생성
+      # 8. [데이터 생성] 상품 및 급여 데이터
+      - name: 상품 및 급여 데이터 생성
         shell: powershell
         run: |
-          Write-Host "Generating Payroll & Audit Data..."
+          Write-Host "Generating Product & Payroll Data..."
+          $prodPath = "src/main/resources/products"
           $payrollPath = "src/main/resources/payroll"
-          $auditPath = "src/main/resources/audit"
+          New-Item -ItemType Directory -Force -Path $prodPath | Out-Null
           New-Item -ItemType Directory -Force -Path $payrollPath | Out-Null
-          New-Item -ItemType Directory -Force -Path $auditPath | Out-Null
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          # 급여 데이터 10,000건
-          $header = "EMP_ID,NAME,DEPT,SALARY,BONUS,PAY_DATE"
-          $header | Out-File -FilePath "$payrollPath/payroll_master.csv" -Encoding utf8
-          1..10000 | ForEach-Object {
-            "$_,User_$_,IT,$(Get-Random -Min 3000 -Max 9000),100,2025-01-21" | Out-File -FilePath "$payrollPath/payroll_master.csv" -Encoding utf8 -Append
-          }
+          # 상품 20,000건
+          [System.IO.File]::WriteAllText("$prodPath/products.csv", "ID,NAME,PRICE,STOCK`r`n", $utf8NoBom)
+          $prodLines = 1..20000 | ForEach-Object { "$_,Item_$_,$(Get-Random -Min 100 -Max 9000),99" }
+          [System.IO.File]::AppendAllLines("$prodPath/products.csv", $prodLines, $utf8NoBom)
           
-          # 감사 로그 5,000건
-          1..5000 | ForEach-Object {
-             "[SECURITY] TS:$(Get-Date) | ACT:LOGIN | USER:user_$_" | Out-File -FilePath "$auditPath/audit_$_.log" -Encoding utf8
-          }
-          Write-Host "Payroll & Audit Data Generated."
+          # 급여 5,000건
+          [System.IO.File]::WriteAllText("$payrollPath/payroll.csv", "EMP_ID,SALARY,DATE`r`n", $utf8NoBom)
+          $payLines = 1..5000 | ForEach-Object { "$_,$(Get-Random -Min 3000 -Max 8000),2025-01-21" }
+          [System.IO.File]::AppendAllLines("$payrollPath/payroll.csv", $payLines, $utf8NoBom)
+          
+          Write-Host "CSV Data Generated."
 
-      # 9. 의존성 및 방화벽 설정
-      - name: 환경 준비 (Maven & Firewall)
+      # 9. 환경 준비
+      - name: Maven 의존성 및 네트워크 설정
         shell: powershell
         run: |
           mvn dependency:go-offline -B
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           New-NetFirewallRule -DisplayName "App Traffic" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -ErrorAction SilentlyContinue
 
-      # 10. 빌드 수행
-      - name: 통합 대량 빌드 (Build Massive)
+      # 10. 빌드 (Compile & Package)
+      - name: 통합 대량 빌드 (Build)
         shell: powershell
         run: |
-          Write-Host "Building Application with ALL Massive Resources..."
+          Write-Host "Compiling Massive Application..."
           mvn clean package -DskipTests -B -q
           Write-Host "Build Successful."
 
-      # 11. 패키징
+      # 11. [신규] 계정 처리 시뮬레이션 (Simulation)
+      - name: 계정 처리 시뮬레이션 (Account Processing Simulation)
+        shell: powershell
+        run: |
+          Write-Host "Starting Account Processing Simulation..."
+          $accPath = "src/main/resources/accounts"
+          $reportPath = "simulation_report.csv"
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+          
+          # CSV 리포트 헤더 작성
+          [System.IO.File]::WriteAllText($reportPath, "USER_ID,PROCESS_STATUS,LATENCY_MS,TIMESTAMP`r`n", $utf8NoBom)
+          
+          # 10,000개 계정 파일을 읽어서 처리하는 척 시뮬레이션
+          # 성능을 위해 1,000개 단위로 배치 처리 로그 출력
+          $files = Get-ChildItem $accPath *.json
+          $counter = 0
+          $batchResults = New-Object System.Collections.Generic.List[string]
+          
+          foreach ($file in $files) {
+             $counter++
+             $status = Get-Random -InputObject "PROCESSED", "VERIFIED", "FLAGGED"
+             $latency = Get-Random -Minimum 10 -Maximum 150
+             
+             # 결과 라인 추가
+             $batchResults.Add("$($file.BaseName),$status,$latency,$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
+             
+             if ($counter % 2000 -eq 0) {
+                 Write-Host " -> Processed $counter / 10000 accounts..."
+             }
+          }
+          
+          # 결과 파일 저장
+          [System.IO.File]::AppendAllLines($reportPath, $batchResults, $utf8NoBom)
+          
+          Write-Host "Simulation Completed. Report Generated: $reportPath"
+          Write-Host "Total Transactions Simulated: $counter"
+
+      # 12. 패키징 (시뮬레이션 결과 포함)
       - name: 통합 아티팩트 패키징
         shell: powershell
         run: |
           $date = Get-Date -Format 'yyyyMMdd'
-          $packageName = "korea-mega-windows-$date.zip"
+          $packageName = "korea-complete-sim-windows-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
-          # 모든 리소스 포함 압축
-          Compress-Archive -Path "target/*.jar", "src/main/resources/accounts", "src/main/resources/config", "src/main/resources/payroll", "src/main/resources/audit", "src/main/java" -DestinationPath $packageName -Force
+          # JAR, 리소스, 소스, 시뮬레이션 리포트 모두 포함
+          Compress-Archive -Path "target/*.jar", "src/main/resources/*", "src/main/java", "simulation_report.csv" -DestinationPath $packageName -Force
           Write-Host "Package Created: $packageName"
 
-      # 12. 정리 및 업로드
+      # 13. 정리 및 업로드
       - name: 정리 및 업로드
         shell: powershell
         run: Remove-Item -Path "maven.zip" -Force -ErrorAction SilentlyContinue
@@ -188,31 +224,27 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-mega-package
+          name: windows-simulation-package
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (All-in-One Massive Data & DB)
+  # [JOB 2] Linux Agent (Simulate & Build)
   # ==================================================================================
   agent-linux:
-    name: Linux Agent (Mega Build)
+    name: Linux Agent (Simulation & Build)
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      # 1. 작업 설정
       - name: 작업 설정
         uses: actions/checkout@v4
 
-      # 2. 시스템 최적화
       - name: 시스템 최적화
         run: |
-          echo "Optimizing Linux Environment..."
           sudo apt-get update
           sudo apt-get install --only-upgrade ufw iptables net-tools -y
           sudo ufw --force reset
 
-      # 3. Java/Maven 준비
       - name: Java & Maven 준비
         uses: actions/setup-java@v4
         with:
@@ -225,71 +257,57 @@ jobs:
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      # 4. [통합] 계정 정보(Account) 10,000건 생성 (XML)
-      - name: 계정 정보 대량 생성 (Linux)
+      - name: [통합] 데이터 대량 생성
         run: |
-          echo "Generating 10,000 Account XML Records..."
-          ACC_PATH="src/main/resources/accounts"
-          mkdir -p $ACC_PATH
+          echo "Generating Massive Data..."
+          mkdir -p src/main/resources/{accounts,products,config}
+          
+          # 계정 10,000개
           for i in {1..10000}; do
-             echo "<account><id>$i</id><type>PREMIUM</type><created>$(date)</created></account>" > "$ACC_PATH/acc_$i.xml"
+             echo "<account><id>$i</id><status>ACTIVE</status></account>" > "src/main/resources/accounts/acc_$i.xml"
           done
-          echo "Account Generation Completed."
+          
+          # 상품 20,000개
+          for i in {1..20000}; do
+             echo "PROD_$i,Item_$i,$(($RANDOM % 1000))" >> "src/main/resources/products/catalog.csv"
+          done
+          echo "Data Generation Complete."
 
-      # 5. [통합] Spring Boot 설정 500개 생성 (YAML)
-      - name: Spring Boot 설정 생성
-        run: |
-          echo "Generating Massive Config Files..."
-          CONF_PATH="src/main/resources/config"
-          mkdir -p $CONF_PATH
-          for i in {1..500}; do
-             echo -e "server:\n  port: 80$i\nservice:\n  id: svc_$i" > "$CONF_PATH/application-svc-$i.yml"
-          done
-          echo "Configs Generated."
+      - name: 빌드 수행
+        run: mvn clean package -DskipTests -B -q
 
-      # 6. [통합] DB 덤프 및 권한 매트릭스 생성
-      - name: DB 덤프 및 권한 데이터 생성
+      - name: [신규] 계정 처리 시뮬레이션 (Linux)
         run: |
-          echo "Generating DB & Permission Data..."
-          DB_PATH="src/main/resources/db_dumps"
-          PERM_PATH="src/main/resources/permissions"
-          mkdir -p $DB_PATH $PERM_PATH
+          echo "Starting Batch Processing Simulation..."
+          REPORT="linux_simulation_report.log"
+          echo "TIMESTAMP,FILE,STATUS" > $REPORT
           
-          # SQL 덤프
-          for i in {1..50}; do
-             echo "CREATE TABLE t_$i (id INT);" > "$DB_PATH/schema_$i.sql"
-             for j in {1..500}; do echo "INSERT INTO t_$i VALUES ($j);" >> "$DB_PATH/schema_$i.sql"; done
+          # 10,000개 파일을 루프 돌면서 처리 시뮬레이션
+          count=0
+          for file in src/main/resources/accounts/*.xml; do
+             ((count++))
+             if ((count % 2500 == 0)); then
+                 echo " -> Processed $count accounts..."
+             fi
+             # 랜덤 처리 상태 (의사 난수)
+             if (( $RANDOM % 10 > 1 )); then STATUS="SUCCESS"; else STATUS="RETRY"; fi
+             echo "$(date +%s),$file,$STATUS" >> $REPORT
           done
-          
-          # 권한 XML
-          for i in {1..5000}; do
-             echo "<perm><uid>$i</uid><role>ADMIN</role></perm>" > "$PERM_PATH/user_$i.xml"
-          done
-          
-          # 대용량 바이너리 (300MB)
-          dd if=/dev/urandom of="$DB_PATH/full_backup.bak" bs=1M count=300 status=none
-          echo "DB Data Generated."
+          echo "Simulation Finished. Total processed: $count"
 
-      # 7. 빌드 및 패키징
-      - name: 통합 빌드 및 패키징
+      - name: 패키징 및 업로드
         run: |
-          echo "Building & Packaging..."
-          mvn clean package -DskipTests -B -q
-          
-          VERSION="v1.0.linux.$(date +%Y%m%d)"
-          PKG_NAME="korea-mega-linux-$VERSION.tar.gz"
-          
+          VERSION="v1.0.sim.$(date +%Y%m%d)"
+          PKG_NAME="korea-complete-sim-linux-$VERSION.tar.gz"
           mkdir -p target
-          tar -czf $PKG_NAME target/*.jar src/main/resources/
+          
+          tar -czf $PKG_NAME target/*.jar src/main/resources/ linux_simulation_report.log
+          
           echo "Package Created: $PKG_NAME"
-
-      # 8. 정리 및 업로드
-      - name: 정리 및 업로드
-        run: rm -rf apache-maven-3.9.6-bin.tar.gz
 
       - name: 결과물 업로드
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: linux-mega-package
+          name: linux-simulation-package
           path: '*.tar.gz'
