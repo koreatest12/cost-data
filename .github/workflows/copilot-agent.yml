@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate 1M Records (Stability Fix)
+name: Cost Data Agent - Ultimate Upload & Release Edition
 
 on:
   push:
@@ -7,18 +7,18 @@ on:
     branches: [ main, master, develop ]
   workflow_dispatch:
 
+# [중요] 업로드 기능을 위해 권한을 'write'로 변경
 permissions:
-  contents: read
+  contents: write
+  packages: write
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (1 Million Records & Stable Summary)
+  # [JOB 1] Windows Agent (1M Records + Release Upload)
   # ==================================================================================
   agent-windows:
-    name: Windows Agent (1M Records)
+    name: Windows Agent (Upload Release)
     runs-on: windows-latest
-    permissions:
-      contents: read
     steps:
       # 1. 작업 설정
       - name: 작업 설정
@@ -62,8 +62,8 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 5. [데이터 생성] 가상 계좌 50만 건 (대량 생성)
-      - name: 가상 계좌 50만 건 생성 (Massive Scale)
+      # 5. [데이터 생성] 가상 계좌 50만 건
+      - name: 가상 계좌 50만 건 생성
         shell: powershell
         run: |
           Write-Host "Generating 500,000 Virtual Account Records..."
@@ -84,10 +84,10 @@ jobs:
              if ($_ % 100000 -eq 0) { Write-Host " -> Generated $_ / 500,000 VA records..." }
           }
           $swVA.Close()
-          Write-Host "VA Data Generation Completed."
+          Write-Host "VA Data Generated."
 
-      # 6. [데이터 생성] 마케팅 이메일 100만 건 (1 Million)
-      - name: 마케팅 이메일 100만 건 생성 (1 Million Records)
+      # 6. [데이터 생성] 마케팅 이메일 100만 건
+      - name: 마케팅 이메일 100만 건 생성
         shell: powershell
         run: |
           Write-Host "Generating 1,000,000 Marketing Emails..."
@@ -98,7 +98,6 @@ jobs:
           $swEmail = New-Object System.IO.StreamWriter("$emailPath/marketing_db.csv", $false, $utf8NoBom)
           $swEmail.WriteLine("EMAIL,STATUS,LAST_SENT")
           
-          # 100만 건 루프
           1..1000000 | ForEach-Object {
              $swEmail.WriteLine("customer.$_@market.com,SUBSCRIBED,$(Get-Date -Format 'yyyy-MM-dd')")
              if ($_ % 200000 -eq 0) { Write-Host " -> Generated $_ / 1,000,000 emails..." }
@@ -106,7 +105,7 @@ jobs:
           $swEmail.Close()
           Write-Host "Marketing Email DB Generated."
 
-      # 7. [시뮬레이션] 대량 트랜잭션 처리 (3만 건)
+      # 7. [시뮬레이션] 처리 결과 로그 생성
       - name: 통합 처리 시뮬레이션
         shell: powershell
         run: |
@@ -116,7 +115,6 @@ jobs:
           $swLog = New-Object System.IO.StreamWriter($logPath, $false, $utf8NoBom)
           $swLog.WriteLine("TIMESTAMP | TYPE | ID | RESULT")
           
-          # 입금 10,000건, 이메일 발송 20,000건 -> 총 30,000건 시뮬레이션
           1..10000 | ForEach-Object { $swLog.WriteLine("$(Get-Date) | DEPOSIT | VA_$_ | SUCCESS") }
           1..20000 | ForEach-Object { $swLog.WriteLine("$(Get-Date) | EMAIL_SEND | customer.$_ | SENT") }
           
@@ -131,58 +129,65 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           mvn clean package -DskipTests -B -q
 
-      # 9. [수정됨] GitHub 요약 보고서 (안정성 확보 - 이모지 제거)
-      - name: 실행 결과 요약 보고서 생성 (Job Summary Fixed)
+      # 9. GitHub 요약 보고서 (배열 방식 - 안정성 확보)
+      - name: 실행 결과 요약 보고서 생성
         shell: powershell
         run: |
           $summaryFile = $env:GITHUB_STEP_SUMMARY
-          
-          # 배열 대신 직접 파일에 쓰기 (인코딩 오류 방지)
-          "## Windows Agent Execution Report" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "| Category | Count | Status |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "|---|---|---|" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "| Virtual Accounts | 500,000 | Created |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "| Marketing Emails | 1,000,000 | Created |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "| Simulation Tx | 30,000 | Processed |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "| Maven Build | Success | Completed |" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "### System Info" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "- OS: Windows Server 2022" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "- Java: Temurin 17" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          "- Timestamp: $(Get-Date)" | Out-File -FilePath $summaryFile -Append -Encoding utf8
-          
-          Write-Host "Job Summary Successfully Generated."
+          $summaryContent = @(
+              "## Windows Agent Upload Report",
+              "",
+              "| Category | Count | Status |",
+              "|---|---|---|",
+              "| Virtual Accounts | 500,000 | Created |",
+              "| Marketing Emails | 1,000,000 | Created |",
+              "| Build | Success | Ready to Upload |"
+          )
+          $summaryContent | Out-File -FilePath $summaryFile -Encoding utf8 -Append
 
       # 10. 통합 결과 이메일 생성
-      - name: 통합 결과 이메일 생성 및 전송 시뮬레이션
+      - name: 통합 결과 리포트 파일 생성
         shell: powershell
         run: |
-          $reportFile = "FINAL_EXECUTION_REPORT_EMAIL.html"
+          $reportFile = "FINAL_REPORT_WINDOWS.html"
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           $sw = New-Object System.IO.StreamWriter($reportFile, $false, $utf8NoBom)
-          
-          $sw.WriteLine("<html><body><h1>[Windows] 1M Records Report</h1><ul><li>Status: Success</li><li>Data: 1.5 Million Records</li></ul></body></html>")
+          $sw.WriteLine("<html><body><h1>Windows Release Report</h1><p>Data Upload Ready.</p></body></html>")
           $sw.Close()
-          
-          Write-Host "Email Content Generated."
 
-      # 11. 패키징 및 업로드
+      # 11. 패키징
       - name: 통합 아티팩트 패키징
         shell: powershell
         run: |
           $date = Get-Date -Format 'yyyyMMdd'
-          $packageName = "windows-result-1m-$date.zip"
+          $packageName = "windows-release-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
-          Compress-Archive -Path "target/*.jar", "src/main/resources/services", "simulation_results.log", "FINAL_EXECUTION_REPORT_EMAIL.html" -DestinationPath $packageName -Force
+          Compress-Archive -Path "target/*.jar", "src/main/resources/services", "simulation_results.log", "FINAL_REPORT_WINDOWS.html" -DestinationPath $packageName -Force
           Write-Host "Package Created: $packageName"
 
-      - name: 정리 및 업로드
+      # [신규 기능] 12. GitHub Release에 업로드
+      - name: GitHub Release 업로드 (Upload to koreatest12/cost-data)
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $date = Get-Date -Format 'yyyyMMdd-HHmm'
+          $tagName = "v1.0.win.$date"
+          $packageName = "windows-release-$(Get-Date -Format 'yyyyMMdd').zip"
+          
+          Write-Host "Creating Release $tagName and Uploading Artifact..."
+          
+          # 릴리스 생성 및 파일 업로드
+          gh release create $tagName $packageName --title "Windows Release $date" --notes "Automated massive data build (1.5M records)." --repo koreatest12/cost-data
+          
+          Write-Host "Upload Successful."
+
+      - name: 정리 및 업로드 (Artifact)
         shell: powershell
         run: Remove-Item -Path "maven.zip" -Force -ErrorAction SilentlyContinue
       
-      - name: 결과물 업로드 (화면 표시용)
+      - name: 결과물 업로드 (Artifact)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -190,13 +195,11 @@ jobs:
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (Python Reporting & Visual Summary)
+  # [JOB 2] Linux Agent (Python Reporting & Release Upload)
   # ==================================================================================
   agent-linux:
-    name: Linux Agent (Report & Visual Summary)
+    name: Linux Agent (Upload Release)
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: 작업 설정
         uses: actions/checkout@v4
@@ -227,14 +230,12 @@ jobs:
           
           python3 -c "
           # 1. 500k VA Data
-          print('Generating 500k VA Records...')
           with open('src/main/resources/services/virtual_accounts/va.csv', 'w') as f:
               f.write('ID,BANK,ACC,EMAIL,STATUS\n')
               for i in range(500000):
                   f.write(f'VA_{i},004,999{i},user.{i}@mail.com,ACTIVE\n')
           
           # 2. 1M Marketing Data
-          print('Generating 1M Marketing Records...')
           with open('src/main/resources/services/marketing/email.csv', 'w') as f:
               f.write('EMAIL,OPT_IN\n')
               for i in range(1000000):
@@ -244,50 +245,55 @@ jobs:
       - name: 통합 빌드
         run: mvn clean package -DskipTests -B -q
 
-      # [Python] 시뮬레이션 및 이메일 리포트 생성
-      - name: 시뮬레이션 및 이메일 리포트 생성
+      # [Python] 시뮬레이션 및 리포트
+      - name: 시뮬레이션 및 리포트 생성
         run: |
           python3 -c "
           import time
-          
-          # 시뮬레이션 로그
           with open('linux_simulation.log', 'w') as f:
               f.write('TS,ACTION,RESULT\n')
-              for i in range(30000):
+              for i in range(10000):
                   f.write(f'{time.time()},PROCESS_TX_{i},SUCCESS\n')
           
-          # HTML 이메일 리포트
-          with open('FINAL_REPORT_EMAIL.html', 'w') as f:
-              f.write('<html><body><h1>Linux Report</h1><p>Success</p></body></html>')
+          with open('FINAL_REPORT_LINUX.html', 'w') as f:
+              f.write('<html><body><h1>Linux Report</h1><p>Ready to Upload</p></body></html>')
           "
 
-      # [신규 기능] GitHub 요약 보고서 (Job Summary) 생성
       - name: 실행 결과 요약 보고서 생성 (Job Summary)
         run: |
-          echo "## Linux Agent Execution Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Virtual Accounts | 500,000 | Generated |" >> $GITHUB_STEP_SUMMARY
-          echo "| Marketing DB | 1,000,000 | Generated |" >> $GITHUB_STEP_SUMMARY
-          echo "| Simulation Tx | 30,000 | Processed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build Artifacts | Included | Ready |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Email Notification Status" >> $GITHUB_STEP_SUMMARY
-          echo "- Recipient: team@koreatest12.com" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: Sent (Simulated)" >> $GITHUB_STEP_SUMMARY
+          echo "## Linux Agent Upload Report" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Data Count | 1,500,000 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Upload Target | koreatest12/cost-data |" >> $GITHUB_STEP_SUMMARY
 
-      - name: 패키징 및 업로드
+      - name: 패키징
         run: |
           VERSION="v1.0.rpt.$(date +%Y%m%d)"
-          PKG_NAME="linux-result-1m-$VERSION.tar.gz"
+          PKG_NAME="linux-release-$(date +%Y%m%d).tar.gz"
           mkdir -p target
           
-          tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_simulation.log FINAL_REPORT_EMAIL.html
+          tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_simulation.log FINAL_REPORT_LINUX.html
           
           echo "Package Created: $PKG_NAME"
 
-      - name: 결과물 업로드 (화면 표시용)
+      # [신규 기능] GitHub Release에 업로드
+      - name: GitHub Release 업로드 (Upload to koreatest12/cost-data)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE=$(date +'%Y%m%d-%H%M')
+          TAG_NAME="v1.0.linux.$DATE"
+          PKG_NAME="linux-release-$(date +%Y%m%d).tar.gz"
+          
+          echo "Creating Release $TAG_NAME and Uploading..."
+          
+          # 릴리스 생성 및 파일 업로드
+          gh release create $TAG_NAME $PKG_NAME --title "Linux Release $DATE" --notes "Automated massive data build (1.5M records)." --repo koreatest12/cost-data
+          
+          echo "Upload Successful."
+
+      - name: 결과물 업로드 (Artifact)
         if: always()
         uses: actions/upload-artifact@v4
         with:
