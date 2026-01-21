@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate Service Patch & Massive Edition
+name: Cost Data Agent - Ultimate Virtual Account & Patch Edition
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (Massive Data + Patch Operations)
+  # [JOB 1] Windows Agent (300k Virtual Accounts & Patches)
   # ==================================================================================
   agent-windows:
-    name: Windows Service Agent (Patch & Build)
+    name: Windows Fintech Agent (300k VA Data)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -62,81 +62,75 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 5. [기반 데이터] 서비스별 디렉토리 및 데이터 생성 (50k)
-      - name: 서비스별 대량 데이터 생성 (Base Data)
+      # 5. [신규 대량 생성] 가상 계좌 정보 30만 건 (StreamWriter 최적화)
+      - name: 가상 계좌 정보 30만 건 생성 (Massive VA Generation)
         shell: powershell
         run: |
-          Write-Host "Generating Base Service Data..."
+          Write-Host "Generating 300,000 Virtual Account Records..."
+          $vaPath = "src/main/resources/services/virtual_accounts"
+          New-Item -ItemType Directory -Force -Path $vaPath | Out-Null
+          
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+          $swVA = New-Object System.IO.StreamWriter("$vaPath/va_master_db.csv", $false, $utf8NoBom)
+          
+          # CSV 헤더
+          $swVA.WriteLine("VA_ID,BANK_CODE,ACCOUNT_NUM,OWNER_NAME,EXPIRY_DATE,STATUS,REF_ID")
+          
+          # 30만 건 루프 (성능 최적화: 단순 문자열 조합)
+          1..300000 | ForEach-Object {
+             $bankCode = Get-Random -InputObject "004", "088", "020", "011"
+             $accNum = "999$(Get-Random -Min 10000000 -Max 99999999)"
+             $status = if ($_ % 20 -eq 0) { "EXPIRED" } else { "ACTIVE" }
+             $expiry = (Get-Date).AddDays(7).ToString("yyyy-MM-dd")
+             
+             # 쓰기 작업
+             $swVA.WriteLine("VA_$_, $bankCode, $accNum, User_$_, $expiry, $status, REF_$_")
+             
+             if ($_ % 50000 -eq 0) { Write-Host " -> Generated $_ / 300,000 VA records..." }
+          }
+          $swVA.Close()
+          Write-Host "Virtual Account Generation Completed."
+
+      # 6. [기반 데이터] 서비스별 패치 파일 생성
+      - name: 서비스별 패치 및 기반 데이터 생성
+        shell: powershell
+        run: |
+          Write-Host "Generating Base Service & Patch Data..."
           $base = "src/main/resources/services"
-          $dirs = "$base/auth/users", "$base/payment/tx", "$base/noti/logs", "$base/patches"
+          $dirs = "$base/auth", "$base/payment", "$base/patches"
           foreach ($d in $dirs) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
           
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          # 인증 사용자 20,000명
-          $swUser = New-Object System.IO.StreamWriter("$base/auth/users/users.csv", $false, $utf8NoBom)
-          $swUser.WriteLine("UID,NAME,STATUS")
-          1..20000 | ForEach-Object { $swUser.WriteLine("$_,user_$_,ACTIVE") }
-          $swUser.Close()
-          
-          # 결제 내역 20,000건
-          $swTx = New-Object System.IO.StreamWriter("$base/payment/tx/transactions.csv", $false, $utf8NoBom)
-          $swTx.WriteLine("TXID,AMOUNT,STATUS")
-          1..20000 | ForEach-Object { $swTx.WriteLine("tx_$_,$(Get-Random -Min 100 -Max 9000),DONE") }
-          $swTx.Close()
-          
-          Write-Host "Base Data Generation Completed."
-
-      # 6. [신규 기능] 서비스별 패치(Patch) 파일 대량 생성
-      - name: 서비스별 패치 파일 자동 생성 (Patch Generation)
-        shell: powershell
-        run: |
-          Write-Host "Generating Service Patch Files..."
-          $patchBase = "src/main/resources/services/patches"
-          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
-          
-          # 서비스 목록
-          $services = "AuthService", "PaymentService", "NotiService"
-          
-          foreach ($svc in $services) {
-              $svcPath = "$patchBase/$svc"
-              New-Item -ItemType Directory -Force -Path $svcPath | Out-Null
-              
-              # 서비스당 500개의 패치 SQL/Script 생성
-              1..500 | ForEach-Object {
-                  $version = "v1.$_"
-                  $patchFile = "$svcPath/patch_$version.sql"
-                  $content = "-- PATCH for $svc $version`r`nALTER TABLE ${svc}_table ADD COLUMN patch_col_$_ VARCHAR(50);`r`nUPDATE ${svc}_config SET version='$version';"
-                  
-                  $sw = New-Object System.IO.StreamWriter($patchFile, $false, $utf8NoBom)
-                  $sw.Write($content)
-                  $sw.Close()
-              }
+          # 패치 파일 1,000개 생성
+          1..1000 | ForEach-Object {
+             $sw = New-Object System.IO.StreamWriter("$base/patches/patch_v$_.sql", $false, $utf8NoBom)
+             $sw.WriteLine("-- Critical Patch v$_`r`nUPDATE accounts SET status='VERIFIED' WHERE id=$_")
+             $sw.Close()
           }
-          Write-Host "Generated 1,500 Patch Files across services."
+          Write-Host "Patch Data Generated."
 
-      # 7. [신규 기능] 패치 적용 시뮬레이션 및 로그 기록
-      - name: 패치 적용 작업 시뮬레이션 (Patch Execution)
+      # 7. [시뮬레이션] 가상 계좌 입금 처리 시뮬레이션
+      - name: 가상 계좌 입금 처리 시뮬레이션
         shell: powershell
         run: |
-          Write-Host "Simulating Patch Application..."
-          $logPath = "patch_execution_report.log"
+          Write-Host "Simulating VA Deposit Processing..."
+          $logPath = "va_deposit_report.log"
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           $swLog = New-Object System.IO.StreamWriter($logPath, $false, $utf8NoBom)
           
-          $swLog.WriteLine("TIMESTAMP | SERVICE | PATCH_FILE | STATUS | DURATION_MS")
+          $swLog.WriteLine("TIMESTAMP | VA_ID | AMOUNT | RESULT | PROCESS_TIME_MS")
           
-          $services = "AuthService", "PaymentService", "NotiService"
-          foreach ($svc in $services) {
-              Write-Host " -> Patching $svc..."
-              1..500 | ForEach-Object {
-                  $status = if ($_ % 50 -eq 0) { "SKIPPED (Already Applied)" } else { "APPLIED" }
-                  $duration = Get-Random -Min 10 -Max 300
-                  $swLog.WriteLine("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | $svc | patch_v1.$_.sql | $status | $duration")
-              }
+          # 1,000건의 입금 시도 시뮬레이션
+          1..1000 | ForEach-Object {
+              $amount = Get-Random -Min 10000 -Max 1000000
+              $procTime = Get-Random -Min 5 -Max 50
+              $status = "SUCCESS"
+              
+              $swLog.WriteLine("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | VA_$_ | $amount | $status | $procTime")
           }
           $swLog.Close()
-          Write-Host "Patch Simulation Completed. Log: $logPath"
+          Write-Host "Deposit Simulation Completed."
 
       # 8. Maven 빌드
       - name: 통합 빌드
@@ -145,7 +139,7 @@ jobs:
           mvn dependency:go-offline -B
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           
-          Write-Host "Building Application with Patches..."
+          Write-Host "Building Application with 300k VA Data..."
           mvn clean package -DskipTests -B -q
           Write-Host "Build Successful."
 
@@ -154,11 +148,11 @@ jobs:
         shell: powershell
         run: |
           $date = Get-Date -Format 'yyyyMMdd'
-          $packageName = "korea-patch-windows-$date.zip"
+          $packageName = "korea-fintech-windows-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
-          # 패치 파일 및 로그 포함 압축
-          Compress-Archive -Path "target/*.jar", "src/main/resources/services", "patch_execution_report.log" -DestinationPath $packageName -Force
+          # VA 데이터 포함 압축
+          Compress-Archive -Path "target/*.jar", "src/main/resources/services", "va_deposit_report.log" -DestinationPath $packageName -Force
           Write-Host "Package Created: $packageName"
 
       - name: 정리 및 업로드
@@ -169,14 +163,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-patch-package
+          name: windows-fintech-package
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (Python Optimized Patching)
+  # [JOB 2] Linux Agent (Python Optimized 300k Generation)
   # ==================================================================================
   agent-linux:
-    name: Linux Service Agent (Patch & Build)
+    name: Linux Fintech Agent (300k VA Data)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -202,69 +196,85 @@ jobs:
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      # [Python 사용] 서비스별 패치 데이터 생성 (안정성 확보)
-      - name: 서비스별 패치 데이터 생성 (Python)
+      # [Python 사용] 30만 건 가상 계좌 데이터 고속 생성
+      - name: 가상 계좌 30만 건 생성 (Python)
         run: |
-          echo "Generating Patch Data using Python..."
-          mkdir -p src/main/resources/services/{auth,payment,notification}/patches
+          echo "Generating 300,000 Virtual Accounts using Python..."
+          mkdir -p src/main/resources/services/virtual_accounts
           
           python3 -c "
-          import os
+          import random
           
-          services = ['auth', 'payment', 'notification']
-          base_dir = 'src/main/resources/services'
+          file_path = 'src/main/resources/services/virtual_accounts/va_master_db.csv'
+          banks = ['004', '088', '020', '011', '003']
+          total_records = 300000
           
-          for svc in services:
-              print(f'Generating patches for {svc}...')
-              patch_dir = f'{base_dir}/{svc}/patches'
+          print(f'Starting generation of {total_records} VA records...')
+          
+          with open(file_path, 'w') as f:
+              f.write('VA_ID,BANK_CODE,ACCOUNT_NUM,OWNER,EXPIRY,STATUS\n')
               
-              # 1,000개의 패치 파일 생성
-              for i in range(1, 1001):
-                  with open(f'{patch_dir}/update_v{i}.sh', 'w') as f:
-                      f.write(f'#!/bin/bash\n# Patch {svc} v{i}\necho \"Updating {svc} to v{i}\"\n')
+              for i in range(1, total_records + 1):
+                  bank = random.choice(banks)
+                  acc = f'999{random.randint(10000000, 99999999)}'
+                  status = 'ACTIVE' if i % 20 != 0 else 'EXPIRED'
+                  
+                  f.write(f'VA_{i},{bank},{acc},User_{i},2025-12-31,{status}\n')
+                  
+                  if i % 50000 == 0:
+                      print(f' -> Generated {i} records...')
                       
-          print('All Patch Files Generated.')
+          print('Virtual Account Generation Completed.')
+          "
+
+      # [Python 사용] 서비스별 패치 파일 생성
+      - name: 서비스별 패치 데이터 생성
+        run: |
+          echo "Generating Patch Data..."
+          mkdir -p src/main/resources/services/patches
+          python3 -c "
+          for i in range(1, 1001):
+              with open(f'src/main/resources/services/patches/patch_v{i}.sql', 'w') as f:
+                  f.write(f'-- Patch v{i}\\nALTER TABLE users ADD col_{i} VARCHAR(10);')
           "
 
       - name: 통합 빌드
         run: mvn clean package -DskipTests -B -q
 
-      # [Python 사용] 패치 적용 및 롤백 시뮬레이션
-      - name: 패치 적용 및 롤백 시뮬레이션
+      # [Python 사용] 대량 입금 처리 및 패치 적용 시뮬레이션
+      - name: 입금 처리 및 패치 시뮬레이션
         run: |
-          echo "Running Patch Simulation..."
+          echo "Running Deposit & Patch Simulation..."
           python3 -c "
           import random, time
           
-          report_file = 'linux_patch_report.log'
-          services = ['Auth', 'Payment', 'Notification']
+          report_file = 'linux_fintech_report.csv'
           
           with open(report_file, 'w') as f:
-              f.write('TIMESTAMP,SERVICE,ACTION,RESULT\n')
+              f.write('TIMESTAMP,TYPE,ID,RESULT,LATENCY\n')
               
-              for svc in services:
-                  print(f'Patching {svc} Service...')
-                  # 100개의 배포 작업 시뮬레이션
-                  for i in range(1, 101):
-                      ts = int(time.time())
-                      
-                      # 10% 확률로 패치 실패 및 롤백 시나리오
-                      if random.random() < 0.1:
-                          f.write(f'{ts},{svc},PATCH_v{i},FAILED\n')
-                          f.write(f'{ts+1},{svc},ROLLBACK_v{i},SUCCESS\n')
-                      else:
-                          f.write(f'{ts},{svc},PATCH_v{i},SUCCESS\n')
-                          
-                  print(f' -> {svc} patching completed.')
+              # 1. 입금 처리 시뮬레이션 (2,000건)
+              print('Simulating Deposits...')
+              for i in range(2000):
+                  lat = random.randint(10, 100)
+                  f.write(f'{int(time.time())},DEPOSIT,VA_{i},SUCCESS,{lat}\n')
+                  
+              # 2. 패치 적용 시뮬레이션 (500건)
+              print('Simulating Patches...')
+              for i in range(500):
+                  status = 'APPLIED' if random.random() > 0.05 else 'FAILED'
+                  f.write(f'{int(time.time())},PATCH,v{i},{status},0\n')
+                  
+          print('All Simulations Finished.')
           "
 
       - name: 패키징 및 업로드
         run: |
-          VERSION="v1.0.patch.$(date +%Y%m%d)"
-          PKG_NAME="korea-patch-linux-$VERSION.tar.gz"
+          VERSION="v1.0.fintech.$(date +%Y%m%d)"
+          PKG_NAME="korea-fintech-linux-$VERSION.tar.gz"
           mkdir -p target
           
-          tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_patch_report.log
+          tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_fintech_report.csv
           
           echo "Package Created: $PKG_NAME"
 
@@ -272,5 +282,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: linux-patch-package
+          name: linux-fintech-package
           path: '*.tar.gz'
