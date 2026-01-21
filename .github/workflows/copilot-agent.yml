@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate Virtual Account & Patch Edition
+name: Cost Data Agent - Ultimate Fintech & Email Massive Edition
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (300k Virtual Accounts & Patches)
+  # [JOB 1] Windows Agent (300k VA + 500k Email Data)
   # ==================================================================================
   agent-windows:
-    name: Windows Fintech Agent (300k VA Data)
+    name: Windows Fintech Agent (Massive Email & VA)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -62,75 +62,85 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 5. [신규 대량 생성] 가상 계좌 정보 30만 건 (StreamWriter 최적화)
-      - name: 가상 계좌 정보 30만 건 생성 (Massive VA Generation)
+      # 5. [업데이트] 가상 계좌 + 가상 이메일 30만 건 (통합 생성)
+      - name: 가상 계좌 및 이메일 30만 건 생성 (Integrated Generation)
         shell: powershell
         run: |
-          Write-Host "Generating 300,000 Virtual Account Records..."
+          Write-Host "Generating 300,000 Virtual Account & Email Records..."
           $vaPath = "src/main/resources/services/virtual_accounts"
           New-Item -ItemType Directory -Force -Path $vaPath | Out-Null
           
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           $swVA = New-Object System.IO.StreamWriter("$vaPath/va_master_db.csv", $false, $utf8NoBom)
           
-          # CSV 헤더
-          $swVA.WriteLine("VA_ID,BANK_CODE,ACCOUNT_NUM,OWNER_NAME,EXPIRY_DATE,STATUS,REF_ID")
+          # CSV 헤더 (이메일 필드 추가됨)
+          $swVA.WriteLine("VA_ID,BANK_CODE,ACCOUNT_NUM,OWNER_NAME,EMAIL,EXPIRY_DATE,STATUS")
           
-          # 30만 건 루프 (성능 최적화: 단순 문자열 조합)
+          # 30만 건 루프
           1..300000 | ForEach-Object {
              $bankCode = Get-Random -InputObject "004", "088", "020", "011"
              $accNum = "999$(Get-Random -Min 10000000 -Max 99999999)"
              $status = if ($_ % 20 -eq 0) { "EXPIRED" } else { "ACTIVE" }
-             $expiry = (Get-Date).AddDays(7).ToString("yyyy-MM-dd")
+             $expiry = (Get-Date).AddDays(30).ToString("yyyy-MM-dd")
              
-             # 쓰기 작업
-             $swVA.WriteLine("VA_$_, $bankCode, $accNum, User_$_, $expiry, $status, REF_$_")
+             # 가상 이메일 생성 로직
+             $domain = Get-Random -InputObject "gmail.com", "naver.com", "kakao.com", "virtual-bank.co.kr"
+             $email = "user.fintech.$_@$domain"
              
-             if ($_ % 50000 -eq 0) { Write-Host " -> Generated $_ / 300,000 VA records..." }
+             $swVA.WriteLine("VA_$_, $bankCode, $accNum, User_$_, $email, $expiry, $status")
+             
+             if ($_ % 50000 -eq 0) { Write-Host " -> Generated $_ / 300,000 records..." }
           }
           $swVA.Close()
-          Write-Host "Virtual Account Generation Completed."
+          Write-Host "VA & Email Generation Completed."
 
-      # 6. [기반 데이터] 서비스별 패치 파일 생성
-      - name: 서비스별 패치 및 기반 데이터 생성
+      # 6. [신규 대량] 마케팅용 가상 이메일 DB 50만 건 추가 생성
+      - name: 마케팅용 가상 이메일 DB 50만 건 생성
         shell: powershell
         run: |
-          Write-Host "Generating Base Service & Patch Data..."
-          $base = "src/main/resources/services"
-          $dirs = "$base/auth", "$base/payment", "$base/patches"
-          foreach ($d in $dirs) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
+          Write-Host "Generating 500,000 Marketing Email Records..."
+          $emailPath = "src/main/resources/services/marketing"
+          New-Item -ItemType Directory -Force -Path $emailPath | Out-Null
           
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+          $swEmail = New-Object System.IO.StreamWriter("$emailPath/email_marketing_db.csv", $false, $utf8NoBom)
           
-          # 패치 파일 1,000개 생성
-          1..1000 | ForEach-Object {
-             $sw = New-Object System.IO.StreamWriter("$base/patches/patch_v$_.sql", $false, $utf8NoBom)
-             $sw.WriteLine("-- Critical Patch v$_`r`nUPDATE accounts SET status='VERIFIED' WHERE id=$_")
-             $sw.Close()
+          $swEmail.WriteLine("EMAIL_ID,EMAIL_ADDRESS,SUBSCRIPTION_STATUS,LAST_OPEN_DATE")
+          
+          1..500000 | ForEach-Object {
+             $subStatus = if ($_ % 5 -eq 0) { "UNSUBSCRIBED" } else { "SUBSCRIBED" }
+             $swEmail.WriteLine("EID_$_,customer.$_@marketing-test.com,$subStatus,$(Get-Date -Format 'yyyy-MM-dd')")
+             
+             if ($_ % 100000 -eq 0) { Write-Host " -> Generated $_ / 500,000 emails..." }
           }
-          Write-Host "Patch Data Generated."
+          $swEmail.Close()
+          Write-Host "Marketing Email DB Generated."
 
-      # 7. [시뮬레이션] 가상 계좌 입금 처리 시뮬레이션
-      - name: 가상 계좌 입금 처리 시뮬레이션
+      # 7. [시뮬레이션] 이메일 발송 및 계좌 입금 시뮬레이션
+      - name: 이메일 발송 및 입금 처리 시뮬레이션
         shell: powershell
         run: |
-          Write-Host "Simulating VA Deposit Processing..."
-          $logPath = "va_deposit_report.log"
+          Write-Host "Simulating Email & Deposit Processing..."
+          $logPath = "fintech_process_report.log"
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           $swLog = New-Object System.IO.StreamWriter($logPath, $false, $utf8NoBom)
           
-          $swLog.WriteLine("TIMESTAMP | VA_ID | AMOUNT | RESULT | PROCESS_TIME_MS")
+          $swLog.WriteLine("TIMESTAMP | TYPE | TARGET | RESULT | LATENCY_MS")
           
-          # 1,000건의 입금 시도 시뮬레이션
+          # 1. 이메일 발송 시뮬레이션 (2,000건)
+          1..2000 | ForEach-Object {
+              $latency = Get-Random -Min 10 -Max 100
+              $swLog.WriteLine("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | EMAIL_SEND | user.$_@vbank.com | SENT | $latency")
+          }
+          
+          # 2. 입금 처리 시뮬레이션 (1,000건)
           1..1000 | ForEach-Object {
               $amount = Get-Random -Min 10000 -Max 1000000
-              $procTime = Get-Random -Min 5 -Max 50
-              $status = "SUCCESS"
-              
-              $swLog.WriteLine("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | VA_$_ | $amount | $status | $procTime")
+              $swLog.WriteLine("$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | DEPOSIT | VA_$_ | SUCCESS | 25")
           }
+          
           $swLog.Close()
-          Write-Host "Deposit Simulation Completed."
+          Write-Host "Combined Simulation Completed."
 
       # 8. Maven 빌드
       - name: 통합 빌드
@@ -139,7 +149,7 @@ jobs:
           mvn dependency:go-offline -B
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           
-          Write-Host "Building Application with 300k VA Data..."
+          Write-Host "Building Application with Massive Fintech Data..."
           mvn clean package -DskipTests -B -q
           Write-Host "Build Successful."
 
@@ -148,11 +158,11 @@ jobs:
         shell: powershell
         run: |
           $date = Get-Date -Format 'yyyyMMdd'
-          $packageName = "korea-fintech-windows-$date.zip"
+          $packageName = "korea-fintech-email-windows-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
-          # VA 데이터 포함 압축
-          Compress-Archive -Path "target/*.jar", "src/main/resources/services", "va_deposit_report.log" -DestinationPath $packageName -Force
+          # 모든 데이터 포함 압축
+          Compress-Archive -Path "target/*.jar", "src/main/resources/services", "fintech_process_report.log" -DestinationPath $packageName -Force
           Write-Host "Package Created: $packageName"
 
       - name: 정리 및 업로드
@@ -163,14 +173,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-fintech-package
+          name: windows-fintech-email-package
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (Python Optimized 300k Generation)
+  # [JOB 2] Linux Agent (Python Optimized 300k+ Data)
   # ==================================================================================
   agent-linux:
-    name: Linux Fintech Agent (300k VA Data)
+    name: Linux Fintech Agent (Massive Data)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -196,10 +206,10 @@ jobs:
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      # [Python 사용] 30만 건 가상 계좌 데이터 고속 생성
-      - name: 가상 계좌 30만 건 생성 (Python)
+      # [Python 사용] 가상 계좌 + 이메일 30만 건 고속 생성
+      - name: 가상 계좌 및 이메일 30만 건 생성 (Python)
         run: |
-          echo "Generating 300,000 Virtual Accounts using Python..."
+          echo "Generating 300,000 VA & Email Records using Python..."
           mkdir -p src/main/resources/services/virtual_accounts
           
           python3 -c "
@@ -207,74 +217,78 @@ jobs:
           
           file_path = 'src/main/resources/services/virtual_accounts/va_master_db.csv'
           banks = ['004', '088', '020', '011', '003']
+          domains = ['gmail.com', 'naver.com', 'kakao.com', 'work.co.kr']
           total_records = 300000
           
-          print(f'Starting generation of {total_records} VA records...')
+          print(f'Starting generation of {total_records} records...')
           
           with open(file_path, 'w') as f:
-              f.write('VA_ID,BANK_CODE,ACCOUNT_NUM,OWNER,EXPIRY,STATUS\n')
+              f.write('VA_ID,BANK,ACCOUNT,OWNER,EMAIL,STATUS\n')
               
               for i in range(1, total_records + 1):
                   bank = random.choice(banks)
                   acc = f'999{random.randint(10000000, 99999999)}'
-                  status = 'ACTIVE' if i % 20 != 0 else 'EXPIRED'
+                  domain = random.choice(domains)
+                  email = f'user.fintech.{i}@{domain}'
+                  status = 'ACTIVE'
                   
-                  f.write(f'VA_{i},{bank},{acc},User_{i},2025-12-31,{status}\n')
+                  f.write(f'VA_{i},{bank},{acc},User_{i},{email},{status}\n')
                   
                   if i % 50000 == 0:
                       print(f' -> Generated {i} records...')
                       
-          print('Virtual Account Generation Completed.')
+          print('Generation Completed.')
           "
 
-      # [Python 사용] 서비스별 패치 파일 생성
-      - name: 서비스별 패치 데이터 생성
+      # [Python 사용] 이메일 검증 및 마케팅 데이터 생성
+      - name: 이메일 마케팅 데이터 생성
         run: |
-          echo "Generating Patch Data..."
-          mkdir -p src/main/resources/services/patches
+          echo "Generating Marketing Email Data..."
+          mkdir -p src/main/resources/services/marketing
           python3 -c "
-          for i in range(1, 1001):
-              with open(f'src/main/resources/services/patches/patch_v{i}.sql', 'w') as f:
-                  f.write(f'-- Patch v{i}\\nALTER TABLE users ADD col_{i} VARCHAR(10);')
+          with open('src/main/resources/services/marketing/email_list.csv', 'w') as f:
+              f.write('EMAIL,OPT_IN,SEGMENT\n')
+              for i in range(1, 100001): # 10만 건 추가
+                  segment = 'VIP' if i % 10 == 0 else 'GENERAL'
+                  f.write(f'customer.{i}@testmail.com,TRUE,{segment}\n')
           "
 
       - name: 통합 빌드
         run: mvn clean package -DskipTests -B -q
 
-      # [Python 사용] 대량 입금 처리 및 패치 적용 시뮬레이션
-      - name: 입금 처리 및 패치 시뮬레이션
+      # [Python 사용] 시뮬레이션
+      - name: 이메일 및 금융 처리 시뮬레이션
         run: |
-          echo "Running Deposit & Patch Simulation..."
+          echo "Running Comprehensive Simulation..."
           python3 -c "
           import random, time
           
-          report_file = 'linux_fintech_report.csv'
+          report_file = 'linux_fintech_email_report.csv'
           
           with open(report_file, 'w') as f:
-              f.write('TIMESTAMP,TYPE,ID,RESULT,LATENCY\n')
+              f.write('TIMESTAMP,TYPE,TARGET,RESULT\n')
               
-              # 1. 입금 처리 시뮬레이션 (2,000건)
-              print('Simulating Deposits...')
+              # 이메일 발송 시뮬레이션
+              print('Simulating 2,000 Emails...')
               for i in range(2000):
-                  lat = random.randint(10, 100)
-                  f.write(f'{int(time.time())},DEPOSIT,VA_{i},SUCCESS,{lat}\n')
+                  res = 'OPENED' if random.random() > 0.3 else 'SENT'
+                  f.write(f'{int(time.time())},EMAIL,user_{i}@test.com,{res}\n')
                   
-              # 2. 패치 적용 시뮬레이션 (500건)
-              print('Simulating Patches...')
-              for i in range(500):
-                  status = 'APPLIED' if random.random() > 0.05 else 'FAILED'
-                  f.write(f'{int(time.time())},PATCH,v{i},{status},0\n')
+              # 입금 시뮬레이션
+              print('Simulating 1,000 Deposits...')
+              for i in range(1000):
+                  f.write(f'{int(time.time())},DEPOSIT,VA_{i},CONFIRMED\n')
                   
-          print('All Simulations Finished.')
+          print('Simulation Finished.')
           "
 
       - name: 패키징 및 업로드
         run: |
           VERSION="v1.0.fintech.$(date +%Y%m%d)"
-          PKG_NAME="korea-fintech-linux-$VERSION.tar.gz"
+          PKG_NAME="korea-fintech-email-linux-$VERSION.tar.gz"
           mkdir -p target
           
-          tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_fintech_report.csv
+          tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_fintech_email_report.csv
           
           echo "Package Created: $PKG_NAME"
 
@@ -282,5 +296,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: linux-fintech-package
+          name: linux-fintech-email-package
           path: '*.tar.gz'
