@@ -1,10 +1,12 @@
 name: Copilot Agent - Complete Run (Ultimate Massive Data Edition)
+
 on:
   push:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master, develop ]
   workflow_dispatch:
+
 permissions:
   contents: read
 
@@ -36,7 +38,7 @@ jobs:
               Install-Module -Name NetSecurity -Force -AllowClobber -Scope CurrentUser
           }
 
-      # 3. 방화벽 서비스 설치 및 업그레이드 (강화됨)
+      # 3. 방화벽 서비스 설치 및 업그레이드
       - name: 방화벽 서비스 설치 및 업그레이드
         shell: powershell
         run: |
@@ -93,7 +95,7 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 7. [수정됨] 초대형 더미 데이터 생성 (5배 증량)
+      # 7. 초대형 더미 데이터 생성 (5배 증량)
       - name: 초대형 더미 데이터 및 빌드 자산 생성 (Massive Generation)
         shell: powershell
         run: |
@@ -101,7 +103,7 @@ jobs:
           $dataPath = "src/main/resources/mock_data"
           New-Item -ItemType Directory -Force -Path $dataPath | Out-Null
           
-          # JSON 데이터 5,000개 생성 (기존 1,000개 -> 5,000개)
+          # JSON 데이터 5,000개 생성
           Write-Host " -> Generating 5,000 JSON records..."
           1..5000 | ForEach-Object {
             $json = "{ 'id': $_, 'uuid': '$([guid]::NewGuid())', 'payload': 'load_test_data_$_' }"
@@ -175,7 +177,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-release-package
-          path: *.zip
+          path: '*.zip'
 
   # ==================================================================================
   # [JOB 2] Linux Agent (Fixed & Massive Build)
@@ -239,17 +241,17 @@ jobs:
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      # 7. [수정됨] 초대형 더미 데이터 생성 (5배 증량)
+      # 7. 초대형 더미 데이터 생성 (5배 증량)
       - name: 초대형 더미 데이터 및 빌드 자산 생성 (Massive Generation)
         run: |
           echo "Generating ULTIMATE Massive Dataset for Linux..."
           DATA_PATH="src/main/resources/mock_data"
           mkdir -p $DATA_PATH
           
-          # 1. XML 데이터 5,000개 생성 (기존 1,000개 -> 5,000개)
+          # 1. XML 데이터 5,000개 생성
           echo " -> Generating 5,000 XML records..."
           for i in {1..5000}; do
-             echo "<record><id>$i</id><uuid>$(uuidgen)</uuid><data>load_test_$i</data></record>" > "$DATA_PATH/data_$i.xml"
+             echo "<record><id>$i</id><ts>$(date +%s)</ts><data>load_test_$i</data></record>" > "$DATA_PATH/data_$i.xml"
           done
           
           # 2. 대용량 바이너리 10개 생성 (총 500MB 부하)
@@ -277,7 +279,7 @@ jobs:
           sudo ufw --force enable
           sudo ufw status verbose
 
-      # 10. Agent 기동 (루프 구문 수정됨)
+      # 10. Agent 기동
       - name: Copilot Coding Agent 대량 기동
         run: |
           for i in {1..5}; do
@@ -285,7 +287,7 @@ jobs:
              sleep 0.1
           done
 
-      # 11. AI 상태 확인 (구문 수정됨)
+      # 11. AI 상태 확인
       - name: AI 정상 가동 확인
         run: |
           for i in {1..5}; do
@@ -299,7 +301,7 @@ jobs:
           mvn clean verify -B -q
           echo "Build Success."
 
-      # 13. 패키징 (구문 수정됨)
+      # 13. 패키징
       - name: 에이전트 패키징 및 출시
         run: |
           echo "Packaging Agent Artifacts..."
@@ -325,4 +327,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-release-package
-          path: *.tar.gz
+          path: '*.tar.gz'
