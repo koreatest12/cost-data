@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate Permissions & Logic Edition
+name: Cost Data Agent - Ultimate Combined Massive Edition
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (Permissions, Logic Generation & Build)
+  # [JOB 1] Windows Agent (All-in-One Massive Data & Build)
   # ==================================================================================
   agent-windows:
-    name: Windows Agent (Permissions & Logic)
+    name: Windows Agent (Mega Build)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -24,8 +24,8 @@ jobs:
       - name: 작업 설정 (Job Setup)
         uses: actions/checkout@v4
 
-      # 2. 실행기 환경 및 보안 모듈 검증
-      - name: 실행기 환경 및 보안 모듈 검증
+      # 2. 실행기 및 보안 모듈 검증
+      - name: 실행기 및 보안 모듈 검증
         shell: powershell
         run: |
           Write-Host "Verifying Environment..."
@@ -48,7 +48,7 @@ jobs:
             Write-Host "Managed Environment Detected."
           }
 
-      # 4. Java 17 (Spring Boot) 및 Maven 설정
+      # 4. Java 17 & Maven 설정
       - name: Java & Maven 환경 구성
         uses: actions/setup-java@v4
         with:
@@ -66,118 +66,136 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 5. [신규] 계정별 권한(Permission) 정책 대량 생성 (JSON)
-      - name: 계정별 권한 정책 대량 생성
+      # 5. [통합] 계정 정보(Account) 10,000건 대량 생성
+      - name: 계정 정보 대량 생성 (Massive Accounts)
         shell: powershell
         run: |
-          Write-Host "Generating RBAC Permission Policies..."
-          $permPath = "src/main/resources/permissions"
-          New-Item -ItemType Directory -Force -Path $permPath | Out-Null
+          Write-Host "Generating 10,000 User Account Records..."
+          $accPath = "src/main/resources/accounts"
+          New-Item -ItemType Directory -Force -Path $accPath | Out-Null
           
-          # 10,000개의 계정에 대해 랜덤 권한 부여 (골고루 반영)
+          # 1만 건의 계정 JSON 데이터 생성
           1..10000 | ForEach-Object {
-            $role = Get-Random -InputObject "ADMIN", "MANAGER", "USER", "AUDITOR", "GUEST"
-            $scope = Get-Random -InputObject "READ_ONLY", "READ_WRITE", "FULL_ACCESS"
-            $canDelete = Get-Random -InputObject "true", "false"
-            
-            $json = "{ 'uid': $_, 'role': '$role', 'scope': '$scope', 'allow_delete': $canDelete, 'generated_at': '$(Get-Date)' }"
-            $json | Out-File -FilePath "$permPath/perm_policy_$_.json" -Encoding utf8
+            $uuid = [guid]::NewGuid()
+            $role = if ($_ % 10 -eq 0) { "ADMIN" } else { "USER" }
+            $json = "{ 'user_id': $_, 'uuid': '$uuid', 'username': 'user_$_', 'email': 'user_$_@koreatest12.com', 'role': '$role', 'active': true }"
+            $json | Out-File -FilePath "$accPath/user_$_.json" -Encoding utf8
           }
-          Write-Host "Permission Policies Generated."
+          Write-Host "Account Data Generation Completed."
 
-      # 6. [신규] 계정별 처리 로직(Java Class) 동적 생성 (컴파일 부하 테스트)
-      - name: 계정별 처리 로직(Java Source) 동적 생성
+      # 6. [통합] Spring Boot 설정 파일 500개 및 자산 생성
+      - name: Spring Boot 리소스 대량 생성
+        shell: powershell
+        run: |
+          Write-Host "Generating Massive Spring Boot Resources..."
+          $configPath = "src/main/resources/config"
+          New-Item -ItemType Directory -Force -Path $configPath | Out-Null
+          
+          # 500개의 프로퍼티 파일 생성 (멀티 테넌트 시뮬레이션)
+          1..500 | ForEach-Object {
+            $prop = "server.port=80$_\nspring.application.name=service-$_\nlogging.level.root=INFO"
+            $prop | Out-File -FilePath "$configPath/application-tenant-$_.properties" -Encoding utf8
+          }
+          
+          # 대용량 정적 자산(Static Assets) 생성 (250MB)
+          Write-Host "Generating Static Assets..."
+          1..5 | ForEach-Object {
+            fsutil file createnew "$configPath/asset_blob_$_.dat" 52428800
+          }
+          Write-Host "Spring Boot Resource Preparation Done."
+
+      # 7. [통합] Java 비즈니스 로직 동적 생성 (구문 오류 수정 적용됨)
+      - name: 비즈니스 로직 동적 생성 (Safe Logic)
         shell: powershell
         run: |
           Write-Host "Generating Dynamic Java Business Logic..."
           $sourcePath = "src/main/java/com/koreatest12/dynamic"
           New-Item -ItemType Directory -Force -Path $sourcePath | Out-Null
           
-          # 500개의 Java 클래스 파일을 동적으로 생성하여 빌드에 포함
+          # 500개의 Java 클래스 파일 생성 (배열 방식 사용으로 구문 오류 방지)
           1..500 | ForEach-Object {
             $className = "UserProcessingService_$_"
-            $code = @"
-            package com.koreatest12.dynamic;
-            import java.util.UUID;
-            public class $className {
-                public String processUser(int userId) {
-                    return "Processing User " + userId + " with Logic ID $_ : " + UUID.randomUUID().toString();
-                }
-            }
-            "@
-            $code | Out-File -FilePath "$sourcePath/$className.java" -Encoding utf8
+            $codeLines = @(
+                "package com.koreatest12.dynamic;",
+                "import java.util.UUID;",
+                "public class $className {",
+                "    public String processUser(int userId) {",
+                "        return `"Processed User `" + userId + `" with Logic ID $_ : `" + UUID.randomUUID().toString();",
+                "    }",
+                "}"
+            )
+            $codeLines -join "`r`n" | Out-File -FilePath "$sourcePath/$className.java" -Encoding utf8
           }
-          Write-Host "Dynamic Java Source Code Generated (500 Classes)."
+          Write-Host "Dynamic Java Source Code Generated."
 
-      # 7. [신규] 계정별 트랜잭션 처리 로그 대량 생성
-      - name: 계정별 트랜잭션 로그 생성
+      # 8. [통합] 급여(Payroll) 및 감사(Audit) 로그 생성
+      - name: 급여 및 감사 데이터 생성
         shell: powershell
         run: |
-          Write-Host "Generating Transaction Logs..."
-          $logPath = "src/main/resources/logs"
-          New-Item -ItemType Directory -Force -Path $logPath | Out-Null
+          Write-Host "Generating Payroll & Audit Data..."
+          $payrollPath = "src/main/resources/payroll"
+          $auditPath = "src/main/resources/audit"
+          New-Item -ItemType Directory -Force -Path $payrollPath | Out-Null
+          New-Item -ItemType Directory -Force -Path $auditPath | Out-Null
           
-          # 5,000건의 랜덤 트랜잭션 로그 (다양한 상태값 반영)
-          1..5000 | ForEach-Object {
-            $status = Get-Random -InputObject "SUCCESS", "FAILED", "PENDING", "CANCELLED"
-            $amount = Get-Random -Minimum 100 -Maximum 9999999
-            $log = "TX_ID: $([guid]::NewGuid()) | USER: user_$_ | STATUS: $status | AMOUNT: $amount | TS: $(Get-Date)"
-            $log | Out-File -FilePath "$logPath/tx_log_$_.txt" -Encoding utf8
+          # 급여 데이터 10,000건
+          $header = "EMP_ID,NAME,DEPT,SALARY,BONUS,PAY_DATE"
+          $header | Out-File -FilePath "$payrollPath/payroll_master.csv" -Encoding utf8
+          1..10000 | ForEach-Object {
+            "$_,User_$_,IT,$(Get-Random -Min 3000 -Max 9000),100,2025-01-21" | Out-File -FilePath "$payrollPath/payroll_master.csv" -Encoding utf8 -Append
           }
-          Write-Host "Transaction Logs Created."
+          
+          # 감사 로그 5,000건
+          1..5000 | ForEach-Object {
+             "[SECURITY] TS:$(Get-Date) | ACT:LOGIN | USER:user_$_" | Out-File -FilePath "$auditPath/audit_$_.log" -Encoding utf8
+          }
+          Write-Host "Payroll & Audit Data Generated."
 
-      # 8. 의존성 준비
-      - name: Maven 의존성 오프라인 준비
-        shell: powershell
-        run: mvn dependency:go-offline -B
-
-      # 9. 방화벽 규칙 적용
-      - name: 네트워크/방화벽 규칙 적용
+      # 9. 의존성 및 방화벽 설정
+      - name: 환경 준비 (Maven & Firewall)
         shell: powershell
         run: |
+          mvn dependency:go-offline -B
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
-          New-NetFirewallRule -DisplayName "App Traffic" -Direction Inbound -Protocol TCP -LocalPort 8080,9090 -Action Allow -ErrorAction SilentlyContinue
+          New-NetFirewallRule -DisplayName "App Traffic" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -ErrorAction SilentlyContinue
 
-      # 10. 빌드 수행 (동적 생성된 코드 컴파일 포함)
-      - name: 전체 로직 빌드 및 검증
+      # 10. 빌드 수행
+      - name: 통합 대량 빌드 (Build Massive)
         shell: powershell
         run: |
-          Write-Host "Compiling Generated Code & Resources..."
-          # 테스트는 건너뛰고 컴파일 및 패키징 수행 (동적 생성된 Java 파일 컴파일 확인)
+          Write-Host "Building Application with ALL Massive Resources..."
           mvn clean package -DskipTests -B -q
-          Write-Host "Build Successful. Dynamic Logic Compiled."
+          Write-Host "Build Successful."
 
-      # 11. 패키징 및 배포
-      - name: 아티팩트 패키징 (Zip)
+      # 11. 패키징
+      - name: 통합 아티팩트 패키징
         shell: powershell
         run: |
           $date = Get-Date -Format 'yyyyMMdd'
-          $packageName = "korea-logic-windows-$date.zip"
-          
+          $packageName = "korea-mega-windows-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
-          # 컴파일된 Jar, 권한 파일, 로그, 소스 코드 모두 포함
-          Compress-Archive -Path "target/*.jar", "src/main/resources/permissions", "src/main/resources/logs", "src/main/java" -DestinationPath $packageName -Force
-          
+          # 모든 리소스 포함 압축
+          Compress-Archive -Path "target/*.jar", "src/main/resources/accounts", "src/main/resources/config", "src/main/resources/payroll", "src/main/resources/audit", "src/main/java" -DestinationPath $packageName -Force
           Write-Host "Package Created: $packageName"
 
       # 12. 정리 및 업로드
-      - name: 정리
+      - name: 정리 및 업로드
         shell: powershell
         run: Remove-Item -Path "maven.zip" -Force -ErrorAction SilentlyContinue
-
+      
       - name: 결과물 업로드
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-logic-package
+          name: windows-mega-package
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (Distributed Processing & Permissions)
+  # [JOB 2] Linux Agent (All-in-One Massive Data & DB)
   # ==================================================================================
   agent-linux:
-    name: Linux Agent (Distributed Logic)
+    name: Linux Agent (Mega Build)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -187,16 +205,15 @@ jobs:
         uses: actions/checkout@v4
 
       # 2. 시스템 최적화
-      - name: 시스템 최적화 및 보안 설정
+      - name: 시스템 최적화
         run: |
           echo "Optimizing Linux Environment..."
           sudo apt-get update
           sudo apt-get install --only-upgrade ufw iptables net-tools -y
           sudo ufw --force reset
-          echo "System Optimized."
 
       # 3. Java/Maven 준비
-      - name: Java(Spring Boot) 준비
+      - name: Java & Maven 준비
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -208,66 +225,71 @@ jobs:
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      # 4. [신규] 계정별 권한 매트릭스 생성 (XML) - 골고루 반영
-      - name: 계정별 권한 매트릭스 생성 (Distributed)
+      # 4. [통합] 계정 정보(Account) 10,000건 생성 (XML)
+      - name: 계정 정보 대량 생성 (Linux)
         run: |
-          echo "Generating XML Permission Matrix..."
-          PERM_PATH="src/main/resources/permissions_xml"
-          mkdir -p $PERM_PATH
-          
-          # 10,000개 계정에 대해 랜덤 Role 할당
+          echo "Generating 10,000 Account XML Records..."
+          ACC_PATH="src/main/resources/accounts"
+          mkdir -p $ACC_PATH
           for i in {1..10000}; do
-             # shuf 명령어로 랜덤 역할 배정
-             ROLE=$(shuf -e "SUPER_ADMIN" "ADMIN" "OPERATOR" "VIEWER" -n 1)
-             LEVEL=$(shuf -i 1-10 -n 1)
-             echo "<permission><id>$i</id><role>$ROLE</role><level>$LEVEL</level></permission>" > "$PERM_PATH/perm_$i.xml"
+             echo "<account><id>$i</id><type>PREMIUM</type><created>$(date)</created></account>" > "$ACC_PATH/acc_$i.xml"
           done
-          
-          echo "XML Permission Matrix Generated."
+          echo "Account Generation Completed."
 
-      # 5. [신규] 처리 로직 설정 파일 대량 생성 (YAML)
-      - name: 처리 로직 설정 생성 (Business Logic Config)
+      # 5. [통합] Spring Boot 설정 500개 생성 (YAML)
+      - name: Spring Boot 설정 생성
         run: |
-          echo "Generating Business Logic Configs..."
-          CONF_PATH="src/main/resources/logic_config"
+          echo "Generating Massive Config Files..."
+          CONF_PATH="src/main/resources/config"
           mkdir -p $CONF_PATH
+          for i in {1..500}; do
+             echo -e "server:\n  port: 80$i\nservice:\n  id: svc_$i" > "$CONF_PATH/application-svc-$i.yml"
+          done
+          echo "Configs Generated."
+
+      # 6. [통합] DB 덤프 및 권한 매트릭스 생성
+      - name: DB 덤프 및 권한 데이터 생성
+        run: |
+          echo "Generating DB & Permission Data..."
+          DB_PATH="src/main/resources/db_dumps"
+          PERM_PATH="src/main/resources/permissions"
+          mkdir -p $DB_PATH $PERM_PATH
           
-          # 각 계정별 처리 방식을 정의하는 YAML 파일 1,000개 생성
-          for i in {1..1000}; do
-             PROCESS_TYPE=$(shuf -e "SYNC" "ASYNC" "BATCH" "REALTIME" -n 1)
-             echo -e "user_id: $i\nprocess:\n  type: $PROCESS_TYPE\n  timeout: 5000\n  retry: 3" > "$CONF_PATH/logic_user_$i.yml"
+          # SQL 덤프
+          for i in {1..50}; do
+             echo "CREATE TABLE t_$i (id INT);" > "$DB_PATH/schema_$i.sql"
+             for j in {1..500}; do echo "INSERT INTO t_$i VALUES ($j);" >> "$DB_PATH/schema_$i.sql"; done
           done
           
-          echo "Logic Configs Generated."
+          # 권한 XML
+          for i in {1..5000}; do
+             echo "<perm><uid>$i</uid><role>ADMIN</role></perm>" > "$PERM_PATH/user_$i.xml"
+          done
+          
+          # 대용량 바이너리 (300MB)
+          dd if=/dev/urandom of="$DB_PATH/full_backup.bak" bs=1M count=300 status=none
+          echo "DB Data Generated."
 
-      # 6. Maven 빌드
-      - name: Maven 빌드 (모든 리소스 포함)
+      # 7. 빌드 및 패키징
+      - name: 통합 빌드 및 패키징
         run: |
-          echo "Starting Build..."
+          echo "Building & Packaging..."
           mvn clean package -DskipTests -B -q
-          echo "Build Completed."
-
-      # 7. 패키징
-      - name: 패키징 및 배포
-        run: |
-          echo "Creating Release Package..."
-          VERSION="v1.0.logic.$(date +%Y%m%d)"
-          PKG_NAME="korea-logic-linux-$VERSION.tar.gz"
+          
+          VERSION="v1.0.linux.$(date +%Y%m%d)"
+          PKG_NAME="korea-mega-linux-$VERSION.tar.gz"
           
           mkdir -p target
-          
-          # 권한 XML, 로직 설정, Jar 파일 포함 압축
-          tar -czf $PKG_NAME target/*.jar src/main/resources/permissions_xml/ src/main/resources/logic_config/
-          
-          echo "Package: $PKG_NAME"
+          tar -czf $PKG_NAME target/*.jar src/main/resources/
+          echo "Package Created: $PKG_NAME"
 
       # 8. 정리 및 업로드
-      - name: 정리
+      - name: 정리 및 업로드
         run: rm -rf apache-maven-3.9.6-bin.tar.gz
 
       - name: 결과물 업로드
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: linux-logic-package
+          name: linux-mega-package
           path: '*.tar.gz'
