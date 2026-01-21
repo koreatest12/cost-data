@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate Simulation & Massive Build
+name: Cost Data Agent - Ultimate Massive Final (StreamWriter Fix)
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (Gen -> Build -> Simulate -> Package)
+  # [JOB 1] Windows Agent (Stable StreamWriter & High Volume Data)
   # ==================================================================================
   agent-windows:
-    name: Windows Agent (Simulation & Build)
+    name: Windows Agent (Mega Simulation)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -63,26 +63,31 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 5. [데이터 생성] 계정 정보 10,000건 (BOM 제거)
+      # 5. [안정화] 계정 정보 대량 생성 (StreamWriter 사용)
       - name: 계정 정보 대량 생성 (Massive Accounts)
         shell: powershell
         run: |
-          Write-Host "Generating 10,000 User Account Records..."
+          Write-Host "Generating 15,000 User Account Records..."
           $accPath = "src/main/resources/accounts"
           New-Item -ItemType Directory -Force -Path $accPath | Out-Null
           
-          # [중요] BOM 없는 UTF-8 인코딩 객체
+          # BOM 없는 UTF-8 설정
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          1..10000 | ForEach-Object {
+          # 15,000개 파일 생성 (StreamWriter로 안전하게 쓰기)
+          1..15000 | ForEach-Object {
             $uuid = [guid]::NewGuid()
             $role = if ($_ % 10 -eq 0) { "ADMIN" } else { "USER" }
             $json = "{ 'user_id': $_, 'uuid': '$uuid', 'username': 'user_$_', 'email': 'user_$_@koreatest12.com', 'role': '$role', 'status': 'ACTIVE' }"
-            [System.IO.File]::WriteAllText("$accPath/user_$_.json", $json, $utf8NoBom)
+            
+            # StreamWriter를 사용하여 파일 개별 생성 (BOM 방지)
+            $sw = New-Object System.IO.StreamWriter("$accPath/user_$_.json", $false, $utf8NoBom)
+            $sw.Write($json)
+            $sw.Close()
           }
-          Write-Host "Account Data Generation Completed (Clean UTF-8)."
+          Write-Host "Account Data Generation Completed."
 
-      # 6. [데이터 생성] Spring Boot 리소스
+      # 6. [대량 추가] Spring Boot 리소스 및 대용량 에셋
       - name: Spring Boot 리소스 대량 생성
         shell: powershell
         run: |
@@ -91,64 +96,81 @@ jobs:
           New-Item -ItemType Directory -Force -Path $configPath | Out-Null
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          1..500 | ForEach-Object {
-            $prop = "server.port=80$_\nspring.application.name=service-$_\nlogging.level.root=INFO"
-            [System.IO.File]::WriteAllText("$configPath/application-tenant-$_.properties", $prop, $utf8NoBom)
+          # 설정 파일 1,000개
+          1..1000 | ForEach-Object {
+            $sw = New-Object System.IO.StreamWriter("$configPath/application-tenant-$_.properties", $false, $utf8NoBom)
+            $sw.WriteLine("server.port=80$_")
+            $sw.WriteLine("spring.application.name=service-$_")
+            $sw.Close()
           }
           
-          # 정적 자산 생성
-          1..5 | ForEach-Object {
+          # 정적 자산 생성 (500MB)
+          Write-Host "Generating Heavy Static Assets..."
+          1..10 | ForEach-Object {
             fsutil file createnew "$configPath/asset_blob_$_.dat" 52428800
           }
           Write-Host "Spring Boot Resources Ready."
 
-      # 7. [데이터 생성] Java 비즈니스 로직 (BOM 제거 필수)
-      - name: 비즈니스 로직 동적 생성 (Java Source)
+      # 7. [안정화] Java 비즈니스 로직 동적 생성
+      - name: 비즈니스 로직 동적 생성 (StreamWriter Fix)
         shell: powershell
         run: |
-          Write-Host "Generating Dynamic Java Business Logic (No BOM)..."
+          Write-Host "Generating Dynamic Java Business Logic..."
           $sourcePath = "src/main/java/com/koreatest12/dynamic"
           New-Item -ItemType Directory -Force -Path $sourcePath | Out-Null
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
           1..500 | ForEach-Object {
             $className = "UserProcessingService_$_"
-            $codeLines = @(
-                "package com.koreatest12.dynamic;",
-                "import java.util.UUID;",
-                "public class $className {",
-                "    public String processUser(int userId) {",
-                "        return `"Processed User `" + userId + `" with Logic ID $_ : `" + UUID.randomUUID().toString();",
-                "    }",
-                "}"
-            )
-            $finalCode = $codeLines -join "`r`n"
-            [System.IO.File]::WriteAllText("$sourcePath/$className.java", $finalCode, $utf8NoBom)
+            $code = "package com.koreatest12.dynamic;`r`nimport java.util.UUID;`r`npublic class $className {`r`n  public String process(int id) { return `"Processed `"+id; }`r`n}"
+            
+            $sw = New-Object System.IO.StreamWriter("$sourcePath/$className.java", $false, $utf8NoBom)
+            $sw.Write($code)
+            $sw.Close()
           }
           Write-Host "Java Source Code Generated."
 
-      # 8. [데이터 생성] 상품 및 급여 데이터
-      - name: 상품 및 급여 데이터 생성
+      # 8. [오류 수정] 상품 및 급여 데이터 (StreamWriter 사용)
+      - name: 상품, 급여, IoT 센서 데이터 생성 (Mega Volume)
         shell: powershell
         run: |
-          Write-Host "Generating Product & Payroll Data..."
+          Write-Host "Generating Massive CSV Data (Products, Payroll, IoT)..."
           $prodPath = "src/main/resources/products"
           $payrollPath = "src/main/resources/payroll"
+          $iotPath = "src/main/resources/iot"
+          
           New-Item -ItemType Directory -Force -Path $prodPath | Out-Null
           New-Item -ItemType Directory -Force -Path $payrollPath | Out-Null
+          New-Item -ItemType Directory -Force -Path $iotPath | Out-Null
+          
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          # 상품 20,000건
-          [System.IO.File]::WriteAllText("$prodPath/products.csv", "ID,NAME,PRICE,STOCK`r`n", $utf8NoBom)
-          $prodLines = 1..20000 | ForEach-Object { "$_,Item_$_,$(Get-Random -Min 100 -Max 9000),99" }
-          [System.IO.File]::AppendAllLines("$prodPath/products.csv", $prodLines, $utf8NoBom)
+          # 1. 상품 데이터 (30,000건) - StreamWriter 사용으로 오류 해결
+          $swProd = New-Object System.IO.StreamWriter("$prodPath/products.csv", $false, $utf8NoBom)
+          $swProd.WriteLine("ID,NAME,PRICE,STOCK")
+          1..30000 | ForEach-Object {
+            $swProd.WriteLine("$_,Item_$_,$(Get-Random -Min 100 -Max 9999),99")
+          }
+          $swProd.Close()
+          Write-Host " -> Products Generated."
           
-          # 급여 5,000건
-          [System.IO.File]::WriteAllText("$payrollPath/payroll.csv", "EMP_ID,SALARY,DATE`r`n", $utf8NoBom)
-          $payLines = 1..5000 | ForEach-Object { "$_,$(Get-Random -Min 3000 -Max 8000),2025-01-21" }
-          [System.IO.File]::AppendAllLines("$payrollPath/payroll.csv", $payLines, $utf8NoBom)
-          
-          Write-Host "CSV Data Generated."
+          # 2. 급여 데이터 (10,000건)
+          $swPay = New-Object System.IO.StreamWriter("$payrollPath/payroll.csv", $false, $utf8NoBom)
+          $swPay.WriteLine("EMP_ID,SALARY,DATE")
+          1..10000 | ForEach-Object {
+            $swPay.WriteLine("$_,$(Get-Random -Min 3000 -Max 8000),2025-01-21")
+          }
+          $swPay.Close()
+          Write-Host " -> Payroll Generated."
+
+          # 3. [신규] IoT 센서 데이터 (20,000건)
+          $swIoT = New-Object System.IO.StreamWriter("$iotPath/sensor_logs.csv", $false, $utf8NoBom)
+          $swIoT.WriteLine("SENSOR_ID,TEMP,HUMIDITY,TS")
+          1..20000 | ForEach-Object {
+            $swIoT.WriteLine("SENS_$_,$(Get-Random -Min 20 -Max 40),$(Get-Random -Min 30 -Max 80),$(Get-Date -Format 'yyyyMMddHHmmss')")
+          }
+          $swIoT.Close()
+          Write-Host " -> IoT Sensor Data Generated."
 
       # 9. 환경 준비
       - name: Maven 의존성 및 네트워크 설정
@@ -166,8 +188,8 @@ jobs:
           mvn clean package -DskipTests -B -q
           Write-Host "Build Successful."
 
-      # 11. [신규] 계정 처리 시뮬레이션 (Simulation)
-      - name: 계정 처리 시뮬레이션 (Account Processing Simulation)
+      # 11. 계정 처리 시뮬레이션
+      - name: 계정 처리 시뮬레이션 (Simulation)
         shell: powershell
         run: |
           Write-Host "Starting Account Processing Simulation..."
@@ -175,33 +197,28 @@ jobs:
           $reportPath = "simulation_report.csv"
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           
-          # CSV 리포트 헤더 작성
-          [System.IO.File]::WriteAllText($reportPath, "USER_ID,PROCESS_STATUS,LATENCY_MS,TIMESTAMP`r`n", $utf8NoBom)
+          $swReport = New-Object System.IO.StreamWriter($reportPath, $false, $utf8NoBom)
+          $swReport.WriteLine("USER_ID,STATUS,LATENCY,TS")
           
-          # 10,000개 계정 파일을 읽어서 처리하는 척 시뮬레이션
-          # 성능을 위해 1,000개 단위로 배치 처리 로그 출력
+          # 파일 목록 가져오기 (15,000개)
           $files = Get-ChildItem $accPath *.json
           $counter = 0
-          $batchResults = New-Object System.Collections.Generic.List[string]
           
           foreach ($file in $files) {
              $counter++
-             $status = Get-Random -InputObject "PROCESSED", "VERIFIED", "FLAGGED"
-             $latency = Get-Random -Minimum 10 -Maximum 150
+             # 랜덤 처리 시뮬레이션
+             $status = Get-Random -InputObject "SUCCESS", "RETRY", "FAIL"
+             $latency = Get-Random -Min 10 -Max 100
              
-             # 결과 라인 추가
-             $batchResults.Add("$($file.BaseName),$status,$latency,$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
+             $swReport.WriteLine("$($file.BaseName),$status,$latency,$(Get-Date)")
              
-             if ($counter % 2000 -eq 0) {
-                 Write-Host " -> Processed $counter / 10000 accounts..."
+             if ($counter % 3000 -eq 0) {
+                 Write-Host " -> Processed $counter / 15000 accounts..."
              }
           }
+          $swReport.Close()
           
-          # 결과 파일 저장
-          [System.IO.File]::AppendAllLines($reportPath, $batchResults, $utf8NoBom)
-          
-          Write-Host "Simulation Completed. Report Generated: $reportPath"
-          Write-Host "Total Transactions Simulated: $counter"
+          Write-Host "Simulation Completed. Total: $counter"
 
       # 12. 패키징 (시뮬레이션 결과 포함)
       - name: 통합 아티팩트 패키징
@@ -211,7 +228,6 @@ jobs:
           $packageName = "korea-complete-sim-windows-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
-          # JAR, 리소스, 소스, 시뮬레이션 리포트 모두 포함
           Compress-Archive -Path "target/*.jar", "src/main/resources/*", "src/main/java", "simulation_report.csv" -DestinationPath $packageName -Force
           Write-Host "Package Created: $packageName"
 
@@ -228,10 +244,10 @@ jobs:
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (Simulate & Build)
+  # [JOB 2] Linux Agent (Optimized Loop & Mega Volume)
   # ==================================================================================
   agent-linux:
-    name: Linux Agent (Simulation & Build)
+    name: Linux Agent (Mega Simulation)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -257,43 +273,52 @@ jobs:
           tar -xzf apache-maven-3.9.6-bin.tar.gz
           echo "$PWD/apache-maven-3.9.6/bin" >> $GITHUB_PATH
 
-      - name: 데이터 대량 생성
+      - name: 데이터 대량 생성 (Linux Optimized)
         run: |
-          echo "Generating Massive Data..."
-          mkdir -p src/main/resources/{accounts,products,config}
+          echo "Generating Massive Data for Linux..."
+          mkdir -p src/main/resources/{accounts,products,config,logs}
           
-          # 계정 10,000개
-          for i in {1..10000}; do
-             echo "<account><id>$i</id><status>ACTIVE</status></account>" > "src/main/resources/accounts/acc_$i.xml"
+          # 계정 15,000개 (Shell Loop 최적화)
+          # seq를 사용하여 빠른 반복
+          seq 1 15000 | xargs -I {} sh -c 'echo "<account><id>{}</id><status>ACTIVE</status></account>" > src/main/resources/accounts/acc_{}.xml'
+          
+          # 상품 30,000개 (단일 파일 append가 더 빠름)
+          echo "ID,NAME,PRICE" > src/main/resources/products/catalog.csv
+          for i in {1..30000}; do
+             echo "PROD_$i,Item_$i,$((RANDOM % 1000))" >> src/main/resources/products/catalog.csv
           done
           
-          # 상품 20,000개
-          for i in {1..20000}; do
-             echo "PROD_$i,Item_$i,$(($RANDOM % 1000))" >> "src/main/resources/products/catalog.csv"
-          done
+          # 로그 파일 5,000개
+          seq 1 5000 | xargs -I {} sh -c 'echo "LOG ENTRY {}" > src/main/resources/logs/sys_{}.log'
+          
           echo "Data Generation Complete."
 
       - name: 빌드 수행
         run: mvn clean package -DskipTests -B -q
 
-      - name: 계정 처리 시뮬레이션 (Linux)
+      - name: 계정 처리 시뮬레이션 (Linux Loop Fix)
         run: |
           echo "Starting Batch Processing Simulation..."
           REPORT="linux_simulation_report.log"
           echo "TIMESTAMP,FILE,STATUS" > $REPORT
           
-          # 10,000개 파일을 루프 돌면서 처리 시뮬레이션
-          count=0
-          for file in src/main/resources/accounts/*.xml; do
-             ((count++))
-             if ((count % 2500 == 0)); then
-                 echo " -> Processed $count accounts..."
-             fi
-             # 랜덤 처리 상태 (의사 난수)
-             if (( $RANDOM % 10 > 1 )); then STATUS="SUCCESS"; else STATUS="RETRY"; fi
-             echo "$(date +%s),$file,$STATUS" >> $REPORT
-          done
-          echo "Simulation Finished. Total processed: $count"
+          # 파일이 존재하는지 확인 후 루프
+          if [ -d "src/main/resources/accounts" ]; then
+             count=0
+             # find 명령어로 안전하게 파일 목록 순회
+             find src/main/resources/accounts -name "*.xml" | while read file; do
+                 ((count++))
+                 # 3000건마다 진행상황 출력
+                 if ((count % 3000 == 0)); then
+                     echo " -> Processed $count accounts..."
+                 fi
+                 echo "$(date +%s),$file,PROCESSED" >> $REPORT
+             done
+             echo "Simulation Finished. Total processed: $count"
+          else
+             echo "Error: Account directory not found."
+             exit 1
+          fi
 
       - name: 패키징 및 업로드
         run: |
