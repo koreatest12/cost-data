@@ -1,4 +1,4 @@
-name: Cost Data Agent - Ultimate Visibility & Reporting Edition
+name: Cost Data Agent - Ultimate 1M Records & Job Summary Fixed
 
 on:
   push:
@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (Massive Data + Visual Job Summary)
+  # [JOB 1] Windows Agent (1 Million Records + Visual Summary Fix)
   # ==================================================================================
   agent-windows:
-    name: Windows Agent (Report & Visual Summary)
+    name: Windows Agent (1M Records & Summary)
     runs-on: windows-latest
     permissions:
       contents: read
@@ -62,11 +62,11 @@ jobs:
           $mavenBin = "$(Get-Location)\apache-maven-3.9.6\bin"
           echo "$mavenBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # 5. [데이터 생성] 가상 계좌 + 이메일 30만 건
-      - name: 가상 계좌 및 이메일 30만 건 생성
+      # 5. [데이터 생성] 가상 계좌 50만 건 (초대형 규모 확장)
+      - name: 가상 계좌 50만 건 생성 (Massive Scale)
         shell: powershell
         run: |
-          Write-Host "Generating 300,000 Virtual Account Records..."
+          Write-Host "Generating 500,000 Virtual Account Records..."
           $vaPath = "src/main/resources/services/virtual_accounts"
           New-Item -ItemType Directory -Force -Path $vaPath | Out-Null
           
@@ -74,22 +74,23 @@ jobs:
           $swVA = New-Object System.IO.StreamWriter("$vaPath/va_master_db.csv", $false, $utf8NoBom)
           $swVA.WriteLine("VA_ID,BANK,ACCOUNT,OWNER,EMAIL,STATUS")
           
-          1..300000 | ForEach-Object {
+          # 50만 건 루프
+          1..500000 | ForEach-Object {
              $bank = Get-Random -InputObject "004", "088", "020"
              $acc = "999$(Get-Random -Min 10000000 -Max 99999999)"
              $email = "user.$_@fintech.com"
              $swVA.WriteLine("VA_$_, $bank, $acc, User_$_, $email, ACTIVE")
              
-             if ($_ % 50000 -eq 0) { Write-Host " -> Generated $_ / 300,000..." }
+             if ($_ % 100000 -eq 0) { Write-Host " -> Generated $_ / 500,000 VA records..." }
           }
           $swVA.Close()
-          Write-Host "VA Data Generated."
+          Write-Host "VA Data Generation Completed."
 
-      # 6. [데이터 생성] 마케팅 이메일 50만 건
-      - name: 마케팅 이메일 50만 건 생성
+      # 6. [데이터 생성] 마케팅 이메일 100만 건 (1 Million)
+      - name: 마케팅 이메일 100만 건 생성 (1 Million Records)
         shell: powershell
         run: |
-          Write-Host "Generating 500,000 Marketing Emails..."
+          Write-Host "Generating 1,000,000 Marketing Emails..."
           $emailPath = "src/main/resources/services/marketing"
           New-Item -ItemType Directory -Force -Path $emailPath | Out-Null
           
@@ -97,26 +98,27 @@ jobs:
           $swEmail = New-Object System.IO.StreamWriter("$emailPath/marketing_db.csv", $false, $utf8NoBom)
           $swEmail.WriteLine("EMAIL,STATUS,LAST_SENT")
           
-          1..500000 | ForEach-Object {
+          # 100만 건 루프
+          1..1000000 | ForEach-Object {
              $swEmail.WriteLine("customer.$_@market.com,SUBSCRIBED,$(Get-Date -Format 'yyyy-MM-dd')")
-             if ($_ % 100000 -eq 0) { Write-Host " -> Generated $_ / 500,000..." }
+             if ($_ % 200000 -eq 0) { Write-Host " -> Generated $_ / 1,000,000 emails..." }
           }
           $swEmail.Close()
           Write-Host "Marketing Email DB Generated."
 
-      # 7. [시뮬레이션] 처리 결과 로그 생성
+      # 7. [시뮬레이션] 처리 결과 로그 생성 (대량 트랜잭션)
       - name: 통합 처리 시뮬레이션
         shell: powershell
         run: |
-          Write-Host "Simulating Transactions..."
+          Write-Host "Simulating Massive Transactions..."
           $logPath = "simulation_results.log"
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           $swLog = New-Object System.IO.StreamWriter($logPath, $false, $utf8NoBom)
           $swLog.WriteLine("TIMESTAMP | TYPE | ID | RESULT")
           
-          # 입금 2000건, 이메일 발송 3000건
-          1..2000 | ForEach-Object { $swLog.WriteLine("$(Get-Date) | DEPOSIT | VA_$_ | SUCCESS") }
-          1..3000 | ForEach-Object { $swLog.WriteLine("$(Get-Date) | EMAIL_SEND | customer.$_ | SENT") }
+          # 입금 10,000건, 이메일 발송 20,000건
+          1..10000 | ForEach-Object { $swLog.WriteLine("$(Get-Date) | DEPOSIT | VA_$_ | SUCCESS") }
+          1..20000 | ForEach-Object { $swLog.WriteLine("$(Get-Date) | EMAIL_SEND | customer.$_ | SENT") }
           
           $swLog.Close()
           Write-Host "Simulation Completed."
@@ -129,29 +131,34 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           mvn clean package -DskipTests -B -q
 
-      # 9. [신규 기능] GitHub 요약 보고서 (Job Summary) 생성 - 화면에 바로 출력
-      - name: 실행 결과 요약 보고서 생성 (Job Summary)
+      # 9. [수정됨] GitHub 요약 보고서 (배열 방식 사용으로 오류 해결)
+      - name: 실행 결과 요약 보고서 생성 (Job Summary Fixed)
         shell: powershell
         run: |
           $summaryFile = $env:GITHUB_STEP_SUMMARY
           
-          # 마크다운 형식으로 요약 작성
-          Add-Content -Path $summaryFile -Value "## 🚀 Windows Agent Execution Report"
-          Add-Content -Path $summaryFile -Value ""
-          Add-Content -Path $summaryFile -Value "| Category | Count | Status |"
-          Add-Content -Path $summaryFile -Value "|---|---|---|"
-          Add-Content -Path $summaryFile -Value "| **Virtual Accounts** | 300,000 | ✅ Created |"
-          Add-Content -Path $summaryFile -Value "| **Marketing Emails** | 500,000 | ✅ Created |"
-          Add-Content -Path $summaryFile -Value "| **Deposits Processed** | 2,000 | ✅ Simulated |"
-          Add-Content -Path $summaryFile -Value "| **Emails Sent** | 3,000 | ✅ Simulated |"
-          Add-Content -Path $summaryFile -Value "| **Maven Build** | Build Success | ✅ Completed |"
-          Add-Content -Path $summaryFile -Value ""
-          Add-Content -Path $summaryFile -Value "### 📊 System Performance"
-          Add-Content -Path $summaryFile -Value "- **OS:** Windows Server 2022"
-          Add-Content -Path $summaryFile -Value "- **Java:** Temurin 17"
-          Add-Content -Path $summaryFile -Value "- **Timestamp:** $(Get-Date)"
+          # 배열(Array)을 사용하여 문자열 터미네이터 오류 방지
+          $summaryContent = @(
+              "## 🚀 Windows Agent Execution Report",
+              "",
+              "| Category | Count | Status |",
+              "|---|---|---|",
+              "| **Virtual Accounts** | 500,000 | ✅ Created |",
+              "| **Marketing Emails** | 1,000,000 | ✅ Created |",
+              "| **Deposits Sim** | 10,000 | ✅ Processed |",
+              "| **Emails Sim** | 20,000 | ✅ Processed |",
+              "| **Maven Build** | Build Success | ✅ Completed |",
+              "",
+              "### 📊 System Performance",
+              "- **OS:** Windows Server 2022",
+              "- **Java:** Temurin 17",
+              "- **Timestamp:** $(Get-Date)"
+          )
           
-          Write-Host "Job Summary Updated."
+          # 파일에 안전하게 쓰기
+          $summaryContent | Out-File -FilePath $summaryFile -Encoding utf8 -Append
+          
+          Write-Host "Job Summary Successfully Generated."
 
       # 10. 통합 결과 이메일 생성
       - name: 통합 결과 이메일 생성 및 전송 시뮬레이션
@@ -161,7 +168,7 @@ jobs:
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           $sw = New-Object System.IO.StreamWriter($reportFile, $false, $utf8NoBom)
           
-          $sw.WriteLine("<html><body><h1>[Windows] Execution Report</h1><ul><li>Status: Success</li><li>Data: 800k Records</li></ul></body></html>")
+          $sw.WriteLine("<html><body><h1>[Windows] 1M Records Report</h1><ul><li>Status: Success</li><li>Data: 1.5 Million Records</li></ul></body></html>")
           $sw.Close()
           
           Write-Host "Email Content Generated."
@@ -171,7 +178,7 @@ jobs:
         shell: powershell
         run: |
           $date = Get-Date -Format 'yyyyMMdd'
-          $packageName = "windows-result-package-$date.zip"
+          $packageName = "windows-result-1m-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
           Compress-Archive -Path "target/*.jar", "src/main/resources/services", "simulation_results.log", "FINAL_EXECUTION_REPORT_EMAIL.html" -DestinationPath $packageName -Force
@@ -225,16 +232,18 @@ jobs:
           mkdir -p src/main/resources/services/{virtual_accounts,marketing}
           
           python3 -c "
-          # 1. 300k VA Data
+          # 1. 500k VA Data
+          print('Generating 500k VA Records...')
           with open('src/main/resources/services/virtual_accounts/va.csv', 'w') as f:
               f.write('ID,BANK,ACC,EMAIL,STATUS\n')
-              for i in range(300000):
+              for i in range(500000):
                   f.write(f'VA_{i},004,999{i},user.{i}@mail.com,ACTIVE\n')
           
-          # 2. 500k Marketing Data
+          # 2. 1M Marketing Data
+          print('Generating 1M Marketing Records...')
           with open('src/main/resources/services/marketing/email.csv', 'w') as f:
               f.write('EMAIL,OPT_IN\n')
-              for i in range(500000):
+              for i in range(1000000):
                   f.write(f'cust_{i}@promo.com,YES\n')
           "
 
@@ -250,7 +259,7 @@ jobs:
           # 시뮬레이션 로그
           with open('linux_simulation.log', 'w') as f:
               f.write('TS,ACTION,RESULT\n')
-              for i in range(5000):
+              for i in range(10000):
                   f.write(f'{time.time()},PROCESS_TX_{i},SUCCESS\n')
           
           # HTML 이메일 리포트
@@ -258,16 +267,16 @@ jobs:
               f.write('<html><body><h1>Linux Report</h1><p>Success</p></body></html>')
           "
 
-      # [신규 기능] GitHub 요약 보고서 (Job Summary) 생성 - 화면에 바로 출력
+      # [신규 기능] GitHub 요약 보고서 (Job Summary) 생성
       - name: 실행 결과 요약 보고서 생성 (Job Summary)
         run: |
           echo "## 🐧 Linux Agent Execution Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Virtual Accounts** | 300,000 | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Marketing DB** | 500,000 | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Simulation Tx** | 5,000 | ✅ Processed |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Virtual Accounts** | 500,000 | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Marketing DB** | 1,000,000 | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Simulation Tx** | 10,000 | ✅ Processed |" >> $GITHUB_STEP_SUMMARY
           echo "| **Build Artifacts** | Included | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📧 Email Notification Status" >> $GITHUB_STEP_SUMMARY
@@ -277,7 +286,7 @@ jobs:
       - name: 패키징 및 업로드
         run: |
           VERSION="v1.0.rpt.$(date +%Y%m%d)"
-          PKG_NAME="linux-result-package-$VERSION.tar.gz"
+          PKG_NAME="linux-result-1m-$VERSION.tar.gz"
           mkdir -p target
           
           tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_simulation.log FINAL_REPORT_EMAIL.html
