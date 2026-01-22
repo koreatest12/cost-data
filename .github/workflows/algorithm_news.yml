@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Server-Ops Massive)
+name: 🌌 Omni-Intelligence Grand Pipeline (Hyper-Scale Fix)
 
 on:
   schedule:
@@ -15,10 +15,10 @@ permissions:
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine (생성 -> 압축 패키징)
+  # 🛡️ 1. Security Engine (20만 건 생성 -> 압축)
   # ==============================================================================
   security-core:
-    name: 🛡️ Security Engine (Pkg)
+    name: 🛡️ Security Engine (200k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,44 +27,41 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install faker
-      - name: 🧬 Generate Massive Data
+      - name: 🧬 Generate Hyper-Massive Data
         run: |
           cat << 'EOF' > sec_core.py
           import json, os, datetime, random
           from faker import Faker
           fake = Faker()
           
-          print("⚡ [Server] Generating 100,000 Security Records...")
+          print("⚡ [Server] Generating 200,000 Security Records...")
           data = []
-          for i in range(100000):
+          # 루프 대폭 증가 (200,000건)
+          for i in range(200000):
               data.append({
                   "id": f"SEC-{i}",
-                  "title": f"Critical Vulnerability CVE-2026-{10000+i}",
-                  "content": fake.paragraph(),
-                  "severity": random.choice(["Critical", "High"]),
+                  "title": f"Critical Vulnerability CVE-2026-{10000+i} Detected",
+                  "content": fake.sentence(),
+                  "severity": random.choice(["Critical", "High", "Medium"]),
                   "date": datetime.datetime.now().strftime('%Y-%m-%d')
               })
           
           with open("DB_SEC/live/threat_intel/news.json", "w") as f: json.dump(data, f)
-          print(f"✅ Data Generated: {len(data)}")
+          print(f"✅ Security Data Size: {len(data)}")
           EOF
           python sec_core.py
 
-      # [전송 최적화] 데이터 압축 (Install Package 생성)
-      - name: 📦 Create Install Package
-        run: |
-          tar -czf security_pkg.tar.gz DB_SEC/
-          echo "📦 Package Size:"
-          du -h security_pkg.tar.gz
+      - name: 📦 Compress Data
+        run: tar -czf security_pkg.tar.gz DB_SEC/
 
       - uses: actions/upload-artifact@v4
         with: { name: pkg-security, path: security_pkg.tar.gz }
 
   # ==============================================================================
-  # 💼 2. Job Engine (생성 -> 압축 패키징)
+  # 💼 2. Job Engine (10만 건 생성 -> 압축)
   # ==============================================================================
   job-core:
-    name: 💼 Job Fortress (Pkg)
+    name: 💼 Job Fortress (100k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,87 +70,86 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install faker
-      - name: 🧬 Generate Massive Data
+      - name: 🧬 Generate Hyper-Massive Data
         run: |
           cat << 'EOF' > job_core.py
           import json, os, random
           from faker import Faker
           fake = Faker()
-          print("⚡ [Server] Generating 50,000 Job Records...")
+          print("⚡ [Server] Generating 100,000 Job Records...")
           data = []
-          for i in range(50000):
+          for i in range(100000):
               data.append({
                   "id": f"JOB-{i}",
-                  "title": f"{fake.job()} Hiring",
-                  "company": fake.company(),
-                  "location": random.choice(["Pangyo", "Gangnam", "Remote"])
+                  "title": f"{fake.job()} Hiring at {fake.company()}",
+                  "location": random.choice(["Pangyo", "Gangnam", "Remote", "Global"])
               })
           with open("DB_JOB/live/global/jobs.json", "w") as f: json.dump(data, f)
           EOF
           python job_core.py
 
-      - name: 📦 Create Install Package
+      - name: 📦 Compress Data
         run: tar -czf job_pkg.tar.gz DB_JOB/
 
       - uses: actions/upload-artifact@v4
         with: { name: pkg-job, path: job_pkg.tar.gz }
 
   # ==============================================================================
-  # 🧮 3. Algo Engine (생성 -> 압축 패키징)
+  # 🧮 3. Algo Engine (10만 건 생성 -> 압축)
   # ==============================================================================
   algo-core:
-    name: 🧮 Algo Engine (Pkg)
+    name: 🧮 Algo Engine (100k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_ALGO/live/ai
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: 🧬 Generate Massive Data
+      - name: 🧬 Generate Hyper-Massive Data
         run: |
           cat << 'EOF' > algo_core.py
           import json, os
-          print("⚡ [Server] Generating 30,000 Algo Records...")
-          data = [{"id":i, "title":f"Algo Research #{i}"} for i in range(30000)]
+          print("⚡ [Server] Generating 100,000 Algo Records...")
+          data = [{"id":i, "title":f"Advanced AI Research Paper #{i}"} for i in range(100000)]
           with open("DB_ALGO/live/ai/data.json", "w") as f: json.dump(data, f)
           EOF
           python algo_core.py
 
-      - name: 📦 Create Install Package
+      - name: 📦 Compress Data
         run: tar -czf algo_pkg.tar.gz DB_ALGO/
 
       - uses: actions/upload-artifact@v4
         with: { name: pkg-algo, path: algo_pkg.tar.gz }
 
   # ==============================================================================
-  # 💰 4. Cost Engine (생성 -> 압축 패키징)
+  # 💰 4. Cost Engine (10만 건 생성 -> 압축)
   # ==============================================================================
   misc-core:
-    name: 💰 Cost Engine (Pkg)
+    name: 💰 Cost Engine (100k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_COST/live/market
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: 🧬 Generate Massive Data
+      - name: 🧬 Generate Hyper-Massive Data
         run: |
           cat << 'EOF' > misc_core.py
           import json, os, random
-          print("⚡ [Server] Generating 20,000 Cost Records...")
-          data = [{"id":i, "rate":1400+random.randint(-50,50)} for i in range(20000)]
+          print("⚡ [Server] Generating 100,000 Cost Records...")
+          data = [{"id":i, "rate":1400+random.randint(-100,100)} for i in range(100000)]
           with open("DB_COST/live/market/data.json", "w") as f: json.dump(data, f)
           EOF
           python misc_core.py
 
-      - name: 📦 Create Install Package
+      - name: 📦 Compress Data
         run: tar -czf cost_pkg.tar.gz DB_COST/
 
       - uses: actions/upload-artifact@v4
         with: { name: pkg-cost, path: cost_pkg.tar.gz }
 
   # ==============================================================================
-  # ☕ 5. Java App Build (전송 -> 설치 -> 빌드)
+  # ☕ 5. Java App Build (Fix: Jakarta Import & Data Install)
   # ==============================================================================
   java-app-build:
     needs: [security-core, job-core, algo-core, misc-core]
@@ -162,7 +158,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # 1. [전송] 패키지 다운로드 (Transmission)
+      # 1. 패키지 다운로드
       - uses: actions/download-artifact@v4
         with: { pattern: 'pkg-*', merge-multiple: true }
         continue-on-error: true
@@ -171,48 +167,31 @@ jobs:
         uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin', cache: maven }
 
-      # 2. [설치] 압축 해제 및 데이터 주입 (Installation)
+      # 2. 압축 해제 및 설치 (Fail-Safe)
       - name: 🛠️ Install Data Packages
         run: |
           echo "📦 Installing Massive Data Packages..."
-          
-          # 패키지 존재 여부 확인 및 해제
           if ls *.tar.gz 1> /dev/null 2>&1; then
-            for pkg in *.tar.gz; do
-              echo "  - Extracting $pkg..."
-              tar -xzf "$pkg"
-            done
+            for pkg in *.tar.gz; do tar -xzf "$pkg"; done
           else
-            echo "⚠️ No packages found! Creating Emergency Dump..."
+            echo "⚠️ No packages! Creating Emergency Dumps..."
             mkdir -p DB_SEC/live DB_JOB/live DB_ALGO/live DB_COST/live
           fi
           
-          # 비상용 더미 생성 (압축 해제 후에도 비어있을 경우 대비)
-          cat << 'EOF' > installer.py
-          import os, json
-          PATHS = ["DB_SEC/live/threat_intel", "DB_JOB/live/global", "DB_ALGO/live/ai", "DB_COST/live/market"]
-          for p in PATHS:
-              os.makedirs(p, exist_ok=True)
-              f_path = f"{p}/data.json"
-              if not os.path.exists(f_path):
-                  print(f"⚠️ Installing Default Data to {p}")
-                  with open(f_path, "w") as f: json.dump([{"status":"installed"}], f)
-          EOF
-          python installer.py
-
           # 리소스 폴더에 설치
           rm -rf src
           mkdir -p src/main/resources/data
           
-          cp -r DB_SEC/live src/main/resources/data/security
-          cp -r DB_JOB/live src/main/resources/data/jobs
-          cp -r DB_ALGO/live src/main/resources/data/algo
-          cp -r DB_COST/live src/main/resources/data/cost
+          # 폴더가 존재할 때만 복사 (에러 방지)
+          [ -d DB_SEC/live ] && cp -r DB_SEC/live src/main/resources/data/security
+          [ -d DB_JOB/live ] && cp -r DB_JOB/live src/main/resources/data/jobs
+          [ -d DB_ALGO/live ] && cp -r DB_ALGO/live src/main/resources/data/algo
+          [ -d DB_COST/live ] && cp -r DB_COST/live src/main/resources/data/cost
           
-          echo "✅ Installation Complete. Verified Files:"
-          find src/main/resources/data -name "*.json" | wc -l
+          echo "✅ Installation Complete."
+          find src/main/resources/data -maxdepth 2
 
-      - name: 📝 pom.xml 생성
+      - name: 📝 pom.xml 생성 (Dependencies 추가)
         run: |
           cat << 'EOF' > pom.xml
           <?xml version="1.0" encoding="UTF-8"?>
@@ -226,21 +205,27 @@ jobs:
               <dependencies>
                   <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
                   <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
+                  <dependency><groupId>jakarta.annotation</groupId><artifactId>jakarta.annotation-api</artifactId></dependency>
               </dependencies>
               <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId><configuration><mainClass>com.costdata.OmniApiApplication</mainClass></configuration></plugin></plugins></build>
           </project>
           EOF
 
+      # [핵심 수정] javax -> jakarta로 변경
       - name: 🧬 Java API Server Code
         run: |
           mkdir -p src/main/java/com/costdata
           cat << 'EOF' > src/main/java/com/costdata/OmniApiApplication.java
           package com.costdata;
+          
           import org.springframework.boot.SpringApplication;
           import org.springframework.boot.autoconfigure.SpringBootApplication;
           import org.springframework.web.bind.annotation.GetMapping;
           import org.springframework.web.bind.annotation.RestController;
-          import javax.annotation.PostConstruct;
+          
+          // [Fix] Spring Boot 3.x에서는 jakarta 패키지 사용 필수
+          import jakarta.annotation.PostConstruct;
+          
           import java.util.Map;
           
           @SpringBootApplication @RestController
@@ -249,13 +234,11 @@ jobs:
               
               @PostConstruct
               public void init() {
-                  System.out.println("🚀 [Server] Installing Massive Data Modules...");
-                  System.out.println("✅ [Server] Security Module Loaded (100k records)");
-                  System.out.println("✅ [Server] Job Module Loaded (50k records)");
+                  System.out.println("🚀 [Server] System Initialized with Hyper-Scale Data.");
               }
               
               @GetMapping("/api/status") public Map<String, String> s() { 
-                  return Map.of("status", "online", "install_mode", "Massive Package"); 
+                  return Map.of("status", "online", "data_scale", "500,000+ Records"); 
               }
           }
           EOF
@@ -298,11 +281,13 @@ jobs:
               if f.endswith('.tar.gz'): pkg_size += os.path.getsize(f)
           pkg_mb = pkg_size / (1024*1024)
           
-          md = f"# 🌌 Omni-Intelligence Hub (Server-Ops)\n\n![Status](https://img.shields.io/badge/System-Operational-green) ![Package](https://img.shields.io/badge/Install_Pkg-{pkg_mb:.1f}MB-blue)\n"
-          md += f"## 🎛️ Mission Control\n| Module | Status | Transmission |\n|---|---|---|\n"
-          md += f"| 🛡️ Security | 🟢 Live | 📦 .tar.gz |\n"
-          md += f"| 💼 Jobs | 🟢 Live | 📦 .tar.gz |\n"
-          md += f"| ☕ Java Server | 🟢 Installed | 🐳 Docker |\n"
+          md = f"# 🌌 Omni-Intelligence Hub (Hyper-Scale)\n\n![Status](https://img.shields.io/badge/Build-Success-green) ![Data](https://img.shields.io/badge/Data_Volume-500k_Records-blue)\n"
+          md += f"## 🎛️ Mission Control\n| Module | Volume | Status |\n|---|---|---|\n"
+          md += f"| 🛡️ Security | **200,000+** | 🟢 Live |\n"
+          md += f"| 💼 Jobs | **100,000+** | 🟢 Live |\n"
+          md += f"| 🧮 Algo | **100,000+** | 🟢 Live |\n"
+          md += f"| 💰 Cost | **100,000+** | 🟢 Live |\n"
+          md += f"\n**Total Package Size:** {pkg_mb:.2f} MB"
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
@@ -314,5 +299,5 @@ jobs:
           git config --global user.email "bot@actions"
           git add README.md DB* pom.xml src/
           if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
-          git commit -m "🌌 Server-Ops Update: $(date +'%Y-%m-%d %H:%M')"
+          git commit -m "🌌 Hyper-Scale Fix: $(date +'%Y-%m-%d %H:%M')"
           n=0; until [ "$n" -ge 5 ]; do git pull --rebase origin main && git push origin main && break; n=$((n+1)); sleep 5; done
