@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Container Grid)
+name: 🌌 Omni-Intelligence Grand Pipeline (Container Grid Fixed)
 
 on:
   schedule:
@@ -11,7 +11,7 @@ permissions: write-all
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine (50만 건)
+  # 🛡️ 1. Security Engine (50만 건 생성)
   # ==============================================================================
   security-core:
     name: 🛡️ Security Engine (500k)
@@ -42,7 +42,7 @@ jobs:
         with: { name: pkg-security, path: security_pkg.tar.gz }
 
   # ==============================================================================
-  # 💼 2. Job Engine (30만 건)
+  # 💼 2. Job Engine (30만 건 생성)
   # ==============================================================================
   job-core:
     name: 💼 Job Fortress (300k)
@@ -72,7 +72,7 @@ jobs:
         with: { name: pkg-job, path: job_pkg.tar.gz }
 
   # ==============================================================================
-  # 🧮 3. Algo Engine (10만 건)
+  # 🧮 3. Algo Engine (10만 건 생성)
   # ==============================================================================
   algo-core:
     name: 🧮 Algo Engine (100k)
@@ -96,7 +96,7 @@ jobs:
         with: { name: pkg-algo, path: algo_pkg.tar.gz }
 
   # ==============================================================================
-  # 💰 4. Cost Engine (10만 건)
+  # 💰 4. Cost Engine (10만 건 생성)
   # ==============================================================================
   misc-core:
     name: 💰 Cost Engine (100k)
@@ -120,18 +120,22 @@ jobs:
         with: { name: pkg-cost, path: cost_pkg.tar.gz }
 
   # ==============================================================================
-  # 🏭 5. Microservices Factory (멀티 모듈 빌드 & 개별 컨테이너)
+  # 🏭 5. Microservices Factory (구문 오류 수정됨)
   # ==============================================================================
   services-factory:
     needs: [security-core, job-core, algo-core, misc-core]
     name: 🏭 Microservices Build & Containerize
     runs-on: ubuntu-latest
     steps:
+      # [Fix] 들여쓰기와 줄바꿈을 정확하게 수정
       - uses: actions/checkout@v4
-        with: { token: ${{ secrets.GITHUB_TOKEN }} }
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - uses: actions/download-artifact@v4
-        with: { pattern: 'pkg-*', merge-multiple: true }
+        with:
+          pattern: 'pkg-*'
+          merge-multiple: true
         continue-on-error: true
 
       - name: ☕ JDK 17 Setup
@@ -148,13 +152,12 @@ jobs:
           fi
           echo "✅ Data Packets Extracted."
 
-      # [2] 멀티 모듈 프로젝트 구조 생성 (Microservices Architecture)
+      # [2] 멀티 모듈 프로젝트 구조 생성
       - name: 🏗️ Scaffold Microservices
         run: |
           rm -rf services
           mkdir -p services
           
-          # 서비스 정의
           SERVICES="security job algo cost"
           
           for svc in $SERVICES; do
@@ -162,13 +165,13 @@ jobs:
             mkdir -p services/omni-$svc-service/src/main/java/com/costdata/$svc
             mkdir -p services/omni-$svc-service/src/main/resources/data
             
-            # 서비스별 데이터 주입 (Data Injection)
-            if [ "$svc" == "security" ]; then cp -r DB_SEC/live/* services/omni-$svc-service/src/main/resources/data/; fi
-            if [ "$svc" == "job" ]; then cp -r DB_JOB/live/* services/omni-$svc-service/src/main/resources/data/; fi
-            if [ "$svc" == "algo" ]; then cp -r DB_ALGO/live/* services/omni-$svc-service/src/main/resources/data/; fi
-            if [ "$svc" == "cost" ]; then cp -r DB_COST/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            # 서비스별 데이터 분산 주입
+            if [ "$svc" == "security" ] && [ -d "DB_SEC/live" ]; then cp -r DB_SEC/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            if [ "$svc" == "job" ] && [ -d "DB_JOB/live" ]; then cp -r DB_JOB/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            if [ "$svc" == "algo" ] && [ -d "DB_ALGO/live" ]; then cp -r DB_ALGO/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            if [ "$svc" == "cost" ] && [ -d "DB_COST/live" ]; then cp -r DB_COST/live/* services/omni-$svc-service/src/main/resources/data/; fi
             
-            # Service-Specific POM.xml
+            # Service POM
             cat <<EOF > services/omni-$svc-service/pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
               <modelVersion>4.0.0</modelVersion>
@@ -183,7 +186,7 @@ jobs:
           </project>
           EOF
 
-            # Service-Specific Application.java
+            # Service App Code
             cat <<EOF > services/omni-$svc-service/src/main/java/com/costdata/$svc/ServiceApplication.java
           package com.costdata.$svc;
           import org.springframework.boot.SpringApplication;
@@ -201,7 +204,7 @@ jobs:
           EOF
           done
 
-          # Root POM (Parent)
+          # Root POM
           cat <<EOF > services/pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
               <modelVersion>4.0.0</modelVersion>
@@ -217,15 +220,14 @@ jobs:
           </project>
           EOF
 
-      # [3] 대량 컴파일 (Massive Compilation)
+      # [3] 대량 컴파일
       - name: 🔨 Compile All Services
         run: |
           cd services
           mvn clean package -DskipTests
           echo "✅ All Microservices Built Successfully."
-          ls -R target/*.jar
 
-      # [4] 개별 컨테이너 설치 및 적재 (Dockerize Each Service)
+      # [4] 컨테이너화 및 배포
       - name: 🐳 Dockerize & Push Grid
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -233,15 +235,12 @@ jobs:
           SERVICES="security job algo cost"
           for svc in $SERVICES; do
             echo "🐳 Containerizing: omni-$svc-service"
-            
-            # 각 서비스 폴더로 이동하여 Dockerfile 생성
             cd services/omni-$svc-service
             
             cat <<EOF > Dockerfile
           FROM eclipse-temurin:17-jdk-jammy
           WORKDIR /app
           COPY target/*.jar app.jar
-          # 대량 데이터가 리소스에 포함되어 있음
           ENTRYPOINT ["java", "-jar", "/app.jar"]
           EOF
             
@@ -249,7 +248,6 @@ jobs:
             docker build -t $IMG .
             docker push $IMG
             
-            # 다시 루트(services)로 복귀
             cd ../.. 
           done
           echo "✅ Container Grid Deployed."
@@ -264,7 +262,9 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0, token: ${{ secrets.GITHUB_TOKEN }} }
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: 📊 Generate README
         run: |
@@ -282,12 +282,21 @@ jobs:
           python dashboard.py
 
       - run: cat README.md >> $GITHUB_STEP_SUMMARY
+
       - name: 🌿 Commit
         run: |
           git config --global user.name "Omni Bot"
           git config --global user.email "bot@actions"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          
           git add README.md services/
           if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
-          git commit -m "🌌 Microservices Update: $(date +'%Y-%m-%d %H:%M')"
-          n=0; until [ "$n" -ge 10 ]; do git pull origin main --no-rebase -s recursive -X ours && git push origin main && break; n=$((n+1)); sleep 5; done
+          
+          git commit -m "🌌 Microservices Fix: $(date +'%Y-%m-%d %H:%M')"
+          
+          n=0
+          until [ "$n" -ge 10 ]; do
+             git pull origin main --no-rebase -s recursive -X ours && git push origin main && break
+             n=$((n+1))
+             sleep 5
+          done
