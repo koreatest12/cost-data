@@ -1,7 +1,11 @@
-# 🌌 Omni-Intelligence Hub (1 Million)
+# 🌌 Omni-Intelligence Hub (Microservices Grid)
 
-![Status](https://img.shields.io/badge/Status-Stable-green) ![Data](https://img.shields.io/badge/Records-1,000,000+-blue)
-## 🎛️ Mission Control
-- **Payload:** 17.80 MB
-- **Security:** 500k
-- **Jobs:** 300k
+![Status](https://img.shields.io/badge/System-Distributed-blue) ![Data](https://img.shields.io/badge/Data-1M_Records-green)
+
+## 🏭 Container Grid Status
+| Service | Image | Data Load |
+|---|---|---|
+| 🛡️ Security | `omni-security-service` | ✅ 500k |
+| 💼 Jobs | `omni-job-service` | ✅ 300k |
+| 🧮 Algo | `omni-algo-service` | ✅ 100k |
+| 💰 Cost | `omni-cost-service` | ✅ 100k |
