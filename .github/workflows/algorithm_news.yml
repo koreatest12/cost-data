@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Full Permissions)
+name: 🌌 Omni-Intelligence Grand Pipeline (Conflict Auto-Fix)
 
 on:
   schedule:
@@ -7,20 +7,17 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-# [핵심] 리포지토리의 모든 권한을 쓰기(Write) 모드로 설정
 permissions: write-all
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine (30만 건 생성)
+  # 🛡️ 1. Security Engine (50만 건 폭발적 생성)
   # ==============================================================================
   security-core:
-    name: 🛡️ Security Engine (300k)
+    name: 🛡️ Security Engine (500k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }} # 명시적 토큰 사용
       - run: mkdir -p DB_SEC/live/threat_intel
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
@@ -32,12 +29,14 @@ jobs:
           from faker import Faker
           fake = Faker()
           
-          print("⚡ Generating 300,000 Security Records...")
+          print("⚡ Generating 500,000 Security Records...")
           data = []
-          for i in range(300000):
+          # 50만 건 루프
+          for i in range(500000):
               data.append({
                   "id": f"SEC-{i}",
                   "title": f"Critical Vulnerability CVE-2026-{10000+i}",
+                  "content": fake.sentence(),
                   "severity": random.choice(["Critical", "High", "Medium"]),
                   "date": datetime.datetime.now().strftime('%Y-%m-%d')
               })
@@ -76,7 +75,7 @@ jobs:
               data.append({
                   "id": f"JOB-{i}",
                   "title": f"{fake.job()} at {fake.company()}",
-                  "location": "Global"
+                  "location": random.choice(["Pangyo", "Seoul", "Busan", "Global"])
               })
           with open("DB_JOB/live/global/jobs.json", "w") as f: json.dump(data, f)
           EOF
@@ -88,10 +87,10 @@ jobs:
         with: { name: pkg-job, path: job_pkg.tar.gz }
 
   # ==============================================================================
-  # 🧮 3. Algo Engine (20만 건 생성)
+  # 🧮 3. Algo Engine (10만 건 생성)
   # ==============================================================================
   algo-core:
-    name: 🧮 Algo Engine (200k)
+    name: 🧮 Algo Engine (100k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -102,8 +101,8 @@ jobs:
         run: |
           cat << 'EOF' > algo_core.py
           import json, os
-          print("⚡ Generating 200,000 Algo Records...")
-          data = [{"id":i, "title":f"Algo Research #{i}"} for i in range(200000)]
+          print("⚡ Generating 100,000 Algo Records...")
+          data = [{"id":i, "title":f"Algo Research #{i}"} for i in range(100000)]
           with open("DB_ALGO/live/ai/data.json", "w") as f: json.dump(data, f)
           EOF
           python algo_core.py
@@ -114,10 +113,10 @@ jobs:
         with: { name: pkg-algo, path: algo_pkg.tar.gz }
 
   # ==============================================================================
-  # 💰 4. Cost Engine (20만 건 생성)
+  # 💰 4. Cost Engine (10만 건 생성)
   # ==============================================================================
   misc-core:
-    name: 💰 Cost Engine (200k)
+    name: 💰 Cost Engine (100k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -128,8 +127,8 @@ jobs:
         run: |
           cat << 'EOF' > misc_core.py
           import json, os, random
-          print("⚡ Generating 200,000 Cost Records...")
-          data = [{"id":i, "rate":1400+random.randint(-100,100)} for i in range(200000)]
+          print("⚡ Generating 100,000 Cost Records...")
+          data = [{"id":i, "rate":1400+random.randint(-100,100)} for i in range(100000)]
           with open("DB_COST/live/market/data.json", "w") as f: json.dump(data, f)
           EOF
           python misc_core.py
@@ -140,11 +139,11 @@ jobs:
         with: { name: pkg-cost, path: cost_pkg.tar.gz }
 
   # ==============================================================================
-  # ☕ 5. Java App Build (권한 기반 업로드 및 빌드)
+  # ☕ 5. Java App Build (Robust Upload & Build)
   # ==============================================================================
   java-app-build:
     needs: [security-core, job-core, algo-core, misc-core]
-    name: ☕ Java API Build (Authorized)
+    name: ☕ Java API Build (Final)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -155,7 +154,7 @@ jobs:
         with: { pattern: 'pkg-*', merge-multiple: true }
         continue-on-error: true
 
-      - name: ☕ JDK 17 설정
+      - name: ☕ JDK 17
         uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin', cache: maven }
 
@@ -177,7 +176,7 @@ jobs:
           
           echo "✅ Massive Data Installed."
 
-      - name: 📝 Generate pom.xml
+      - name: 📝 pom.xml
         run: |
           cat << 'EOF' > pom.xml
           <?xml version="1.0" encoding="UTF-8"?>
@@ -198,34 +197,26 @@ jobs:
           </project>
           EOF
 
-      - name: 🧬 Generate Java Code
+      - name: 🧬 Java Code
         run: |
           mkdir -p src/main/java/com/costdata
           cat << 'EOF' > src/main/java/com/costdata/OmniApiApplication.java
           package com.costdata;
           import org.springframework.boot.SpringApplication;
           import org.springframework.boot.autoconfigure.SpringBootApplication;
-          @SpringBootApplication
-          public class OmniApiApplication {
-              public static void main(String[] args) { SpringApplication.run(OmniApiApplication.class, args); }
-          }
-          EOF
-          
-          cat << 'EOF' > src/main/java/com/costdata/DataController.java
-          package com.costdata;
           import org.springframework.web.bind.annotation.GetMapping;
           import org.springframework.web.bind.annotation.RestController;
           import java.util.Map;
-          @RestController
-          public class DataController {
-              @GetMapping("/api/status") public Map<String, String> status() { return Map.of("status", "Online", "records", "1,000,000+"); }
+          @SpringBootApplication @RestController
+          public class OmniApiApplication {
+              public static void main(String[] args) { SpringApplication.run(OmniApiApplication.class, args); }
+              @GetMapping("/api/status") public Map<String, String> s() { return Map.of("status", "Online", "records", "1,000,000+"); }
           }
           EOF
 
-      - name: 🔨 Maven Build
-        run: mvn clean package -DskipTests
+      - run: mvn clean package -DskipTests
 
-      - name: 🐳 Docker Build & Push
+      - name: 🐳 Docker Build
         run: |
           cat <<EOF > Dockerfile
           FROM eclipse-temurin:17-jdk-jammy
@@ -238,7 +229,7 @@ jobs:
           docker build -t $IMG . && docker push $IMG
 
   # ==============================================================================
-  # 🌍 6. Master Dashboard (권한 기반 강제 업로드)
+  # 🌍 6. Master Dashboard (충돌 자동 해결 로직 적용)
   # ==============================================================================
   master-hub:
     needs: [java-app-build]
@@ -248,8 +239,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 히스토리 전체
-          token: ${{ secrets.GITHUB_TOKEN }} # 중요: Write 권한 토큰 사용
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/download-artifact@v4
         with: { pattern: 'pkg-*', merge-multiple: true }
@@ -262,36 +253,40 @@ jobs:
           for f in os.listdir('.'):
               if f.endswith('.tar.gz'): pkg_size += os.path.getsize(f)
           pkg_mb = pkg_size / (1024*1024)
-          md = f"# 🌌 Omni-Intelligence Hub (Authorized)\n\n![Status](https://img.shields.io/badge/Permissions-All_Granted-green) ![Data](https://img.shields.io/badge/Total_Volume-1M_Records-blue)\n"
-          md += f"## 🎛️ Mission Control\n- **Target Repo:** `koreatest12/cost-data`\n- **Total Payload:** {pkg_mb:.2f} MB\n- **Status:** All Systems Online\n"
+          md = f"# 🌌 Omni-Intelligence Hub (1 Million)\n\n![Status](https://img.shields.io/badge/Status-Stable-green) ![Data](https://img.shields.io/badge/Records-1,000,000+-blue)\n"
+          md += f"## 🎛️ Mission Control\n- **Payload:** {pkg_mb:.2f} MB\n- **Security:** 500k\n- **Jobs:** 300k\n"
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
 
       - run: cat README.md >> $GITHUB_STEP_SUMMARY
 
-      # [핵심] 권한 기반 강제 업로드 (Push with Authority)
-      - name: 🌿 Commit & Push (Force Authorization)
+      # [핵심] 충돌 발생 시 내 데이터를 우선으로 강제 병합 (Auto-Resolve Conflict Strategy)
+      - name: 🌿 Commit & Push (Force Resolve)
         run: |
           git config --global user.name "Omni Bot"
           git config --global user.email "bot@actions"
           
-          # [중요] 원격 리포지토리 URL에 토큰을 심어서 권한 오류 방지
+          # 1. 원격 URL에 토큰 주입 (권한 확보)
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           
-          git add README.md DB* pom.xml src/
+          # 2. 모든 변경사항 스테이징
+          git add .
           
           if git diff --cached --quiet; then
             echo "✨ No changes to commit"
           else
             git commit -m "🚀 Massive Update: $(date +'%Y-%m-%d %H:%M')"
             
-            # 무적의 푸시 (Rebase Loop)
+            # [Fix] 충돌 자동 해결 루프 (Rebase 대신 Merge Strategy 사용)
             n=0
             until [ "$n" -ge 10 ]; do
-               git pull --rebase origin main && git push origin main && break
+               # Pull을 시도하되, 충돌 시 내 변경사항(ours)을 우선 적용 (-X ours)
+               # 주의: 여기서 'ours'는 현재 작업 중인 브랜치(봇이 만든 데이터)를 의미
+               git pull origin main --no-rebase -s recursive -X ours && git push origin main && break
+               
                n=$((n+1))
-               echo "⚠️ Retry Push ($n/10)..."
-               sleep 10
+               echo "⚠️ Conflict detected. Auto-resolving using local data... ($n/10)"
+               sleep 5
             done
           fi
