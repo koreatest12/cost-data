@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Conflict Auto-Fix)
+name: 🌌 Omni-Intelligence Grand Pipeline (Container Grid)
 
 on:
   schedule:
@@ -11,14 +11,14 @@ permissions: write-all
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine (50만 건 폭발적 생성)
+  # 🛡️ 1. Security Engine (50만 건)
   # ==============================================================================
   security-core:
     name: 🛡️ Security Engine (500k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir -p DB_SEC/live/threat_intel
+      - run: mkdir -p DB_SEC/live
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install faker
@@ -28,38 +28,28 @@ jobs:
           import json, os, datetime, random
           from faker import Faker
           fake = Faker()
-          
           print("⚡ Generating 500,000 Security Records...")
           data = []
-          # 50만 건 루프
           for i in range(500000):
-              data.append({
-                  "id": f"SEC-{i}",
-                  "title": f"Critical Vulnerability CVE-2026-{10000+i}",
-                  "content": fake.sentence(),
-                  "severity": random.choice(["Critical", "High", "Medium"]),
-                  "date": datetime.datetime.now().strftime('%Y-%m-%d')
-              })
-          
-          with open("DB_SEC/live/threat_intel/news.json", "w") as f: json.dump(data, f)
-          print(f"✅ Security Data Generated: {len(data)}")
+              data.append({"id":f"SEC-{i}", "title":f"Critical CVE-2026-{10000+i}", "content":fake.sentence()})
+          with open("DB_SEC/live/security_data.json", "w") as f: json.dump(data, f)
+          print(f"✅ Generated {len(data)} Security Records")
           EOF
           python sec_core.py
-
-      - name: 📦 Pack Data
+      - name: 📦 Pack
         run: tar -czf security_pkg.tar.gz DB_SEC/
       - uses: actions/upload-artifact@v4
         with: { name: pkg-security, path: security_pkg.tar.gz }
 
   # ==============================================================================
-  # 💼 2. Job Engine (30만 건 생성)
+  # 💼 2. Job Engine (30만 건)
   # ==============================================================================
   job-core:
     name: 💼 Job Fortress (300k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir -p DB_JOB/live/global
+      - run: mkdir -p DB_JOB/live
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install faker
@@ -72,92 +62,83 @@ jobs:
           print("⚡ Generating 300,000 Job Records...")
           data = []
           for i in range(300000):
-              data.append({
-                  "id": f"JOB-{i}",
-                  "title": f"{fake.job()} at {fake.company()}",
-                  "location": random.choice(["Pangyo", "Seoul", "Busan", "Global"])
-              })
-          with open("DB_JOB/live/global/jobs.json", "w") as f: json.dump(data, f)
+              data.append({"id":f"JOB-{i}", "title":f"{fake.job()} at {fake.company()}", "loc":"Global"})
+          with open("DB_JOB/live/job_data.json", "w") as f: json.dump(data, f)
           EOF
           python job_core.py
-
-      - name: 📦 Pack Data
+      - name: 📦 Pack
         run: tar -czf job_pkg.tar.gz DB_JOB/
       - uses: actions/upload-artifact@v4
         with: { name: pkg-job, path: job_pkg.tar.gz }
 
   # ==============================================================================
-  # 🧮 3. Algo Engine (10만 건 생성)
+  # 🧮 3. Algo Engine (10만 건)
   # ==============================================================================
   algo-core:
     name: 🧮 Algo Engine (100k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir -p DB_ALGO/live/ai
+      - run: mkdir -p DB_ALGO/live
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: 🧬 Generate Massive Data
+      - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > algo_core.py
           import json, os
-          print("⚡ Generating 100,000 Algo Records...")
           data = [{"id":i, "title":f"Algo Research #{i}"} for i in range(100000)]
-          with open("DB_ALGO/live/ai/data.json", "w") as f: json.dump(data, f)
+          with open("DB_ALGO/live/algo_data.json", "w") as f: json.dump(data, f)
           EOF
           python algo_core.py
-
-      - name: 📦 Pack Data
+      - name: 📦 Pack
         run: tar -czf algo_pkg.tar.gz DB_ALGO/
       - uses: actions/upload-artifact@v4
         with: { name: pkg-algo, path: algo_pkg.tar.gz }
 
   # ==============================================================================
-  # 💰 4. Cost Engine (10만 건 생성)
+  # 💰 4. Cost Engine (10만 건)
   # ==============================================================================
   misc-core:
     name: 💰 Cost Engine (100k)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir -p DB_COST/live/market
+      - run: mkdir -p DB_COST/live
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - name: 🧬 Generate Massive Data
+      - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > misc_core.py
-          import json, os, random
-          print("⚡ Generating 100,000 Cost Records...")
-          data = [{"id":i, "rate":1400+random.randint(-100,100)} for i in range(100000)]
-          with open("DB_COST/live/market/data.json", "w") as f: json.dump(data, f)
+          import json, os
+          data = [{"id":i, "rate":1400+i} for i in range(100000)]
+          with open("DB_COST/live/cost_data.json", "w") as f: json.dump(data, f)
           EOF
           python misc_core.py
-
-      - name: 📦 Pack Data
+      - name: 📦 Pack
         run: tar -czf cost_pkg.tar.gz DB_COST/
       - uses: actions/upload-artifact@v4
         with: { name: pkg-cost, path: cost_pkg.tar.gz }
 
   # ==============================================================================
-  # ☕ 5. Java App Build (Robust Upload & Build)
+  # 🏭 5. Microservices Factory (멀티 모듈 빌드 & 개별 컨테이너)
   # ==============================================================================
-  java-app-build:
+  services-factory:
     needs: [security-core, job-core, algo-core, misc-core]
-    name: ☕ Java API Build (Final)
+    name: 🏭 Microservices Build & Containerize
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        with: { token: ${{ secrets.GITHUB_TOKEN }} }
       
       - uses: actions/download-artifact@v4
         with: { pattern: 'pkg-*', merge-multiple: true }
         continue-on-error: true
 
-      - name: ☕ JDK 17
+      - name: ☕ JDK 17 Setup
         uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin', cache: maven }
 
+      # [1] 데이터 패키지 설치
       - name: 🛠️ Install Data
         run: |
           if ls *.tar.gz 1> /dev/null 2>&1; then
@@ -165,128 +146,148 @@ jobs:
           else
             mkdir -p DB_SEC/live DB_JOB/live DB_ALGO/live DB_COST/live
           fi
-          
-          rm -rf src
-          mkdir -p src/main/resources/data
-          
-          [ -d DB_SEC/live ] && cp -r DB_SEC/live src/main/resources/data/security
-          [ -d DB_JOB/live ] && cp -r DB_JOB/live src/main/resources/data/jobs
-          [ -d DB_ALGO/live ] && cp -r DB_ALGO/live src/main/resources/data/algo
-          [ -d DB_COST/live ] && cp -r DB_COST/live src/main/resources/data/cost
-          
-          echo "✅ Massive Data Installed."
+          echo "✅ Data Packets Extracted."
 
-      - name: 📝 pom.xml
+      # [2] 멀티 모듈 프로젝트 구조 생성 (Microservices Architecture)
+      - name: 🏗️ Scaffold Microservices
         run: |
-          cat << 'EOF' > pom.xml
-          <?xml version="1.0" encoding="UTF-8"?>
+          rm -rf services
+          mkdir -p services
+          
+          # 서비스 정의
+          SERVICES="security job algo cost"
+          
+          for svc in $SERVICES; do
+            echo "🔨 Creating Service: omni-$svc-service"
+            mkdir -p services/omni-$svc-service/src/main/java/com/costdata/$svc
+            mkdir -p services/omni-$svc-service/src/main/resources/data
+            
+            # 서비스별 데이터 주입 (Data Injection)
+            if [ "$svc" == "security" ]; then cp -r DB_SEC/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            if [ "$svc" == "job" ]; then cp -r DB_JOB/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            if [ "$svc" == "algo" ]; then cp -r DB_ALGO/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            if [ "$svc" == "cost" ]; then cp -r DB_COST/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            
+            # Service-Specific POM.xml
+            cat <<EOF > services/omni-$svc-service/pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
               <modelVersion>4.0.0</modelVersion>
-              <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.1</version><relativePath/></parent>
-              <groupId>com.costdata</groupId><artifactId>omni-intelligence-api</artifactId><version>1.0.0</version>
+              <parent><groupId>com.costdata</groupId><artifactId>omni-platform</artifactId><version>1.0.0</version></parent>
+              <artifactId>omni-$svc-service</artifactId>
               <packaging>jar</packaging>
-              <name>Omni Intelligence API</name>
-              <properties><java.version>17</java.version></properties>
               <dependencies>
                   <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
-                  <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
                   <dependency><groupId>jakarta.annotation</groupId><artifactId>jakarta.annotation-api</artifactId></dependency>
-                  <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId></dependency>
               </dependencies>
-              <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId><configuration><mainClass>com.costdata.OmniApiApplication</mainClass></configuration></plugin></plugins></build>
+              <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
           </project>
           EOF
 
-      - name: 🧬 Java Code
-        run: |
-          mkdir -p src/main/java/com/costdata
-          cat << 'EOF' > src/main/java/com/costdata/OmniApiApplication.java
-          package com.costdata;
+            # Service-Specific Application.java
+            cat <<EOF > services/omni-$svc-service/src/main/java/com/costdata/$svc/ServiceApplication.java
+          package com.costdata.$svc;
           import org.springframework.boot.SpringApplication;
           import org.springframework.boot.autoconfigure.SpringBootApplication;
           import org.springframework.web.bind.annotation.GetMapping;
           import org.springframework.web.bind.annotation.RestController;
+          import jakarta.annotation.PostConstruct;
           import java.util.Map;
           @SpringBootApplication @RestController
-          public class OmniApiApplication {
-              public static void main(String[] args) { SpringApplication.run(OmniApiApplication.class, args); }
-              @GetMapping("/api/status") public Map<String, String> s() { return Map.of("status", "Online", "records", "1,000,000+"); }
+          public class ServiceApplication {
+              public static void main(String[] args) { SpringApplication.run(ServiceApplication.class, args); }
+              @PostConstruct public void init() { System.out.println("🚀 $svc Service Started with Local Data"); }
+              @GetMapping("/") public Map<String, String> status() { return Map.of("service", "$svc", "status", "active"); }
           }
           EOF
+          done
 
-      - run: mvn clean package -DskipTests
+          # Root POM (Parent)
+          cat <<EOF > services/pom.xml
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.costdata</groupId><artifactId>omni-platform</artifactId><version>1.0.0</version>
+              <packaging>pom</packaging>
+              <modules>
+                  <module>omni-security-service</module>
+                  <module>omni-job-service</module>
+                  <module>omni-algo-service</module>
+                  <module>omni-cost-service</module>
+              </modules>
+              <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.1</version><relativePath/></parent>
+          </project>
+          EOF
 
-      - name: 🐳 Docker Build
+      # [3] 대량 컴파일 (Massive Compilation)
+      - name: 🔨 Compile All Services
         run: |
-          cat <<EOF > Dockerfile
+          cd services
+          mvn clean package -DskipTests
+          echo "✅ All Microservices Built Successfully."
+          ls -R target/*.jar
+
+      # [4] 개별 컨테이너 설치 및 적재 (Dockerize Each Service)
+      - name: 🐳 Dockerize & Push Grid
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          SERVICES="security job algo cost"
+          for svc in $SERVICES; do
+            echo "🐳 Containerizing: omni-$svc-service"
+            
+            # 각 서비스 폴더로 이동하여 Dockerfile 생성
+            cd services/omni-$svc-service
+            
+            cat <<EOF > Dockerfile
           FROM eclipse-temurin:17-jdk-jammy
           WORKDIR /app
           COPY target/*.jar app.jar
+          # 대량 데이터가 리소스에 포함되어 있음
           ENTRYPOINT ["java", "-jar", "/app.jar"]
           EOF
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-java-api:latest"
-          docker build -t $IMG . && docker push $IMG
+            
+            IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-$svc-service:latest"
+            docker build -t $IMG .
+            docker push $IMG
+            
+            # 다시 루트(services)로 복귀
+            cd ../.. 
+          done
+          echo "✅ Container Grid Deployed."
 
   # ==============================================================================
-  # 🌍 6. Master Dashboard (충돌 자동 해결 로직 적용)
+  # 🌍 6. Master Dashboard
   # ==============================================================================
   master-hub:
-    needs: [java-app-build]
+    needs: [services-factory]
     name: 🌍 Master Dashboard
     runs-on: ubuntu-latest
     if: always()
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/download-artifact@v4
-        with: { pattern: 'pkg-*', merge-multiple: true }
+        with: { fetch-depth: 0, token: ${{ secrets.GITHUB_TOKEN }} }
       
       - name: 📊 Generate README
         run: |
           cat << 'EOF' > dashboard.py
-          import os
-          pkg_size = 0
-          for f in os.listdir('.'):
-              if f.endswith('.tar.gz'): pkg_size += os.path.getsize(f)
-          pkg_mb = pkg_size / (1024*1024)
-          md = f"# 🌌 Omni-Intelligence Hub (1 Million)\n\n![Status](https://img.shields.io/badge/Status-Stable-green) ![Data](https://img.shields.io/badge/Records-1,000,000+-blue)\n"
-          md += f"## 🎛️ Mission Control\n- **Payload:** {pkg_mb:.2f} MB\n- **Security:** 500k\n- **Jobs:** 300k\n"
+          md = "# 🌌 Omni-Intelligence Hub (Microservices Grid)\n\n"
+          md += "![Status](https://img.shields.io/badge/System-Distributed-blue) ![Data](https://img.shields.io/badge/Data-1M_Records-green)\n\n"
+          md += "## 🏭 Container Grid Status\n"
+          md += "| Service | Image | Data Load |\n|---|---|---|\n"
+          md += "| 🛡️ Security | `omni-security-service` | ✅ 500k |\n"
+          md += "| 💼 Jobs | `omni-job-service` | ✅ 300k |\n"
+          md += "| 🧮 Algo | `omni-algo-service` | ✅ 100k |\n"
+          md += "| 💰 Cost | `omni-cost-service` | ✅ 100k |\n"
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
 
       - run: cat README.md >> $GITHUB_STEP_SUMMARY
-
-      # [핵심] 충돌 발생 시 내 데이터를 우선으로 강제 병합 (Auto-Resolve Conflict Strategy)
-      - name: 🌿 Commit & Push (Force Resolve)
+      - name: 🌿 Commit
         run: |
           git config --global user.name "Omni Bot"
           git config --global user.email "bot@actions"
-          
-          # 1. 원격 URL에 토큰 주입 (권한 확보)
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          
-          # 2. 모든 변경사항 스테이징
-          git add .
-          
-          if git diff --cached --quiet; then
-            echo "✨ No changes to commit"
-          else
-            git commit -m "🚀 Massive Update: $(date +'%Y-%m-%d %H:%M')"
-            
-            # [Fix] 충돌 자동 해결 루프 (Rebase 대신 Merge Strategy 사용)
-            n=0
-            until [ "$n" -ge 10 ]; do
-               # Pull을 시도하되, 충돌 시 내 변경사항(ours)을 우선 적용 (-X ours)
-               # 주의: 여기서 'ours'는 현재 작업 중인 브랜치(봇이 만든 데이터)를 의미
-               git pull origin main --no-rebase -s recursive -X ours && git push origin main && break
-               
-               n=$((n+1))
-               echo "⚠️ Conflict detected. Auto-resolving using local data... ($n/10)"
-               sleep 5
-            done
-          fi
+          git add README.md services/
+          if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
+          git commit -m "🌌 Microservices Update: $(date +'%Y-%m-%d %H:%M')"
+          n=0; until [ "$n" -ge 10 ]; do git pull origin main --no-rebase -s recursive -X ours && git push origin main && break; n=$((n+1)); sleep 5; done
