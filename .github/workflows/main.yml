@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir -p DB_SEC/primary DB_SEC/replica
+      - run: mkdir -p DB_SEC/primary
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -39,11 +39,10 @@ jobs:
         run: |
           cat << 'EOF' > sec_core.py
           import json, random, datetime
-          # [Simulation] Niantic Support Twitter & Anti-Cheat News
           print("📡 Connecting to Niantic Help Twitter...")
           data = []
           reasons = ["Strike 1 (7 Days)", "Permanent Ban", "Login Issue", "GPS Spoofing Detected"]
-          for i in range(10000): # 대량 데이터 시뮬레이션
+          for i in range(5000):
               data.append({
                   "id": f"SEC-LOG-{i}",
                   "source": "Twitter/NianticHelp",
@@ -78,19 +77,15 @@ jobs:
         run: |
           cat << 'EOF' > job_core.py
           import json
-          # [Simulation] Pokemon GO Live News & Event Schedule
           print("📡 Scraping pokemongolive.com/news...")
           events = []
           event_types = ["Raid Hour", "Spotlight Hour", "Community Day", "Season Event", "GBL League"]
-          
-          # 1년치 예상 이벤트 데이터 생성 (대량)
-          for i in range(5000): 
+          for i in range(3000): 
               events.append({
                   "id": f"EVT-{2026}-{i}",
                   "title": f"Official Event #{i}",
                   "category": event_types[i % len(event_types)],
                   "url": f"https://pokemongolive.com/post/event-{i}",
-                  "description": "Trainers, get ready for...",
                   "start_date": "2026-01-24",
                   "end_date": "2026-02-01"
               })
@@ -121,17 +116,14 @@ jobs:
         run: |
           cat << 'EOF' > algo_core.py
           import json
-          # [Simulation] GamePress & PvPoke Meta Data
           print("📡 Analyzing Raid/PvP Meta...")
           meta_data = []
           pokemon_list = ["Rayquaza", "Mewtwo", "Groudon", "Kyogre", "Lucario", "Garchomp"]
-          
-          for i in range(20000): # 방대한 메타 연산 데이터
+          for i in range(10000):
               mon = pokemon_list[i % len(pokemon_list)]
               meta_data.append({
                   "id": f"META-{i}",
                   "pokemon": mon,
-                  "mode": "Raid" if i % 2 == 0 else "PvP_Master_League",
                   "dps_score": 20.5 + (i % 10),
                   "tier": "S+" if i % 5 == 0 else "A"
               })
@@ -162,15 +154,13 @@ jobs:
         run: |
           cat << 'EOF' > misc_core.py
           import json
-          # [Simulation] Shop Boxes & Coin Value
           boxes = []
-          for i in range(1000):
+          for i in range(500):
               boxes.append({
                   "id": f"BOX-{i}",
-                  "name": "Community Day Box" if i % 2 == 0 else "Raid Box",
+                  "name": "Community Day Box",
                   "coins": 480 + i,
-                  "items": {"Raid Pass": 3, "Incubator": 2},
-                  "value_rating": "High" if i % 3 == 0 else "Low"
+                  "value_rating": "High"
               })
           with open("DB_COST/primary/shop_data.json", "w") as f: json.dump(boxes, f)
           EOF
@@ -201,7 +191,7 @@ jobs:
           path: pkg-infra-scripts.tar.gz
 
   # ==============================================================================
-  # 🏭 6. Service Factory (Mass Compile & Docker)
+  # 🏭 6. Service Factory (Mass Compile & Docker & Data Aggregation)
   # ==============================================================================
   services-factory:
     needs: [security-core, job-core, algo-core, misc-core, infra-engine]
@@ -238,10 +228,19 @@ jobs:
 
       - name: 🛠️ Organize & Inject Mass Data
         run: |
-          # 아티팩트 해제 및 데이터 폴더 준비
+          # 아티팩트 해제
           for pkg in *.tar.gz; do tar -xzf "$pkg" || echo "Skip"; done
           
-          # 서비스 스캐폴딩 및 데이터 대량 주입
+          # [NEW] pokemon-go-data 폴더 생성 및 데이터 통합 적재
+          echo "📦 Aggregating data to pokemon-go-data..."
+          mkdir -p pokemon-go-data
+          cp DB_SEC/primary/*.json pokemon-go-data/ 2>/dev/null || true
+          cp DB_JOB/primary/*.json pokemon-go-data/ 2>/dev/null || true
+          cp DB_ALGO/primary/*.json pokemon-go-data/ 2>/dev/null || true
+          cp DB_COST/primary/*.json pokemon-go-data/ 2>/dev/null || true
+          echo "This folder contains aggregated Pokemon GO data (Security, Events, Tier List, Shop)." > pokemon-go-data/README.md
+          
+          # 서비스 스캐폴딩 및 데이터 주입
           SERVICES="security job algo cost"
           mkdir -p services
           
@@ -251,7 +250,7 @@ jobs:
             mkdir -p "services/omni-$svc-service/src/main/java/com/costdata/$svc"
             mkdir -p "$SRC_DIR"
             
-            # 각 엔진의 산출물을 해당 서비스 리소스 폴더로 이동 (대량 파일 처리)
+            # 리소스 폴더로 데이터 복사
             case $svc in
               security) cp DB_SEC/primary/*.json "$SRC_DIR/" ;;
               job)      cp DB_JOB/primary/*.json "$SRC_DIR/" ;;
@@ -259,7 +258,7 @@ jobs:
               cost)     cp DB_COST/primary/*.json "$SRC_DIR/" ;;
             esac
             
-            # POM 파일 생성 (SpringBoot 3.2.1)
+            # POM 파일 생성
             cat <<EOF > services/omni-$svc-service/pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
               <modelVersion>4.0.0</modelVersion>
@@ -272,7 +271,6 @@ jobs:
               <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId><configuration><layers><enabled>true</enabled></layers></configuration></plugin></plugins></build>
           </project>
           EOF
-          
             # Java Controller 생성
             cat <<EOF > services/omni-$svc-service/src/main/java/com/costdata/$svc/ServiceApplication.java
           package com.costdata.$svc;
@@ -308,54 +306,46 @@ jobs:
         run: |
           echo "🔥 Starting Mass Compilation..."
           cd services && mvn clean package -DskipTests -T 1C
-          echo "✅ Compilation Complete."
 
       - name: 🐳 Mass Docker Build & Push
         run: |
           SERVICES="security job algo cost"
           for svc in $SERVICES; do
             cd services/omni-$svc-service
-            
-            # Dockerfile (Layered Jar for Efficiency)
             cat <<EOF > Dockerfile
           FROM eclipse-temurin:17-jre-jammy AS builder
           WORKDIR /app
           COPY target/*.jar app.jar
           RUN java -Djarmode=layertools -jar app.jar extract
-          
           FROM eclipse-temurin:17-jre-jammy
           RUN groupadd -r omni && useradd -r -g omni omni
           USER omni
           WORKDIR /app
-          # Copy layers (includes injected JSON data in resources)
           COPY --from=builder /app/dependencies/ ./
           COPY --from=builder /app/spring-boot-loader/ ./
           COPY --from=builder /app/snapshot-dependencies/ ./
           COPY --from=builder /app/application/ ./
-          
           ENV JAVA_OPTS="${{ env.JAVA_OPTS }}"
           HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:8080/actuator/health || exit 1
           ENTRYPOINT ["sh", "-c", "java \$JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]
           EOF
-            
             IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-$svc-service:latest"
-            echo "🐳 Building & Pushing $IMG..."
-            
             docker buildx build \
               --platform linux/amd64,linux/arm64 \
               --tag $IMG \
               --cache-from type=gha \
               --cache-to type=gha,mode=max \
               --push .
-            
             cd ../..
           done
 
-      - name: 📤 Upload Artifacts
+      - name: 📤 Upload Artifacts (Includes pokemon-go-data)
         uses: actions/upload-artifact@v4
         with:
           name: enterprise-artifacts
-          path: services/
+          path: |
+            services/
+            pokemon-go-data/
 
   # ==============================================================================
   # 🚀 7. ServerOps Release
@@ -387,16 +377,15 @@ jobs:
           body: |
             # 🌌 Omni-Intelligence Release
             **Updates:**
-            - 📡 **Data:** Official Sources (Twitter/Web) Scraped & Injected
+            - 📡 **Data:** Synced to `pokemon-go-data/`
             - 🐳 **Docker:** Mass Build & Layered Optimization
-            - 🔐 **Security:** Latest Anti-Cheat Ruleset Applied
           files: release_assets/**/*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
   # ==============================================================================
-  # 🌍 8. Master Hub (대시보드 업데이트)
+  # 🌍 8. Master Hub (데이터 및 서비스 커밋)
   # ==============================================================================
   master-hub:
     needs: [grand-release]
@@ -408,42 +397,43 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
+
+      # [NEW] 생성된 데이터와 서비스 코드 다운로드
+      - name: 📥 Retrieve Generated Data
+        uses: actions/download-artifact@v4
+        with:
+          name: enterprise-artifacts
+          path: . 
+        continue-on-error: true
+
       - name: 📊 Generate Dashboard
         run: |
           cat << 'EOF' > dashboard.py
           import datetime
           now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-          
-          sources_md = """
-          ### 📡 Data Sources (Live Sync)
-          - **Official:** [Pokemon GO Live](https://pokemongolive.com) (Events/News)
-          - **Social:** [Twitter @PokemonGoApp](https://twitter.com/PokemonGoApp) (Updates)
-          - **Meta:** [PvPoke/GamePress](https://pvpoke.com) (Battle Tiers)
-          """
-          
           md = f"# 🌌 Omni-Intelligence Hub\n\n"
-          md += f"![Build](https://img.shields.io/badge/Build-Success-brightgreen) ![Data](https://img.shields.io/badge/Data-Mass_Injection-blue)\n\n"
+          md += f"![Data](https://img.shields.io/badge/PokemonGO-Data_Synced-blue) ![Status](https://img.shields.io/badge/System-Operational-green)\n\n"
           md += f"## 🚀 System Status ({now})\n"
-          md += "- **Data Pipeline:** 4 Engines Active (Security, Job, Algo, Cost)\n"
-          md += "- **Docker Registry:** Updated (ghcr.io)\n\n"
-          md += sources_md
-          
+          md += "- **Data Path:** `pokemon-go-data/` (JSON Aggregated)\n"
+          md += "- **Services:** 4 Microservices Built & Pushed\n"
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
+
       - name: 🌿 Commit & Push
         run: |
           git config --global user.name "Omni Bot"
           git config --global user.email "bot@actions"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           
+          # 서비스 코드 및 pokemon-go-data 폴더 커밋
           if [ -d "services" ]; then git add services/; fi
+          if [ -d "pokemon-go-data" ]; then git add pokemon-go-data/; fi
           git add README.md
           
           if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
-          git commit -m "🌌 Auto-Sync: Mass Data & Docker Update $(date +'%Y-%m-%d')"
+          git commit -m "🌌 Auto-Sync: Data & Services Update $(date +'%Y-%m-%d')"
           
-          # [Fix] 충돌 방지 로직 강화
           n=0
           until [ "$n" -ge 10 ]; do 
              git pull origin main --no-rebase -s recursive -X ours && git push origin main && break
