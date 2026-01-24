@@ -1,13 +1,11 @@
-# 🌌 Omni-Intelligence Hub
+# 🌌 Omni-Intelligence Hub (DR Edition)
 
-![Build](https://img.shields.io/badge/Build-Success-brightgreen) ![Data](https://img.shields.io/badge/Data-Mass_Injection-blue)
+![Status](https://img.shields.io/badge/Replication-3x_Active-blue) ![Data](https://img.shields.io/badge/Records-1M+-green)
 
-## 🚀 System Status (2026-01-24 21:17)
-- **Data Pipeline:** 4 Engines Active (Security, Job, Algo, Cost)
-- **Docker Registry:** Updated (ghcr.io)
-
-
-### 📡 Data Sources (Live Sync)
-- **Official:** [Pokemon GO Live](https://pokemongolive.com) (Events/News)
-- **Social:** [Twitter @PokemonGoApp](https://twitter.com/PokemonGoApp) (Updates)
-- **Meta:** [PvPoke/GamePress](https://pvpoke.com) (Battle Tiers)
+## 🏭 Replication Status (2026-01-24 12:21)
+| Engine | Primary | Replica | Archive |
+|---|---|---|---|
+| Security | ✅ Uploaded | ✅ Uploaded | ✅ Uploaded |
+| Job | ✅ Uploaded | ✅ Uploaded | ✅ Uploaded |
+| Algo | ✅ Uploaded | ✅ Uploaded | - |
+| Cost | ✅ Uploaded | ✅ Uploaded | - |
