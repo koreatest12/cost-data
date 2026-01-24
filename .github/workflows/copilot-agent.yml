@@ -7,14 +7,13 @@ on:
     branches: [ main, master, develop ]
   workflow_dispatch:
 
-# [중요] 업로드 기능을 위해 권한을 'write'로 변경
 permissions:
   contents: write
   packages: write
 
 jobs:
   # ==================================================================================
-  # [JOB 1] Windows Agent (1M Records + Release Upload)
+  # [JOB 1] Windows Agent (1M Records + Release Upload + Finance Verification)
   # ==================================================================================
   agent-windows:
     name: Windows Agent (Upload Release)
@@ -86,6 +85,42 @@ jobs:
           $swVA.Close()
           Write-Host "VA Data Generated."
 
+      # [신규 기능] 5-1. 자금 연동: 가상계좌 예금주 실명 조회 및 검증 (펌뱅킹 시뮬레이션)
+      - name: 가상계좌 예금주 검증 및 등록 (Firm Banking)
+        shell: powershell
+        run: |
+          Write-Host "Connecting to Mock Firm Banking Gateway..."
+          $vaPath = "src/main/resources/services/virtual_accounts"
+          $outputFile = "$vaPath/va_verification_result.csv"
+          
+          # 검증 결과 파일 헤더 생성
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+          $sw = New-Object System.IO.StreamWriter($outputFile, $false, $utf8NoBom)
+          $sw.WriteLine("VA_ID,BANK_CODE,RESULT_CODE,MESSAGE,TIMESTAMP")
+          
+          Write-Host "Processing Batch Verification for 500,000 Records..."
+          
+          # 대량 처리를 위한 로직 (샘플링 시뮬레이션으로 속도 최적화)
+          1..500000 | ForEach-Object {
+             if ($_ % 10 -eq 0) { 
+                # 10건 중 1건은 예금주 불일치 오류 시뮬레이션
+                $resCode = "E004"
+                $msg = "NAME_MISMATCH"
+             } else {
+                # 나머지는 정상 승인
+                $resCode = "0000"
+                $msg = "VERIFIED_SUCCESS"
+             }
+             
+             $timestamp = (Get-Date).ToString("yyyyMMddHHmmss")
+             $sw.WriteLine("VA_$_,004,$resCode,$msg,$timestamp")
+             
+             if ($_ % 100000 -eq 0) { Write-Host " -> Verified $_ accounts via Banking Network..." }
+          }
+          
+          $sw.Close()
+          Write-Host "Firm Banking Verification Completed."
+
       # 6. [데이터 생성] 마케팅 이메일 100만 건
       - name: 마케팅 이메일 100만 건 생성
         shell: powershell
@@ -129,7 +164,7 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled True
           mvn clean package -DskipTests -B -q
 
-      # 9. GitHub 요약 보고서 (배열 방식 - 안정성 확보)
+      # 9. GitHub 요약 보고서
       - name: 실행 결과 요약 보고서 생성
         shell: powershell
         run: |
@@ -140,6 +175,7 @@ jobs:
               "| Category | Count | Status |",
               "|---|---|---|",
               "| Virtual Accounts | 500,000 | Created |",
+              "| Firm Banking Verification | 500,000 | Verified (Mock) |",
               "| Marketing Emails | 1,000,000 | Created |",
               "| Build | Success | Ready to Upload |"
           )
@@ -152,7 +188,7 @@ jobs:
           $reportFile = "FINAL_REPORT_WINDOWS.html"
           $utf8NoBom = New-Object System.Text.UTF8Encoding $false
           $sw = New-Object System.IO.StreamWriter($reportFile, $false, $utf8NoBom)
-          $sw.WriteLine("<html><body><h1>Windows Release Report</h1><p>Data Upload Ready.</p></body></html>")
+          $sw.WriteLine("<html><body><h1>Windows Release Report</h1><p>Data Upload Ready with Finance Verification.</p></body></html>")
           $sw.Close()
 
       # 11. 패키징
@@ -163,10 +199,11 @@ jobs:
           $packageName = "windows-release-$date.zip"
           if (-not (Test-Path "target")) { New-Item -ItemType Directory -Force -Path "target" }
           
+          # [자금 연동 반영] services 폴더 내의 검증 결과 파일도 함께 압축됨
           Compress-Archive -Path "target/*.jar", "src/main/resources/services", "simulation_results.log", "FINAL_REPORT_WINDOWS.html" -DestinationPath $packageName -Force
           Write-Host "Package Created: $packageName"
 
-      # [신규 기능] 12. GitHub Release에 업로드
+      # 12. GitHub Release에 업로드
       - name: GitHub Release 업로드 (Upload to koreatest12/cost-data)
         shell: powershell
         env:
@@ -178,8 +215,7 @@ jobs:
           
           Write-Host "Creating Release $tagName and Uploading Artifact..."
           
-          # 릴리스 생성 및 파일 업로드
-          gh release create $tagName $packageName --title "Windows Release $date" --notes "Automated massive data build (1.5M records)." --repo koreatest12/cost-data
+          gh release create $tagName $packageName --title "Windows Release $date" --notes "Automated massive data build with Finance Verification." --repo koreatest12/cost-data
           
           Write-Host "Upload Successful."
 
@@ -195,7 +231,7 @@ jobs:
           path: '*.zip'
 
   # ==================================================================================
-  # [JOB 2] Linux Agent (Python Reporting & Release Upload)
+  # [JOB 2] Linux Agent (Python Reporting + Deposit Notification + Release Upload)
   # ==================================================================================
   agent-linux:
     name: Linux Agent (Upload Release)
@@ -216,6 +252,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
+
       - name: Maven 3.9.6 설치
         run: |
           wget -q https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz
@@ -242,6 +279,51 @@ jobs:
                   f.write(f'cust_{i}@promo.com,YES\n')
           "
 
+      # [신규 기능] 자금 연동: 입금 통보(Webhook) 대량 처리 테스트
+      - name: 입금 통보(Webhook) 대량 처리 테스트
+        run: |
+          echo "Starting Deposit Notification Simulation..."
+          
+          python3 -c "
+          import random
+          import json
+          import time
+          from datetime import datetime
+
+          # 입금 로그 파일 생성
+          report_file = 'src/main/resources/services/finance_reconciliation.csv'
+          
+          print(f'Simulating Bank Webhook Calls -> {report_file}')
+          
+          success_count = 0
+          fail_count = 0
+          
+          # 10만 건의 입금 이벤트 발생 시뮬레이션
+          with open(report_file, 'w') as f:
+              f.write('TX_ID,VA_NUMBER,AMOUNT,STATUS,BANK_RES_TIME\n')
+              
+              for i in range(100000):
+                  # 랜덤 입금 데이터 생성
+                  tx_id = f'TX_{datetime.now().strftime(f\"%Y%m%d\")}{i:06d}'
+                  amount = random.choice([10000, 30000, 50000, 100000])
+                  va_num = f'999{i:08d}'
+                  
+                  # 95% 성공, 5% 실패(금액 상이 등) 시뮬레이션
+                  if random.random() > 0.05:
+                      status = 'MATCHED'
+                      success_count += 1
+                  else:
+                      status = 'AMOUNT_MISMATCH'
+                      fail_count += 1
+                  
+                  f.write(f'{tx_id},{va_num},{amount},{status},{time.time()}\n')
+                  
+                  if i % 20000 == 0:
+                      print(f' -> Processed {i} deposit notifications...')
+
+          print(f'Deposit Simulation Finished: Success={success_count}, Fail={fail_count}')
+          "
+
       - name: 통합 빌드
         run: mvn clean package -DskipTests -B -q
 
@@ -256,7 +338,7 @@ jobs:
                   f.write(f'{time.time()},PROCESS_TX_{i},SUCCESS\n')
           
           with open('FINAL_REPORT_LINUX.html', 'w') as f:
-              f.write('<html><body><h1>Linux Report</h1><p>Ready to Upload</p></body></html>')
+              f.write('<html><body><h1>Linux Report</h1><p>Ready to Upload with Deposit Simulation</p></body></html>')
           "
 
       - name: 실행 결과 요약 보고서 생성 (Job Summary)
@@ -265,6 +347,7 @@ jobs:
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Data Count | 1,500,000 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deposit Simulation | 100,000 TXs |" >> $GITHUB_STEP_SUMMARY
           echo "| Upload Target | koreatest12/cost-data |" >> $GITHUB_STEP_SUMMARY
 
       - name: 패키징
@@ -273,11 +356,12 @@ jobs:
           PKG_NAME="linux-release-$(date +%Y%m%d).tar.gz"
           mkdir -p target
           
+          # [자금 연동 반영] services 폴더 내의 입금 내역(finance_reconciliation.csv)도 함께 압축됨
           tar -czf $PKG_NAME target/*.jar src/main/resources/services/ linux_simulation.log FINAL_REPORT_LINUX.html
           
           echo "Package Created: $PKG_NAME"
 
-      # [신규 기능] GitHub Release에 업로드
+      # GitHub Release에 업로드
       - name: GitHub Release 업로드 (Upload to koreatest12/cost-data)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -288,8 +372,7 @@ jobs:
           
           echo "Creating Release $TAG_NAME and Uploading..."
           
-          # 릴리스 생성 및 파일 업로드
-          gh release create $TAG_NAME $PKG_NAME --title "Linux Release $DATE" --notes "Automated massive data build (1.5M records)." --repo koreatest12/cost-data
+          gh release create $TAG_NAME $PKG_NAME --title "Linux Release $DATE" --notes "Automated massive data build with Finance Verification." --repo koreatest12/cost-data
           
           echo "Upload Successful."
 
