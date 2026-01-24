@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Release Fix)
+name: 🌌 Omni-Intelligence Grand Pipeline (Docker Ultimate)
 
 on:
   schedule:
@@ -13,12 +13,11 @@ permissions:
   issues: write
   packages: write
 
-# [전역 환경 설정]
+# [✅ 전역 환경 설정]
 env:
   TZ: 'Asia/Seoul'
-  LOG_DIR: '.github/omni/logs'
-  REPORT_DIR: '.github/omni/reports'
   RETRY_MAX: 5
+  REGISTRY: ghcr.io
 
 jobs:
   # ==============================================================================
@@ -35,7 +34,6 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install faker
-      
       - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > sec_core.py
@@ -46,18 +44,12 @@ jobs:
           with open("DB_SEC/primary/security_data.json", "w") as f: json.dump(data, f)
           EOF
           python sec_core.py
-
-      - name: 📦 Compress & Verify
+      - name: 📦 Compress
         run: |
-          # Checksum
           sha256sum DB_SEC/primary/security_data.json > DB_SEC/primary/checksum.sha256
-          # Replication
           cp DB_SEC/primary/* DB_SEC/replica/
           cp DB_SEC/primary/* DB_SEC/archive/
-          # [Fix] Create Tarball for Release
           tar -czf pkg-sec-primary.tar.gz DB_SEC/primary/
-
-      # [Fix] Upload the .tar.gz file instead of folder
       - uses: actions/upload-artifact@v4
         with: { name: pkg-sec-primary, path: pkg-sec-primary.tar.gz }
 
@@ -73,7 +65,6 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install faker
-      
       - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > job_core.py
@@ -84,14 +75,11 @@ jobs:
           with open("DB_JOB/primary/job_data.json", "w") as f: json.dump(data, f)
           EOF
           python job_core.py
-
-      - name: 📦 Compress & Verify
+      - name: 📦 Compress
         run: |
           sha256sum DB_JOB/primary/job_data.json > DB_JOB/primary/checksum.sha256
           cp DB_JOB/primary/* DB_JOB/replica/
-          # [Fix] Tarball
           tar -czf pkg-job-primary.tar.gz DB_JOB/primary/
-
       - uses: actions/upload-artifact@v4
         with: { name: pkg-job-primary, path: pkg-job-primary.tar.gz }
 
@@ -114,10 +102,8 @@ jobs:
           with open("DB_ALGO/primary/algo_data.json", "w") as f: json.dump(data, f)
           EOF
           python algo_core.py
-      
       - name: 📦 Compress
         run: tar -czf pkg-algo-primary.tar.gz DB_ALGO/primary/
-
       - uses: actions/upload-artifact@v4
         with: { name: pkg-algo-primary, path: pkg-algo-primary.tar.gz }
 
@@ -140,19 +126,17 @@ jobs:
           with open("DB_COST/primary/cost_data.json", "w") as f: json.dump(data, f)
           EOF
           python misc_core.py
-      
       - name: 📦 Compress
         run: tar -czf pkg-cost-primary.tar.gz DB_COST/primary/
-
       - uses: actions/upload-artifact@v4
         with: { name: pkg-cost-primary, path: pkg-cost-primary.tar.gz }
 
   # ==============================================================================
-  # 🏭 5. Service Factory (Actuator & K8s)
+  # 🏭 5. Service Factory (Docker Ultimate & Buildx)
   # ==============================================================================
   services-factory:
     needs: [security-core, job-core, algo-core, misc-core]
-    name: 🏭 Service Factory
+    name: 🏭 Service Factory (Buildx)
     runs-on: ubuntu-latest
     steps:
       - name: 🔄 Checkout
@@ -162,7 +146,7 @@ jobs:
           fetch-depth: 1
         continue-on-error: true
 
-      - name: 🐧 Install OS Packages
+      - name: 🐧 Install Utils
         run: sudo apt-get update && sudo apt-get install -y jq curl unzip tree
 
       - uses: actions/download-artifact@v4
@@ -175,26 +159,33 @@ jobs:
         uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin', cache: maven }
 
-      - name: 📂 Generate Ops Files
-        run: |
-          mkdir -p ops_logs
-          echo "Log Entry" > ops_logs/access.log
+      # [✅ New] Docker Buildx & QEMU Setup (Multi-Arch Support)
+      - name: 🐳 Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: image=moby/buildkit:latest
 
-      - name: 🛠️ Extract & Organize
+      # [✅ New] Docker Login (More Robust)
+      - name: 🔐 Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🛠️ Organize Data
         run: |
-          # [Fix] Extract downloaded tarballs
-          for pkg in *.tar.gz; do
-            tar -xzf "$pkg" || echo "Failed to extract $pkg"
-          done
-          
+          for pkg in *.tar.gz; do tar -xzf "$pkg" || echo "Skip $pkg"; done
           mkdir -p DB_SEC/live DB_JOB/live DB_ALGO/live DB_COST/live
-          # Move files from extracted primary folders
           [ -d "DB_SEC/primary" ] && mv DB_SEC/primary/* DB_SEC/live/
           [ -d "DB_JOB/primary" ] && mv DB_JOB/primary/* DB_JOB/live/
           [ -d "DB_ALGO/primary" ] && mv DB_ALGO/primary/* DB_ALGO/live/
           [ -d "DB_COST/primary" ] && mv DB_COST/primary/* DB_COST/live/
 
-      - name: 🏗️ Scaffold Services
+      - name: 🏗️ Scaffold & Build Services
         run: |
           rm -rf services
           mkdir -p services
@@ -223,7 +214,13 @@ jobs:
                   <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency>
                   <dependency><groupId>jakarta.annotation</groupId><artifactId>jakarta.annotation-api</artifactId></dependency>
               </dependencies>
-              <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
+              <build>
+                  <plugins>
+                      <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId>
+                          <configuration><layers><enabled>true</enabled></layers></configuration>
+                      </plugin>
+                  </plugins>
+              </build>
           </project>
           EOF
             
@@ -242,7 +239,7 @@ jobs:
           }
           EOF
 
-            # [Fix] Unique K8s Filename to prevent upload conflict
+            # K8s
             cat <<EOF > services/omni-$svc-service/k8s/omni-$svc.yaml
           apiVersion: apps/v1
           kind: Deployment
@@ -263,6 +260,11 @@ jobs:
                   image: ghcr.io/${GITHUB_REPOSITORY,,}/omni-$svc-service:latest
                   ports:
                   - containerPort: 8080
+                  livenessProbe:
+                    httpGet:
+                      path: /actuator/health
+                      port: 8080
+                    initialDelaySeconds: 30
           EOF
           done
           
@@ -282,24 +284,54 @@ jobs:
           </project>
           EOF
 
-      - name: 🔨 Compile
+      - name: 🔨 Compile Services
         run: cd services && mvn clean package -DskipTests
 
-      - name: 🐳 Docker Push
+      # [✅ New] Advanced Docker Build with Retry & Layered Jar Support
+      - name: 🐳 Build & Push Grid (With Retry)
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           SERVICES="security job algo cost"
           for svc in $SERVICES; do
+            echo "🐳 Processing: omni-$svc-service"
             cd services/omni-$svc-service
+            
+            # [Optimization] Layered Jar Dockerfile
             cat <<EOF > Dockerfile
-          FROM eclipse-temurin:17-jdk-jammy
+          FROM eclipse-temurin:17-jre-jammy as builder
           WORKDIR /app
           COPY target/*.jar app.jar
-          ENTRYPOINT ["java", "-jar", "/app.jar"]
+          RUN java -Djarmode=layertools -jar app.jar extract
+
+          FROM eclipse-temurin:17-jre-jammy
+          WORKDIR /app
+          COPY --from=builder /app/dependencies/ ./
+          COPY --from=builder /app/spring-boot-loader/ ./
+          COPY --from=builder /app/snapshot-dependencies/ ./
+          COPY --from=builder /app/application/ ./
+          
+          LABEL org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          LABEL org.opencontainers.image.description="Omni Intelligence $svc Service"
+          
+          HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:8080/actuator/health || exit 1
+          ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
           EOF
+            
             IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-$svc-service:latest"
-            docker build -t $IMG .
-            docker push $IMG
+            
+            # [Retry Logic] for Unknown Blob Error
+            n=0
+            until [ "$n" -ge 5 ]; do
+              echo "🚀 Pushing $IMG (Attempt $((n+1))/5)..."
+              docker buildx build \
+                --platform linux/amd64,linux/arm64 \
+                --tag $IMG \
+                --push \
+                . && break
+              n=$((n+1))
+              echo "⚠️ Push failed. Retrying in 10s..."
+              sleep 10
+            done
+            
             cd ../.. 
           done
 
@@ -307,12 +339,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: enterprise-artifacts
-          path: |
-            services/
-            ops_logs/
+          path: services/
 
   # ==============================================================================
-  # 🚀 6. Enterprise Release
+  # 🚀 6. Release
   # ==============================================================================
   grand-release:
     needs: [services-factory]
@@ -320,7 +350,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
     steps:
       - uses: actions/checkout@v4
         continue-on-error: true
@@ -328,7 +357,6 @@ jobs:
       - name: 📥 Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          # Download everything to correct paths
           pattern: '*'
           merge-multiple: true
           path: release_assets
@@ -343,7 +371,11 @@ jobs:
         with:
           tag_name: ${{ steps.tagger.outputs.tag }}
           name: 🌌 Release ${{ steps.tagger.outputs.tag }}
-          body: "Enterprise Release with 1M+ Records."
+          body: |
+            # 🌌 Omni-Intelligence Ultimate Release
+            - **Docker:** Multi-Arch (AMD64/ARM64) Supported
+            - **Resilience:** Auto-Retry Push Enabled
+            - **Healthcheck:** K8s Liveness Probes Ready
           files: |
             release_assets/*.tar.gz
             release_assets/services/**/target/*.jar
@@ -380,7 +412,7 @@ jobs:
           now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
           has_source = os.path.exists("services")
           status = "Online" if has_source else "Partial"
-          md = f"# 🌌 Omni-Intelligence Hub\n\n![Status](https://img.shields.io/badge/Status-{status}-green)\n\n## 🚀 {now}\n"
+          md = f"# 🌌 Omni-Intelligence Hub\n\n![Status](https://img.shields.io/badge/System-{status}-green) ![Docker](https://img.shields.io/badge/Docker-MultiArch-blue)\n\n## 🚀 {now}\n"
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
