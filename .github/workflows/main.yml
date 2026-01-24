@@ -32,7 +32,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_SEC/primary DB_SEC/replica
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - run: pip install faker pandas requests
       - name: 🧬 Crawl & Generate Security Data
         run: |
@@ -57,7 +58,9 @@ jobs:
       - name: 📦 Archive
         run: tar -czf pkg-sec-primary.tar.gz DB_SEC/primary/
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-sec-primary, path: pkg-sec-primary.tar.gz }
+        with:
+          name: pkg-sec-primary
+          path: pkg-sec-primary.tar.gz
 
   # ==============================================================================
   # 💼 2. Job Engine (공식 이벤트/뉴스 대량 수집)
@@ -69,7 +72,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_JOB/primary
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - name: 🧬 Crawl Official News
         run: |
           cat << 'EOF' > job_core.py
@@ -97,7 +101,9 @@ jobs:
       - name: 📦 Archive
         run: tar -czf pkg-job-primary.tar.gz DB_JOB/primary/
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-job-primary, path: pkg-job-primary.tar.gz }
+        with:
+          name: pkg-job-primary
+          path: pkg-job-primary.tar.gz
 
   # ==============================================================================
   # 🧮 3. Algo Engine (배틀/레이드 티어 데이터 분석)
@@ -109,7 +115,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_ALGO/primary
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - name: 🧬 Analyze Meta Data
         run: |
           cat << 'EOF' > algo_core.py
@@ -135,7 +142,9 @@ jobs:
       - name: 📦 Archive
         run: tar -czf pkg-algo-primary.tar.gz DB_ALGO/primary/
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-algo-primary, path: pkg-algo-primary.tar.gz }
+        with:
+          name: pkg-algo-primary
+          path: pkg-algo-primary.tar.gz
 
   # ==============================================================================
   # 💰 4. Cost Engine (샵/박스 효율 분석)
@@ -147,7 +156,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_COST/primary
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - name: 🧬 Crawl Shop Data
         run: |
           cat << 'EOF' > misc_core.py
@@ -168,7 +178,9 @@ jobs:
       - name: 📦 Archive
         run: tar -czf pkg-cost-primary.tar.gz DB_COST/primary/
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-cost-primary, path: pkg-cost-primary.tar.gz }
+        with:
+          name: pkg-cost-primary
+          path: pkg-cost-primary.tar.gz
 
   # ==============================================================================
   # 🏗️ 5. Infra Automation
@@ -184,7 +196,9 @@ jobs:
           chmod +x infra_scripts/*.sh
           tar -czf pkg-infra-scripts.tar.gz infra_scripts/
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-infra, path: pkg-infra-scripts.tar.gz }
+        with:
+          name: pkg-infra
+          path: pkg-infra-scripts.tar.gz
 
   # ==============================================================================
   # 🏭 6. Service Factory (Mass Compile & Docker)
@@ -357,7 +371,10 @@ jobs:
         continue-on-error: true
       - name: 📥 Download
         uses: actions/download-artifact@v4
-        with: { pattern: '*', merge-multiple: true, path: release_assets }
+        with:
+          pattern: '*'
+          merge-multiple: true
+          path: release_assets
         continue-on-error: true
       - name: 🏷️ Tagging
         id: tagger
@@ -374,7 +391,8 @@ jobs:
             - 🐳 **Docker:** Mass Build & Layered Optimization
             - 🔐 **Security:** Latest Anti-Cheat Ruleset Applied
           files: release_assets/**/*.jar
-        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
   # ==============================================================================
@@ -387,7 +405,8 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@v4
-        with: { token: ${{ secrets.GITHUB_TOKEN }} }
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
       - name: 📊 Generate Dashboard
         run: |
@@ -423,4 +442,11 @@ jobs:
           
           if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
           git commit -m "🌌 Auto-Sync: Mass Data & Docker Update $(date +'%Y-%m-%d')"
-          git pull origin main --rebase && git push origin main
+          
+          # [Fix] 충돌 방지 로직 강화
+          n=0
+          until [ "$n" -ge 10 ]; do 
+             git pull origin main --no-rebase -s recursive -X ours && git push origin main && break
+             n=$((n+1))
+             sleep 5
+          done
