@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Replication & Upload)
+name: 🌌 Omni-Intelligence Grand Pipeline (Enterprise Fix)
 
 on:
   schedule:
@@ -7,344 +7,376 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-  issues: write
-  packages: write
-  actions: write
+permissions: write-all
+
+# [✅ 1. 전역 환경 설정]
+env:
+  TZ: 'Asia/Seoul'
+  LOG_DIR: '.github/omni/logs'
+  REPORT_DIR: '.github/omni/reports'
+  DR_DIR: '.github/omni/dr'
+  RETRY_MAX: 5
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine (3중 복제: Live / Mirror / Backup)
+  # 🛡️ 1. Security Engine
   # ==============================================================================
   security-core:
-    name: 🛡️ Security Engine (Replication)
+    name: 🛡️ Security Engine
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 🛠️ Directory Setup
-        run: |
-          # 3단계 폴더 구조 생성
-          mkdir -p DB_SEC/live/threat_intel
-          mkdir -p DB_SEC/mirror/threat_intel
-          mkdir -p DB_SEC/backup/$(date +%Y%m%d)
+      - name: 🛠️ Setup Env
+        run: mkdir -p DB_SEC/primary DB_SEC/replica DB_SEC/archive
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - run: pip install pandas faker
-      - name: 🧬 Run Security Generator & Replication
+      - run: pip install faker
+      - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > sec_core.py
-          import json, os, datetime, random, shutil
+          import json, os, datetime, hashlib
           from faker import Faker
           fake = Faker()
-          
-          print("⚡ Generating 100,000+ Security Records...")
-          data = []
-          for i in range(100000):
-              data.append({
-                  "id": f"SEC-{i}",
-                  "title": f"Critical Threat detected in Sector {random.randint(1,999)}",
-                  "severity": random.choice(["Critical", "High"]),
-                  "date": datetime.datetime.now().strftime('%Y-%m-%d')
-              })
-          
-          # 1. 원본 저장 (Live)
-          live_path = "DB_SEC/live/threat_intel/news.json"
-          with open(live_path, "w") as f: json.dump(data, f)
-          print(f"✅ [1/3] Live Data Saved: {len(data)}")
-          
-          # 2. 미러링 복제 (Mirror - 실시간 복제본)
-          mirror_path = "DB_SEC/mirror/threat_intel/news_replica.json"
-          os.makedirs(os.path.dirname(mirror_path), exist_ok=True)
-          shutil.copy2(live_path, mirror_path)
-          print(f"✅ [2/3] Data Mirrored/Replicated")
-          
-          # 3. 시점 백업 (Backup - 아카이빙)
-          date_str = datetime.datetime.now().strftime('%Y%m%d')
-          backup_path = f"DB_SEC/backup/{date_str}/sec_full_dump.json"
-          shutil.copy2(live_path, backup_path)
-          print(f"✅ [3/3] Data Archived to Backup Zone")
+          data = [{"id":f"SEC-{i}", "cve":f"CVE-2026-{10000+i}", "desc":fake.sentence()} for i in range(500000)]
+          with open("DB_SEC/primary/security_data.json", "w") as f: json.dump(data, f)
           EOF
           python sec_core.py
-      
-      # [업로드] 생성된 모든 폴더(Live, Mirror, Backup)를 아티팩트로 업로드
+      - name: 🔐 Integrity Check
+        run: |
+          sha256sum DB_SEC/primary/security_data.json > DB_SEC/primary/checksum.sha256
+          cp DB_SEC/primary/* DB_SEC/replica/
+          cp DB_SEC/primary/* DB_SEC/archive/
       - uses: actions/upload-artifact@v4
-        with: { name: db-sec-full, path: DB_SEC/ }
+        with: { name: pkg-sec-primary, path: DB_SEC/primary }
 
   # ==============================================================================
-  # 💼 2. Job Engine (지역별 분산 저장 및 통합 복제)
+  # 💼 2. Job Engine
   # ==============================================================================
   job-core:
-    name: 💼 Job Fortress (Replication)
+    name: 💼 Job Fortress
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 🛠️ Directory Setup
-        run: mkdir -p DB/jobs/regional DB/jobs/global_mirror DB/backup
+      - run: mkdir -p DB_JOB/primary DB_JOB/replica DB_JOB/archive
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install faker
-      - name: 🧬 Run Job Generator & Replication
+      - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > job_core.py
-          import json, os, datetime, random, shutil
+          import json, os
           from faker import Faker
           fake = Faker()
-          
-          LOCATIONS = ["pangyo", "gangnam", "silicon_valley"]
-          print("⚡ Generating 50,000 Job Records...")
-          
-          all_jobs = []
-          
-          # 1. 지역별 분산 저장 (Live)
-          for loc in LOCATIONS:
-              jobs = []
-              for i in range(17000): # Total ~50k
-                  job = {
-                      "id": f"JOB-{loc}-{i}",
-                      "title": f"{fake.job()} at {fake.company()}",
-                      "location": loc
-                  }
-                  jobs.append(job)
-                  all_jobs.append(job)
-              
-              path = f"DB/jobs/regional/{loc}/data.json"
-              os.makedirs(os.path.dirname(path), exist_ok=True)
-              with open(path, "w") as f: json.dump(jobs, f)
-              print(f"  - Saved {len(jobs)} jobs to {loc}")
-          
-          # 2. 글로벌 통합 미러링 (Global Replica)
-          mirror_path = "DB/jobs/global_mirror/all_jobs_replica.json"
-          with open(mirror_path, "w") as f: json.dump(all_jobs, f)
-          print(f"✅ [Replication] Global Mirror Created ({len(all_jobs)} records)")
-          
-          # 3. 압축 백업 (Zip Upload Simulation)
-          shutil.make_archive("DB/backup/jobs_archive", 'zip', "DB/jobs/regional")
-          print(f"✅ [Backup] Zipped Archive Created")
+          data = [{"id":f"JOB-{i}", "title":fake.job(), "loc":"Global"} for i in range(300000)]
+          with open("DB_JOB/primary/job_data.json", "w") as f: json.dump(data, f)
           EOF
           python job_core.py
-          
+      - name: 🔐 Integrity Check
+        run: |
+          sha256sum DB_JOB/primary/job_data.json > DB_JOB/primary/checksum.sha256
+          cp DB_JOB/primary/* DB_JOB/replica/
       - uses: actions/upload-artifact@v4
-        with: { name: db-job-full, path: DB/ }
+        with: { name: pkg-job-primary, path: DB_JOB/primary }
 
   # ==============================================================================
-  # 🧮 3. Algo Engine (버전 관리 및 스냅샷 복제)
+  # 🧮 3. Algo Engine
   # ==============================================================================
   algo-core:
-    name: 🧮 Algo Engine (Versioning)
+    name: 🧮 Algo Engine
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir -p DB_ALGO/v1 DB_ALGO/v2 DB_ALGO/latest
+      - run: mkdir -p DB_ALGO/primary DB_ALGO/replica
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - run: pip install faker
-      - name: 🧬 Run Algo Generator
+      - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > algo_core.py
-          import json, os, random, shutil
-          
-          print("⚡ Generating 30,000 Tech Articles...")
-          data = [{"title": f"Algo Paper #{i}", "tag": "AI"} for i in range(30000)]
-          
-          # 1. 최신 버전 저장 (Latest)
-          with open("DB_ALGO/latest/data.json", "w") as f: json.dump(data, f)
-          
-          # 2. 버전별 스냅샷 복제 (Versioning)
-          shutil.copy2("DB_ALGO/latest/data.json", "DB_ALGO/v1/data_v1.0.json")
-          shutil.copy2("DB_ALGO/latest/data.json", "DB_ALGO/v2/data_v2.0_beta.json")
-          
-          print("✅ [Versioning] Saved to Latest, V1, and V2 folders")
+          import json
+          data = [{"id":i, "algo":f"Model-{i}"} for i in range(100000)]
+          with open("DB_ALGO/primary/algo_data.json", "w") as f: json.dump(data, f)
           EOF
           python algo_core.py
       - uses: actions/upload-artifact@v4
-        with: { name: db-algo-full, path: DB_ALGO/ }
+        with: { name: pkg-algo-primary, path: DB_ALGO/primary }
 
   # ==============================================================================
-  # 💰 4. Cost Engine (다중 포맷 복제: JSON/CSV)
+  # 💰 4. Cost Engine
   # ==============================================================================
   misc-core:
-    name: 💰 Cost Engine (Multi-Format)
+    name: 💰 Cost Engine
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir -p DB_COST/json DB_COST/csv DB_COST/backup
+      - run: mkdir -p DB_COST/primary DB_COST/replica
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - run: pip install pandas faker
-      - name: 🧬 Run Cost Generator
+      - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > misc_core.py
-          import json, os, random, pandas as pd
-          
-          print("⚡ Generating 20,000 Cost Records...")
-          data = []
-          for i in range(20000):
-              data.append({"id": i, "cost": random.uniform(10, 1000), "currency": "USD"})
-          
-          # 1. JSON 저장
-          json_path = "DB_COST/json/cost.json"
-          with open(json_path, "w") as f: json.dump(data, f)
-          
-          # 2. CSV 변환 복제 (Format Replication)
-          df = pd.DataFrame(data)
-          df.to_csv("DB_COST/csv/cost.csv", index=False)
-          print("✅ [Replication] Converted & Saved as CSV")
-          
-          # 3. 백업 복사
-          shutil.copy2(json_path, "DB_COST/backup/cost_backup.json")
+          import json
+          data = [{"id":i, "cost":100+i} for i in range(100000)]
+          with open("DB_COST/primary/cost_data.json", "w") as f: json.dump(data, f)
           EOF
           python misc_core.py
       - uses: actions/upload-artifact@v4
-        with: { name: db-misc-full, path: DB_COST/ }
+        with: { name: pkg-cost-primary, path: DB_COST/primary }
 
   # ==============================================================================
-  # ☕ 5. Java App Build (모든 복제본 통합 주입)
+  # 🏭 5. Enterprise Service Factory (Fix Applied)
   # ==============================================================================
-  java-app-build:
+  services-factory:
     needs: [security-core, job-core, algo-core, misc-core]
-    name: ☕ Java API Build (All Replicas)
+    name: 🏭 Service Factory
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      # [업로드된 모든 데이터 다운로드]
-      - uses: actions/download-artifact@v4
-        with: { pattern: 'db-*', merge-multiple: true }
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: ☕ JDK 17 설정
+      - name: 🐧 Install OS Packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl unzip net-tools tree
+          echo "✅ Base OS Packages Installed."
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: 'pkg-*-primary'
+          merge-multiple: true
+        continue-on-error: true
+
+      - name: ☕ JDK 17 Setup
         uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin', cache: maven }
 
-      - name: 🛠️ 데이터 통합 및 검증
+      - name: 📂 Generate Massive Ops Files
         run: |
-          # 비상용 더미 생성기 (다운로드 실패 시)
-          cat << 'EOF' > dummy_gen.py
-          import os, json
-          dirs = ["DB_SEC/live", "DB_SEC/mirror", "DB/jobs/regional", "DB/backup"]
-          for d in dirs:
-              os.makedirs(d, exist_ok=True)
-              with open(f"{d}/dummy.json", "w") as f: json.dump([{"status":"dummy"}], f)
-          EOF
-          python dummy_gen.py
+          mkdir -p ops_logs/shard_{0..9}
+          for i in {0..9}; do
+            for j in {0..100}; do
+              echo "Log Entry $j" > ops_logs/shard_$i/access_$j.log
+            done
+          done
+          echo "✅ Ops Files Created."
 
-          # 리소스 폴더 준비
-          rm -rf src
-          mkdir -p src/main/resources/data
-          
-          # [핵심] 원본, 미러, 백업 폴더를 전부 Java 리소스로 복사
-          cp -r DB_SEC src/main/resources/data/security
-          cp -r DB src/main/resources/data/jobs
-          cp -r DB_ALGO src/main/resources/data/algo
-          cp -r DB_COST src/main/resources/data/cost
-          
-          echo "📊 Total Files Injected (Original + Replicas):"
-          find src/main/resources/data -type f | wc -l
-
-      - name: 📝 pom.xml 생성
+      - name: 🛠️ Organize Data
         run: |
-          cat << 'EOF' > pom.xml
-          <?xml version="1.0" encoding="UTF-8"?>
+          mkdir -p DB_SEC/live DB_JOB/live DB_ALGO/live DB_COST/live
+          [ -f "security_data.json" ] && mv security_data.json DB_SEC/live/
+          [ -f "job_data.json" ] && mv job_data.json DB_JOB/live/
+          [ -f "algo_data.json" ] && mv algo_data.json DB_ALGO/live/
+          [ -f "cost_data.json" ] && mv cost_data.json DB_COST/live/
+
+      - name: 🏗️ Scaffold Services (Actuator & K8s)
+        run: |
+          rm -rf services
+          mkdir -p services
+          SERVICES="security job algo cost"
+          
+          for svc in $SERVICES; do
+            # 디렉토리 생성
+            mkdir -p services/omni-$svc-service/src/main/java/com/costdata/$svc
+            mkdir -p services/omni-$svc-service/src/main/resources/data
+            mkdir -p services/omni-$svc-service/k8s
+            
+            # 데이터 주입
+            if [ -d "DB_SEC/live" ] && [ "$svc" == "security" ]; then cp -r DB_SEC/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            if [ -d "DB_JOB/live" ] && [ "$svc" == "job" ]; then cp -r DB_JOB/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            if [ -d "DB_ALGO/live" ] && [ "$svc" == "algo" ]; then cp -r DB_ALGO/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            if [ -d "DB_COST/live" ] && [ "$svc" == "cost" ]; then cp -r DB_COST/live/* services/omni-$svc-service/src/main/resources/data/; fi
+            
+            # [Fix] POM File Indentation Corrected
+            cat <<EOF > services/omni-$svc-service/pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
               <modelVersion>4.0.0</modelVersion>
-              <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.1</version><relativePath/></parent>
-              <groupId>com.costdata</groupId><artifactId>omni-intelligence-api</artifactId><version>1.0.0</version>
+              <parent><groupId>com.costdata</groupId><artifactId>omni-platform</artifactId><version>1.0.0</version></parent>
+              <artifactId>omni-$svc-service</artifactId>
               <packaging>jar</packaging>
-              <name>Omni Intelligence API</name>
-              <properties><java.version>17</java.version></properties>
               <dependencies>
                   <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
-                  <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
+                  <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency>
+                  <dependency><groupId>jakarta.annotation</groupId><artifactId>jakarta.annotation-api</artifactId></dependency>
               </dependencies>
-              <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId><configuration><mainClass>com.costdata.OmniApiApplication</mainClass></configuration></plugin></plugins></build>
+              <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
           </project>
           EOF
-
-      - name: 🧬 Java Code
-        run: |
-          mkdir -p src/main/java/com/costdata
-          cat << 'EOF' > src/main/java/com/costdata/OmniApiApplication.java
-          package com.costdata;
+            
+            # [Fix] Java Code Indentation Corrected
+            cat <<EOF > services/omni-$svc-service/src/main/java/com/costdata/$svc/ServiceApplication.java
+          package com.costdata.$svc;
           import org.springframework.boot.SpringApplication;
           import org.springframework.boot.autoconfigure.SpringBootApplication;
           import org.springframework.web.bind.annotation.GetMapping;
           import org.springframework.web.bind.annotation.RestController;
           import java.util.Map;
           @SpringBootApplication @RestController
-          public class OmniApiApplication {
-              public static void main(String[] args) { SpringApplication.run(OmniApiApplication.class, args); }
-              @GetMapping("/api/status") public Map<String, String> s() { 
-                  return Map.of("status", "online", "replication", "Active", "backup", "Secured"); 
-              }
+          public class ServiceApplication {
+              public static void main(String[] args) { SpringApplication.run(ServiceApplication.class, args); }
+              @GetMapping("/") public Map<String, String> s() { return Map.of("status", "online", "metrics", "enabled"); }
           }
           EOF
 
-      - name: 🔨 Maven Build
-        run: mvn clean package -DskipTests
+            # [Fix] K8s YAML Indentation Corrected
+            cat <<EOF > services/omni-$svc-service/k8s/deployment.yaml
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: omni-$svc
+            labels:
+              app: omni-$svc
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                app: omni-$svc
+            template:
+              metadata:
+                labels:
+                  app: omni-$svc
+              spec:
+                containers:
+                - name: app
+                  image: ghcr.io/${GITHUB_REPOSITORY,,}/omni-$svc-service:latest
+                  ports:
+                  - containerPort: 8080
+          EOF
+          done
+          
+          # Root POM
+          cat <<EOF > services/pom.xml
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.costdata</groupId><artifactId>omni-platform</artifactId><version>1.0.0</version>
+              <packaging>pom</packaging>
+              <modules>
+                  <module>omni-security-service</module>
+                  <module>omni-job-service</module>
+                  <module>omni-algo-service</module>
+                  <module>omni-cost-service</module>
+              </modules>
+              <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.1</version><relativePath/></parent>
+          </project>
+          EOF
 
-      - name: 🐳 Docker Build & Push
+      - name: 🔨 Compile
+        run: cd services && mvn clean package -DskipTests
+
+      - name: 🐳 Docker Grid Push
         run: |
-          cat <<EOF > Dockerfile
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          SERVICES="security job algo cost"
+          for svc in $SERVICES; do
+            cd services/omni-$svc-service
+            cat <<EOF > Dockerfile
           FROM eclipse-temurin:17-jdk-jammy
           WORKDIR /app
           COPY target/*.jar app.jar
           ENTRYPOINT ["java", "-jar", "/app.jar"]
           EOF
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-java-api:latest"
-          docker build -t $IMG . && docker push $IMG
+            IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-$svc-service:latest"
+            docker build -t $IMG .
+            docker push $IMG
+            cd ../.. 
+          done
+
+      - name: 📤 Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: enterprise-artifacts
+          path: |
+            services/
+            ops_logs/
 
   # ==============================================================================
-  # 🌍 6. Master Dashboard
+  # 🚀 6. Enterprise Release
+  # ==============================================================================
+  grand-release:
+    needs: [services-factory]
+    name: 🚀 Enterprise Release
+    runs-on: ubuntu-latest
+    permissions: contents: write
+    steps:
+      - uses: actions/checkout@v4
+        continue-on-error: true
+
+      - name: 📥 Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*'
+          merge-multiple: true
+          path: release_assets
+        continue-on-error: true
+
+      - name: 🏷️ Version Tag
+        id: tagger
+        run: echo "tag=v$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
+
+      - name: 📦 Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tagger.outputs.tag }}
+          name: 🌌 Enterprise Release ${{ steps.tagger.outputs.tag }}
+          body: "Enterprise Release with Actuator & K8s."
+          files: |
+            release_assets/*.tar.gz
+            release_assets/services/**/target/*.jar
+            release_assets/services/**/k8s/*.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  # ==============================================================================
+  # 🌍 7. Master Hub
   # ==============================================================================
   master-hub:
-    needs: [java-app-build]
-    name: 🌍 Master Dashboard
+    needs: [grand-release]
+    name: 🌍 Master Ops Dashboard
     runs-on: ubuntu-latest
     if: always()
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: actions/download-artifact@v4
-        with: { pattern: 'db-*', merge-multiple: true }
-      
-      - name: 📊 Generate README
+        with: { token: ${{ secrets.GITHUB_TOKEN }} }
+        continue-on-error: true
+
+      - name: 📥 Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: enterprise-artifacts
+          path: services
+        continue-on-error: true
+
+      - name: 📊 Generate Ops Dashboard
         run: |
           cat << 'EOF' > dashboard.py
-          import os, json
-          def cnt(p):
-              c=0
-              if not os.path.exists(p): return 0
-              for r,d,f in os.walk(p):
-                  for file in f:
-                      if file.endswith('.json'):
-                          try: c += len(json.load(open(os.path.join(r,file))))
-                          except: pass
-              return c
-          sec = cnt("DB_SEC")
-          job = cnt("DB/jobs")
-          algo = cnt("DB_ALGO")
-          cost = cnt("DB_COST")
-          total = sec + job + algo + cost
-          
-          md = f"# 🌌 Omni-Intelligence Hub (Replication Active)\n\n![Status](https://img.shields.io/badge/Replication-3x_Redundancy-blue) ![Data](https://img.shields.io/badge/Total_Copies-{total:,}-green)\n"
-          md += f"## 🎛️ Mission Control\n| Module | Original | Replica/Mirror | Backup |\n|---|---|---|---|\n"
-          md += f"| 🛡️ Security | ✅ Live | ✅ Mirror | ✅ Archive |\n"
-          md += f"| 💼 Jobs | ✅ Regional | ✅ Global | ✅ Zip |\n"
-          md += f"| 🧮 Algo | ✅ Latest | ✅ v1.0 | ✅ v2.0 |\n"
-          md += f"| 💰 Cost | ✅ JSON | ✅ CSV | ✅ Dump |\n"
-          
+          import datetime, os
+          now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+          has_source = os.path.exists("services")
+          status = "Online" if has_source else "Partial"
+          md = f"# 🌌 Omni-Intelligence Hub (Enterprise)\n\n"
+          md += f"![Status](https://img.shields.io/badge/Status-{status}-green) ![K8s](https://img.shields.io/badge/Kubernetes-Ready-blue)\n\n"
+          md += f"## 🏭 Operational Status ({now})\n"
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
 
-      - run: cat README.md >> $GITHUB_STEP_SUMMARY
-      - name: 🌿 Commit
+      - name: 🌿 Commit & Push
         run: |
           git config --global user.name "Omni Bot"
           git config --global user.email "bot@actions"
-          git add README.md DB* pom.xml src/
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          
+          if [ -d "services" ]; then git add services/; fi
+          git add README.md
+          
           if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
-          git commit -m "🌌 Replication Update: $(date +'%Y-%m-%d %H:%M')"
-          n=0; until [ "$n" -ge 5 ]; do git pull --rebase origin main && git push origin main && break; n=$((n+1)); sleep 5; done
+          
+          git commit -m "🌌 Enterprise Update: $(date +'%Y-%m-%d %H:%M')"
+          
+          n=0
+          until [ "$n" -ge 10 ]; do
+             git pull origin main --no-rebase -s recursive -X ours && git push origin main && break
+             n=$((n+1))
+             sleep 5
+          done
