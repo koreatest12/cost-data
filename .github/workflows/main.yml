@@ -18,7 +18,6 @@ env:
   TZ: 'Asia/Seoul'
   RETRY_MAX: 5
   REGISTRY: ghcr.io
-  # [Server Tuning - Production Level]
   JAVA_OPTS: "-XX:+UseG1GC -Xmx512m -Xms256m -XX:MaxMetaspaceSize=128m -XX:+AlwaysPreTouch"
 
 jobs:
@@ -40,7 +39,7 @@ jobs:
       - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > sec_core.py
-          import json, os, hashlib
+          import json, os
           from faker import Faker
           fake = Faker()
           data = [{"id":f"SEC-{i}", "cve":f"CVE-2026-{10000+i}", "desc":fake.sentence()} for i in range(500000)]
@@ -73,7 +72,7 @@ jobs:
       - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > job_core.py
-          import json, os
+          import json
           from faker import Faker
           fake = Faker()
           data = [{"id":f"JOB-{i}", "title":fake.job(), "loc":"Global"} for i in range(300000)]
@@ -192,7 +191,7 @@ jobs:
           path: pkg-infra-scripts.tar.gz
 
   # ==============================================================================
-  # 🏭 6. Service Factory (Docker Fix & Security)
+  # 🏭 6. Service Factory (Prod)
   # ==============================================================================
   services-factory:
     needs: [security-core, job-core, algo-core, misc-core, infra-engine]
@@ -303,45 +302,35 @@ jobs:
       - name: 🔨 Compile
         run: cd services && mvn clean package -DskipTests
 
-      # [✅ Fix] Dockerfile Case Correction & Security Hardening
       - name: 🐳 Docker Grid Push (Secured)
         run: |
           SERVICES="security job algo cost"
           for svc in $SERVICES; do
             cd services/omni-$svc-service
             
-            # [Optimization] Production Grade Dockerfile
+            # Dockerfile
             cat <<EOF > Dockerfile
-          # [Fix] Use Upper Case 'AS' to avoid warning
           FROM eclipse-temurin:17-jre-jammy AS builder
           WORKDIR /app
           COPY target/*.jar app.jar
           RUN java -Djarmode=layertools -jar app.jar extract
           FROM eclipse-temurin:17-jre-jammy
-          
-          # [Security] Create Non-Root User
           RUN groupadd -r omni && useradd -r -g omni omni
           USER omni
-          
           WORKDIR /app
           COPY --from=builder /app/dependencies/ ./
           COPY --from=builder /app/spring-boot-loader/ ./
           COPY --from=builder /app/snapshot-dependencies/ ./
           COPY --from=builder /app/application/ ./
-          
-          # Server Tuning Env
           ENV JAVA_OPTS="${{ env.JAVA_OPTS }}"
-          
-          # [Stability] Graceful Shutdown Signal
           STOPSIGNAL SIGTERM
-          
           HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:8080/actuator/health || exit 1
           ENTRYPOINT ["sh", "-c", "java \$JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]
           EOF
             
             IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-$svc-service:latest"
             
-            # [Cache] Use GHA Cache to speed up builds
+            # Build
             n=0
             until [ "$n" -ge 5 ]; do
               docker buildx build \
@@ -391,12 +380,10 @@ jobs:
           name: 🌌 ServerOps Release ${{ steps.tagger.outputs.tag }}
           body: |
             # 🌌 Omni-Intelligence ServerOps Edition
-            
             **Update Highlights:**
-            - 🛠️ **Fix:** Dockerfile Syntax (`AS` casing)
-            - 🔐 **Security:** Non-root Container User (`omni`)
+            - 🎮 **Content:** Official Pokemon GO Source Links Added
+            - 🛠️ **Fix:** Dockerfile Syntax & Security
             - 🚀 **Performance:** Build Cache Enabled
-            - 🏗️ **Infra:** Maintenance Scripts Included
           files: |
             release_assets/*.tar.gz
             release_assets/services/**/target/*.jar
@@ -405,7 +392,7 @@ jobs:
         continue-on-error: true
 
   # ==============================================================================
-  # 🌍 8. Master Hub
+  # 🌍 8. Master Hub (정보 통합 대시보드)
   # ==============================================================================
   master-hub:
     needs: [grand-release]
@@ -422,11 +409,70 @@ jobs:
           cat << 'EOF' > dashboard.py
           import datetime, os
           now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+          
+          # [1. 공식 출처 데이터 모음]
+          official_sources = """
+          ### 📌 Pokémon GO 공식 정보 모음 (Official Sources)
+          
+          #### 🎮 기본 공식 채널
+          - **공식 홈페이지 (KR):** [바로가기](https://pokemongo.com/ko/)
+          - **뉴스 / 이벤트 공지:** [전체보기](https://pokemongolive.com/news?hl=ko)
+          
+          #### 🗺️ 시즌: 보물찾기의 길 (Precious Paths)
+          - **기간:** 12/2 ~ 3/2
+          - **시즌 공식 페이지:** [상세보기](https://pokemongo.com/ko/seasons/precious-paths)
+          - **GO 배틀리그 안내:** [GBL 공지](https://pokemongo.com/ko/news/go-battle-league-precious-paths)
+          
+          #### 📅 레이드 & 이벤트 일정 (공식 분류)
+          - **전설/메가 로테이션:** [뉴스 확인](https://pokemongolive.com/news?hl=ko)
+          - **레이드/스포트라이트 아워:** [주간 공지 모음](https://pokemongolive.com/post/?hl=ko)
+          - **맥스/거다이맥스:** [공식 안내](https://pokemongolive.com/post/dynamax?hl=ko)
+          - **대발견 보상 (12월~3월):** [리서치 안내](https://pokemongolive.com/post/research-breakthrough?hl=ko)
+          
+          #### 🎉 스페셜 이벤트 & 지역
+          - **커뮤니티 데이:** [공식 공지](https://pokemongolive.com/post/community-day?hl=ko)
+          - **레이드 데이:** [공식 공지](https://pokemongolive.com/post/raid-day?hl=ko)
+          - **GO 투어 (칼로스):** [이벤트 페이지](https://pokemongolive.com/events/tour?hl=ko)
+          - **한국 지역 이벤트:** [Live Events](https://pokemongolive.com/events/live?hl=ko)
+          """
+
+          # [2. 성능 분석 및 티어 (커뮤니티)]
+          tier_info = """
+          ### 📊 성능 분석 및 티어 리스트 (Unofficial)
+          > ⚠️ 아래 정보는 Niantic 공식 자료가 아니며, 커뮤니티 데이터입니다.
+          
+          - **GamePress (종합 티어):** [Attackers Tier List](https://gamepress.gg/pokemongo/attackers-tier-list)
+          - **타입별 레이드 티어 (Google Sheets):** [데이터 시트 보기](https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-a0DcSGf2dITFS2ekiQkX2SJ6AHSY6FIuLJdzJUlkS4rdC6QabZnMcKJeKY7zwLK18XjYwfIl7DX4/pubhtml?gid=392792009&single=true)
+          """
+
+          # [3. 다가오는 일정 요약 (1월-2월)]
+          upcoming_events = """
+          ### 🗓️ Upcoming Events (Jan - Feb)
+          
+          **🔥 레이드 (Raids)**
+          - **1/16~1/25:** ⚡ 볼트로스(화신)✨ / 🦎 메가 나무킹✨
+          - **1/25~:** 🌪️ 토네로스(화신)✨ / ⚡ 메가 전룡✨
+          - **1/24 (토):** 🐯 그림자 라이코✨ 레이드 데이
+          - **2/14 (토):** 🧚 러브로스(영물)✨ 레이드 데이
+          
+          **🎉 주요 일정**
+          - **1/19~1/25:** ❄️ [평창] 겨울 축제 ✨⭐️
+          - **1/26 (월):** 맥스 단굴✨
+          - **1/27 (화):** 스포트라이트 깜놀버슬✨
+          - **2/1 (일):** 🦊 식스테일 커뮤니티데이✨
+          - **2/28~3/1:** 🌍 칼로스 투어: 글로벌
+          """
+
           md = f"# 🌌 Omni-Intelligence Hub (ServerOps)\n\n"
-          md += f"![Status](https://img.shields.io/badge/System-Secure_Production-green) ![Docker](https://img.shields.io/badge/User-NonRoot-blue)\n\n"
+          md += f"![Status](https://img.shields.io/badge/System-Operational-green) ![Data](https://img.shields.io/badge/PokemonGO-Official_Sources-blue)\n\n"
           md += f"## 🚀 Operations Report ({now})\n"
-          md += "- **Build:** Warning-Free Dockerfile\n"
-          md += "- **Security:** Omni User Active\n"
+          md += "- **System:** Stable\n"
+          md += "- **Security:** Secured (Non-Root)\n\n"
+          md += "--- \n"
+          md += official_sources + "\n"
+          md += tier_info + "\n"
+          md += upcoming_events
+          
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
@@ -440,7 +486,7 @@ jobs:
           git add README.md
           
           if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
-          git commit -m "🌌 ServerOps Fix: $(date +'%Y-%m-%d %H:%M')"
+          git commit -m "🌌 Update: Pokemon GO Official Sources & Events $(date +'%Y-%m-%d')"
           
           n=0
           until [ "$n" -ge 10 ]; do 
