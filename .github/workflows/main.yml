@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Final Ops)
+name: 🌌 Omni-Intelligence Grand Pipeline (Release Fix)
 
 on:
   schedule:
@@ -13,7 +13,7 @@ permissions:
   issues: write
   packages: write
 
-# [✅ 전역 환경 설정]
+# [전역 환경 설정]
 env:
   TZ: 'Asia/Seoul'
   LOG_DIR: '.github/omni/logs'
@@ -29,12 +29,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 🧹 Free Disk Space
+      - name: 🧹 Free Disk
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
       - run: mkdir -p DB_SEC/primary DB_SEC/replica DB_SEC/archive
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install faker
+      
       - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > sec_core.py
@@ -45,13 +46,20 @@ jobs:
           with open("DB_SEC/primary/security_data.json", "w") as f: json.dump(data, f)
           EOF
           python sec_core.py
-      - name: 🔐 Integrity Check
+
+      - name: 📦 Compress & Verify
         run: |
+          # Checksum
           sha256sum DB_SEC/primary/security_data.json > DB_SEC/primary/checksum.sha256
+          # Replication
           cp DB_SEC/primary/* DB_SEC/replica/
           cp DB_SEC/primary/* DB_SEC/archive/
+          # [Fix] Create Tarball for Release
+          tar -czf pkg-sec-primary.tar.gz DB_SEC/primary/
+
+      # [Fix] Upload the .tar.gz file instead of folder
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-sec-primary, path: DB_SEC/primary }
+        with: { name: pkg-sec-primary, path: pkg-sec-primary.tar.gz }
 
   # ==============================================================================
   # 💼 2. Job Engine
@@ -65,6 +73,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - run: pip install faker
+      
       - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > job_core.py
@@ -75,12 +84,16 @@ jobs:
           with open("DB_JOB/primary/job_data.json", "w") as f: json.dump(data, f)
           EOF
           python job_core.py
-      - name: 🔐 Integrity Check
+
+      - name: 📦 Compress & Verify
         run: |
           sha256sum DB_JOB/primary/job_data.json > DB_JOB/primary/checksum.sha256
           cp DB_JOB/primary/* DB_JOB/replica/
+          # [Fix] Tarball
+          tar -czf pkg-job-primary.tar.gz DB_JOB/primary/
+
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-job-primary, path: DB_JOB/primary }
+        with: { name: pkg-job-primary, path: pkg-job-primary.tar.gz }
 
   # ==============================================================================
   # 🧮 3. Algo Engine
@@ -101,8 +114,12 @@ jobs:
           with open("DB_ALGO/primary/algo_data.json", "w") as f: json.dump(data, f)
           EOF
           python algo_core.py
+      
+      - name: 📦 Compress
+        run: tar -czf pkg-algo-primary.tar.gz DB_ALGO/primary/
+
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-algo-primary, path: DB_ALGO/primary }
+        with: { name: pkg-algo-primary, path: pkg-algo-primary.tar.gz }
 
   # ==============================================================================
   # 💰 4. Cost Engine
@@ -123,8 +140,12 @@ jobs:
           with open("DB_COST/primary/cost_data.json", "w") as f: json.dump(data, f)
           EOF
           python misc_core.py
+      
+      - name: 📦 Compress
+        run: tar -czf pkg-cost-primary.tar.gz DB_COST/primary/
+
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-cost-primary, path: DB_COST/primary }
+        with: { name: pkg-cost-primary, path: pkg-cost-primary.tar.gz }
 
   # ==============================================================================
   # 🏭 5. Service Factory (Actuator & K8s)
@@ -134,7 +155,7 @@ jobs:
     name: 🏭 Service Factory
     runs-on: ubuntu-latest
     steps:
-      - name: 🔄 Checkout with Retry
+      - name: 🔄 Checkout
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -142,10 +163,7 @@ jobs:
         continue-on-error: true
 
       - name: 🐧 Install OS Packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq curl unzip tree
-          echo "✅ Base OS Packages Installed."
+        run: sudo apt-get update && sudo apt-get install -y jq curl unzip tree
 
       - uses: actions/download-artifact@v4
         with:
@@ -157,23 +175,24 @@ jobs:
         uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin', cache: maven }
 
-      - name: 📂 Generate Massive Ops Files
+      - name: 📂 Generate Ops Files
         run: |
-          mkdir -p ops_logs/shard_{0..9}
-          for i in {0..9}; do
-            for j in {0..100}; do
-              echo "Log Entry $j" > ops_logs/shard_$i/access_$j.log
-            done
-          done
-          echo "✅ Ops Files Created."
+          mkdir -p ops_logs
+          echo "Log Entry" > ops_logs/access.log
 
-      - name: 🛠️ Organize Data
+      - name: 🛠️ Extract & Organize
         run: |
+          # [Fix] Extract downloaded tarballs
+          for pkg in *.tar.gz; do
+            tar -xzf "$pkg" || echo "Failed to extract $pkg"
+          done
+          
           mkdir -p DB_SEC/live DB_JOB/live DB_ALGO/live DB_COST/live
-          [ -f "security_data.json" ] && mv security_data.json DB_SEC/live/
-          [ -f "job_data.json" ] && mv job_data.json DB_JOB/live/
-          [ -f "algo_data.json" ] && mv algo_data.json DB_ALGO/live/
-          [ -f "cost_data.json" ] && mv cost_data.json DB_COST/live/
+          # Move files from extracted primary folders
+          [ -d "DB_SEC/primary" ] && mv DB_SEC/primary/* DB_SEC/live/
+          [ -d "DB_JOB/primary" ] && mv DB_JOB/primary/* DB_JOB/live/
+          [ -d "DB_ALGO/primary" ] && mv DB_ALGO/primary/* DB_ALGO/live/
+          [ -d "DB_COST/primary" ] && mv DB_COST/primary/* DB_COST/live/
 
       - name: 🏗️ Scaffold Services
         run: |
@@ -186,6 +205,7 @@ jobs:
             mkdir -p services/omni-$svc-service/src/main/resources/data
             mkdir -p services/omni-$svc-service/k8s
             
+            # Data Injection
             if [ -d "DB_SEC/live" ] && [ "$svc" == "security" ]; then cp -r DB_SEC/live/* services/omni-$svc-service/src/main/resources/data/; fi
             if [ -d "DB_JOB/live" ] && [ "$svc" == "job" ]; then cp -r DB_JOB/live/* services/omni-$svc-service/src/main/resources/data/; fi
             if [ -d "DB_ALGO/live" ] && [ "$svc" == "algo" ]; then cp -r DB_ALGO/live/* services/omni-$svc-service/src/main/resources/data/; fi
@@ -218,18 +238,16 @@ jobs:
           @SpringBootApplication @RestController
           public class ServiceApplication {
               public static void main(String[] args) { SpringApplication.run(ServiceApplication.class, args); }
-              @GetMapping("/") public Map<String, String> s() { return Map.of("status", "online", "metrics", "enabled"); }
+              @GetMapping("/") public Map<String, String> s() { return Map.of("status", "online"); }
           }
           EOF
 
-            # K8s
-            cat <<EOF > services/omni-$svc-service/k8s/deployment.yaml
+            # [Fix] Unique K8s Filename to prevent upload conflict
+            cat <<EOF > services/omni-$svc-service/k8s/omni-$svc.yaml
           apiVersion: apps/v1
           kind: Deployment
           metadata:
             name: omni-$svc
-            labels:
-              app: omni-$svc
           spec:
             replicas: 3
             selector:
@@ -267,7 +285,7 @@ jobs:
       - name: 🔨 Compile
         run: cd services && mvn clean package -DskipTests
 
-      - name: 🐳 Docker Grid Push
+      - name: 🐳 Docker Push
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           SERVICES="security job algo cost"
@@ -298,7 +316,7 @@ jobs:
   # ==============================================================================
   grand-release:
     needs: [services-factory]
-    name: 🚀 Enterprise Release
+    name: 🚀 Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -310,6 +328,7 @@ jobs:
       - name: 📥 Download Artifacts
         uses: actions/download-artifact@v4
         with:
+          # Download everything to correct paths
           pattern: '*'
           merge-multiple: true
           path: release_assets
@@ -323,8 +342,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tagger.outputs.tag }}
-          name: 🌌 Enterprise Release ${{ steps.tagger.outputs.tag }}
-          body: "Enterprise Release with Actuator & K8s."
+          name: 🌌 Release ${{ steps.tagger.outputs.tag }}
+          body: "Enterprise Release with 1M+ Records."
           files: |
             release_assets/*.tar.gz
             release_assets/services/**/target/*.jar
@@ -338,38 +357,35 @@ jobs:
   # ==============================================================================
   master-hub:
     needs: [grand-release]
-    name: 🌍 Master Ops Dashboard
+    name: 🌍 Master Dashboard
     runs-on: ubuntu-latest
     if: always()
     steps:
-      # [✅ Fixed Indentation]
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: 📥 Download Artifacts
+      - name: 📥 Download
         uses: actions/download-artifact@v4
         with:
           name: enterprise-artifacts
           path: services
         continue-on-error: true
 
-      - name: 📊 Generate Ops Dashboard
+      - name: 📊 Dashboard
         run: |
           cat << 'EOF' > dashboard.py
           import datetime, os
           now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
           has_source = os.path.exists("services")
           status = "Online" if has_source else "Partial"
-          md = f"# 🌌 Omni-Intelligence Hub (Enterprise)\n\n"
-          md += f"![Status](https://img.shields.io/badge/Status-{status}-green) ![K8s](https://img.shields.io/badge/Kubernetes-Ready-blue)\n\n"
-          md += f"## 🏭 Operational Status ({now})\n"
+          md = f"# 🌌 Omni-Intelligence Hub\n\n![Status](https://img.shields.io/badge/Status-{status}-green)\n\n## 🚀 {now}\n"
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
 
-      - name: 🌿 Commit & Push
+      - name: 🌿 Commit
         run: |
           git config --global user.name "Omni Bot"
           git config --global user.email "bot@actions"
@@ -380,7 +396,7 @@ jobs:
           
           if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
           
-          git commit -m "🌌 Enterprise Update: $(date +'%Y-%m-%d %H:%M')"
+          git commit -m "🌌 Update: $(date +'%Y-%m-%d %H:%M')"
           
           n=0
           until [ "$n" -ge 10 ]; do
