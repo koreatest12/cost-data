@@ -34,7 +34,8 @@ jobs:
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
       - run: mkdir -p DB_SEC/primary DB_SEC/replica DB_SEC/archive
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - run: pip install faker
       - name: 🧬 Generate Data
         run: |
@@ -52,7 +53,9 @@ jobs:
           cp DB_SEC/primary/* DB_SEC/replica/
           tar -czf pkg-sec-primary.tar.gz DB_SEC/primary/
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-sec-primary, path: pkg-sec-primary.tar.gz }
+        with:
+          name: pkg-sec-primary
+          path: pkg-sec-primary.tar.gz
 
   # ==============================================================================
   # 💼 2. Job Engine
@@ -64,7 +67,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_JOB/primary DB_JOB/replica DB_JOB/archive
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - run: pip install faker
       - name: 🧬 Generate Data
         run: |
@@ -82,7 +86,9 @@ jobs:
           cp DB_JOB/primary/* DB_JOB/replica/
           tar -czf pkg-job-primary.tar.gz DB_JOB/primary/
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-job-primary, path: pkg-job-primary.tar.gz }
+        with:
+          name: pkg-job-primary
+          path: pkg-job-primary.tar.gz
 
   # ==============================================================================
   # 🧮 3. Algo Engine
@@ -94,7 +100,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_ALGO/primary DB_ALGO/replica
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > algo_core.py
@@ -106,7 +113,9 @@ jobs:
       - name: 📦 Archive
         run: tar -czf pkg-algo-primary.tar.gz DB_ALGO/primary/
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-algo-primary, path: pkg-algo-primary.tar.gz }
+        with:
+          name: pkg-algo-primary
+          path: pkg-algo-primary.tar.gz
 
   # ==============================================================================
   # 💰 4. Cost Engine
@@ -118,7 +127,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_COST/primary DB_COST/replica
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - name: 🧬 Generate Data
         run: |
           cat << 'EOF' > misc_core.py
@@ -130,7 +140,9 @@ jobs:
       - name: 📦 Archive
         run: tar -czf pkg-cost-primary.tar.gz DB_COST/primary/
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-cost-primary, path: pkg-cost-primary.tar.gz }
+        with:
+          name: pkg-cost-primary
+          path: pkg-cost-primary.tar.gz
 
   # ==============================================================================
   # 🏗️ 5. Infra Automation
@@ -174,9 +186,10 @@ jobs:
           
           chmod +x infra_scripts/*.sh
           tar -czf pkg-infra-scripts.tar.gz infra_scripts/
-
       - uses: actions/upload-artifact@v4
-        with: { name: pkg-infra, path: pkg-infra-scripts.tar.gz }
+        with:
+          name: pkg-infra
+          path: pkg-infra-scripts.tar.gz
 
   # ==============================================================================
   # 🏭 6. Service Factory (Docker Fix & Security)
@@ -188,7 +201,9 @@ jobs:
     steps:
       - name: 🔄 Checkout
         uses: actions/checkout@v4
-        with: { token: ${{ secrets.GITHUB_TOKEN }}, fetch-depth: 1 }
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
         continue-on-error: true
 
       - name: 🐳 Set up Docker Buildx
@@ -202,12 +217,17 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/download-artifact@v4
-        with: { pattern: 'pkg-*-primary', merge-multiple: true }
+        with:
+          pattern: 'pkg-*-primary'
+          merge-multiple: true
         continue-on-error: true
 
       - name: ☕ JDK 17 Setup
         uses: actions/setup-java@v4
-        with: { java-version: '17', distribution: 'temurin', cache: maven }
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
 
       - name: 🛠️ Organize Data
         run: |
@@ -297,7 +317,6 @@ jobs:
           WORKDIR /app
           COPY target/*.jar app.jar
           RUN java -Djarmode=layertools -jar app.jar extract
-
           FROM eclipse-temurin:17-jre-jammy
           
           # [Security] Create Non-Root User
@@ -335,7 +354,7 @@ jobs:
               sleep 10
             done
             cd ../.. 
-          done
+           done
 
       - name: 📤 Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -355,7 +374,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         continue-on-error: true
-
       - name: 📥 Download Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -363,11 +381,9 @@ jobs:
           merge-multiple: true
           path: release_assets
         continue-on-error: true
-
       - name: 🏷️ Tagging
         id: tagger
         run: echo "tag=v$(date +'%Y.%m.%d-%H%M')" >> $GITHUB_OUTPUT
-
       - name: 📦 Release
         uses: softprops/action-gh-release@v1
         with:
@@ -398,9 +414,9 @@ jobs:
     if: always()
     steps:
       - uses: actions/checkout@v4
-        with: { token: ${{ secrets.GITHUB_TOKEN }} }
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
-
       - name: 📊 Dashboard
         run: |
           cat << 'EOF' > dashboard.py
@@ -414,7 +430,6 @@ jobs:
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
-
       - name: 🌿 Commit
         run: |
           git config --global user.name "Omni Bot"
@@ -428,7 +443,7 @@ jobs:
           git commit -m "🌌 ServerOps Fix: $(date +'%Y-%m-%d %H:%M')"
           
           n=0
-          until [ "$n" -ge 10 ]; do
+          until [ "$n" -ge 10 ]; do 
              git pull origin main --no-rebase -s recursive -X ours && git push origin main && break
              n=$((n+1))
              sleep 5
