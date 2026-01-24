@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Final)
+name: 🌌 Omni-Intelligence Grand Pipeline (Syntax Fixed)
 
 on:
   schedule:
@@ -250,7 +250,10 @@ jobs:
     needs: [services-factory]
     name: 🚀 Grand Release
     runs-on: ubuntu-latest
-    permissions: contents: write
+    # [Fix] Permissions syntax corrected
+    permissions:
+      contents: write
+    
     steps:
       - uses: actions/checkout@v4
         continue-on-error: true
