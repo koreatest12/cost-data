@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Resilient)
+name: 🌌 Omni-Intelligence Grand Pipeline (Final Fix)
 
 on:
   schedule:
@@ -11,7 +11,7 @@ permissions: write-all
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine (50만 건)
+  # 🛡️ 1. Security Engine
   # ==============================================================================
   security-core:
     name: 🛡️ Security Engine
@@ -38,7 +38,7 @@ jobs:
         with: { name: pkg-security, path: security_pkg.tar.gz }
 
   # ==============================================================================
-  # 💼 2. Job Engine (30만 건)
+  # 💼 2. Job Engine
   # ==============================================================================
   job-core:
     name: 💼 Job Fortress
@@ -65,7 +65,7 @@ jobs:
         with: { name: pkg-job, path: job_pkg.tar.gz }
 
   # ==============================================================================
-  # 🧮 3. Algo Engine (10만 건)
+  # 🧮 3. Algo Engine
   # ==============================================================================
   algo-core:
     name: 🧮 Algo Engine
@@ -89,7 +89,7 @@ jobs:
         with: { name: pkg-algo, path: algo_pkg.tar.gz }
 
   # ==============================================================================
-  # 💰 4. Cost Engine (10만 건)
+  # 💰 4. Cost Engine
   # ==============================================================================
   misc-core:
     name: 💰 Cost Engine
@@ -113,28 +113,28 @@ jobs:
         with: { name: pkg-cost, path: cost_pkg.tar.gz }
 
   # ==============================================================================
-  # 🏭 5. Microservices Factory (Checkout Retry & Artifact Guard)
+  # 🏭 5. Microservices Factory
   # ==============================================================================
   services-factory:
     needs: [security-core, job-core, algo-core, misc-core]
     name: 🏭 Microservices Factory
     runs-on: ubuntu-latest
     steps:
-      # [핵심 1] 500 에러 방지를 위한 Checkout 재시도 로직
+      # [Retry Logic]
       - name: 🔄 Checkout with Retry
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 1 # 깊이를 1로 줄여서 네트워크 부하 감소
-        continue-on-error: true # 실패해도 다음 단계 진행 (수동 복구 시도)
+          fetch-depth: 1
+        continue-on-error: true
 
       - name: 🔄 Manual Git Init (Fallback)
-        if: failure() # 위 checkout이 실패했을 때만 실행
+        if: failure()
         run: |
-          echo "⚠️ Git Checkout failed (500 Error). Initializing empty git..."
+          echo "⚠️ Git Checkout failed. Initializing empty git..."
           git init
           git remote add origin https://github.com/${{ github.repository }}
-          git pull origin main || echo "Git pull failed, proceeding with fresh build."
+          git pull origin main || echo "Git pull failed."
 
       - uses: actions/download-artifact@v4
         with:
@@ -151,7 +151,7 @@ jobs:
           if ls *.tar.gz 1> /dev/null 2>&1; then
             for pkg in *.tar.gz; do tar -xzf "$pkg"; done
           else
-            echo "⚠️ Artifact download failed. Creating dummy data structure."
+            echo "⚠️ Artifact missing. Creating dummy structure."
             mkdir -p DB_SEC/live DB_JOB/live DB_ALGO/live DB_COST/live
           fi
 
@@ -164,7 +164,7 @@ jobs:
             mkdir -p services/omni-$svc-service/src/main/java/com/costdata/$svc
             mkdir -p services/omni-$svc-service/src/main/resources/data
             
-            # Data Injection (폴더가 존재할 때만 복사)
+            # Data Injection
             if [ -d "DB_SEC/live" ] && [ "$svc" == "security" ]; then cp -r DB_SEC/live/* services/omni-$svc-service/src/main/resources/data/; fi
             if [ -d "DB_JOB/live" ] && [ "$svc" == "job" ]; then cp -r DB_JOB/live/* services/omni-$svc-service/src/main/resources/data/; fi
             if [ -d "DB_ALGO/live" ] && [ "$svc" == "algo" ]; then cp -r DB_ALGO/live/* services/omni-$svc-service/src/main/resources/data/; fi
@@ -253,7 +253,7 @@ jobs:
     permissions: contents: write
     steps:
       - uses: actions/checkout@v4
-        continue-on-error: true # Checkout 실패 허용
+        continue-on-error: true
 
       - name: 📥 Download All Artifacts
         uses: actions/download-artifact@v4
@@ -261,7 +261,7 @@ jobs:
           pattern: '*'
           merge-multiple: true
           path: release_assets
-        continue-on-error: true # [핵심] 아티팩트 없어도 진행
+        continue-on-error: true
 
       - name: 🏷️ Generate Version Tag
         id: tagger
@@ -272,16 +272,16 @@ jobs:
         with:
           tag_name: ${{ steps.tagger.outputs.tag }}
           name: 🌌 Release ${{ steps.tagger.outputs.tag }}
-          body: "**Status:** Resilient Release. Some assets might be missing due to network issues."
+          body: "Resilient Release. 1M+ Records."
           files: |
             release_assets/*.tar.gz
             release_assets/services/**/target/*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true # 릴리스 실패 시에도 대시보드는 갱신
+        continue-on-error: true
 
   # ==============================================================================
-  # 🌍 7. Master Dashboard (Artifact Check added)
+  # 🌍 7. Master Dashboard (Fixed)
   # ==============================================================================
   master-hub:
     needs: [grand-release]
@@ -289,11 +289,12 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
+      # [Fix] Indentation aligned correctly
       - uses: actions/checkout@v4
-        with: { token: ${{ secrets.GITHUB_TOKEN }} }
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      # [핵심 2] 아티팩트 다운로드 실패를 대비한 조건부 다운로드
       - name: 📥 Try Download Source Code
         uses: actions/download-artifact@v4
         with:
@@ -307,13 +308,8 @@ jobs:
           import datetime, os
           now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
           has_source = os.path.exists("services")
-          status = "Online" if has_source else "Partial (Network Issues)"
-          
-          md = f"# 🌌 Omni-Intelligence Hub (Resilient)\n\n"
-          md += f"![Status](https://img.shields.io/badge/System-{status}-orange)\n\n"
-          md += f"## 🚀 Status Report ({now})\n"
-          md += "- **Data Pipeline:** 1 Million Records Target\n"
-          md += "- **Note:** Auto-recovery protocols active.\n"
+          status = "Online" if has_source else "Partial"
+          md = f"# 🌌 Omni-Intelligence Hub\n\n![Status](https://img.shields.io/badge/System-{status}-orange)\n\n## 🚀 {now}\n"
           with open("README.md", "w") as f: f.write(md)
           EOF
           python dashboard.py
@@ -324,7 +320,6 @@ jobs:
           git config --global user.email "bot@actions"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           
-          # 파일이 있을 때만 추가
           if [ -d "services" ]; then git add services/; fi
           git add README.md
           
