@@ -7,5 +7,5 @@ import java.util.Map;
 @SpringBootApplication @RestController
 public class ServiceApplication {
     public static void main(String[] args) { SpringApplication.run(ServiceApplication.class, args); }
-    @GetMapping("/") public Map<String, String> s() { return Map.of("status", "online"); }
+    @GetMapping("/") public Map<String, String> status() { return Map.of("service", "algo", "data_status", "injected"); }
 }
