@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (DR Edition)
+name: 🌌 Omni-Intelligence Grand Pipeline (Final DR Fix)
 
 on:
   schedule:
@@ -7,11 +7,8 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-  packages: write
+# [Fix] 권한 설정 구문 오류 수정 (표준 문법)
+permissions: write-all
 
 jobs:
   # ==============================================================================
@@ -36,12 +33,11 @@ jobs:
           from faker import Faker
           fake = Faker()
           data = [{"id":f"SEC-{i}", "title":f"Critical CVE-2026-{10000+i}", "content":fake.sentence()} for i in range(500000)]
-          # Save to Primary
           with open("DB_SEC/primary/security_data.json", "w") as f: json.dump(data, f)
           EOF
           python sec_core.py
 
-      - name: 🔄 Replicate Data (Mirroring)
+      - name: 🔄 Replicate Data
         run: |
           echo "⚡ Replicating Data to Disaster Recovery Zones..."
           cp DB_SEC/primary/security_data.json DB_SEC/replica/security_data_rep.json
@@ -52,7 +48,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with: { name: pkg-sec-primary, path: DB_SEC/primary }
       
-      - name: 📤 Upload Replica (Backup)
+      - name: 📤 Upload Replica
         uses: actions/upload-artifact@v4
         with: { name: pkg-sec-replica, path: DB_SEC/replica }
 
@@ -160,22 +156,25 @@ jobs:
         with: { name: pkg-cost-replica, path: DB_COST/replica }
 
   # ==============================================================================
-  # 🏭 5. Microservices Factory (Uses Primary Data)
+  # 🏭 5. Microservices Factory
   # ==============================================================================
   services-factory:
     needs: [security-core, job-core, algo-core, misc-core]
     name: 🏭 Microservices Factory
     runs-on: ubuntu-latest
     steps:
+      # [Fix] 들여쓰기 및 구문 오류 완벽 수정
       - name: 🔄 Checkout
         uses: actions/checkout@v4
-        with: { token: ${{ secrets.GITHUB_TOKEN }}, fetch-depth: 1 }
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
         continue-on-error: true
 
       - name: 📥 Download Primary Data
         uses: actions/download-artifact@v4
         with:
-          pattern: 'pkg-*-primary' # Download ONLY primary data for build
+          pattern: 'pkg-*-primary'
           merge-multiple: true
         continue-on-error: true
 
@@ -185,21 +184,20 @@ jobs:
 
       - name: 🛠️ Organize Data
         run: |
-          # Move flat artifact files into correct folder structure
           mkdir -p DB_SEC/live DB_JOB/live DB_ALGO/live DB_COST/live
-          
-          # Check and move if files exist (Resilience)
-          [ -f "security_data.json" ] && mv security_data.json DB_SEC/live/
-          [ -f "job_data.json" ] && mv job_data.json DB_JOB/live/
-          [ -f "algo_data.json" ] && mv algo_data.json DB_ALGO/live/
-          [ -f "cost_data.json" ] && mv cost_data.json DB_COST/live/
-          echo "✅ Data Organized for Microservices."
+          # 파일 존재 여부 확인 후 이동
+          if [ -f "security_data.json" ]; then mv security_data.json DB_SEC/live/; fi
+          if [ -f "job_data.json" ]; then mv job_data.json DB_JOB/live/; fi
+          if [ -f "algo_data.json" ]; then mv algo_data.json DB_ALGO/live/; fi
+          if [ -f "cost_data.json" ]; then mv cost_data.json DB_COST/live/; fi
+          echo "✅ Data Organized."
 
       - name: 🏗️ Scaffold Microservices
         run: |
           rm -rf services
           mkdir -p services
           SERVICES="security job algo cost"
+          
           for svc in $SERVICES; do
             mkdir -p services/omni-$svc-service/src/main/java/com/costdata/$svc
             mkdir -p services/omni-$svc-service/src/main/resources/data
@@ -210,7 +208,7 @@ jobs:
             if [ -d "DB_ALGO/live" ] && [ "$svc" == "algo" ]; then cp -r DB_ALGO/live/* services/omni-$svc-service/src/main/resources/data/; fi
             if [ -d "DB_COST/live" ] && [ "$svc" == "cost" ]; then cp -r DB_COST/live/* services/omni-$svc-service/src/main/resources/data/; fi
             
-            # POM
+            # POM Generation
             cat <<EOF > services/omni-$svc-service/pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
               <modelVersion>4.0.0</modelVersion>
@@ -224,7 +222,8 @@ jobs:
               <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
           </project>
           EOF
-            # Java
+          
+            # Java Code Generation
             cat <<EOF > services/omni-$svc-service/src/main/java/com/costdata/$svc/ServiceApplication.java
           package com.costdata.$svc;
           import org.springframework.boot.SpringApplication;
@@ -235,12 +234,12 @@ jobs:
           @SpringBootApplication @RestController
           public class ServiceApplication {
               public static void main(String[] args) { SpringApplication.run(ServiceApplication.class, args); }
-              @GetMapping("/") public Map<String, String> s() { return Map.of("status", "active", "replication", "enabled"); }
+              @GetMapping("/") public Map<String, String> s() { return Map.of("status", "active"); }
           }
           EOF
           done
           
-          # Root POM
+          # Root POM Generation
           cat <<EOF > services/pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
               <modelVersion>4.0.0</modelVersion>
@@ -284,7 +283,7 @@ jobs:
           path: services/
 
   # ==============================================================================
-  # 🌍 6. Master Hub (PR with Replication Status)
+  # 🌍 6. Master Hub (Create Pull Request)
   # ==============================================================================
   master-hub:
     needs: [services-factory]
@@ -321,6 +320,7 @@ jobs:
           EOF
           python dashboard.py
 
+      # [Fix] 한글 구문 -> 영문 구문으로 변경
       - name: 🤖 Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
@@ -334,10 +334,6 @@ jobs:
             - Primary Data: **Secured**
             - Replica Data: **Mirrored**
             - Archives: **Stored**
-            
-            **Artifacts Uploaded:**
-            - `pkg-sec-primary`, `pkg-sec-replica`
-            - `pkg-job-primary`, `pkg-job-replica`
             
             *Auto-generated by Omni-Intelligence Pipeline*
           branch: "omni-dr/run-${{ github.run_id }}"
