@@ -1,4 +1,4 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Final Fix)
+name: 🌌 Omni-Intelligence Grand Pipeline (Final)
 
 on:
   schedule:
@@ -120,7 +120,6 @@ jobs:
     name: 🏭 Microservices Factory
     runs-on: ubuntu-latest
     steps:
-      # [Retry Logic]
       - name: 🔄 Checkout with Retry
         uses: actions/checkout@v4
         with:
@@ -170,7 +169,7 @@ jobs:
             if [ -d "DB_ALGO/live" ] && [ "$svc" == "algo" ]; then cp -r DB_ALGO/live/* services/omni-$svc-service/src/main/resources/data/; fi
             if [ -d "DB_COST/live" ] && [ "$svc" == "cost" ]; then cp -r DB_COST/live/* services/omni-$svc-service/src/main/resources/data/; fi
             
-            # POM
+            # POM File
             cat <<EOF > services/omni-$svc-service/pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
               <modelVersion>4.0.0</modelVersion>
@@ -184,7 +183,8 @@ jobs:
               <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
           </project>
           EOF
-            # Java
+          
+            # Java Service Code
             cat <<EOF > services/omni-$svc-service/src/main/java/com/costdata/$svc/ServiceApplication.java
           package com.costdata.$svc;
           import org.springframework.boot.SpringApplication;
@@ -281,7 +281,7 @@ jobs:
         continue-on-error: true
 
   # ==============================================================================
-  # 🌍 7. Master Dashboard (Fixed)
+  # 🌍 7. Master Dashboard
   # ==============================================================================
   master-hub:
     needs: [grand-release]
@@ -289,7 +289,6 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      # [Fix] Indentation aligned correctly
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -325,7 +324,7 @@ jobs:
           
           if git diff --cached --quiet; then echo "✨ No changes"; exit 0; fi
           
-          git commit -m "🌌 Resilient Update: $(date +'%Y-%m-%d %H:%M')"
+          git commit -m "🌌 Update: $(date +'%Y-%m-%d %H:%M')"
           
           n=0
           until [ "$n" -ge 10 ]; do
