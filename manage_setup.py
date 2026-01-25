@@ -32,6 +32,9 @@ def generate_java_service(service_name, port, description):
     <version>2.7.14</version>
     <relativePath/> 
   </parent>
+  <properties>
+    <java.version>17</java.version>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -80,12 +83,13 @@ public class App {{
     }
 
 # =========================================================
-# 1. 파일 대량 생성 및 업데이트 함수 (Docker & Bulk API 반영)
+# 1. 파일 대량 생성 및 업데이트 함수
 # =========================================================
 def manage_files(manifest_file=FILES_MANIFEST):
     print(f"📝 [파일 관리] 대량 파일 생성 작업을 시작합니다...")
 
     # 1-1. files.json이 없을 경우, 대량의 기본 파일 생성
+    # (이미 존재하더라도 강제로 업데이트하고 싶다면 이 조건문을 수정하거나 files.json을 삭제 후 실행하세요)
     if not os.path.exists(manifest_file):
         print(f"   ⚠️  {manifest_file} 없음. Docker 및 MSA 환경 파일을 자동 생성합니다.")
         
@@ -178,29 +182,38 @@ networks:
         print(f"   ❌ 파일 처리 중 오류 발생: {e}")
 
 # =========================================================
-# 2. 모듈 대량 설치 함수
+# 2. 모듈 대량 설치 함수 (에러 수정됨!)
 # =========================================================
 def install_modules(root_path):
     print(f"🔄 [모듈 설치] {root_path} 내부의 의존성을 스캔합니다...")
     
     for dirpath, _, filenames in os.walk(root_path):
-        # 3-1. Python
+        # 2-1. Python
         if "requirements.txt" in filenames:
             req_path = os.path.join(dirpath, "requirements.txt")
             print(f"   🐍 Python Install: {req_path}")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", req_path], stdout=subprocess.DEVNULL)
+            # pip도 문자열 커맨드로 실행하여 안정성 확보
+            cmd = f"{sys.executable} -m pip install -r {req_path}"
+            subprocess.call(cmd, shell=True)
         
-        # 3-2. Java (pom.xml)
+        # 2-2. Java (pom.xml) - [No goals specified 에러 수정 부분]
         if "pom.xml" in filenames:
             pom_path = os.path.join(dirpath, "pom.xml")
             print(f"   ☕ Java Build: {pom_path}")
+            
             mvn_cmd = "mvn.cmd" if os.name == 'nt' else "mvn"
+            
+            # [FIX] 명령어를 리스트([])가 아닌 단일 문자열(String)로 변경
+            # shell=True 사용 시 문자열로 전달해야 모든 인자가 정상적으로 쉘에 전달됩니다.
+            # -DskipTests: 테스트 건너뛰기, -fn: 실패해도 계속 진행, -q: 조용히
+            cmd = f"{mvn_cmd} clean install -f {pom_path} -DskipTests -fn"
+            
             try:
-                subprocess.check_call([mvn_cmd, "-q", "clean", "install", "-f", pom_path, "-DskipTests", "-fn"], shell=True)
-            except subprocess.CalledProcessError:
-                print(f"   ⚠️  빌드 실패: {pom_path} (계속 진행합니다)")
-            except FileNotFoundError:
-                print("   ⚠️  Maven 명령어를 찾을 수 없습니다.")
+                retcode = subprocess.call(cmd, shell=True)
+                if retcode != 0:
+                    print(f"   ⚠️  빌드 경고 (Exit Code: {retcode}) - 계속 진행합니다.")
+            except Exception as e:
+                print(f"   ⚠️  실행 오류: {e}")
 
 # =========================================================
 # 3. 모델 파일 대량 다운로드 함수
@@ -227,7 +240,7 @@ def download_models(manifest_file="models.json"):
         if not os.path.exists(dest_path):
             print(f"   📥 Downloading {name}...")
             try:
-                subprocess.check_call(["curl", "-L", "-o", dest_path, url], stderr=subprocess.DEVNULL)
+                subprocess.call(f"curl -L -o {dest_path} {url}", shell=True)
             except:
                 print("   ⚠️  Download failed")
 
@@ -237,27 +250,32 @@ def download_models(manifest_file="models.json"):
 def run_dependabot_check():
     print("🛡️  [Dependabot] 상태 점검 중...")
     try:
-        subprocess.run([sys.executable, "-m", "pip", "list", "--outdated"], check=False)
+        subprocess.call(f"{sys.executable} -m pip list --outdated", shell=True)
     except: pass
+    
     print("   ☁️  GitHub Actions 트리거 시도...")
     try:
-        subprocess.run(["gh", "workflow", "run", "dependabot.yml"], stderr=subprocess.DEVNULL, check=False)
-    except FileNotFoundError:
+        subprocess.call("gh workflow run dependabot.yml", shell=True)
+    except:
         print("   ℹ️  'gh' CLI 미설치로 건너뜀.")
 
 # =========================================================
 # 메인 실행
 # =========================================================
 if __name__ == "__main__":
-    print("🚀 [전체 시스템 관리자 시작] - Docker & MSA Edition\n")
+    print("🚀 [전체 시스템 관리자 시작] - Fixed & Enhanced\n")
     
+    # 0. 기존 files.json이 있다면 삭제 권장 (새로운 구조 반영을 위해)
+    # 필요시 아래 주석을 해제하여 자동 삭제
+    # if os.path.exists(FILES_MANIFEST): os.remove(FILES_MANIFEST)
+
     # 1. 파일 자동 생성 (Docker, MSA 서비스 포함)
     manage_files(FILES_MANIFEST)
 
     # 2. 모델 다운로드
     download_models("models.json")
     
-    # 3. 의존성 설치
+    # 3. 의존성 설치 (에러 수정됨)
     install_modules(ROOT_DIR)
 
     # 4. Dependabot 체크
