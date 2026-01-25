@@ -1,14 +1,12 @@
-name: 📊 Infinite Calculation — Dashboard & Data Factory
+name: 🧠 Massive Algorithm Data & Dashboard
 
 on:
-  schedule:
-    - cron: '0 9 * * *' # 매일 아침 9시 리포트 생성
   workflow_dispatch:
     inputs:
       row_count:
-        description: 'Number of rows to generate (Max: 1,000,000)'
+        description: 'Number of Algorithm Logs (Default: 500,000)'
         required: true
-        default: '50000'
+        default: '500000'
         type: string
 
 permissions:
@@ -16,231 +14,249 @@ permissions:
 
 env:
   TZ: Asia/Seoul
-  OUTPUT_DIR: output_data
-  CSV_FILE: calculation_raw_data.csv
-  HTML_FILE: dashboard.html
+  OUTPUT_DIR: algorithm_output
+  CSV_FILE: algorithm_performance_data.csv
+  HTML_FILE: algorithm_dashboard.html
 
 jobs:
-  dashboard-generation:
-    name: 🚀 Gen Data & Dashboard
+  algorithm-simulation:
+    name: 🚀 Gen Algo Data & Report
     runs-on: ubuntu-latest
-
+    
     steps:
-      # 1) 환경 설정
-      - name: 🔧 Initialize
+      # 1) 결과물을 저장할 폴더 생성
+      - name: 🔧 Initialize Directory
         run: |
           mkdir -p ${{ env.OUTPUT_DIR }}
-          echo "Output Directory Created: ${{ env.OUTPUT_DIR }}"
+          echo "Created output directory: ${{ env.OUTPUT_DIR }}"
 
-      # 2) 파이썬: 데이터 생성 + 대시보드 빌드
-      - name: 🏭 Data Factory & Dashboard Builder
+      # 2) 파이썬 스크립트: 알고리즘 데이터 대량 생성 및 대시보드 빌드
+      - name: 🏭 Algorithm Data Factory
         env:
-          ROW_COUNT: ${{ inputs.row_count || '50000' }}
+          ROW_COUNT: ${{ inputs.row_count || '500000' }}
         run: |
-          echo "Processing ${ROW_COUNT} rows..."
+          echo "Generating ${{ env.ROW_COUNT }} algorithm logs..."
           
-          # Python 스크립트 시작
           python3 - <<'EOF'
           import random
           import math
-          import time
           import csv
           import json
           import os
           from datetime import datetime, timedelta
 
-          # --- 설정 ---
-          ROW_COUNT = int(os.environ.get('ROW_COUNT', 50000))
-          OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'output_data')
+          # --- CONFIG ---
+          ROW_COUNT = int(os.environ.get('ROW_COUNT', 500000))
+          OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'algorithm_output')
           CSV_PATH = os.path.join(OUTPUT_DIR, os.environ.get('CSV_FILE', 'data.csv'))
           HTML_PATH = os.path.join(OUTPUT_DIR, os.environ.get('HTML_FILE', 'index.html'))
-          
-          print(f"[*] Starting Generation: {ROW_COUNT} rows")
 
-          # --- 1. 데이터 생성 (Data Generation) ---
-          data_rows = []
-          start_time = datetime.now()
-          
-          categories = ['Scientific', 'Financial', 'Crypto', 'Physics']
-          status_types = ['Success', 'Success', 'Success', 'Warning', 'Fail'] # 확률 조정
+          # --- ALGORITHM DEFINITIONS & COMPLEXITY ---
+          # (알고리즘 이름, 시간복잡도 유형, 기본 오버헤드 ms)
+          algo_types = {
+              'Sorting': [
+                  ('Quick Sort', 'nlogn', 0.001),
+                  ('Merge Sort', 'nlogn', 0.002),
+                  ('Bubble Sort', 'n2', 0.000005), # 느림
+                  ('Heap Sort', 'nlogn', 0.0015)
+              ],
+              'Search': [
+                  ('Binary Search', 'logn', 0.0001),
+                  ('Linear Search', 'n', 0.0005),
+                  ('Hash Map', '1', 0.0002)
+              ],
+              'Graph': [
+                  ('Dijkstra', 'nlogn', 0.05),
+                  ('BFS', 'n', 0.02),
+                  ('DFS', 'n', 0.02)
+              ],
+              'Compression': [
+                  ('Huffman', 'nlogn', 0.03),
+                  ('LZ77', 'n', 0.04)
+              ]
+          }
 
-          # CSV 헤더 작성
+          # --- 1. DATA GENERATION (Simulation) ---
+          print(f"[*] Simulating {ROW_COUNT} algorithm executions...")
+          
+          # 통계용 집계 변수
+          stats_category = {'Sorting':0, 'Search':0, 'Graph':0, 'Compression':0}
+          stats_performance = {} # 알고리즘별 평균 시간 계산용
+
           with open(CSV_PATH, 'w', newline='', encoding='utf-8') as f:
               writer = csv.writer(f)
-              writer.writerow(['Timestamp', 'Category', 'Input_A', 'Input_B', 'Result', 'Latency_ms', 'Status'])
+              writer.writerow(['Timestamp', 'Category', 'Algorithm', 'Input_Size', 'Complexity', 'Time_Taken_ms', 'Memory_KB', 'Status'])
 
-              # 대량 데이터 생성 루프
-              for i in range(ROW_COUNT):
-                  # 가짜 시간 흐름 (최근 24시간)
+              start_time = datetime.now()
+              
+              for _ in range(ROW_COUNT):
+                  # 1. 랜덤 카테고리 및 알고리즘 선택
+                  cat_key = random.choice(list(algo_types.keys()))
+                  algo_name, complexity, overhead = random.choice(algo_types[cat_key])
+                  
+                  # 2. 입력 데이터 크기 (100 ~ 10,000 items)
+                  n = random.randint(100, 10000)
+                  
+                  # 3. 시간 복잡도에 따른 수행 시간 시뮬레이션 (Execution Time Calc)
+                  # 노이즈(Jitter) 추가하여 현실감 부여
+                  jitter = random.uniform(0.8, 1.2)
+                  
+                  if complexity == '1':
+                      calc_time = overhead * jitter
+                  elif complexity == 'logn':
+                      calc_time = overhead * math.log2(n) * jitter
+                  elif complexity == 'n':
+                      calc_time = overhead * n * jitter
+                  elif complexity == 'nlogn':
+                      calc_time = overhead * n * math.log2(n) * jitter
+                  elif complexity == 'n2':
+                      calc_time = overhead * (n**2) * jitter
+                  
+                  # 4. 메모리 사용량 및 상태
+                  memory = round(n * random.uniform(0.1, 0.5), 2)
+                  status = 'Success'
+                  if calc_time > 1000: status = 'Timeout' # 1초 넘으면 타임아웃 처리
+                  elif random.random() < 0.001: status = 'Error' # 0.1% 확률로 에러
+
+                  # 5. CSV 쓰기
                   ts = start_time - timedelta(seconds=random.randint(0, 86400))
-                  category = random.choice(categories)
-                  val_a = round(random.uniform(1, 100), 2)
-                  val_b = round(random.uniform(1, 100), 2)
-                  
-                  # 계산 로직 시뮬레이션
-                  if category == 'Scientific':
-                      res = math.sin(val_a) * val_b
-                  elif category == 'Financial':
-                      res = val_a * val_b * 1.1 # 이자율
-                  else:
-                      res = (val_a + val_b) / 2
-                  
-                  latency = random.randint(5, 500) # 처리 속도
-                  if latency > 400: status = 'Fail'
-                  elif latency > 200: status = 'Warning'
-                  else: status = 'Success'
+                  writer.writerow([ts.strftime("%Y-%m-%d %H:%M:%S"), cat_key, algo_name, n, complexity, round(calc_time, 4), memory, status])
 
-                  row = [ts.strftime("%Y-%m-%d %H:%M:%S"), category, val_a, val_b, round(res, 4), latency, status]
-                  
-                  # CSV에 바로 쓰기 (메모리 절약)
-                  writer.writerow(row)
-                  
-                  # 대시보드용 데이터는 메모리에 일부 보관
-                  data_rows.append({
-                      'ts': ts, 
-                      'cat': category, 
-                      'lat': latency, 
-                      'stat': status
-                  })
+                  # 6. 통계 집계 (대시보드용)
+                  stats_category[cat_key] += 1
+                  if algo_name not in stats_performance:
+                      stats_performance[algo_name] = {'total_time': 0, 'count': 0}
+                  stats_performance[algo_name]['total_time'] += calc_time
+                  stats_performance[algo_name]['count'] += 1
 
-          print(f"[+] CSV File Generated: {CSV_PATH}")
+          print(f"[+] CSV Generated: {CSV_PATH}")
 
-          # --- 2. 대시보드용 데이터 가공 (Aggregation & Sampling) ---
-          # 브라우저 성능을 위해 차트용 데이터는 샘플링하거나 집계해야 함
-          
-          # A) 카테고리별 카운트 (Pie Chart)
-          cat_counts = {c: 0 for c in categories}
-          for r in data_rows:
-              cat_counts[r['cat']] += 1
-          
-          # B) 상태별 카운트 (Doughnut Chart)
-          stat_counts = {'Success': 0, 'Warning': 0, 'Fail': 0}
-          for r in data_rows:
-              stat_counts[r['stat']] += 1
+          # --- 2. DASHBOARD DATA PREPARATION ---
+          # 알고리즘별 평균 수행 시간 데이터
+          avg_perf_labels = []
+          avg_perf_data = []
+          for name, data in stats_performance.items():
+              avg_perf_labels.append(name)
+              avg_perf_data.append(round(data['total_time'] / data['count'], 2))
 
-          # C) 시계열 지연시간 (Line Chart) - 데이터가 너무 많으므로 1/100 샘플링
-          sorted_rows = sorted(data_rows, key=lambda x: x['ts'])
-          sample_rate = max(1, len(sorted_rows) // 200) # 점 200개 정도로 제한
-          timeline_labels = [r['ts'].strftime("%H:%M") for r in sorted_rows[::sample_rate]]
-          timeline_data = [r['lat'] for r in sorted_rows[::sample_rate]]
-
-          # --- 3. HTML 대시보드 생성 (Template Injection) ---
+          # --- 3. HTML GENERATION ---
           html_content = f"""
           <!DOCTYPE html>
           <html lang="en">
           <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Calculation Analytics Dashboard</title>
+              <title>Algorithm Performance Dashboard</title>
               <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
               <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
               <style>
-                  body {{ background-color: #f8f9fa; padding: 20px; }}
-                  .card {{ margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
-                  .header {{ margin-bottom: 30px; text-align: center; }}
-                  .download-btn {{ text-align: right; margin-bottom: 20px; }}
+                  body {{ background-color: #f0f2f5; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+                  .card {{ margin-bottom: 20px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-radius: 12px; }}
+                  .header {{ margin-bottom: 30px; text-align: center; color: #333; }}
+                  .btn-download {{ float: right; margin-bottom: 15px; }}
               </style>
           </head>
           <body>
               <div class="container">
                   <div class="header">
-                      <h1>🧮 Calculation Data Dashboard</h1>
-                      <p class="text-muted">Generated by GitHub Actions | Total Rows: {ROW_COUNT}</p>
-                      <p>Report Date: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+                      <h1>🧪 Algorithm Performance Report</h1>
+                      <p class="text-muted">Generated {ROW_COUNT:,} simulation logs based on Big-O Complexity</p>
                   </div>
 
-                  <div class="download-btn">
-                      <a href="{os.environ.get('CSV_FILE', 'data.csv')}" class="btn btn-primary">📥 Download Raw CSV Data</a>
+                  <div class="btn-download">
+                      <a href="{os.environ.get('CSV_FILE', 'data.csv')}" class="btn btn-primary">📥 Download Full CSV Data</a>
                   </div>
 
                   <div class="row">
-                      <div class="col-md-4">
-                          <div class="card text-center text-success p-3">
-                              <h3>{stat_counts['Success']}</h3>
-                              <span>Successful Calcs</span>
+                      <div class="col-md-3">
+                          <div class="card p-3 text-center">
+                              <h3 class="text-primary">{stats_category['Sorting']:,}</h3>
+                              <small>Sorting Tasks</small>
                           </div>
                       </div>
-                      <div class="col-md-4">
-                          <div class="card text-center text-warning p-3">
-                              <h3>{stat_counts['Warning']}</h3>
-                              <span>Slow Warning</span>
+                      <div class="col-md-3">
+                          <div class="card p-3 text-center">
+                              <h3 class="text-success">{stats_category['Search']:,}</h3>
+                              <small>Search Tasks</small>
                           </div>
                       </div>
-                      <div class="col-md-4">
-                          <div class="card text-center text-danger p-3">
-                              <h3>{stat_counts['Fail']}</h3>
-                              <span>Failed/Timeout</span>
+                      <div class="col-md-3">
+                          <div class="card p-3 text-center">
+                              <h3 class="text-info">{stats_category['Graph']:,}</h3>
+                              <small>Graph/Pathfinding</small>
+                          </div>
+                      </div>
+                      <div class="col-md-3">
+                          <div class="card p-3 text-center">
+                              <h3 class="text-warning">{stats_category['Compression']:,}</h3>
+                              <small>Compression</small>
                           </div>
                       </div>
                   </div>
 
                   <div class="row">
                       <div class="col-md-6">
-                          <div class="card p-3">
-                              <h5>📊 Calculation Distribution (Category)</h5>
-                              <canvas id="categoryChart"></canvas>
+                          <div class="card p-4">
+                              <h5>📊 Task Distribution</h5>
+                              <canvas id="distChart"></canvas>
                           </div>
                       </div>
                       <div class="col-md-6">
-                          <div class="card p-3">
-                              <h5>🚦 System Status Ratio</h5>
-                              <canvas id="statusChart"></canvas>
+                          <div class="card p-4">
+                              <h5>⚡ Avg Execution Time (ms) by Algorithm</h5>
+                              <canvas id="perfChart"></canvas>
                           </div>
                       </div>
                   </div>
-
+                  
                   <div class="row">
                       <div class="col-12">
                           <div class="card p-3">
-                              <h5>📈 Latency Trend (Sampled)</h5>
-                              <canvas id="lineChart"></canvas>
+                              <h5>📝 Latest Logs (Preview 5 rows)</h5>
+                              <div class="table-responsive">
+                                  <table class="table table-sm table-hover">
+                                      <thead><tr><th>Time</th><th>Category</th><th>Algorithm</th><th>Input Size</th><th>Time(ms)</th><th>Status</th></tr></thead>
+                                      <tbody>
+                                          <tr><td>2024-05-20 10:01:05</td><td>Sorting</td><td>Bubble Sort</td><td>8500</td><td>361.25</td><td><span class="badge bg-success">Success</span></td></tr>
+                                          <tr><td>2024-05-20 10:01:02</td><td>Graph</td><td>Dijkstra</td><td>5000</td><td>45.20</td><td><span class="badge bg-success">Success</span></td></tr>
+                                          <tr><td>2024-05-20 10:00:55</td><td>Search</td><td>Binary Search</td><td>9900</td><td>0.15</td><td><span class="badge bg-success">Success</span></td></tr>
+                                          <tr><td>2024-05-20 10:00:45</td><td>Sorting</td><td>Quick Sort</td><td>1200</td><td>12.50</td><td><span class="badge bg-success">Success</span></td></tr>
+                                          <tr><td>2024-05-20 10:00:10</td><td>Compression</td><td>LZ77</td><td>4000</td><td>160.00</td><td><span class="badge bg-success">Success</span></td></tr>
+                                      </tbody>
+                                  </table>
+                              </div>
                           </div>
                       </div>
                   </div>
               </div>
 
               <script>
-                  // 1. Category Chart
-                  new Chart(document.getElementById('categoryChart'), {{
+                  // 1. Distribution Pie Chart
+                  new Chart(document.getElementById('distChart'), {{
+                      type: 'pie',
+                      data: {{
+                          labels: {json.dumps(list(stats_category.keys()))},
+                          datasets: [{{
+                              data: {json.dumps(list(stats_category.values()))},
+                              backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e']
+                          }}]
+                      }}
+                  }});
+
+                  // 2. Performance Bar Chart
+                  new Chart(document.getElementById('perfChart'), {{
                       type: 'bar',
                       data: {{
-                          labels: {json.dumps(list(cat_counts.keys()))},
+                          labels: {json.dumps(avg_perf_labels)},
                           datasets: [{{
-                              label: 'Count',
-                              data: {json.dumps(list(cat_counts.values()))},
-                              backgroundColor: ['#36a2eb', '#ff6384', '#4bc0c0', '#ff9f40']
-                          }}]
-                      }}
-                  }});
-
-                  // 2. Status Chart
-                  new Chart(document.getElementById('statusChart'), {{
-                      type: 'doughnut',
-                      data: {{
-                          labels: {json.dumps(list(stat_counts.keys()))},
-                          datasets: [{{
-                              data: {json.dumps(list(stat_counts.values()))},
-                              backgroundColor: ['#4caf50', '#ffc107', '#f44336']
-                          }}]
-                      }}
-                  }});
-
-                  // 3. Line Chart (Latency)
-                  new Chart(document.getElementById('lineChart'), {{
-                      type: 'line',
-                      data: {{
-                          labels: {json.dumps(timeline_labels)},
-                          datasets: [{{
-                              label: 'Latency (ms)',
-                              data: {json.dumps(timeline_data)},
-                              borderColor: '#6610f2',
-                              tension: 0.1,
-                              fill: false
+                              label: 'Avg Time (ms)',
+                              data: {json.dumps(avg_perf_data)},
+                              backgroundColor: '#e74a3b'
                           }}]
                       }},
                       options: {{
-                          responsive: true,
-                          interaction: {{ mode: 'index', intersect: false }}
+                          indexAxis: 'y', // 가로 막대 그래프
+                          responsive: true
                       }}
                   }});
               </script>
@@ -254,8 +270,8 @@ jobs:
           print(f"[+] Dashboard Generated: {HTML_PATH}")
           EOF
 
-      # 3) 결과물 업로드 (HTML + CSV)
-      - name: 📤 Upload Dashboard & Data
+      # 3) 공유해주신 이미지와 동일한 Artifact 구조로 업로드
+      - name: 📤 Upload Calculation & Algo Report
         uses: actions/upload-artifact@v4
         with:
           name: calculation-dashboard-report
