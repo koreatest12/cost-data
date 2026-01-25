@@ -1,81 +1,78 @@
 version: 2
 updates:
-  # ======================================================
-  # [Group 1] Java & Maven 서비스 (API, Batch, Admin)
-  # ======================================================
+  # =================================================================
+  # [JAVA / MAVEN] API, Batch, Common Modules
+  # =================================================================
   
-  # 1. 메인 API 서버 (api-server 폴더)
+  # 1. 루트 프로젝트 (Parent POM이 있는 경우)
   - package-ecosystem: "maven"
-    directory: "/api-server"
+    directory: "/" 
     schedule:
-      interval: "daily"
-    groups: # 스프링 부트 관련 패키지는 1개의 PR로 묶음
+      interval: "weekly"
+    groups:
       spring-boot:
-        patterns:
-          - "org.springframework*"
-          - "io.micrometer*"
+        patterns: ["org.springframework*", "io.micrometer*"]
     open-pull-requests-limit: 10
 
-  # 2. 어드민 웹 (admin-web 폴더)
+  # 2. 비용 데이터 API 서버
   - package-ecosystem: "maven"
-    directory: "/admin-web"
+    directory: "/api-server"  # <-- 실제 폴더명으로 수정
     schedule:
-      interval: "weekly"
+      interval: "daily"       # 중요도가 높으므로 매일 체크
     groups:
-      spring-dependencies:
-        patterns:
-          - "org.springframework*"
-    open-pull-requests-limit: 5
-
-  # 3. 배치 작업 (batch 폴더)
-  - package-ecosystem: "maven"
-    directory: "/batch"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-
-  # ======================================================
-  # [Group 2] Python 서비스 (AI, Data)
-  # ======================================================
-
-  # 4. 데이터 프로세서 (data-processor 폴더)
-  - package-ecosystem: "pip"
-    directory: "/data-processor"
-    schedule:
-      interval: "weekly"
-    groups:
-      data-science: # numpy, pandas 등 데이터 관련 패키지 그룹화
-        patterns:
-          - "numpy"
-          - "pandas"
-    open-pull-requests-limit: 5
-
-  # 5. AI 모델 서빙 (ai-model 폴더)
-  - package-ecosystem: "pip"
-    directory: "/ai-model"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-
-  # ======================================================
-  # [Group 3] Docker 인프라 및 컨테이너
-  # ======================================================
-
-  # 6. 인프라 공통 도커파일 (infra 폴더)
-  - package-ecosystem: "docker"
-    directory: "/infra"
-    schedule:
-      interval: "weekly"
+      spring-boot:
+        patterns: ["org.springframework*", "io.micrometer*"]
   
-  # 7. API 서버 내의 도커파일 (api-server 폴더 내)
-  - package-ecosystem: "docker"
-    directory: "/api-server"
+  # 3. 비용 정산 배치(Batch) 모듈
+  - package-ecosystem: "maven"
+    directory: "/batch-processor" # <-- 실제 폴더명으로 수정
     schedule:
       interval: "weekly"
 
-  # ======================================================
-  # [Group 4] CI/CD 워크플로우 (GitHub Actions)
-  # ======================================================
+  # 4. 공통 라이브러리 (Common/Core)
+  - package-ecosystem: "maven"
+    directory: "/core-module" # <-- 실제 폴더명으로 수정
+    schedule:
+      interval: "weekly"
+
+  # =================================================================
+  # [PYTHON] Data Analysis & AI
+  # =================================================================
+
+  # 5. 비용 분석/통계 모듈
+  - package-ecosystem: "pip"
+    directory: "/data-analysis" # <-- 실제 폴더명으로 수정 (requirements.txt 위치)
+    schedule:
+      interval: "weekly"
+    groups:
+      data-science:
+        patterns: ["pandas", "numpy", "scikit-learn"]
+
+  # 6. AWS/Azure 클라우드 연동 스크립트
+  - package-ecosystem: "pip"
+    directory: "/cloud-scripts" # <-- 실제 폴더명으로 수정
+    schedule:
+      interval: "weekly"
+
+  # =================================================================
+  # [DOCKER] Infrastructure & Deployment
+  # =================================================================
+
+  # 7. 루트 레벨 Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # 8. 인프라 배포 설정 (Docker Compose 등)
+  - package-ecosystem: "docker"
+    directory: "/infra"       # <-- 실제 폴더명으로 수정
+    schedule:
+      interval: "weekly"
+
+  # =================================================================
+  # [GITHUB ACTIONS] CI/CD Workflows
+  # =================================================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
