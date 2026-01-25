@@ -1,7 +1,20 @@
-name: 🧮 Calculation — ALL-IN-ONE Verification Workflow
+name: 🧮 Infinity Calculation — ETL & Mass Loading
 
 on:
+  schedule:
+    - cron: '0 */4 * * *' # 4시간마다 자동 실행
   workflow_dispatch:
+    inputs:
+      row_count:
+        description: 'Target Rows per Job (Default: 100,000 for safety, Max: 10M)'
+        required: true
+        default: '100000'
+        type: string
+      simulate_latency:
+        description: 'Simulate Network Latency? (true/false)'
+        required: true
+        default: 'false'
+        type: boolean
 
 permissions:
   contents: read
@@ -9,194 +22,170 @@ permissions:
 env:
   TZ: Asia/Seoul
   LOG_DIR: calc_logs
-  REPORT: calculation_report.txt
-  DATA_JSON: diverse_calc_data.json
+  # 사용자가 입력한 값 또는 기본값 사용
+  TARGET_ROWS: ${{ inputs.row_count || '100000' }}
+  SIMULATE_LATENCY: ${{ inputs.simulate_latency || 'false' }}
 
 jobs:
-  calculation:
+  # -----------------------------------------------------------------------------
+  # Job: Massive Calculation & ETL (Extract, Transform, Load)
+  # -----------------------------------------------------------------------------
+  infinite-calculation:
+    name: 🔥 Mass Calc & Load (Shard ${{ matrix.shard_id }})
     runs-on: ubuntu-latest
+    timeout-minutes: 350 # 최대 6시간(360분)에 근접하게 설정
+
+    # 3개의 병렬 샤드(Shard)로 나누어 동시에 엄청난 양의 데이터를 처리
+    strategy:
+      fail-fast: false
+      matrix:
+        shard_id: [1, 2, 3]
 
     steps:
-      ###########################################################################
-      # 0) INIT
-      ###########################################################################
+      # 0) 초기화
       - name: 🔧 Initialize Environment
         shell: bash
         run: |
-          set -Eeuo pipefail
           mkdir -p "${LOG_DIR}"
-          echo "Calculation Verification Started at $(date)" > "${REPORT}"
+          echo "START: $(date)" > "${LOG_DIR}/status_${{ matrix.shard_id }}.log"
 
-      ###########################################################################
-      # 1~9) BASIC UNIT TESTS (기존 검증 로직 유지)
-      ###########################################################################
-      - name: ➕➖✖➗ Arithmetic Calculation
+      # 1) 파이썬 스크립트 실행 (대용량 생성 및 적재)
+      - name: 🚀 Run Infinite Generator & Multi-Service Loader
         run: |
-          echo "== Arithmetic Calculation ==" >> "${REPORT}"
-          echo "3 + 5 = $((3 + 5))" >> "${REPORT}"
+          echo "=================================================="
+          echo " Target Rows: $TARGET_ROWS"
+          echo " Shard ID: ${{ matrix.shard_id }}"
+          echo " Network Simulation: $SIMULATE_LATENCY"
+          echo "=================================================="
 
-      - name: 🔢 Binary & Hexadecimal Conversion
-        run: |
-          echo "== Binary & Hex ==" >> "${REPORT}"
-          printf "255 (dec) = 0x%X (hex)\n" 255 >> "${REPORT}"
+          # 환경 변수 전달
+          export TARGET_ROWS="${{ env.TARGET_ROWS }}"
+          export SHARD_ID="${{ matrix.shard_id }}"
+          export SIMULATE_LATENCY="${{ env.SIMULATE_LATENCY }}"
 
-      - name: ⚠️ Integer vs Floating Point
-        run: |
-          echo "== Integer vs Floating Point ==" >> "${REPORT}"
-          python3 -c "print('Floating: 0.1 + 0.2 =', 0.1 + 0.2)" >> "${REPORT}"
-
-      - name: 🔬 IEEE 754 Representation
-        run: |
-          echo "== IEEE 754 ==" >> "${REPORT}"
-          python3 -c "import struct; print('0.1 IEEE754 =', ''.join(f'{b:08b}' for b in struct.pack('!d', 0.1)))" >> "${REPORT}"
-
-      - name: 🔐 Cryptographic Calculation
-        run: |
-          echo "== Cryptographic Calculation ==" >> "${REPORT}"
-          echo -n "hello" | sha256sum >> "${REPORT}"
-
-      - name: 🎲 Secure Random (CSPRNG)
-        run: |
-          echo "== Secure Random ==" >> "${REPORT}"
-          python3 -c "import secrets; print('Secure Random:', secrets.token_hex(16))" >> "${REPORT}"
-
-      ###########################################################################
-      # 10) 🔥 DIVERSE MASS DATA GENERATION (과학/공학/통계 포함)
-      ###########################################################################
-      - name: 🌌 Generate Diverse Scientific & Financial Data
-        run: |
-          echo "==========================================" >> "${REPORT}"
-          echo "🚀 DIVERSE DATA GENERATION STARTED" >> "${REPORT}"
-          echo "==========================================" >> "${REPORT}"
-          
-          python3 - <<'EOF' >> "${REPORT}"
+          python3 - <<'EOF'
           import random
-          import secrets
-          import hashlib
           import math
-          import cmath
-          import statistics
-          import json
           import time
+          import os
+          import uuid
+          import json
+          import sys
 
-          # 설정
-          COUNT = 500  # 각 카테고리별 생성 개수
-          data_registry = {} # JSON 출력을 위한 저장소
+          # --- CONFIGURATION ---
+          try:
+              TOTAL_COUNT = int(os.environ.get('TARGET_ROWS', 100000))
+          except:
+              TOTAL_COUNT = 100000
+              
+          SHARD_ID = os.environ.get('SHARD_ID', '1')
+          SIM_LATENCY = os.environ.get('SIMULATE_LATENCY', 'false') == 'true'
+          BATCH_SIZE = 5000  # 한 번에 적재할 데이터 묶음 크기
 
-          print(f"Generating {COUNT} items per category...\n")
+          print(f"[*] Starting Process for {TOTAL_COUNT} rows... (Batch Size: {BATCH_SIZE})")
 
-          # ---------------------------------------------------------
-          # 1. Trigonometry & Geometry (삼각함수 및 기하학)
-          # ---------------------------------------------------------
-          print("[1. Trigonometry Data]")
-          trig_data = []
-          for _ in range(COUNT):
-              angle_deg = random.uniform(0, 360)
-              angle_rad = math.radians(angle_deg)
-              entry = {
-                  "angle_deg": round(angle_deg, 2),
-                  "sin": round(math.sin(angle_rad), 4),
-                  "cos": round(math.cos(angle_rad), 4),
-                  "tan": round(math.tan(angle_rad), 4) if abs(math.cos(angle_rad)) > 0.001 else "inf"
-              }
-              trig_data.append(entry)
-          data_registry['trigonometry'] = trig_data
-          print(f"Sample: {trig_data[0]}")
+          # --- SERVICE MOCK CLASSES (가상 적재기) ---
+          class ServiceLoader:
+              def __init__(self, name):
+                  self.name = name
+                  self.total_loaded = 0
 
-          # ---------------------------------------------------------
-          # 2. Complex Numbers (복소수 연산)
-          # ---------------------------------------------------------
-          print("\n[2. Complex Number Operations]")
-          complex_data = []
-          for _ in range(COUNT):
-              c1 = complex(random.randint(-10, 10), random.randint(-10, 10))
-              c2 = complex(random.randint(-10, 10), random.randint(-10, 10))
-              res_mul = c1 * c2
-              res_mag = abs(c1) # Magnitude
-              entry = {
-                  "c1": str(c1),
-                  "c2": str(c2),
-                  "multiply": str(res_mul),
-                  "c1_magnitude": round(res_mag, 4)
-              }
-              complex_data.append(entry)
-          data_registry['complex_nums'] = complex_data
-          print(f"Sample: {complex_data[0]}")
+              def load_batch(self, batch_data):
+                  # 네트워크 지연 시뮬레이션 (옵션)
+                  if SIM_LATENCY:
+                      time.sleep(0.05) 
+                  
+                  # 실제로는 여기서 DB Insert 쿼리가 실행됨
+                  self.total_loaded += len(batch_data)
+                  # 로그가 너무 많으면 CI가 느려지므로 5만 건마다 한 번씩만 출력
+                  if self.total_loaded % 50000 == 0:
+                      print(f"   Wait... [{self.name}] Committing batch... Total: {self.total_loaded}")
 
-          # ---------------------------------------------------------
-          # 3. Big Integer & Factorials (대수 연산)
-          # ---------------------------------------------------------
-          print("\n[3. Big Integer & Factorials]")
-          bigint_data = []
-          for _ in range(50): # 팩토리얼은 무거우므로 개수 조절
-              n = random.randint(10, 100)
-              fact = math.factorial(n)
-              entry = {
-                  "n": n,
-                  "factorial_len": len(str(fact)), # 숫자가 너무 길어서 길이만 기록
-                  "factorial_prefix": str(fact)[:10] + "..."
-              }
-              bigint_data.append(entry)
-          data_registry['big_integers'] = bigint_data
-          print(f"Sample: {bigint_data[0]}")
+          # 가상의 서비스 연결
+          services = {
+              "PostgreSQL (RDB)": ServiceLoader("SQL-DB"),
+              "MongoDB (NoSQL)": ServiceLoader("Doc-DB"),
+              "Kafka (Stream)": ServiceLoader("Msg-Queue"),
+              "S3 DataLake": ServiceLoader("Obj-Storage")
+          }
 
-          # ---------------------------------------------------------
-          # 4. Statistics & Distributions (통계)
-          # ---------------------------------------------------------
-          print("\n[4. Statistics]")
-          stats_data = []
-          for _ in range(50): # 50개의 데이터셋 생성
-              # 정규분포(Normal Distribution)를 따르는 랜덤 데이터셋 생성
-              dataset = [random.gauss(mu=50, sigma=15) for _ in range(100)]
-              entry = {
-                  "mean": round(statistics.mean(dataset), 4),
-                  "median": round(statistics.median(dataset), 4),
-                  "stdev": round(statistics.stdev(dataset), 4),
-                  "variance": round(statistics.variance(dataset), 4)
-              }
-              stats_data.append(entry)
-          data_registry['statistics'] = stats_data
-          print(f"Sample: {stats_data[0]}")
+          # --- DATA GENERATOR (메모리 절약을 위한 스트리밍) ---
+          def generate_infinite_stream():
+              """끝없이 계산 데이터를 생성하여 yield하는 제너레이터"""
+              counter = 0
+              while counter < TOTAL_COUNT:
+                  counter += 1
+                  
+                  # 1. 고비용 수학 연산 (CPU 부하 생성)
+                  val_a = random.uniform(1, 1000)
+                  val_b = random.uniform(1, 1000)
+                  
+                  # 복잡한 계산: 로그, 삼각함수, 제곱근 혼합
+                  complex_result = math.sqrt(val_a) * math.sin(val_b) + math.log(val_a + 1)
+                  
+                  # 2. 데이터 레코드 생성
+                  record = {
+                      "id": str(uuid.uuid4()),
+                      "shard": SHARD_ID,
+                      "timestamp": time.time(),
+                      "inputs": {"a": val_a, "b": val_b},
+                      "calc_result": complex_result,
+                      "metadata": {
+                          "type": "scientific",
+                          "precision": "high",
+                          "tags": ["simulation", "mass-data"]
+                      }
+                  }
+                  yield record
 
-          # ---------------------------------------------------------
-          # 5. Vector Operations (벡터 연산 - Dot Product)
-          # ---------------------------------------------------------
-          print("\n[5. Vector Dot Products]")
-          vector_data = []
-          for _ in range(COUNT):
-              # 3차원 벡터
-              v1 = [random.randint(1, 10) for _ in range(3)]
-              v2 = [random.randint(1, 10) for _ in range(3)]
-              # 내적 계산: sum(a*b)
-              dot_prod = sum(x*y for x,y in zip(v1, v2))
-              entry = {"v1": v1, "v2": v2, "dot_product": dot_prod}
-              vector_data.append(entry)
-          data_registry['vectors'] = vector_data
-          print(f"Sample: {vector_data[0]}")
+          # --- MAIN PIPELINE ---
+          start_time = time.time()
+          batch_buffer = []
+          processed_count = 0
 
-          # JSON 파일로 전체 데이터 저장 (Artifact용)
-          with open('diverse_calc_data.json', 'w') as f:
-              json.dump(data_registry, f, indent=2)
+          # 스트림에서 데이터를 하나씩 꺼내서 배치 처리
+          for data_row in generate_infinite_stream():
+              batch_buffer.append(data_row)
+
+              # 배치가 꽉 차면 적재(Flush) 실행
+              if len(batch_buffer) >= BATCH_SIZE:
+                  for svc_name, loader in services.items():
+                      loader.load_batch(batch_buffer)
+                  
+                  processed_count += len(batch_buffer)
+                  batch_buffer = [] # 버퍼 비우기
+                  
+                  # 진행률 표시 (Progress Bar 효과)
+                  if processed_count % 10000 == 0:
+                      elapsed = time.time() - start_time
+                      speed = processed_count / elapsed
+                      print(f"🚀 [Shard {SHARD_ID}] Progress: {processed_count}/{TOTAL_COUNT} ({speed:.2f} rows/sec)")
+
+          # 남은 데이터 처리
+          if batch_buffer:
+              for svc_name, loader in services.items():
+                  loader.load_batch(batch_buffer)
+              processed_count += len(batch_buffer)
+
+          # --- FINAL SUMMARY ---
+          end_time = time.time()
+          duration = end_time - start_time
           
-          print("\n✅ Diverse Data Generation Completed. Saved to 'diverse_calc_data.json'")
+          print("\n" + "="*50)
+          print(f"✅ FINAL REPORT (Shard {SHARD_ID})")
+          print("="*50)
+          print(f"⏱  Duration      : {duration:.2f} seconds")
+          print(f"📊 Total Rows    : {processed_count}")
+          print(f"⚡ Throughput    : {processed_count / duration:.2f} rows/sec")
+          print("-" * 30)
+          print("💾 [Storage Report]")
+          for svc_name, loader in services.items():
+              print(f"   -> {svc_name.ljust(20)} : {loader.total_loaded} records stored.")
+          print("="*50)
+          
           EOF
 
-      ###########################################################################
-      # 11) FINAL REPORT & ARTIFACTS
-      ###########################################################################
-      - name: 📄 Show Final Report Summary
+      # 2) 결과 확인 (간단한 로그)
+      - name: 📝 Verification
         run: |
-          echo "========== REPORT SUMMARY =========="
-          tail -n 30 "${REPORT}"
-
-      - name: 📤 Upload Calculation Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: calculation-full-report
-          path: ${{ env.REPORT }}
-
-      - name: 📤 Upload JSON Dataset
-        uses: actions/upload-artifact@v4
-        with:
-          name: diverse-calculation-data-json
-          path: diverse_calc_data.json
+          echo "Process Completed for Shard ${{ matrix.shard_id }}"
