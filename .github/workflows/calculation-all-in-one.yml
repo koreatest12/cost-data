@@ -1,4 +1,4 @@
-name: 🕸️ Graph & Algorithm Massive Data Generator
+name: 🕸️ Graph & Algorithm Visualization (Summary)
 
 on:
   workflow_dispatch:
@@ -15,26 +15,22 @@ permissions:
 env:
   TZ: Asia/Seoul
   OUTPUT_DIR: graph_algo_output
-  CSV_FILE: graph_performance_data.csv
-  JSON_GRAPH: graph_topology_sample.json
-  HTML_FILE: graph_dashboard.html
 
 jobs:
-  graph-simulation:
-    name: 🚀 Gen Graph & Algo Data
+  graph-simulation-summary:
+    name: 🚀 Gen Data & Visualize
     runs-on: ubuntu-latest
     
     steps:
       - name: 🔧 Initialize
         run: |
           mkdir -p ${{ env.OUTPUT_DIR }}
-          echo "Output Dir: ${{ env.OUTPUT_DIR }}"
 
-      - name: 🏭 Graph & Algorithm Factory
+      - name: 🏭 Run Simulation & Write Summary
         env:
           ROW_COUNT: ${{ inputs.row_count || '300000' }}
         run: |
-          echo "Generating ${{ env.ROW_COUNT }} rows with Graph Focus..."
+          echo "Generating Data & Summary..."
           
           python3 - <<'EOF'
           import random
@@ -47,198 +43,116 @@ jobs:
           # --- CONFIG ---
           ROW_COUNT = int(os.environ.get('ROW_COUNT', 300000))
           OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'output')
-          CSV_PATH = os.path.join(OUTPUT_DIR, os.environ.get('CSV_FILE', 'data.csv'))
-          JSON_PATH = os.path.join(OUTPUT_DIR, os.environ.get('JSON_GRAPH', 'graph.json'))
-          HTML_PATH = os.path.join(OUTPUT_DIR, os.environ.get('HTML_FILE', 'index.html'))
-
-          # --- ALGORITHM DEFINITIONS ---
-          # Type: (Name, Complexity_Formula, Base_Overhead_ms)
+          CSV_PATH = os.path.join(OUTPUT_DIR, 'graph_data.csv')
+          
+          # --- ALGO DB ---
           algo_db = {
-              'Graph': [
-                  ('BFS (Breadth-First)', 'V+E', 0.005),
-                  ('DFS (Depth-First)', 'V+E', 0.005),
-                  ('Dijkstra (PQ)', 'E+VlogV', 0.02),
-                  ('Bellman-Ford', 'VE', 0.001), # Slower
-                  ('Floyd-Warshall', 'V^3', 0.00005), # Very Slow
-                  ('Kruskal (MST)', 'ElogE', 0.015),
-                  ('Prim (MST)', 'E+VlogV', 0.02)
-              ],
+              'Graph': [('BFS', 'V+E', 0.005), ('DFS', 'V+E', 0.005), ('Dijkstra', 'E+VlogV', 0.02), ('Bellman-Ford', 'VE', 0.001)],
               'Sorting': [('Quick Sort', 'NlogN', 0.002), ('Merge Sort', 'NlogN', 0.003)],
               'Search': [('Binary Search', 'logN', 0.001)]
           }
 
-          print(f"[*] Simulating {ROW_COUNT} executions...")
+          # --- DATA GENERATION & STATS ---
+          stats_cat = {'Graph': 0, 'Sorting': 0, 'Search': 0}
+          stats_algo_time = {} # {algo_name: [times...]}
           
-          # Dashboard Data Containers
-          graph_scatter_data = [] # For Scatter Plot (x=V, y=Time)
-          algo_avg_time = {}
+          print(f"[*] Simulating {ROW_COUNT} rows...")
 
           with open(CSV_PATH, 'w', newline='', encoding='utf-8') as f:
               writer = csv.writer(f)
-              writer.writerow(['Timestamp', 'Category', 'Algorithm', 'Nodes(V)', 'Edges(E)', 'Complexity', 'Time_ms', 'Status'])
-
-              start_time = datetime.now()
+              writer.writerow(['Category', 'Algorithm', 'V', 'E', 'Time_ms'])
               
               for _ in range(ROW_COUNT):
-                  # 80% Graph, 20% Others (Focus on Graph)
-                  if random.random() < 0.8:
+                  # Logic (Simplified for brevity)
+                  if random.random() < 0.7:
                       cat = 'Graph'
-                      algo, formula, overhead = random.choice(algo_db['Graph'])
-                      
-                      # Graph Specific Params
-                      V = random.randint(10, 2000) # Nodes
-                      # Edges depends on Density (Sparse vs Dense)
-                      max_edges = V * (V - 1) // 2
-                      density = random.uniform(0.1, 0.8)
-                      E = int(max_edges * density) if formula != 'V^3' else random.randint(V, V*5) # Floyd is heavy
-                      
-                      # Adjust V for heavy algos to prevent unrealistic times
-                      if formula == 'V^3' and V > 300: V = random.randint(10, 300)
-                      if formula == 'VE' and V > 1000: V = random.randint(10, 1000)
-
-                      N = V # Representative Size
+                      algo, form, overhead = random.choice(algo_db['Graph'])
+                      V = random.randint(10, 500)
+                      E = V * random.randint(1, 5)
+                      calc = (V+E) * overhead * random.uniform(0.8, 1.2)
                   else:
                       cat = random.choice(['Sorting', 'Search'])
-                      algo, formula, overhead = random.choice(algo_db[cat])
-                      V = random.randint(100, 10000)
+                      algo, form, overhead = random.choice(algo_db[cat])
+                      V = random.randint(100, 1000)
                       E = 0
-                      N = V
+                      calc = V * overhead * random.uniform(0.8, 1.2)
 
-                  # Time Calculation Logic
-                  jitter = random.uniform(0.9, 1.1)
+                  time_ms = round(calc, 4)
+                  writer.writerow([cat, algo, V, E, time_ms])
                   
-                  if formula == 'V+E': calc = (V + E) * overhead
-                  elif formula == 'E+VlogV': calc = (E + (V * math.log2(V if V>1 else 1))) * overhead
-                  elif formula == 'VE': calc = (V * E) * overhead
-                  elif formula == 'V^3': calc = (V**3) * overhead
-                  elif formula == 'ElogE': calc = (E * math.log2(E if E>1 else 1)) * overhead
-                  elif formula == 'NlogN': calc = (N * math.log2(N if N>1 else 1)) * overhead
-                  elif formula == 'logN': calc = math.log2(N if N>1 else 1) * overhead
-                  else: calc = N * overhead
+                  # Stats Aggregation
+                  stats_cat[cat] += 1
+                  if algo not in stats_algo_time: stats_algo_time[algo] = []
+                  stats_algo_time[algo].append(time_ms)
 
-                  time_ms = round(calc * jitter, 4)
-                  status = 'Timeout' if time_ms > 5000 else 'Success'
+          # --- GENERATE GITHUB JOB SUMMARY (MARKDOWN) ---
+          # 1. Calculate Averages
+          avg_times = {k: sum(v)/len(v) for k, v in stats_algo_time.items()}
+          sorted_algos = sorted(avg_times.items(), key=lambda item: item[1], reverse=True)
 
-                  # Write CSV
-                  ts = start_time - timedelta(seconds=random.randint(0, 86400))
-                  writer.writerow([ts, cat, algo, V, E, formula, time_ms, status])
-
-                  # Aggregation for Dashboard
-                  if cat == 'Graph' and random.random() < 0.01: # Sample 1% for scatter plot
-                      graph_scatter_data.append({'x': V, 'y': time_ms, 'algo': algo})
-                  
-                  if algo not in algo_avg_time: algo_avg_time[algo] = []
-                  algo_avg_time[algo].append(time_ms)
-
-          print(f"[+] CSV Generated: {CSV_PATH}")
-
-          # --- 2. GENERATE GRAPH TOPOLOGY SAMPLE (JSON) ---
-          # Create a small visualizable graph sample
-          print("[*] Generating Graph Topology Sample...")
-          sample_v = 50
-          sample_nodes = [{'id': i, 'label': f'Node {i}'} for i in range(sample_v)]
-          sample_edges = []
-          for i in range(sample_v):
-              # Connect to 1-3 random other nodes
-              targets = random.sample(range(sample_v), k=random.randint(1, 3))
-              for t in targets:
-                  if i != t:
-                      sample_edges.append({'source': i, 'target': t, 'weight': random.randint(1, 10)})
+          # 2. Construct Markdown
+          summary_md = f"""
+          # 📊 Algorithm Performance Summary
           
-          graph_topology = {'nodes': sample_nodes, 'edges': sample_edges}
-          with open(JSON_PATH, 'w') as f:
-              json.dump(graph_topology, f, indent=2)
-          print(f"[+] Topology JSON Generated: {JSON_PATH}")
-
-          # --- 3. DASHBOARD GENERATION ---
-          # Prepare Data for Chart.js
-          avg_labels = list(algo_avg_time.keys())
-          avg_values = [sum(v)/len(v) for v in algo_avg_time.values()]
+          **Simulation Report**
+          - **Total Records:** {ROW_COUNT:,}
+          - **Generated At:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
           
-          # Color mapping for scatter plot
-          scatter_datasets = []
-          colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
-          algo_names = sorted(list(set([d['algo'] for d in graph_scatter_data])))
+          ---
           
-          for idx, name in enumerate(algo_names):
-              pts = [{'x': d['x'], 'y': d['y']} for d in graph_scatter_data if d['algo'] == name]
-              scatter_datasets.append({
-                  'label': name,
-                  'data': pts,
-                  'backgroundColor': colors[idx % len(colors)],
-                  'pointRadius': 4
-              })
-
-          html_content = f"""
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <title>Graph Algo Analytics</title>
-              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-              <style>body{{padding:20px; background:#f4f7f6}} .card{{margin-bottom:20px; border-radius:10px; border:none; box-shadow:0 4px 6px rgba(0,0,0,0.05)}}</style>
-          </head>
-          <body>
-              <div class="container">
-                  <h2 class="text-center mb-4">🕸️ Graph Algorithm Performance Dashboard</h2>
-                  <div class="text-end mb-3">
-                      <a href="graph_performance_data.csv" class="btn btn-outline-primary btn-sm">📥 CSV Data</a>
-                      <a href="graph_topology_sample.json" class="btn btn-outline-success btn-sm">📥 Graph Topology JSON</a>
-                  </div>
-
-                  <div class="card p-4">
-                      <h5>⏱️ Average Execution Time (ms)</h5>
-                      <canvas id="barChart" height="100"></canvas>
-                  </div>
-
-                  <div class="card p-4">
-                      <h5>📈 Graph Complexity Analysis (Nodes vs Time)</h5>
-                      <p class="text-muted small">Compare how different algorithms scale as the number of Nodes (V) increases.</p>
-                      <canvas id="scatterChart" height="150"></canvas>
-                  </div>
-
-                  <div class="card p-4">
-                      <h5>👀 Topology Data Preview (Sample)</h5>
-                      <pre style="background:#2d2d2d; color:#eee; padding:15px; border-radius:5px; max-height:200px; overflow:auto;">{json.dumps(graph_topology, indent=2)}</pre>
-                  </div>
-              </div>
-
-              <script>
-                  // 1. Bar Chart
-                  new Chart(document.getElementById('barChart'), {{
-                      type: 'bar',
-                      data: {{
-                          labels: {json.dumps(avg_labels)},
-                          datasets: [{{
-                              label: 'Avg Time (ms)',
-                              data: {json.dumps(avg_values)},
-                              backgroundColor: '#36A2EB'
-                          }}]
-                      }}
-                  }});
-
-                  // 2. Scatter Chart (Graph Performance)
-                  new Chart(document.getElementById('scatterChart'), {{
-                      type: 'scatter',
-                      data: {{ datasets: {json.dumps(scatter_datasets)} }},
-                      options: {{
-                          scales: {{
-                              x: {{ title: {{ display: true, text: 'Number of Nodes (V)' }} }},
-                              y: {{ title: {{ display: true, text: 'Execution Time (ms)' }} }}
-                          }}
-                      }}
-                  }});
-              </script>
-          </body>
-          </html>
+          ### 1️⃣ Category Distribution (Pie Chart)
+          
+          ```mermaid
+          pie title Task Distribution
+              "Graph Algo" : {stats_cat['Graph']}
+              "Sorting" : {stats_cat['Sorting']}
+              "Search" : {stats_cat['Search']}
+          ```
+          
+          ### 2️⃣ Performance Rankings (Avg Time)
+          
+          | Rank | Algorithm | Avg Time (ms) | Complexity |
+          | :---: | :--- | :---: | :--- |
+          """
+          
+          for idx, (name, t) in enumerate(sorted_algos):
+              icon = "🥇" if idx==0 else "🥈" if idx==1 else "🥉" if idx==2 else str(idx+1)
+              # Guess complexity for display
+              comp = "Unknown"
+              for cat in algo_db:
+                  for a in algo_db[cat]:
+                      if a[0] == name: comp = a[1]
+              
+              summary_md += f"| {icon} | **{name}** | `{t:.4f} ms` | *O({comp})* |\n"
+          
+          summary_md += """
+          ---
+          
+          ### 3️⃣ Graph Topology Insights
+          > Note: Graph algorithms (BFS, Dijkstra) show higher variance due to Edge(E) density.
+          
+          <details>
+          <summary>🔍 Click to see RAW JSON sample</summary>
+          
+          ```json
+          {
+            "sample_node": {"id": 1, "label": "Node_Start"},
+            "sample_edge": {"source": 1, "target": 5, "weight": 10},
+            "meta": {"total_nodes": "Variable", "density": "Random"}
+          }
+          ```
+          </details>
           """
 
-          with open(HTML_PATH, 'w', encoding='utf-8') as f:
-              f.write(html_content)
-          print("[+] Dashboard Generated.")
+          # 3. Write to GitHub Environment File
+          # This puts the content directly onto the Summary page
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write(summary_md)
+              
+          print("[+] Summary Generated to GITHUB_STEP_SUMMARY")
           EOF
 
-      - name: 📤 Upload Graph Artifacts
+      - name: 📤 Upload Full Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: graph-algorithm-report
