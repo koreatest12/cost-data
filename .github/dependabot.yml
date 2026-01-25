@@ -1,22 +1,68 @@
-# .github/dependabot.yml
-
 version: 2
 updates:
-  # 1. NPM (Node.js) 설정 예시
-  - package-ecosystem: "npm"
-    directory: "/"
+  # -------------------------------------------------------
+  # 1. Java (Maven) 설정
+  # -------------------------------------------------------
+  - package-ecosystem: "maven"
+    directory: "/" # pom.xml이 있는 경로 (루트인 경우)
     schedule:
-      interval: "weekly"
+      interval: "daily" # 중요 프로젝트는 매일 확인
+    # [그룹화 기능] Spring 등 관련 라이브러리 업데이트를 PR 하나로 묶음
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework*"
+          - "io.micrometer*"
+      jackson:
+        patterns:
+          - "com.fasterxml.jackson*"
     open-pull-requests-limit: 10
 
-  # 2. Pip (Python) 설정 예시 (필요 없다면 지우세요)
+  # -------------------------------------------------------
+  # 2. Python (Pip) 설정
+  # -------------------------------------------------------
   - package-ecosystem: "pip"
+    directory: "/" # requirements.txt 또는 pyproject.toml 위치
+    schedule:
+      interval: "weekly"
+    groups:
+      # 자주 업데이트되는 데이터 분석/AI 라이브러리 묶기 예시
+      data-science:
+        patterns:
+          - "numpy"
+          - "pandas"
+          - "scipy"
+    open-pull-requests-limit: 10
+
+  # -------------------------------------------------------
+  # 3. Docker 설정 (Dockerfile)
+  # -------------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/" # Dockerfile이 있는 위치
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # -------------------------------------------------------
+  # 4. (옵션) GitHub Actions 워크플로우 파일 자체 업데이트
+  # -------------------------------------------------------
+  - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
 
-  # 3. Docker 설정 예시 (필요 없다면 지우세요)
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+  # =======================================================
+  # [대량 생성 예시] 만약 서브 모듈(폴더)이 여러 개라면 아래처럼 추가
+  # =======================================================
+  
+  # 예: backend-service 폴더의 Java 프로젝트
+  # - package-ecosystem: "maven"
+  #   directory: "/backend-service"
+  #   schedule:
+  #     interval: "weekly"
+
+  # 예: ai-service 폴더의 Python 프로젝트
+  # - package-ecosystem: "pip"
+  #   directory: "/ai-service"
+  #   schedule:
+  #     interval: "weekly"
