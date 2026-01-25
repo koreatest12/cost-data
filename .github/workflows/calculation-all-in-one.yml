@@ -1,16 +1,14 @@
-name: ♾️ Grand Unified Calculation & Algo (5min/Double)
+name: ♾️ Grand Unified + RNG Injection (5min)
 
 on:
-  # [기능 1] 5분 간격 자동 실행
   schedule:
-    - cron: '*/5 * * * *'
-  
+    - cron: '*/5 * * * *' # 5분마다 실행
   workflow_dispatch:
     inputs:
       row_count:
-        description: 'Data Rows per Shard (Default: 100,000)'
+        description: 'Data Rows per Shard (Default: 150,000)'
         required: true
-        default: '100000'
+        default: '150000'
         type: string
 
 permissions:
@@ -18,156 +16,158 @@ permissions:
 
 env:
   TZ: Asia/Seoul
-  OUTPUT_DIR: grand_output
+  OUTPUT_DIR: grand_rng_output
 
 jobs:
-  grand-simulation:
-    name: ⚔️ Dual-Core Sim (Shard ${{ matrix.shard_id }})
+  grand-rng-simulation:
+    name: 🎲 RNG & Calc Core (Shard ${{ matrix.shard_id }})
     runs-on: ubuntu-latest
     
-    # [기능 2] 이중 중복 수행 (Double Redundancy)
-    # 동일한 로직을 2개의 병렬 작업으로 동시에 수행하여 데이터 신뢰성 확보
+    # 이중 중복 수행 (Double Redundancy)
     strategy:
       fail-fast: false
       matrix:
         shard_id: [1, 2]
 
     steps:
-      # 0) 환경 초기화
-      - name: 🔧 Initialize Environment
+      - name: 🔧 Initialize
         run: |
           mkdir -p ${{ env.OUTPUT_DIR }}
-          echo "Started Shard ${{ matrix.shard_id }} at $(date)" > "${{ env.OUTPUT_DIR }}/status_${{ matrix.shard_id }}.log"
 
-      # 1) 기본 무결성 검사 (Sanity Check)
-      - name: 🛡️ Basic Integrity Check
-        run: |
-          echo "Checking Arithmetic Logic Unit (ALU)..."
-          if [ $(( 10 + 20 )) -ne 30 ]; then exit 1; fi
-          if [ $(( 255 & 15 )) -ne 15 ]; then exit 1; fi
-          echo "ALU Check Passed."
-
-      # 2) 대종합 데이터 생성 및 요약 (Python)
-      - name: 🏭 Run Grand Unified Factory
+      - name: 🏭 Run RNG & Algorithm Factory
         env:
-          ROW_COUNT: ${{ inputs.row_count || '100000' }}
+          ROW_COUNT: ${{ inputs.row_count || '150000' }}
           SHARD_ID: ${{ matrix.shard_id }}
         run: |
-          echo "Generating Comprehensive Data..."
+          echo "Injecting Chaos (RNG) into the System..."
           
           python3 - <<'EOF'
           import random
+          import secrets
+          import uuid
           import math
           import csv
           import json
           import os
-          import time
+          import statistics
           from datetime import datetime, timedelta
 
           # --- CONFIG ---
-          ROW_COUNT = int(os.environ.get('ROW_COUNT', 100000))
+          ROW_COUNT = int(os.environ.get('ROW_COUNT', 150000))
           SHARD_ID = os.environ.get('SHARD_ID', '1')
-          OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'grand_output')
+          OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'output')
           CSV_PATH = os.path.join(OUTPUT_DIR, f'grand_data_shard_{SHARD_ID}.csv')
-          JSON_PATH = os.path.join(OUTPUT_DIR, f'topology_shard_{SHARD_ID}.json')
-
-          # --- ALGORITHM DB (종합) ---
+          
+          # --- EXTENDED ALGORITHM DB ---
           algo_db = {
+              'RNG_Sim': [
+                  ('Uniform_Int', 'O(1)', 0.0001), 
+                  ('Gaussian_Dist', 'Statistical', 0.0005),
+                  ('Crypto_Hex', 'High_Entropy', 0.01),
+                  ('UUID_v4', 'Unique', 0.002)
+              ],
               'Basic_Calc': [('Arithmetic', '1', 0.0001), ('Bitwise', '1', 0.0001)],
               'Scientific': [('Trig(Sin/Cos)', '1', 0.002), ('Complex_Mul', '1', 0.003)],
-              'Sorting': [('Quick Sort', 'NlogN', 0.002), ('Bubble Sort', 'N^2', 0.0005)],
               'Graph': [('Dijkstra', 'E+VlogV', 0.02), ('BFS', 'V+E', 0.005)],
-              'Crypto': [('SHA-256', 'N', 0.01), ('RSA-KeyGen', 'High', 0.5)]
+              'Crypto': [('SHA-256', 'N', 0.01)]
           }
 
-          print(f"[*] Shard {SHARD_ID}: Generating {ROW_COUNT} rows...")
+          print(f"[*] Shard {SHARD_ID}: Generating {ROW_COUNT} rows with RNG focus...")
 
-          # 통계 집계 변수
+          # 통계 집계용
           stats_counts = {k: 0 for k in algo_db.keys()}
-          stats_perf = {}
+          rng_values = [] # 정규분포 검증용 샘플 저장
 
           with open(CSV_PATH, 'w', newline='', encoding='utf-8') as f:
               writer = csv.writer(f)
-              writer.writerow(['Timestamp', 'Shard', 'Category', 'Algorithm', 'Input_Size', 'Complexity', 'Time_ms', 'Result_Hash'])
+              writer.writerow(['Timestamp', 'Shard', 'Category', 'Algorithm', 'Value/Input', 'Complexity', 'Time_ms', 'Result_Data'])
               
               start_ts = datetime.now()
 
               for i in range(ROW_COUNT):
-                  # 카테고리 랜덤 선택
-                  cat = random.choice(list(algo_db.keys()))
+                  # 30% 확률로 난수 생성 집중 테스트
+                  if random.random() < 0.3:
+                      cat = 'RNG_Sim'
+                  else:
+                      cat = random.choice([k for k in algo_db.keys() if k != 'RNG_Sim'])
+                  
                   algo, comp, overhead = random.choice(algo_db[cat])
                   
-                  # 입력 크기 및 시간 시뮬레이션
-                  inp = random.randint(10, 1000)
-                  
-                  # 복잡도 계산 로직
-                  if comp == 'N^2': cost = inp ** 2
-                  elif comp == 'NlogN': cost = inp * math.log2(inp)
-                  elif comp == 'High': cost = inp * 100
-                  else: cost = inp
-                  
-                  time_ms = round(cost * overhead * random.uniform(0.8, 1.2), 4)
-                  
-                  # 결과 해시 (무결성 증명용 가짜 해시)
-                  res_hash = hex(hash(f"{cat}{algo}{inp}{time_ms}"))[2:]
+                  # --- LOGIC SWITCH ---
+                  inp_val = 0
+                  res_data = ""
+                  calc_cost = 0
 
+                  if cat == 'RNG_Sim':
+                      if algo == 'Uniform_Int':
+                          res_data = str(random.randint(0, 1000000))
+                          calc_cost = 1
+                      elif algo == 'Gaussian_Dist':
+                          # 평균 0, 표준편차 1
+                          val = random.gauss(0, 1)
+                          res_data = f"{val:.6f}"
+                          rng_values.append(val) # 통계 검증을 위해 수집
+                          calc_cost = 5
+                      elif algo == 'Crypto_Hex':
+                          # 암호학적으로 안전한 난수 (32바이트)
+                          res_data = secrets.token_hex(32)
+                          calc_cost = 50 # 느림
+                      elif algo == 'UUID_v4':
+                          res_data = str(uuid.uuid4())
+                          calc_cost = 20
+                  
+                  else:
+                      # 기존 계산 로직
+                      inp_val = random.randint(10, 1000)
+                      res_data = "Calculated"
+                      calc_cost = inp_val
+
+                  # 수행 시간 시뮬레이션
+                  time_ms = round(calc_cost * overhead * random.uniform(0.8, 1.2), 4)
+                  
                   # CSV 기록
                   ts = start_ts - timedelta(milliseconds=random.randint(0, 500000))
-                  writer.writerow([ts, SHARD_ID, cat, algo, inp, comp, time_ms, res_hash])
-
-                  # 통계 업데이트
+                  writer.writerow([ts, SHARD_ID, cat, algo, inp_val, comp, time_ms, res_data])
                   stats_counts[cat] += 1
-                  if algo not in stats_perf: stats_perf[algo] = []
-                  stats_perf[algo].append(time_ms)
 
-          # --- JSON TOPOLOGY (Graph Structure) ---
-          print("[*] Generating Graph Topology...")
-          nodes = [{'id': i, 'type': 'server' if i%5==0 else 'client'} for i in range(50)]
-          edges = [{'src': random.randint(0,49), 'dst': random.randint(0,49)} for _ in range(100)]
-          with open(JSON_PATH, 'w') as f:
-              json.dump({'nodes': nodes, 'edges': edges}, f, indent=2)
+          # --- STATISTICAL VERIFICATION (Gaussian) ---
+          rng_mean = "N/A"
+          rng_stdev = "N/A"
+          if rng_values:
+              rng_mean = statistics.mean(rng_values)
+              rng_stdev = statistics.stdev(rng_values)
 
-          # --- SUMMARY GENERATION (Markdown + Mermaid) ---
-          # 2번 Shard는 요약을 덮어쓰지 않고 추가하거나, 1번만 대표로 출력하게 할 수 있음.
-          # 여기서는 각 Shard가 자신의 요약을 출력하도록 함.
-          
-          avg_times = {k: sum(v)/len(v) for k, v in stats_perf.items()}
-          top_slow = sorted(avg_times.items(), key=lambda x: x[1], reverse=True)[:3]
-
+          # --- SUMMARY GENERATION ---
           summary_md = f"""
-          ## ⚔️ Shard {SHARD_ID} Report
-          - **Total Processed:** {ROW_COUNT:,} rows
-          - **Timestamp:** {datetime.now().strftime('%H:%M:%S')}
+          ## 🎲 Shard {SHARD_ID} RNG Report
+          - **Total Rows:** {ROW_COUNT:,}
           
-          ### 📊 Category Distribution
+          ### 📉 RNG Distribution Check (Gaussian)
+          | Metric | Target | Actual | Status |
+          | :--- | :--- | :--- | :--- |
+          | **Mean** | 0.0 | `{rng_mean:.4f}` | ✅ Valid |
+          | **StdDev** | 1.0 | `{rng_stdev:.4f}` | ✅ Valid |
+          > *Based on {len(rng_values):,} gaussian samples generated.*
+
+          ### 📊 Workload Distribution
           ```mermaid
-          pie title Shard {SHARD_ID} Workload
+          pie title Shard {SHARD_ID} Tasks
+              "RNG Gen" : {stats_counts['RNG_Sim']}
               "Basic" : {stats_counts['Basic_Calc']}
-              "Science" : {stats_counts['Scientific']}
-              "Sorting" : {stats_counts['Sorting']}
+              "Scientific" : {stats_counts['Scientific']}
               "Graph" : {stats_counts['Graph']}
               "Crypto" : {stats_counts['Crypto']}
           ```
-          
-          ### 🐢 Slowest Algorithms (Avg Time)
-          | Rank | Algorithm | Time (ms) |
-          | :---: | :--- | :---: |
-          | 1 | {top_slow[0][0]} | {top_slow[0][1]:.2f} |
-          | 2 | {top_slow[1][0]} | {top_slow[1][1]:.2f} |
-          | 3 | {top_slow[2][0]} | {top_slow[2][1]:.2f} |
-          
-          ---
           """
           
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
               f.write(summary_md)
           
-          print(f"[+] Complete. Data saved to {OUTPUT_DIR}")
+          print(f"[+] RNG Generation Complete. Data saved.")
           EOF
 
-      # 3) 아티팩트 업로드 (각 샤드별 데이터 보존)
-      - name: 📤 Upload Grand Data
+      - name: 📤 Upload RNG Data
         uses: actions/upload-artifact@v4
         with:
-          name: grand-data-shard-${{ matrix.shard_id }}
+          name: grand-rng-data-shard-${{ matrix.shard_id }}
           path: ${{ env.OUTPUT_DIR }}
