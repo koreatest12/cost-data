@@ -1,12 +1,12 @@
-name: 🧠 Massive Algorithm Data & Dashboard
+name: 🕸️ Graph & Algorithm Massive Data Generator
 
 on:
   workflow_dispatch:
     inputs:
       row_count:
-        description: 'Number of Algorithm Logs (Default: 500,000)'
+        description: 'Total Log Count (Default: 300,000)'
         required: true
-        default: '500000'
+        default: '300000'
         type: string
 
 permissions:
@@ -14,28 +14,27 @@ permissions:
 
 env:
   TZ: Asia/Seoul
-  OUTPUT_DIR: algorithm_output
-  CSV_FILE: algorithm_performance_data.csv
-  HTML_FILE: algorithm_dashboard.html
+  OUTPUT_DIR: graph_algo_output
+  CSV_FILE: graph_performance_data.csv
+  JSON_GRAPH: graph_topology_sample.json
+  HTML_FILE: graph_dashboard.html
 
 jobs:
-  algorithm-simulation:
-    name: 🚀 Gen Algo Data & Report
+  graph-simulation:
+    name: 🚀 Gen Graph & Algo Data
     runs-on: ubuntu-latest
     
     steps:
-      # 1) 결과물을 저장할 폴더 생성
-      - name: 🔧 Initialize Directory
+      - name: 🔧 Initialize
         run: |
           mkdir -p ${{ env.OUTPUT_DIR }}
-          echo "Created output directory: ${{ env.OUTPUT_DIR }}"
+          echo "Output Dir: ${{ env.OUTPUT_DIR }}"
 
-      # 2) 파이썬 스크립트: 알고리즘 데이터 대량 생성 및 대시보드 빌드
-      - name: 🏭 Algorithm Data Factory
+      - name: 🏭 Graph & Algorithm Factory
         env:
-          ROW_COUNT: ${{ inputs.row_count || '500000' }}
+          ROW_COUNT: ${{ inputs.row_count || '300000' }}
         run: |
-          echo "Generating ${{ env.ROW_COUNT }} algorithm logs..."
+          echo "Generating ${{ env.ROW_COUNT }} rows with Graph Focus..."
           
           python3 - <<'EOF'
           import random
@@ -46,217 +45,187 @@ jobs:
           from datetime import datetime, timedelta
 
           # --- CONFIG ---
-          ROW_COUNT = int(os.environ.get('ROW_COUNT', 500000))
-          OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'algorithm_output')
+          ROW_COUNT = int(os.environ.get('ROW_COUNT', 300000))
+          OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'output')
           CSV_PATH = os.path.join(OUTPUT_DIR, os.environ.get('CSV_FILE', 'data.csv'))
+          JSON_PATH = os.path.join(OUTPUT_DIR, os.environ.get('JSON_GRAPH', 'graph.json'))
           HTML_PATH = os.path.join(OUTPUT_DIR, os.environ.get('HTML_FILE', 'index.html'))
 
-          # --- ALGORITHM DEFINITIONS & COMPLEXITY ---
-          # (알고리즘 이름, 시간복잡도 유형, 기본 오버헤드 ms)
-          algo_types = {
-              'Sorting': [
-                  ('Quick Sort', 'nlogn', 0.001),
-                  ('Merge Sort', 'nlogn', 0.002),
-                  ('Bubble Sort', 'n2', 0.000005), # 느림
-                  ('Heap Sort', 'nlogn', 0.0015)
-              ],
-              'Search': [
-                  ('Binary Search', 'logn', 0.0001),
-                  ('Linear Search', 'n', 0.0005),
-                  ('Hash Map', '1', 0.0002)
-              ],
+          # --- ALGORITHM DEFINITIONS ---
+          # Type: (Name, Complexity_Formula, Base_Overhead_ms)
+          algo_db = {
               'Graph': [
-                  ('Dijkstra', 'nlogn', 0.05),
-                  ('BFS', 'n', 0.02),
-                  ('DFS', 'n', 0.02)
+                  ('BFS (Breadth-First)', 'V+E', 0.005),
+                  ('DFS (Depth-First)', 'V+E', 0.005),
+                  ('Dijkstra (PQ)', 'E+VlogV', 0.02),
+                  ('Bellman-Ford', 'VE', 0.001), # Slower
+                  ('Floyd-Warshall', 'V^3', 0.00005), # Very Slow
+                  ('Kruskal (MST)', 'ElogE', 0.015),
+                  ('Prim (MST)', 'E+VlogV', 0.02)
               ],
-              'Compression': [
-                  ('Huffman', 'nlogn', 0.03),
-                  ('LZ77', 'n', 0.04)
-              ]
+              'Sorting': [('Quick Sort', 'NlogN', 0.002), ('Merge Sort', 'NlogN', 0.003)],
+              'Search': [('Binary Search', 'logN', 0.001)]
           }
 
-          # --- 1. DATA GENERATION (Simulation) ---
-          print(f"[*] Simulating {ROW_COUNT} algorithm executions...")
+          print(f"[*] Simulating {ROW_COUNT} executions...")
           
-          # 통계용 집계 변수
-          stats_category = {'Sorting':0, 'Search':0, 'Graph':0, 'Compression':0}
-          stats_performance = {} # 알고리즘별 평균 시간 계산용
+          # Dashboard Data Containers
+          graph_scatter_data = [] # For Scatter Plot (x=V, y=Time)
+          algo_avg_time = {}
 
           with open(CSV_PATH, 'w', newline='', encoding='utf-8') as f:
               writer = csv.writer(f)
-              writer.writerow(['Timestamp', 'Category', 'Algorithm', 'Input_Size', 'Complexity', 'Time_Taken_ms', 'Memory_KB', 'Status'])
+              writer.writerow(['Timestamp', 'Category', 'Algorithm', 'Nodes(V)', 'Edges(E)', 'Complexity', 'Time_ms', 'Status'])
 
               start_time = datetime.now()
               
               for _ in range(ROW_COUNT):
-                  # 1. 랜덤 카테고리 및 알고리즘 선택
-                  cat_key = random.choice(list(algo_types.keys()))
-                  algo_name, complexity, overhead = random.choice(algo_types[cat_key])
-                  
-                  # 2. 입력 데이터 크기 (100 ~ 10,000 items)
-                  n = random.randint(100, 10000)
-                  
-                  # 3. 시간 복잡도에 따른 수행 시간 시뮬레이션 (Execution Time Calc)
-                  # 노이즈(Jitter) 추가하여 현실감 부여
-                  jitter = random.uniform(0.8, 1.2)
-                  
-                  if complexity == '1':
-                      calc_time = overhead * jitter
-                  elif complexity == 'logn':
-                      calc_time = overhead * math.log2(n) * jitter
-                  elif complexity == 'n':
-                      calc_time = overhead * n * jitter
-                  elif complexity == 'nlogn':
-                      calc_time = overhead * n * math.log2(n) * jitter
-                  elif complexity == 'n2':
-                      calc_time = overhead * (n**2) * jitter
-                  
-                  # 4. 메모리 사용량 및 상태
-                  memory = round(n * random.uniform(0.1, 0.5), 2)
-                  status = 'Success'
-                  if calc_time > 1000: status = 'Timeout' # 1초 넘으면 타임아웃 처리
-                  elif random.random() < 0.001: status = 'Error' # 0.1% 확률로 에러
+                  # 80% Graph, 20% Others (Focus on Graph)
+                  if random.random() < 0.8:
+                      cat = 'Graph'
+                      algo, formula, overhead = random.choice(algo_db['Graph'])
+                      
+                      # Graph Specific Params
+                      V = random.randint(10, 2000) # Nodes
+                      # Edges depends on Density (Sparse vs Dense)
+                      max_edges = V * (V - 1) // 2
+                      density = random.uniform(0.1, 0.8)
+                      E = int(max_edges * density) if formula != 'V^3' else random.randint(V, V*5) # Floyd is heavy
+                      
+                      # Adjust V for heavy algos to prevent unrealistic times
+                      if formula == 'V^3' and V > 300: V = random.randint(10, 300)
+                      if formula == 'VE' and V > 1000: V = random.randint(10, 1000)
 
-                  # 5. CSV 쓰기
+                      N = V # Representative Size
+                  else:
+                      cat = random.choice(['Sorting', 'Search'])
+                      algo, formula, overhead = random.choice(algo_db[cat])
+                      V = random.randint(100, 10000)
+                      E = 0
+                      N = V
+
+                  # Time Calculation Logic
+                  jitter = random.uniform(0.9, 1.1)
+                  
+                  if formula == 'V+E': calc = (V + E) * overhead
+                  elif formula == 'E+VlogV': calc = (E + (V * math.log2(V if V>1 else 1))) * overhead
+                  elif formula == 'VE': calc = (V * E) * overhead
+                  elif formula == 'V^3': calc = (V**3) * overhead
+                  elif formula == 'ElogE': calc = (E * math.log2(E if E>1 else 1)) * overhead
+                  elif formula == 'NlogN': calc = (N * math.log2(N if N>1 else 1)) * overhead
+                  elif formula == 'logN': calc = math.log2(N if N>1 else 1) * overhead
+                  else: calc = N * overhead
+
+                  time_ms = round(calc * jitter, 4)
+                  status = 'Timeout' if time_ms > 5000 else 'Success'
+
+                  # Write CSV
                   ts = start_time - timedelta(seconds=random.randint(0, 86400))
-                  writer.writerow([ts.strftime("%Y-%m-%d %H:%M:%S"), cat_key, algo_name, n, complexity, round(calc_time, 4), memory, status])
+                  writer.writerow([ts, cat, algo, V, E, formula, time_ms, status])
 
-                  # 6. 통계 집계 (대시보드용)
-                  stats_category[cat_key] += 1
-                  if algo_name not in stats_performance:
-                      stats_performance[algo_name] = {'total_time': 0, 'count': 0}
-                  stats_performance[algo_name]['total_time'] += calc_time
-                  stats_performance[algo_name]['count'] += 1
+                  # Aggregation for Dashboard
+                  if cat == 'Graph' and random.random() < 0.01: # Sample 1% for scatter plot
+                      graph_scatter_data.append({'x': V, 'y': time_ms, 'algo': algo})
+                  
+                  if algo not in algo_avg_time: algo_avg_time[algo] = []
+                  algo_avg_time[algo].append(time_ms)
 
           print(f"[+] CSV Generated: {CSV_PATH}")
 
-          # --- 2. DASHBOARD DATA PREPARATION ---
-          # 알고리즘별 평균 수행 시간 데이터
-          avg_perf_labels = []
-          avg_perf_data = []
-          for name, data in stats_performance.items():
-              avg_perf_labels.append(name)
-              avg_perf_data.append(round(data['total_time'] / data['count'], 2))
+          # --- 2. GENERATE GRAPH TOPOLOGY SAMPLE (JSON) ---
+          # Create a small visualizable graph sample
+          print("[*] Generating Graph Topology Sample...")
+          sample_v = 50
+          sample_nodes = [{'id': i, 'label': f'Node {i}'} for i in range(sample_v)]
+          sample_edges = []
+          for i in range(sample_v):
+              # Connect to 1-3 random other nodes
+              targets = random.sample(range(sample_v), k=random.randint(1, 3))
+              for t in targets:
+                  if i != t:
+                      sample_edges.append({'source': i, 'target': t, 'weight': random.randint(1, 10)})
+          
+          graph_topology = {'nodes': sample_nodes, 'edges': sample_edges}
+          with open(JSON_PATH, 'w') as f:
+              json.dump(graph_topology, f, indent=2)
+          print(f"[+] Topology JSON Generated: {JSON_PATH}")
 
-          # --- 3. HTML GENERATION ---
+          # --- 3. DASHBOARD GENERATION ---
+          # Prepare Data for Chart.js
+          avg_labels = list(algo_avg_time.keys())
+          avg_values = [sum(v)/len(v) for v in algo_avg_time.values()]
+          
+          # Color mapping for scatter plot
+          scatter_datasets = []
+          colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+          algo_names = sorted(list(set([d['algo'] for d in graph_scatter_data])))
+          
+          for idx, name in enumerate(algo_names):
+              pts = [{'x': d['x'], 'y': d['y']} for d in graph_scatter_data if d['algo'] == name]
+              scatter_datasets.append({
+                  'label': name,
+                  'data': pts,
+                  'backgroundColor': colors[idx % len(colors)],
+                  'pointRadius': 4
+              })
+
           html_content = f"""
           <!DOCTYPE html>
-          <html lang="en">
+          <html>
           <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Algorithm Performance Dashboard</title>
+              <title>Graph Algo Analytics</title>
               <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
               <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-              <style>
-                  body {{ background-color: #f0f2f5; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
-                  .card {{ margin-bottom: 20px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-radius: 12px; }}
-                  .header {{ margin-bottom: 30px; text-align: center; color: #333; }}
-                  .btn-download {{ float: right; margin-bottom: 15px; }}
-              </style>
+              <style>body{{padding:20px; background:#f4f7f6}} .card{{margin-bottom:20px; border-radius:10px; border:none; box-shadow:0 4px 6px rgba(0,0,0,0.05)}}</style>
           </head>
           <body>
               <div class="container">
-                  <div class="header">
-                      <h1>🧪 Algorithm Performance Report</h1>
-                      <p class="text-muted">Generated {ROW_COUNT:,} simulation logs based on Big-O Complexity</p>
+                  <h2 class="text-center mb-4">🕸️ Graph Algorithm Performance Dashboard</h2>
+                  <div class="text-end mb-3">
+                      <a href="graph_performance_data.csv" class="btn btn-outline-primary btn-sm">📥 CSV Data</a>
+                      <a href="graph_topology_sample.json" class="btn btn-outline-success btn-sm">📥 Graph Topology JSON</a>
                   </div>
 
-                  <div class="btn-download">
-                      <a href="{os.environ.get('CSV_FILE', 'data.csv')}" class="btn btn-primary">📥 Download Full CSV Data</a>
+                  <div class="card p-4">
+                      <h5>⏱️ Average Execution Time (ms)</h5>
+                      <canvas id="barChart" height="100"></canvas>
                   </div>
 
-                  <div class="row">
-                      <div class="col-md-3">
-                          <div class="card p-3 text-center">
-                              <h3 class="text-primary">{stats_category['Sorting']:,}</h3>
-                              <small>Sorting Tasks</small>
-                          </div>
-                      </div>
-                      <div class="col-md-3">
-                          <div class="card p-3 text-center">
-                              <h3 class="text-success">{stats_category['Search']:,}</h3>
-                              <small>Search Tasks</small>
-                          </div>
-                      </div>
-                      <div class="col-md-3">
-                          <div class="card p-3 text-center">
-                              <h3 class="text-info">{stats_category['Graph']:,}</h3>
-                              <small>Graph/Pathfinding</small>
-                          </div>
-                      </div>
-                      <div class="col-md-3">
-                          <div class="card p-3 text-center">
-                              <h3 class="text-warning">{stats_category['Compression']:,}</h3>
-                              <small>Compression</small>
-                          </div>
-                      </div>
+                  <div class="card p-4">
+                      <h5>📈 Graph Complexity Analysis (Nodes vs Time)</h5>
+                      <p class="text-muted small">Compare how different algorithms scale as the number of Nodes (V) increases.</p>
+                      <canvas id="scatterChart" height="150"></canvas>
                   </div>
 
-                  <div class="row">
-                      <div class="col-md-6">
-                          <div class="card p-4">
-                              <h5>📊 Task Distribution</h5>
-                              <canvas id="distChart"></canvas>
-                          </div>
-                      </div>
-                      <div class="col-md-6">
-                          <div class="card p-4">
-                              <h5>⚡ Avg Execution Time (ms) by Algorithm</h5>
-                              <canvas id="perfChart"></canvas>
-                          </div>
-                      </div>
-                  </div>
-                  
-                  <div class="row">
-                      <div class="col-12">
-                          <div class="card p-3">
-                              <h5>📝 Latest Logs (Preview 5 rows)</h5>
-                              <div class="table-responsive">
-                                  <table class="table table-sm table-hover">
-                                      <thead><tr><th>Time</th><th>Category</th><th>Algorithm</th><th>Input Size</th><th>Time(ms)</th><th>Status</th></tr></thead>
-                                      <tbody>
-                                          <tr><td>2024-05-20 10:01:05</td><td>Sorting</td><td>Bubble Sort</td><td>8500</td><td>361.25</td><td><span class="badge bg-success">Success</span></td></tr>
-                                          <tr><td>2024-05-20 10:01:02</td><td>Graph</td><td>Dijkstra</td><td>5000</td><td>45.20</td><td><span class="badge bg-success">Success</span></td></tr>
-                                          <tr><td>2024-05-20 10:00:55</td><td>Search</td><td>Binary Search</td><td>9900</td><td>0.15</td><td><span class="badge bg-success">Success</span></td></tr>
-                                          <tr><td>2024-05-20 10:00:45</td><td>Sorting</td><td>Quick Sort</td><td>1200</td><td>12.50</td><td><span class="badge bg-success">Success</span></td></tr>
-                                          <tr><td>2024-05-20 10:00:10</td><td>Compression</td><td>LZ77</td><td>4000</td><td>160.00</td><td><span class="badge bg-success">Success</span></td></tr>
-                                      </tbody>
-                                  </table>
-                              </div>
-                          </div>
-                      </div>
+                  <div class="card p-4">
+                      <h5>👀 Topology Data Preview (Sample)</h5>
+                      <pre style="background:#2d2d2d; color:#eee; padding:15px; border-radius:5px; max-height:200px; overflow:auto;">{json.dumps(graph_topology, indent=2)}</pre>
                   </div>
               </div>
 
               <script>
-                  // 1. Distribution Pie Chart
-                  new Chart(document.getElementById('distChart'), {{
-                      type: 'pie',
+                  // 1. Bar Chart
+                  new Chart(document.getElementById('barChart'), {{
+                      type: 'bar',
                       data: {{
-                          labels: {json.dumps(list(stats_category.keys()))},
+                          labels: {json.dumps(avg_labels)},
                           datasets: [{{
-                              data: {json.dumps(list(stats_category.values()))},
-                              backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e']
+                              label: 'Avg Time (ms)',
+                              data: {json.dumps(avg_values)},
+                              backgroundColor: '#36A2EB'
                           }}]
                       }}
                   }});
 
-                  // 2. Performance Bar Chart
-                  new Chart(document.getElementById('perfChart'), {{
-                      type: 'bar',
-                      data: {{
-                          labels: {json.dumps(avg_perf_labels)},
-                          datasets: [{{
-                              label: 'Avg Time (ms)',
-                              data: {json.dumps(avg_perf_data)},
-                              backgroundColor: '#e74a3b'
-                          }}]
-                      }},
+                  // 2. Scatter Chart (Graph Performance)
+                  new Chart(document.getElementById('scatterChart'), {{
+                      type: 'scatter',
+                      data: {{ datasets: {json.dumps(scatter_datasets)} }},
                       options: {{
-                          indexAxis: 'y', // 가로 막대 그래프
-                          responsive: true
+                          scales: {{
+                              x: {{ title: {{ display: true, text: 'Number of Nodes (V)' }} }},
+                              y: {{ title: {{ display: true, text: 'Execution Time (ms)' }} }}
+                          }}
                       }}
                   }});
               </script>
@@ -266,13 +235,11 @@ jobs:
 
           with open(HTML_PATH, 'w', encoding='utf-8') as f:
               f.write(html_content)
-          
-          print(f"[+] Dashboard Generated: {HTML_PATH}")
+          print("[+] Dashboard Generated.")
           EOF
 
-      # 3) 공유해주신 이미지와 동일한 Artifact 구조로 업로드
-      - name: 📤 Upload Calculation & Algo Report
+      - name: 📤 Upload Graph Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: calculation-dashboard-report
+          name: graph-algorithm-report
           path: ${{ env.OUTPUT_DIR }}
