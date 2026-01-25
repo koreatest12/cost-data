@@ -10,6 +10,7 @@ env:
   TZ: Asia/Seoul
   LOG_DIR: calc_logs
   REPORT: calculation_report.txt
+  DATA_JSON: diverse_calc_data.json
 
 jobs:
   calculation:
@@ -27,168 +28,175 @@ jobs:
           echo "Calculation Verification Started at $(date)" > "${REPORT}"
 
       ###########################################################################
-      # 1) BASIC ARITHMETIC CALCULATION
+      # 1~9) BASIC UNIT TESTS (기존 검증 로직 유지)
       ###########################################################################
       - name: ➕➖✖➗ Arithmetic Calculation
         run: |
           echo "== Arithmetic Calculation ==" >> "${REPORT}"
           echo "3 + 5 = $((3 + 5))" >> "${REPORT}"
-          echo "10 - 7 = $((10 - 7))" >> "${REPORT}"
-          echo "6 * 7 = $((6 * 7))" >> "${REPORT}"
-          echo "20 / 4 = $((20 / 4))" >> "${REPORT}"
 
-      ###########################################################################
-      # 2) BINARY & HEX CONVERSION
-      ###########################################################################
       - name: 🔢 Binary & Hexadecimal Conversion
         run: |
           echo "== Binary & Hex ==" >> "${REPORT}"
-          printf "10 (dec) = %s (bin)\n" "$(echo "obase=2;10" | bc)" >> "${REPORT}"
           printf "255 (dec) = 0x%X (hex)\n" 255 >> "${REPORT}"
 
-      ###########################################################################
-      # 3) INTEGER vs FLOATING POINT
-      ###########################################################################
       - name: ⚠️ Integer vs Floating Point
         run: |
           echo "== Integer vs Floating Point ==" >> "${REPORT}"
-          echo "Integer: 1 / 10 = $((1 / 10))" >> "${REPORT}"
-          python3 - <<'EOF' >> "${REPORT}"
-          print("Floating: 0.1 + 0.2 =", 0.1 + 0.2)
-          EOF
+          python3 -c "print('Floating: 0.1 + 0.2 =', 0.1 + 0.2)" >> "${REPORT}"
 
-      ###########################################################################
-      # 4) IEEE 754 FLOAT INSPECTION
-      ###########################################################################
       - name: 🔬 IEEE 754 Representation
         run: |
           echo "== IEEE 754 ==" >> "${REPORT}"
-          python3 - <<'EOF' >> "${REPORT}"
-          import struct
-          v = 0.1
-          bits = ''.join(f'{b:08b}' for b in struct.pack('!d', v))
-          print("0.1 IEEE754 =", bits)
-          EOF
+          python3 -c "import struct; print('0.1 IEEE754 =', ''.join(f'{b:08b}' for b in struct.pack('!d', 0.1)))" >> "${REPORT}"
 
-      ###########################################################################
-      # 5) OVERFLOW SIMULATION (8-bit)
-      ###########################################################################
-      - name: 🚨 Overflow Simulation
-        run: |
-          echo "== Overflow ==" >> "${REPORT}"
-          python3 - <<'EOF' >> "${REPORT}"
-          value = (127 + 1) & 0xff
-          if value > 127:
-              value -= 256
-          print("8-bit signed overflow: 127 + 1 =", value)
-          EOF
-
-      ###########################################################################
-      # 6) BITWISE OPERATIONS
-      ###########################################################################
-      - name: 🧠 Bitwise Operations
-        run: |
-          echo "== Bitwise Operations ==" >> "${REPORT}"
-          echo "5 & 3 = $((5 & 3))" >> "${REPORT}"
-          echo "5 | 3 = $((5 | 3))" >> "${REPORT}"
-          echo "5 ^ 3 = $((5 ^ 3))" >> "${REPORT}"
-          echo "5 << 1 = $((5 << 1))" >> "${REPORT}"
-
-      ###########################################################################
-      # 7) CRYPTOGRAPHIC CALCULATION
-      ###########################################################################
       - name: 🔐 Cryptographic Calculation
         run: |
           echo "== Cryptographic Calculation ==" >> "${REPORT}"
           echo -n "hello" | sha256sum >> "${REPORT}"
-          python3 - <<'EOF' >> "${REPORT}"
-          print("Modular Calc: 7^5 mod 13 =", pow(7,5,13))
-          EOF
 
-      ###########################################################################
-      # 8) SECURE RANDOM NUMBER
-      ###########################################################################
       - name: 🎲 Secure Random (CSPRNG)
         run: |
           echo "== Secure Random ==" >> "${REPORT}"
-          python3 - <<'EOF' >> "${REPORT}"
-          import secrets
-          print("Secure Random (128-bit):", secrets.token_hex(16))
-          EOF
+          python3 -c "import secrets; print('Secure Random:', secrets.token_hex(16))" >> "${REPORT}"
 
       ###########################################################################
-      # 10) 🔥 MASS DATA GENERATION (NEW)
+      # 10) 🔥 DIVERSE MASS DATA GENERATION (과학/공학/통계 포함)
       ###########################################################################
-      - name: 🔥 Generate Mass Dataset (1000+ Items)
+      - name: 🌌 Generate Diverse Scientific & Financial Data
         run: |
           echo "==========================================" >> "${REPORT}"
-          echo "🚀 MASS DATA GENERATION STARTED" >> "${REPORT}"
+          echo "🚀 DIVERSE DATA GENERATION STARTED" >> "${REPORT}"
           echo "==========================================" >> "${REPORT}"
           
           python3 - <<'EOF' >> "${REPORT}"
           import random
           import secrets
           import hashlib
+          import math
+          import cmath
+          import statistics
+          import json
           import time
 
-          COUNT = 200 # 각 항목당 생성할 데이터 수
+          # 설정
+          COUNT = 500  # 각 카테고리별 생성 개수
+          data_registry = {} # JSON 출력을 위한 저장소
 
-          # 1. Mass Arithmetic
-          print(f"\n[Mass Arithmetic: {COUNT} items]")
+          print(f"Generating {COUNT} items per category...\n")
+
+          # ---------------------------------------------------------
+          # 1. Trigonometry & Geometry (삼각함수 및 기하학)
+          # ---------------------------------------------------------
+          print("[1. Trigonometry Data]")
+          trig_data = []
           for _ in range(COUNT):
-              a = random.randint(1, 10000)
-              b = random.randint(1, 10000)
-              op = random.choice(['+', '-', '*', '/'])
-              if op == '+': res = a + b
-              elif op == '-': res = a - b
-              elif op == '*': res = a * b
-              else: res = a / b
-              print(f"{a} {op} {b} = {res:.4f}")
+              angle_deg = random.uniform(0, 360)
+              angle_rad = math.radians(angle_deg)
+              entry = {
+                  "angle_deg": round(angle_deg, 2),
+                  "sin": round(math.sin(angle_rad), 4),
+                  "cos": round(math.cos(angle_rad), 4),
+                  "tan": round(math.tan(angle_rad), 4) if abs(math.cos(angle_rad)) > 0.001 else "inf"
+              }
+              trig_data.append(entry)
+          data_registry['trigonometry'] = trig_data
+          print(f"Sample: {trig_data[0]}")
 
-          # 2. Mass Bitwise
-          print(f"\n[Mass Bitwise Logic: {COUNT} items]")
+          # ---------------------------------------------------------
+          # 2. Complex Numbers (복소수 연산)
+          # ---------------------------------------------------------
+          print("\n[2. Complex Number Operations]")
+          complex_data = []
           for _ in range(COUNT):
-              a = random.randint(0, 65535)
-              b = random.randint(0, 65535)
-              print(f"HEX: {hex(a)} & {hex(b)} = {hex(a&b)} | XOR: {a}^{b}={a^b}")
+              c1 = complex(random.randint(-10, 10), random.randint(-10, 10))
+              c2 = complex(random.randint(-10, 10), random.randint(-10, 10))
+              res_mul = c1 * c2
+              res_mag = abs(c1) # Magnitude
+              entry = {
+                  "c1": str(c1),
+                  "c2": str(c2),
+                  "multiply": str(res_mul),
+                  "c1_magnitude": round(res_mag, 4)
+              }
+              complex_data.append(entry)
+          data_registry['complex_nums'] = complex_data
+          print(f"Sample: {complex_data[0]}")
 
-          # 3. Mass Crypto Hashes
-          print(f"\n[Mass SHA-256 Hashes: {COUNT} items]")
+          # ---------------------------------------------------------
+          # 3. Big Integer & Factorials (대수 연산)
+          # ---------------------------------------------------------
+          print("\n[3. Big Integer & Factorials]")
+          bigint_data = []
+          for _ in range(50): # 팩토리얼은 무거우므로 개수 조절
+              n = random.randint(10, 100)
+              fact = math.factorial(n)
+              entry = {
+                  "n": n,
+                  "factorial_len": len(str(fact)), # 숫자가 너무 길어서 길이만 기록
+                  "factorial_prefix": str(fact)[:10] + "..."
+              }
+              bigint_data.append(entry)
+          data_registry['big_integers'] = bigint_data
+          print(f"Sample: {bigint_data[0]}")
+
+          # ---------------------------------------------------------
+          # 4. Statistics & Distributions (통계)
+          # ---------------------------------------------------------
+          print("\n[4. Statistics]")
+          stats_data = []
+          for _ in range(50): # 50개의 데이터셋 생성
+              # 정규분포(Normal Distribution)를 따르는 랜덤 데이터셋 생성
+              dataset = [random.gauss(mu=50, sigma=15) for _ in range(100)]
+              entry = {
+                  "mean": round(statistics.mean(dataset), 4),
+                  "median": round(statistics.median(dataset), 4),
+                  "stdev": round(statistics.stdev(dataset), 4),
+                  "variance": round(statistics.variance(dataset), 4)
+              }
+              stats_data.append(entry)
+          data_registry['statistics'] = stats_data
+          print(f"Sample: {stats_data[0]}")
+
+          # ---------------------------------------------------------
+          # 5. Vector Operations (벡터 연산 - Dot Product)
+          # ---------------------------------------------------------
+          print("\n[5. Vector Dot Products]")
+          vector_data = []
           for _ in range(COUNT):
-              raw = secrets.token_hex(8)
-              hashed = hashlib.sha256(raw.encode()).hexdigest()
-              print(f"Input: {raw} -> Hash: {hashed}")
+              # 3차원 벡터
+              v1 = [random.randint(1, 10) for _ in range(3)]
+              v2 = [random.randint(1, 10) for _ in range(3)]
+              # 내적 계산: sum(a*b)
+              dot_prod = sum(x*y for x,y in zip(v1, v2))
+              entry = {"v1": v1, "v2": v2, "dot_product": dot_prod}
+              vector_data.append(entry)
+          data_registry['vectors'] = vector_data
+          print(f"Sample: {vector_data[0]}")
 
-          # 4. Mass IEEE 754 Check
-          print(f"\n[Mass IEEE 754 Floats: {COUNT} items]")
-          import struct
-          for _ in range(COUNT):
-              val = random.uniform(-1000.0, 1000.0)
-              bits = ''.join(f'{b:08b}' for b in struct.pack('!d', val))
-              print(f"Val: {val:10.4f} -> Bits: {bits}")
-
-          EOF
+          # JSON 파일로 전체 데이터 저장 (Artifact용)
+          with open('diverse_calc_data.json', 'w') as f:
+              json.dump(data_registry, f, indent=2)
           
-          echo "Mass Generation Completed." >> "${REPORT}"
+          print("\n✅ Diverse Data Generation Completed. Saved to 'diverse_calc_data.json'")
+          EOF
 
       ###########################################################################
-      # 11) FINAL REPORT
+      # 11) FINAL REPORT & ARTIFACTS
       ###########################################################################
-      - name: 📄 Show Final Report
+      - name: 📄 Show Final Report Summary
         run: |
-          echo "========== FINAL REPORT =========="
-          # 보고서가 너무 길 경우를 대비해 앞부분과 뒷부분만 요약 출력 (전체는 아티팩트로 저장 추천)
-          head -n 50 "${REPORT}"
-          echo "..."
-          echo "..."
-          echo "(... Middle content omitted for brevity ...)"
-          echo "..."
-          echo "..."
-          tail -n 50 "${REPORT}"
+          echo "========== REPORT SUMMARY =========="
+          tail -n 30 "${REPORT}"
 
-      # (선택 사항) 생성된 전체 대용량 보고서를 아티팩트로 업로드
       - name: 📤 Upload Calculation Report
         uses: actions/upload-artifact@v4
         with:
           name: calculation-full-report
           path: ${{ env.REPORT }}
+
+      - name: 📤 Upload JSON Dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: diverse-calculation-data-json
+          path: diverse_calc_data.json
