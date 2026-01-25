@@ -1,191 +1,262 @@
-name: 🧮 Infinity Calculation — ETL & Mass Loading
+name: 📊 Infinite Calculation — Dashboard & Data Factory
 
 on:
   schedule:
-    - cron: '0 */4 * * *' # 4시간마다 자동 실행
+    - cron: '0 9 * * *' # 매일 아침 9시 리포트 생성
   workflow_dispatch:
     inputs:
       row_count:
-        description: 'Target Rows per Job (Default: 100,000 for safety, Max: 10M)'
+        description: 'Number of rows to generate (Max: 1,000,000)'
         required: true
-        default: '100000'
+        default: '50000'
         type: string
-      simulate_latency:
-        description: 'Simulate Network Latency? (true/false)'
-        required: true
-        default: 'false'
-        type: boolean
 
 permissions:
   contents: read
 
 env:
   TZ: Asia/Seoul
-  LOG_DIR: calc_logs
-  # 사용자가 입력한 값 또는 기본값 사용
-  TARGET_ROWS: ${{ inputs.row_count || '100000' }}
-  SIMULATE_LATENCY: ${{ inputs.simulate_latency || 'false' }}
+  OUTPUT_DIR: output_data
+  CSV_FILE: calculation_raw_data.csv
+  HTML_FILE: dashboard.html
 
 jobs:
-  # -----------------------------------------------------------------------------
-  # Job: Massive Calculation & ETL (Extract, Transform, Load)
-  # -----------------------------------------------------------------------------
-  infinite-calculation:
-    name: 🔥 Mass Calc & Load (Shard ${{ matrix.shard_id }})
+  dashboard-generation:
+    name: 🚀 Gen Data & Dashboard
     runs-on: ubuntu-latest
-    timeout-minutes: 350 # 최대 6시간(360분)에 근접하게 설정
-
-    # 3개의 병렬 샤드(Shard)로 나누어 동시에 엄청난 양의 데이터를 처리
-    strategy:
-      fail-fast: false
-      matrix:
-        shard_id: [1, 2, 3]
 
     steps:
-      # 0) 초기화
-      - name: 🔧 Initialize Environment
-        shell: bash
+      # 1) 환경 설정
+      - name: 🔧 Initialize
         run: |
-          mkdir -p "${LOG_DIR}"
-          echo "START: $(date)" > "${LOG_DIR}/status_${{ matrix.shard_id }}.log"
+          mkdir -p ${{ env.OUTPUT_DIR }}
+          echo "Output Directory Created: ${{ env.OUTPUT_DIR }}"
 
-      # 1) 파이썬 스크립트 실행 (대용량 생성 및 적재)
-      - name: 🚀 Run Infinite Generator & Multi-Service Loader
+      # 2) 파이썬: 데이터 생성 + 대시보드 빌드
+      - name: 🏭 Data Factory & Dashboard Builder
+        env:
+          ROW_COUNT: ${{ inputs.row_count || '50000' }}
         run: |
-          echo "=================================================="
-          echo " Target Rows: $TARGET_ROWS"
-          echo " Shard ID: ${{ matrix.shard_id }}"
-          echo " Network Simulation: $SIMULATE_LATENCY"
-          echo "=================================================="
-
-          # 환경 변수 전달
-          export TARGET_ROWS="${{ env.TARGET_ROWS }}"
-          export SHARD_ID="${{ matrix.shard_id }}"
-          export SIMULATE_LATENCY="${{ env.SIMULATE_LATENCY }}"
-
+          echo "Processing ${ROW_COUNT} rows..."
+          
+          # Python 스크립트 시작
           python3 - <<'EOF'
           import random
           import math
           import time
-          import os
-          import uuid
+          import csv
           import json
-          import sys
+          import os
+          from datetime import datetime, timedelta
 
-          # --- CONFIGURATION ---
-          try:
-              TOTAL_COUNT = int(os.environ.get('TARGET_ROWS', 100000))
-          except:
-              TOTAL_COUNT = 100000
-              
-          SHARD_ID = os.environ.get('SHARD_ID', '1')
-          SIM_LATENCY = os.environ.get('SIMULATE_LATENCY', 'false') == 'true'
-          BATCH_SIZE = 5000  # 한 번에 적재할 데이터 묶음 크기
-
-          print(f"[*] Starting Process for {TOTAL_COUNT} rows... (Batch Size: {BATCH_SIZE})")
-
-          # --- SERVICE MOCK CLASSES (가상 적재기) ---
-          class ServiceLoader:
-              def __init__(self, name):
-                  self.name = name
-                  self.total_loaded = 0
-
-              def load_batch(self, batch_data):
-                  # 네트워크 지연 시뮬레이션 (옵션)
-                  if SIM_LATENCY:
-                      time.sleep(0.05) 
-                  
-                  # 실제로는 여기서 DB Insert 쿼리가 실행됨
-                  self.total_loaded += len(batch_data)
-                  # 로그가 너무 많으면 CI가 느려지므로 5만 건마다 한 번씩만 출력
-                  if self.total_loaded % 50000 == 0:
-                      print(f"   Wait... [{self.name}] Committing batch... Total: {self.total_loaded}")
-
-          # 가상의 서비스 연결
-          services = {
-              "PostgreSQL (RDB)": ServiceLoader("SQL-DB"),
-              "MongoDB (NoSQL)": ServiceLoader("Doc-DB"),
-              "Kafka (Stream)": ServiceLoader("Msg-Queue"),
-              "S3 DataLake": ServiceLoader("Obj-Storage")
-          }
-
-          # --- DATA GENERATOR (메모리 절약을 위한 스트리밍) ---
-          def generate_infinite_stream():
-              """끝없이 계산 데이터를 생성하여 yield하는 제너레이터"""
-              counter = 0
-              while counter < TOTAL_COUNT:
-                  counter += 1
-                  
-                  # 1. 고비용 수학 연산 (CPU 부하 생성)
-                  val_a = random.uniform(1, 1000)
-                  val_b = random.uniform(1, 1000)
-                  
-                  # 복잡한 계산: 로그, 삼각함수, 제곱근 혼합
-                  complex_result = math.sqrt(val_a) * math.sin(val_b) + math.log(val_a + 1)
-                  
-                  # 2. 데이터 레코드 생성
-                  record = {
-                      "id": str(uuid.uuid4()),
-                      "shard": SHARD_ID,
-                      "timestamp": time.time(),
-                      "inputs": {"a": val_a, "b": val_b},
-                      "calc_result": complex_result,
-                      "metadata": {
-                          "type": "scientific",
-                          "precision": "high",
-                          "tags": ["simulation", "mass-data"]
-                      }
-                  }
-                  yield record
-
-          # --- MAIN PIPELINE ---
-          start_time = time.time()
-          batch_buffer = []
-          processed_count = 0
-
-          # 스트림에서 데이터를 하나씩 꺼내서 배치 처리
-          for data_row in generate_infinite_stream():
-              batch_buffer.append(data_row)
-
-              # 배치가 꽉 차면 적재(Flush) 실행
-              if len(batch_buffer) >= BATCH_SIZE:
-                  for svc_name, loader in services.items():
-                      loader.load_batch(batch_buffer)
-                  
-                  processed_count += len(batch_buffer)
-                  batch_buffer = [] # 버퍼 비우기
-                  
-                  # 진행률 표시 (Progress Bar 효과)
-                  if processed_count % 10000 == 0:
-                      elapsed = time.time() - start_time
-                      speed = processed_count / elapsed
-                      print(f"🚀 [Shard {SHARD_ID}] Progress: {processed_count}/{TOTAL_COUNT} ({speed:.2f} rows/sec)")
-
-          # 남은 데이터 처리
-          if batch_buffer:
-              for svc_name, loader in services.items():
-                  loader.load_batch(batch_buffer)
-              processed_count += len(batch_buffer)
-
-          # --- FINAL SUMMARY ---
-          end_time = time.time()
-          duration = end_time - start_time
+          # --- 설정 ---
+          ROW_COUNT = int(os.environ.get('ROW_COUNT', 50000))
+          OUTPUT_DIR = os.environ.get('OUTPUT_DIR', 'output_data')
+          CSV_PATH = os.path.join(OUTPUT_DIR, os.environ.get('CSV_FILE', 'data.csv'))
+          HTML_PATH = os.path.join(OUTPUT_DIR, os.environ.get('HTML_FILE', 'index.html'))
           
-          print("\n" + "="*50)
-          print(f"✅ FINAL REPORT (Shard {SHARD_ID})")
-          print("="*50)
-          print(f"⏱  Duration      : {duration:.2f} seconds")
-          print(f"📊 Total Rows    : {processed_count}")
-          print(f"⚡ Throughput    : {processed_count / duration:.2f} rows/sec")
-          print("-" * 30)
-          print("💾 [Storage Report]")
-          for svc_name, loader in services.items():
-              print(f"   -> {svc_name.ljust(20)} : {loader.total_loaded} records stored.")
-          print("="*50)
+          print(f"[*] Starting Generation: {ROW_COUNT} rows")
+
+          # --- 1. 데이터 생성 (Data Generation) ---
+          data_rows = []
+          start_time = datetime.now()
           
+          categories = ['Scientific', 'Financial', 'Crypto', 'Physics']
+          status_types = ['Success', 'Success', 'Success', 'Warning', 'Fail'] # 확률 조정
+
+          # CSV 헤더 작성
+          with open(CSV_PATH, 'w', newline='', encoding='utf-8') as f:
+              writer = csv.writer(f)
+              writer.writerow(['Timestamp', 'Category', 'Input_A', 'Input_B', 'Result', 'Latency_ms', 'Status'])
+
+              # 대량 데이터 생성 루프
+              for i in range(ROW_COUNT):
+                  # 가짜 시간 흐름 (최근 24시간)
+                  ts = start_time - timedelta(seconds=random.randint(0, 86400))
+                  category = random.choice(categories)
+                  val_a = round(random.uniform(1, 100), 2)
+                  val_b = round(random.uniform(1, 100), 2)
+                  
+                  # 계산 로직 시뮬레이션
+                  if category == 'Scientific':
+                      res = math.sin(val_a) * val_b
+                  elif category == 'Financial':
+                      res = val_a * val_b * 1.1 # 이자율
+                  else:
+                      res = (val_a + val_b) / 2
+                  
+                  latency = random.randint(5, 500) # 처리 속도
+                  if latency > 400: status = 'Fail'
+                  elif latency > 200: status = 'Warning'
+                  else: status = 'Success'
+
+                  row = [ts.strftime("%Y-%m-%d %H:%M:%S"), category, val_a, val_b, round(res, 4), latency, status]
+                  
+                  # CSV에 바로 쓰기 (메모리 절약)
+                  writer.writerow(row)
+                  
+                  # 대시보드용 데이터는 메모리에 일부 보관
+                  data_rows.append({
+                      'ts': ts, 
+                      'cat': category, 
+                      'lat': latency, 
+                      'stat': status
+                  })
+
+          print(f"[+] CSV File Generated: {CSV_PATH}")
+
+          # --- 2. 대시보드용 데이터 가공 (Aggregation & Sampling) ---
+          # 브라우저 성능을 위해 차트용 데이터는 샘플링하거나 집계해야 함
+          
+          # A) 카테고리별 카운트 (Pie Chart)
+          cat_counts = {c: 0 for c in categories}
+          for r in data_rows:
+              cat_counts[r['cat']] += 1
+          
+          # B) 상태별 카운트 (Doughnut Chart)
+          stat_counts = {'Success': 0, 'Warning': 0, 'Fail': 0}
+          for r in data_rows:
+              stat_counts[r['stat']] += 1
+
+          # C) 시계열 지연시간 (Line Chart) - 데이터가 너무 많으므로 1/100 샘플링
+          sorted_rows = sorted(data_rows, key=lambda x: x['ts'])
+          sample_rate = max(1, len(sorted_rows) // 200) # 점 200개 정도로 제한
+          timeline_labels = [r['ts'].strftime("%H:%M") for r in sorted_rows[::sample_rate]]
+          timeline_data = [r['lat'] for r in sorted_rows[::sample_rate]]
+
+          # --- 3. HTML 대시보드 생성 (Template Injection) ---
+          html_content = f"""
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Calculation Analytics Dashboard</title>
+              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+              <style>
+                  body {{ background-color: #f8f9fa; padding: 20px; }}
+                  .card {{ margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+                  .header {{ margin-bottom: 30px; text-align: center; }}
+                  .download-btn {{ text-align: right; margin-bottom: 20px; }}
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="header">
+                      <h1>🧮 Calculation Data Dashboard</h1>
+                      <p class="text-muted">Generated by GitHub Actions | Total Rows: {ROW_COUNT}</p>
+                      <p>Report Date: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
+                  </div>
+
+                  <div class="download-btn">
+                      <a href="{os.environ.get('CSV_FILE', 'data.csv')}" class="btn btn-primary">📥 Download Raw CSV Data</a>
+                  </div>
+
+                  <div class="row">
+                      <div class="col-md-4">
+                          <div class="card text-center text-success p-3">
+                              <h3>{stat_counts['Success']}</h3>
+                              <span>Successful Calcs</span>
+                          </div>
+                      </div>
+                      <div class="col-md-4">
+                          <div class="card text-center text-warning p-3">
+                              <h3>{stat_counts['Warning']}</h3>
+                              <span>Slow Warning</span>
+                          </div>
+                      </div>
+                      <div class="col-md-4">
+                          <div class="card text-center text-danger p-3">
+                              <h3>{stat_counts['Fail']}</h3>
+                              <span>Failed/Timeout</span>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div class="row">
+                      <div class="col-md-6">
+                          <div class="card p-3">
+                              <h5>📊 Calculation Distribution (Category)</h5>
+                              <canvas id="categoryChart"></canvas>
+                          </div>
+                      </div>
+                      <div class="col-md-6">
+                          <div class="card p-3">
+                              <h5>🚦 System Status Ratio</h5>
+                              <canvas id="statusChart"></canvas>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div class="row">
+                      <div class="col-12">
+                          <div class="card p-3">
+                              <h5>📈 Latency Trend (Sampled)</h5>
+                              <canvas id="lineChart"></canvas>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <script>
+                  // 1. Category Chart
+                  new Chart(document.getElementById('categoryChart'), {{
+                      type: 'bar',
+                      data: {{
+                          labels: {json.dumps(list(cat_counts.keys()))},
+                          datasets: [{{
+                              label: 'Count',
+                              data: {json.dumps(list(cat_counts.values()))},
+                              backgroundColor: ['#36a2eb', '#ff6384', '#4bc0c0', '#ff9f40']
+                          }}]
+                      }}
+                  }});
+
+                  // 2. Status Chart
+                  new Chart(document.getElementById('statusChart'), {{
+                      type: 'doughnut',
+                      data: {{
+                          labels: {json.dumps(list(stat_counts.keys()))},
+                          datasets: [{{
+                              data: {json.dumps(list(stat_counts.values()))},
+                              backgroundColor: ['#4caf50', '#ffc107', '#f44336']
+                          }}]
+                      }}
+                  }});
+
+                  // 3. Line Chart (Latency)
+                  new Chart(document.getElementById('lineChart'), {{
+                      type: 'line',
+                      data: {{
+                          labels: {json.dumps(timeline_labels)},
+                          datasets: [{{
+                              label: 'Latency (ms)',
+                              data: {json.dumps(timeline_data)},
+                              borderColor: '#6610f2',
+                              tension: 0.1,
+                              fill: false
+                          }}]
+                      }},
+                      options: {{
+                          responsive: true,
+                          interaction: {{ mode: 'index', intersect: false }}
+                      }}
+                  }});
+              </script>
+          </body>
+          </html>
+          """
+
+          with open(HTML_PATH, 'w', encoding='utf-8') as f:
+              f.write(html_content)
+          
+          print(f"[+] Dashboard Generated: {HTML_PATH}")
           EOF
 
-      # 2) 결과 확인 (간단한 로그)
-      - name: 📝 Verification
-        run: |
-          echo "Process Completed for Shard ${{ matrix.shard_id }}"
+      # 3) 결과물 업로드 (HTML + CSV)
+      - name: 📤 Upload Dashboard & Data
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculation-dashboard-report
+          path: ${{ env.OUTPUT_DIR }}
