@@ -1,68 +1,82 @@
 version: 2
 updates:
-  # -------------------------------------------------------
-  # 1. Java (Maven) 설정
-  # -------------------------------------------------------
+  # ======================================================
+  # [Group 1] Java & Maven 서비스 (API, Batch, Admin)
+  # ======================================================
+  
+  # 1. 메인 API 서버 (api-server 폴더)
   - package-ecosystem: "maven"
-    directory: "/" # pom.xml이 있는 경로 (루트인 경우)
+    directory: "/api-server"
     schedule:
-      interval: "daily" # 중요 프로젝트는 매일 확인
-    # [그룹화 기능] Spring 등 관련 라이브러리 업데이트를 PR 하나로 묶음
-    groups:
+      interval: "daily"
+    groups: # 스프링 부트 관련 패키지는 1개의 PR로 묶음
       spring-boot:
         patterns:
           - "org.springframework*"
           - "io.micrometer*"
-      jackson:
-        patterns:
-          - "com.fasterxml.jackson*"
     open-pull-requests-limit: 10
 
-  # -------------------------------------------------------
-  # 2. Python (Pip) 설정
-  # -------------------------------------------------------
-  - package-ecosystem: "pip"
-    directory: "/" # requirements.txt 또는 pyproject.toml 위치
+  # 2. 어드민 웹 (admin-web 폴더)
+  - package-ecosystem: "maven"
+    directory: "/admin-web"
     schedule:
       interval: "weekly"
     groups:
-      # 자주 업데이트되는 데이터 분석/AI 라이브러리 묶기 예시
-      data-science:
+      spring-dependencies:
         patterns:
-          - "numpy"
-          - "pandas"
-          - "scipy"
-    open-pull-requests-limit: 10
+          - "org.springframework*"
+    open-pull-requests-limit: 5
 
-  # -------------------------------------------------------
-  # 3. Docker 설정 (Dockerfile)
-  # -------------------------------------------------------
-  - package-ecosystem: "docker"
-    directory: "/" # Dockerfile이 있는 위치
+  # 3. 배치 작업 (batch 폴더)
+  - package-ecosystem: "maven"
+    directory: "/batch"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
 
-  # -------------------------------------------------------
-  # 4. (옵션) GitHub Actions 워크플로우 파일 자체 업데이트
-  # -------------------------------------------------------
+  # ======================================================
+  # [Group 2] Python 서비스 (AI, Data)
+  # ======================================================
+
+  # 4. 데이터 프로세서 (data-processor 폴더)
+  - package-ecosystem: "pip"
+    directory: "/data-processor"
+    schedule:
+      interval: "weekly"
+    groups:
+      data-science: # numpy, pandas 등 데이터 관련 패키지 그룹화
+        patterns:
+          - "numpy"
+          - "pandas"
+    open-pull-requests-limit: 5
+
+  # 5. AI 모델 서빙 (ai-model 폴더)
+  - package-ecosystem: "pip"
+    directory: "/ai-model"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # ======================================================
+  # [Group 3] Docker 인프라 및 컨테이너
+  # ======================================================
+
+  # 6. 인프라 공통 도커파일 (infra 폴더)
+  - package-ecosystem: "docker"
+    directory: "/infra"
+    schedule:
+      interval: "weekly"
+  
+  # 7. API 서버 내의 도커파일 (api-server 폴더 내)
+  - package-ecosystem: "docker"
+    directory: "/api-server"
+    schedule:
+      interval: "weekly"
+
+  # ======================================================
+  # [Group 4] CI/CD 워크플로우 (GitHub Actions)
+  # ======================================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-
-  # =======================================================
-  # [대량 생성 예시] 만약 서브 모듈(폴더)이 여러 개라면 아래처럼 추가
-  # =======================================================
-  
-  # 예: backend-service 폴더의 Java 프로젝트
-  # - package-ecosystem: "maven"
-  #   directory: "/backend-service"
-  #   schedule:
-  #     interval: "weekly"
-
-  # 예: ai-service 폴더의 Python 프로젝트
-  # - package-ecosystem: "pip"
-  #   directory: "/ai-service"
-  #   schedule:
-  #     interval: "weekly"
