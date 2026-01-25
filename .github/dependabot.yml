@@ -1,0 +1,22 @@
+# .github/dependabot.yml
+
+version: 2
+updates:
+  # 1. NPM (Node.js) 설정 예시
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # 2. Pip (Python) 설정 예시 (필요 없다면 지우세요)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # 3. Docker 설정 예시 (필요 없다면 지우세요)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
