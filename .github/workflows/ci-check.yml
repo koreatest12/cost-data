@@ -1,0 +1,44 @@
+name: CI & Dependabot Check
+
+# 1. Dependabot이 PR을 올리거나, 코드가 푸시될 때 실행
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 소스 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Python 설정 (3.9 버전 예시)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      # 3. Java 설정 (JDK 17 버전 예시)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # 4. 모델 정의 파일(models.json)이 없으면 더미 파일 생성 (에러 방지용)
+      - name: Create dummy models.json if missing
+        run: |
+          if [ ! -f models.json ]; then
+            echo '{}' > models.json
+          fi
+
+      # 5. 작성해주신 관리 스크립트 실행 (핵심!)
+      #    -> 이 단계에서 Dependabot이 수정한 버전을 실제로 설치해봅니다.
+      - name: Run Management Setup Script
+        run: |
+          python manage_setup.py
