@@ -1,0 +1,194 @@
+name: 🧮 Calculation — ALL-IN-ONE Verification Workflow
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TZ: Asia/Seoul
+  LOG_DIR: calc_logs
+  REPORT: calculation_report.txt
+
+jobs:
+  calculation:
+    runs-on: ubuntu-latest
+
+    steps:
+      ###########################################################################
+      # 0) INIT
+      ###########################################################################
+      - name: 🔧 Initialize Environment
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "${LOG_DIR}"
+          echo "Calculation Verification Started at $(date)" > "${REPORT}"
+
+      ###########################################################################
+      # 1) BASIC ARITHMETIC CALCULATION
+      ###########################################################################
+      - name: ➕➖✖➗ Arithmetic Calculation
+        run: |
+          echo "== Arithmetic Calculation ==" >> "${REPORT}"
+          echo "3 + 5 = $((3 + 5))" >> "${REPORT}"
+          echo "10 - 7 = $((10 - 7))" >> "${REPORT}"
+          echo "6 * 7 = $((6 * 7))" >> "${REPORT}"
+          echo "20 / 4 = $((20 / 4))" >> "${REPORT}"
+
+      ###########################################################################
+      # 2) BINARY & HEX CONVERSION
+      ###########################################################################
+      - name: 🔢 Binary & Hexadecimal Conversion
+        run: |
+          echo "== Binary & Hex ==" >> "${REPORT}"
+          printf "10 (dec) = %s (bin)\n" "$(echo "obase=2;10" | bc)" >> "${REPORT}"
+          printf "255 (dec) = 0x%X (hex)\n" 255 >> "${REPORT}"
+
+      ###########################################################################
+      # 3) INTEGER vs FLOATING POINT
+      ###########################################################################
+      - name: ⚠️ Integer vs Floating Point
+        run: |
+          echo "== Integer vs Floating Point ==" >> "${REPORT}"
+          echo "Integer: 1 / 10 = $((1 / 10))" >> "${REPORT}"
+          python3 - <<'EOF' >> "${REPORT}"
+          print("Floating: 0.1 + 0.2 =", 0.1 + 0.2)
+          EOF
+
+      ###########################################################################
+      # 4) IEEE 754 FLOAT INSPECTION
+      ###########################################################################
+      - name: 🔬 IEEE 754 Representation
+        run: |
+          echo "== IEEE 754 ==" >> "${REPORT}"
+          python3 - <<'EOF' >> "${REPORT}"
+          import struct
+          v = 0.1
+          bits = ''.join(f'{b:08b}' for b in struct.pack('!d', v))
+          print("0.1 IEEE754 =", bits)
+          EOF
+
+      ###########################################################################
+      # 5) OVERFLOW SIMULATION (8-bit)
+      ###########################################################################
+      - name: 🚨 Overflow Simulation
+        run: |
+          echo "== Overflow ==" >> "${REPORT}"
+          python3 - <<'EOF' >> "${REPORT}"
+          value = (127 + 1) & 0xff
+          if value > 127:
+              value -= 256
+          print("8-bit signed overflow: 127 + 1 =", value)
+          EOF
+
+      ###########################################################################
+      # 6) BITWISE OPERATIONS
+      ###########################################################################
+      - name: 🧠 Bitwise Operations
+        run: |
+          echo "== Bitwise Operations ==" >> "${REPORT}"
+          echo "5 & 3 = $((5 & 3))" >> "${REPORT}"
+          echo "5 | 3 = $((5 | 3))" >> "${REPORT}"
+          echo "5 ^ 3 = $((5 ^ 3))" >> "${REPORT}"
+          echo "5 << 1 = $((5 << 1))" >> "${REPORT}"
+
+      ###########################################################################
+      # 7) CRYPTOGRAPHIC CALCULATION
+      ###########################################################################
+      - name: 🔐 Cryptographic Calculation
+        run: |
+          echo "== Cryptographic Calculation ==" >> "${REPORT}"
+          echo -n "hello" | sha256sum >> "${REPORT}"
+          python3 - <<'EOF' >> "${REPORT}"
+          print("Modular Calc: 7^5 mod 13 =", pow(7,5,13))
+          EOF
+
+      ###########################################################################
+      # 8) SECURE RANDOM NUMBER
+      ###########################################################################
+      - name: 🎲 Secure Random (CSPRNG)
+        run: |
+          echo "== Secure Random ==" >> "${REPORT}"
+          python3 - <<'EOF' >> "${REPORT}"
+          import secrets
+          print("Secure Random (128-bit):", secrets.token_hex(16))
+          EOF
+
+      ###########################################################################
+      # 10) 🔥 MASS DATA GENERATION (NEW)
+      ###########################################################################
+      - name: 🔥 Generate Mass Dataset (1000+ Items)
+        run: |
+          echo "==========================================" >> "${REPORT}"
+          echo "🚀 MASS DATA GENERATION STARTED" >> "${REPORT}"
+          echo "==========================================" >> "${REPORT}"
+          
+          python3 - <<'EOF' >> "${REPORT}"
+          import random
+          import secrets
+          import hashlib
+          import time
+
+          COUNT = 200 # 각 항목당 생성할 데이터 수
+
+          # 1. Mass Arithmetic
+          print(f"\n[Mass Arithmetic: {COUNT} items]")
+          for _ in range(COUNT):
+              a = random.randint(1, 10000)
+              b = random.randint(1, 10000)
+              op = random.choice(['+', '-', '*', '/'])
+              if op == '+': res = a + b
+              elif op == '-': res = a - b
+              elif op == '*': res = a * b
+              else: res = a / b
+              print(f"{a} {op} {b} = {res:.4f}")
+
+          # 2. Mass Bitwise
+          print(f"\n[Mass Bitwise Logic: {COUNT} items]")
+          for _ in range(COUNT):
+              a = random.randint(0, 65535)
+              b = random.randint(0, 65535)
+              print(f"HEX: {hex(a)} & {hex(b)} = {hex(a&b)} | XOR: {a}^{b}={a^b}")
+
+          # 3. Mass Crypto Hashes
+          print(f"\n[Mass SHA-256 Hashes: {COUNT} items]")
+          for _ in range(COUNT):
+              raw = secrets.token_hex(8)
+              hashed = hashlib.sha256(raw.encode()).hexdigest()
+              print(f"Input: {raw} -> Hash: {hashed}")
+
+          # 4. Mass IEEE 754 Check
+          print(f"\n[Mass IEEE 754 Floats: {COUNT} items]")
+          import struct
+          for _ in range(COUNT):
+              val = random.uniform(-1000.0, 1000.0)
+              bits = ''.join(f'{b:08b}' for b in struct.pack('!d', val))
+              print(f"Val: {val:10.4f} -> Bits: {bits}")
+
+          EOF
+          
+          echo "Mass Generation Completed." >> "${REPORT}"
+
+      ###########################################################################
+      # 11) FINAL REPORT
+      ###########################################################################
+      - name: 📄 Show Final Report
+        run: |
+          echo "========== FINAL REPORT =========="
+          # 보고서가 너무 길 경우를 대비해 앞부분과 뒷부분만 요약 출력 (전체는 아티팩트로 저장 추천)
+          head -n 50 "${REPORT}"
+          echo "..."
+          echo "..."
+          echo "(... Middle content omitted for brevity ...)"
+          echo "..."
+          echo "..."
+          tail -n 50 "${REPORT}"
+
+      # (선택 사항) 생성된 전체 대용량 보고서를 아티팩트로 업로드
+      - name: 📤 Upload Calculation Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculation-full-report
+          path: ${{ env.REPORT }}
