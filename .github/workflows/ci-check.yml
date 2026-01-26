@@ -126,14 +126,14 @@ jobs:
 
       # 7. [파일 제공] 홈페이지 및 빌드 결과물 업로드 (화면에서 다운로드 가능)
       - name: 📤 Upload Dashboard Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pokemon-dashboard-html
           path: services/omni-pokemon-web/src/main/resources/static/index.html
           retention-days: 5
 
       - name: 📤 Upload All JARs (Optional)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: microservices-jars
           path: services/**/*.jar

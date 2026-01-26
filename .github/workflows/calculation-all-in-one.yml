@@ -167,7 +167,7 @@ jobs:
           EOF
 
       - name: 📤 Upload RNG Data
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: grand-rng-data-shard-${{ matrix.shard_id }}
           path: ${{ env.OUTPUT_DIR }}

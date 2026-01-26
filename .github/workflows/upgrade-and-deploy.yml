@@ -301,7 +301,7 @@ jobs:
           docker save -o tax-master-system.tar tax-master-system:latest
 
       - name: 📦 실행 파일 및 생성기 저장
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: 세금 마스터 시스템 앱
           path: |

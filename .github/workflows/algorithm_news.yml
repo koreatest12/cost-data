@@ -45,11 +45,11 @@ jobs:
           echo "✅ 3-Way Replication Complete."
 
       - name: 📤 Upload Primary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with: { name: pkg-sec-primary, path: DB_SEC/primary }
       
       - name: 📤 Upload Replica
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with: { name: pkg-sec-replica, path: DB_SEC/replica }
 
   # ==============================================================================
@@ -84,11 +84,11 @@ jobs:
           cp DB_JOB/primary/job_data.json DB_JOB/archive/job_data_arc.json
 
       - name: 📤 Upload Primary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with: { name: pkg-job-primary, path: DB_JOB/primary }
 
       - name: 📤 Upload Replica
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with: { name: pkg-job-replica, path: DB_JOB/replica }
 
   # ==============================================================================
@@ -116,11 +116,11 @@ jobs:
         run: cp DB_ALGO/primary/algo_data.json DB_ALGO/replica/algo_data_rep.json
 
       - name: 📤 Upload Primary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with: { name: pkg-algo-primary, path: DB_ALGO/primary }
 
       - name: 📤 Upload Replica
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with: { name: pkg-algo-replica, path: DB_ALGO/replica }
 
   # ==============================================================================
@@ -148,11 +148,11 @@ jobs:
         run: cp DB_COST/primary/cost_data.json DB_COST/replica/cost_data_rep.json
 
       - name: 📤 Upload Primary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with: { name: pkg-cost-primary, path: DB_COST/primary }
 
       - name: 📤 Upload Replica
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with: { name: pkg-cost-replica, path: DB_COST/replica }
 
   # ==============================================================================
@@ -277,7 +277,7 @@ jobs:
           done
 
       - name: 📤 Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-artifacts
           path: services/

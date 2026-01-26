@@ -80,7 +80,7 @@ jobs:
           print(f"✅ Security News Generated: {len(data)}")
           EOF
           python sec_core.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with: { name: db-sec, path: DB_SEC/ }
 
   # ==============================================================================
@@ -150,7 +150,7 @@ jobs:
               print(f"  - {loc}: {len(jobs)} jobs created.")
           EOF
           python job_core.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with: { name: db-job, path: DB/ }
 
   # ==============================================================================
@@ -213,7 +213,7 @@ jobs:
           print("✅ Algo Articles Saved")
           EOF
           python algo_core.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with: { name: db-algo, path: DB_ALGO/ }
 
   # ==============================================================================
@@ -255,7 +255,7 @@ jobs:
           print("✅ Cost Reports Saved")
           EOF
           python misc_core.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with: { name: db-misc, path: DB_COST/ }
 
   # ==============================================================================
