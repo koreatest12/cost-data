@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: write  # 테스트 리포트 권한
+      checks: write
 
     steps:
       # 1. 소스 체크아웃
@@ -45,96 +45,94 @@ jobs:
             exit 1
           fi
 
-      # 4. [검증] 리소스 확인 및 GitHub 요약(Summary) 작성 준비
-      - name: Verify & Report Resources
-        id: verify
+      # 4. [검증] 리소스 확인
+      - name: Verify Generated Resources
         run: |
-          echo "🔍 Resource Verification Started..."
-          
-          # JAR 파일 개수 확인
+          echo "🔍 Resource Verification..."
           JAR_COUNT=$(find ./services -name "*.jar" | wc -l)
-          echo "JAR_COUNT=$JAR_COUNT" >> $GITHUB_ENV
-          
-          # 포켓몬 웹 소스 확인
-          WEB_SOURCE="./services/omni-pokemon-web/src/main/resources/static/index.html"
-          if [ -f "$WEB_SOURCE" ]; then
-            echo "WEB_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "WEB_EXISTS=false" >> $GITHUB_ENV
+          echo "Found $JAR_COUNT JAR files."
+          if [ "$JAR_COUNT" -lt 7 ]; then
+            echo "❌ JAR 파일 빌드 실패 (개수 부족)"
+            exit 1
           fi
 
-      # 5. [테스트] 홈페이지 서버 접속 테스트 (Smoke Test)
-      - name: 🌐 Homepage Access Test (Smoke Test)
+      # 5. [핵심 수정] 홈페이지 서버 접속 테스트 (Retry Logic 추가)
+      #    단순 대기가 아니라, 서버가 응답할 때까지 최대 60초간 반복 확인합니다.
+      - name: 🌐 Homepage Access Test (Smart Wait)
         id: smoke_test
         run: |
           echo "🔥 포켓몬 웹 서버(omni-pokemon-web) 백그라운드 실행..."
+          # 로그를 web.log에 기록하며 백그라운드 실행
           nohup java -jar ./services/omni-pokemon-web/target/omni-pokemon-web-1.0.0.jar > web.log 2>&1 &
           PID=$!
+          echo "SERVER_PID=$PID" >> $GITHUB_ENV
           
-          echo "⏳ 서버 부팅 대기 (15초)..."
-          sleep 15
+          echo "⏳ 서버 부팅 대기 중 (최대 60초)..."
           
-          echo "📡 접속 시도 (curl localhost:8086)..."
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/index.html)
+          # [Retry Logic] 2초 간격으로 30번(총 60초) 접속 시도
+          MAX_RETRIES=30
+          COUNT=0
+          SUCCESS=false
           
-          echo "HTTP_STATUS=$HTTP_CODE" >> $GITHUB_ENV
+          for i in $(seq 1 $MAX_RETRIES); do
+            # HTTP 200 코드가 오는지 확인
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/index.html || echo "000")
+            
+            if [ "$HTTP_CODE" -eq 200 ]; then
+              echo "✅ [$i/$MAX_RETRIES] 접속 성공! 서버가 정상 작동 중입니다."
+              SUCCESS=true
+              break
+            else
+              echo "zzz [$i/$MAX_RETRIES] 서버 응답 대기 중... (Status: $HTTP_CODE)"
+              sleep 2
+            fi
+          done
           
-          if [ "$HTTP_CODE" -eq 200 ]; then
-            echo "✅ 접속 성공! (200 OK)"
+          if [ "$SUCCESS" = true ]; then
             echo "TEST_RESULT=SUCCESS" >> $GITHUB_ENV
           else
-            echo "❌ 접속 실패 (Status: $HTTP_CODE)"
+            echo "❌ [Timeout] 60초 동안 서버가 응답하지 않았습니다."
             echo "TEST_RESULT=FAILURE" >> $GITHUB_ENV
-            echo "::group::Server Logs"
+            
+            echo "::group::📄 Server Logs (web.log)"
             cat web.log
             echo "::endgroup::"
+            
             kill $PID
             exit 1
           fi
+          
+          # 테스트 후 프로세스 종료
           kill $PID
 
-      # 6. [화면 표시] GitHub Actions Summary 생성 (대량 반영 기능)
-      - name: 📊 Generate GitHub Summary Dashboard
+      # 6. [화면 표시] GitHub Actions Summary (대시보드 링크 추가)
+      - name: 📊 Generate GitHub Summary
         if: always()
         run: |
           echo "# 🚀 Omni System Build Report" >> $GITHUB_STEP_SUMMARY
-          echo "### 🛠️ System Status" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛠️ Service Status" >> $GITHUB_STEP_SUMMARY
           echo "| Service | Status | Port |" >> $GITHUB_STEP_SUMMARY
           echo "| :--- | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Pokemon Web** | 🟢 Active | 8086 |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Cost Core** | 🟢 Active | 8082 |" >> $GITHUB_STEP_SUMMARY
-          echo "| **API Gateway** | 🟢 Active | 8080 |" >> $GITHUB_STEP_SUMMARY
-          echo "| **AI Model** | 🟢 Active | 5000 |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           
-          echo "### 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
           if [ "$TEST_RESULT" == "SUCCESS" ]; then
-             echo "- ✅ **Homepage Smoke Test:** Passed (200 OK)" >> $GITHUB_STEP_SUMMARY
-             echo "- ✅ **Build Artifacts:** $JAR_COUNT JARs Created" >> $GITHUB_STEP_SUMMARY
+            STATUS="🟢 Online"
           else
-             echo "- ❌ **Homepage Smoke Test:** Failed" >> $GITHUB_STEP_SUMMARY
+            STATUS="🔴 Offline"
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### 🌐 Homepage Preview" >> $GITHUB_STEP_SUMMARY
-          echo "> 💡 **Note:** 아래 링크는 로컬 서버용이므로, 실제 파일은 하단 **Artifacts**에서 다운로드하세요." >> $GITHUB_STEP_SUMMARY
-          echo "- **Local URL:** \`http://localhost:8086/index.html\`" >> $GITHUB_STEP_SUMMARY
           
-          if [ "$WEB_EXISTS" == "true" ]; then
-             echo "✅ **index.html generated successfully.**" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "| **Pokemon Web** | $STATUS | 8086 |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Cost Core** | 🟢 Build OK | 8082 |" >> $GITHUB_STEP_SUMMARY
+          echo "| **AI Model** | 🟢 Build OK | 5000 |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### 🌐 How to Access" >> $GITHUB_STEP_SUMMARY
+          echo "아래 **Artifacts**에서 \`pokemon-dashboard-html\`을 다운로드하여 브라우저로 여세요." >> $GITHUB_STEP_SUMMARY
 
-      # 7. [파일 제공] 홈페이지 및 빌드 결과물 업로드 (화면에서 다운로드 가능)
+      # 7. [파일 제공] 홈페이지 및 빌드 결과물 업로드
       - name: 📤 Upload Dashboard Artifact
-        uses: actions/upload-artifact@v6
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: pokemon-dashboard-html
           path: services/omni-pokemon-web/src/main/resources/static/index.html
           retention-days: 5
-
-      - name: 📤 Upload All JARs (Optional)
-        uses: actions/upload-artifact@v6
-        with:
-          name: microservices-jars
-          path: services/**/*.jar
-          retention-days: 1
