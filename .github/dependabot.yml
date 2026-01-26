@@ -1,79 +1,116 @@
 version: 2
 updates:
   # =================================================================
-  # [JAVA / MAVEN] API, Batch, Common Modules
-  # =================================================================
-  
-  # 1. 루트 프로젝트 (Parent POM이 있는 경우)
-  - package-ecosystem: "maven"
-    directory: "/" 
-    schedule:
-      interval: "weekly"
-    groups:
-      spring-boot:
-        patterns: ["org.springframework*", "io.micrometer*"]
-    open-pull-requests-limit: 10
-
-  # 2. 비용 데이터 API 서버
-  - package-ecosystem: "maven"
-    directory: "/api-server"  # <-- 실제 폴더명으로 수정
-    schedule:
-      interval: "daily"       # 중요도가 높으므로 매일 체크
-    groups:
-      spring-boot:
-        patterns: ["org.springframework*", "io.micrometer*"]
-  
-  # 3. 비용 정산 배치(Batch) 모듈
-  - package-ecosystem: "maven"
-    directory: "/batch-processor" # <-- 실제 폴더명으로 수정
-    schedule:
-      interval: "weekly"
-
-  # 4. 공통 라이브러리 (Common/Core)
-  - package-ecosystem: "maven"
-    directory: "/core-module" # <-- 실제 폴더명으로 수정
-    schedule:
-      interval: "weekly"
-
-  # =================================================================
-  # [PYTHON] Data Analysis & AI
-  # =================================================================
-
-  # 5. 비용 분석/통계 모듈
-  - package-ecosystem: "pip"
-    directory: "/data-analysis" # <-- 실제 폴더명으로 수정 (requirements.txt 위치)
-    schedule:
-      interval: "weekly"
-    groups:
-      data-science:
-        patterns: ["pandas", "numpy", "scikit-learn"]
-
-  # 6. AWS/Azure 클라우드 연동 스크립트
-  - package-ecosystem: "pip"
-    directory: "/cloud-scripts" # <-- 실제 폴더명으로 수정
-    schedule:
-      interval: "weekly"
-
-  # =================================================================
-  # [DOCKER] Infrastructure & Deployment
-  # =================================================================
-
-  # 7. 루트 레벨 Dockerfile
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-
-  # 8. 인프라 배포 설정 (Docker Compose 등)
-  - package-ecosystem: "docker"
-    directory: "/infra"       # <-- 실제 폴더명으로 수정
-    schedule:
-      interval: "weekly"
-
-  # =================================================================
-  # [GITHUB ACTIONS] CI/CD Workflows
+  # [GLOBAL] GitHub Actions (CI/CD)
   # =================================================================
   - package-ecosystem: "github-actions"
     directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # =================================================================
+  # [JAVA / MAVEN] MSA Microservices (총 7개 서비스)
+  # setup_system_final.py에 정의된 서비스 목록을 모두 포함
+  # =================================================================
+  
+  # 1. API Gateway
+  - package-ecosystem: "maven"
+    directory: "/services/omni-gateway"
+    schedule:
+      interval: "weekly"
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*", "io.micrometer*"]
+
+  # 2. 인증 서비스 (Auth)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-auth-service"
+    schedule:
+      interval: "weekly"
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*", "io.micrometer*"]
+
+  # 3. 비용 핵심 서비스 (Cost Core)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-cost-service"
+    schedule:
+      interval: "daily" # 핵심 서비스이므로 매일 체크
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*", "io.micrometer*"]
+
+  # 4. 배치 서비스 (High Load Batch)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-batch-service"
+    schedule:
+      interval: "weekly"
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*", "io.micrometer*"]
+
+  # 5. 로그 수집 서비스 (Log Aggregator)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-log-service"
+    schedule:
+      interval: "weekly"
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*", "io.micrometer*"]
+
+  # 6. 결제 서비스 (Payment Gateway)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-payment-service"
+    schedule:
+      interval: "weekly"
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*", "io.micrometer*"]
+
+  # 7. 🌟 [NEW] 포켓몬 IV 매니저 웹 (Pokemon Web)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-pokemon-web"
+    schedule:
+      interval: "weekly"
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*", "io.micrometer*"]
+
+  # =================================================================
+  # [PYTHON / PIP] AI & Data Modules
+  # =================================================================
+
+  # 8. AI 모델 서비스 (FastAPI)
+  - package-ecosystem: "pip"
+    directory: "/ai-model"
+    schedule:
+      interval: "weekly"
+    groups:
+      ai-libs:
+        patterns: ["pandas", "numpy", "fastapi", "uvicorn"]
+
+  # =================================================================
+  # [DOCKER] Container Images (Dockerfile)
+  # 각 서비스의 Dockerfile 내 Base Image 업데이트 추적
+  # =================================================================
+  
+  # 9. 각 서비스별 Dockerfile 감시
+  - package-ecosystem: "docker"
+    directory: "/services/omni-gateway"
+    schedule:
+      interval: "weekly"
+      
+  - package-ecosystem: "docker"
+    directory: "/services/omni-cost-service"
+    schedule:
+      interval: "weekly"
+      
+  - package-ecosystem: "docker"
+    directory: "/services/omni-pokemon-web" # 포켓몬 웹 서버 이미지 관리
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/ai-model" # AI 모델 이미지 관리
     schedule:
       interval: "weekly"
