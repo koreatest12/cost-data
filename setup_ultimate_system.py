@@ -39,7 +39,7 @@ DASHBOARD_SOURCE = """<!DOCTYPE html>
         .btn-analyze:hover { background: #3a53d0; }
         .btn-bulk { background: var(--success); color: white; margin-top: 10px; }
         .btn-bulk:hover { background: #25a296; }
-        .btn-manual { background: #fff; color: var(--primary); border: 2px solid var(--primary); width: auto; padding: 8px 16px; }
+        .btn-manual { background: #fff; color: var(--primary); border: 2px solid var(--primary); width: auto; padding: 8px 16px; font-size: 0.9rem; }
         .btn-manual:hover { background: #eef2ff; }
         table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
         th { text-align: left; padding: 15px; background: #f8f9fa; color: #666; border-bottom: 2px solid #eee; position: sticky; top: 0; }
@@ -59,7 +59,7 @@ DASHBOARD_SOURCE = """<!DOCTYPE html>
             <div style="color:#666;">Database: <span style="color:var(--success); font-weight:bold;">Gen 1 ~ Gen 8 Loaded</span></div>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
-            <button class="btn-manual" onclick="location.href='manual.html'">
+            <button class="btn-manual" onclick="window.location.href='manual.html'">
                 <i class="fas fa-book-open"></i> 사용법 가이드
             </button>
             <span style="background:#eef2ff; color:var(--primary); padding:8px 16px; border-radius:30px; font-weight:bold;">
@@ -110,7 +110,8 @@ DASHBOARD_SOURCE = """<!DOCTYPE html>
 
     <script>
         let list = []; let id = 1;
-        const POKEMON_DB = ["이상해꽃", "리자몽", "거북왕", "피카츄", "망나뇽", "뮤츠", "마기라스", "루기아", "번치코", "대짱이", "가디안", "한카리아스", "루카리오", "토게키스", "샹델라", "개굴닌자", "님피아", "따라큐", "드래펄트", "자시안", "무한다이노"];
+        // [DATA] Gen 1~8 대량 데이터베이스
+        const POKEMON_DB = ["이상해꽃", "리자몽", "거북왕", "피카츄", "망나뇽", "뮤츠", "마기라스", "루기아", "번치코", "대짱이", "가디안", "게을킹", "한카리아스", "루카리오", "토게키스", "샹델라", "삼삼드래", "개굴닌자", "님피아", "따라큐", "드래펄트", "자시안", "무한다이노"];
 
         function addManual() {
             const n = document.getElementById('name').value || 'Unknown';
@@ -166,7 +167,7 @@ DASHBOARD_SOURCE = """<!DOCTYPE html>
 </body>
 </html>"""
 
-# [WEB 2] 사용법 매뉴얼 페이지 (manual.html)
+# [WEB 2] 사용법 매뉴얼 페이지 (manual.html) - 생성 보장
 MANUAL_SOURCE = """<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -311,7 +312,7 @@ updates:
 # [3] 메인 실행
 # =========================================================
 def run_setup():
-    print("🚀 [Ultimate Setup] 시스템 대량 구축 시작 (매뉴얼 포함)...")
+    print("🚀 [Ultimate Setup] 시스템 대량 구축 및 매뉴얼 파일 생성 시작...")
     
     files = {}
     docker_svcs = ""
@@ -327,8 +328,9 @@ def run_setup():
         files[f"{base}/Dockerfile"] = f"FROM openjdk:17-jdk-slim\nCOPY target/{name}-1.0.0.jar app.jar\nENTRYPOINT [\"java\",\"-jar\",\"app.jar\"]"
         files[f"{base}/src/main/resources/application.yml"] = f"server: {{port: {svc['port']}}}"
         
-        # [핵심] 포켓몬 웹 서비스에 대시보드와 매뉴얼 파일 2개 주입
+        # [핵심 수정] manual.html 명시적 생성
         if name == "omni-pokemon-web":
+            print(f"   📘 [Info] '{name}' 서비스에 매뉴얼 파일 주입 중...")
             files[f"{base}/src/main/resources/static/index.html"] = DASHBOARD_SOURCE
             files[f"{base}/src/main/resources/static/manual.html"] = MANUAL_SOURCE
 
@@ -350,6 +352,13 @@ def run_setup():
     for p, c in files.items():
         os.makedirs(os.path.dirname(os.path.abspath(p)), exist_ok=True)
         with open(p, "w", encoding="utf-8") as f: f.write(c)
+
+    # [검증] 매뉴얼 파일 생성 확인
+    manual_path = "./services/omni-pokemon-web/src/main/resources/static/manual.html"
+    if os.path.exists(manual_path):
+        print("   ✅ [검증] manual.html 파일이 정상적으로 생성되었습니다.")
+    else:
+        print("   ❌ [오류] manual.html 파일 생성 실패!")
 
     print("✅ 파일 생성 완료. Maven 빌드 시작...")
     mvn = "mvn.cmd" if os.name == 'nt' else "mvn"
