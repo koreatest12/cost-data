@@ -127,7 +127,7 @@ SERVICES = [
 ]
 
 # =========================================================
-# 1. 파일 생성 함수 (POM 수정으로 오류 방지)
+# 1. 파일 생성 함수 (Maven 경로 경고 수정)
 # =========================================================
 def create_service_files(config):
     name = config["name"]
@@ -139,7 +139,7 @@ def create_service_files(config):
     main_class_path = f"com.koreatest12.{safe_name}.App"
 
     files = {
-        # 1. POM.XML (Main Class 강제 지정)
+        # 1. POM.XML (relativePath 추가하여 상위 폴더 참조 방지)
         f"{base_dir}/pom.xml": f"""<project xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.koreatest12</groupId>
@@ -149,7 +149,7 @@ def create_service_files(config):
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.7.14</version>
-    </parent>
+        <relativePath/> </parent>
     <properties>
         <java.version>17</java.version>
         <start-class>{main_class_path}</start-class>
@@ -203,7 +203,7 @@ EXPOSE {port}""",
 # 2. 실행 로직 (청소 -> 생성 -> 빌드)
 # =========================================================
 def run():
-    print("🚀 [배포 시작] 홈페이지 설치 및 서비스 대량 추가 중...")
+    print("🚀 [배포 시작] Maven 설정 수정 및 서비스 대량 빌드...")
     
     file_map = {}
     docker_services = ""
@@ -249,7 +249,7 @@ networks:
         with open(full_path, "w", encoding="utf-8") as f:
             f.write(content)
             
-    print(f"✅ [설치 완료] {len(SERVICES)}개 서비스 파일 생성 완료.")
+    print(f"✅ [설치 완료] {len(SERVICES)}개 서비스 pom.xml 수정 완료.")
 
     # 5. 빌드 실행
     print("🔄 [빌드 시작] Maven Clean Package...")
@@ -262,6 +262,6 @@ networks:
 
 if __name__ == "__main__":
     run()
-    print("\n✨ 모든 작업 완료!")
+    print("\n✨ 빌드 및 설정 완료!")
     print("👉 실행: docker-compose up --build")
     print("👉 홈페이지 접속: http://localhost:8086/index.html")
