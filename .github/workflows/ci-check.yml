@@ -1,6 +1,5 @@
-name: CI & Dependabot Check & Mass Build
+name: Ultimate CI & Smoke Test
 
-# 1. Dependabot이 PR을 올리거나, 코드가 푸시될 때 실행
 on:
   push:
     branches: [ "main" ]
@@ -8,20 +7,19 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-verify:
+  build-verify-deploy:
     runs-on: ubuntu-latest
     steps:
-      # 1. 소스 코드 체크아웃
+      # 1. 소스 체크아웃
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Python 설정 (스크립트 실행용)
+      # 2. 환경 설정 (Python & Java)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      # 3. Java 설정 (Maven 빌드용 - JDK 17)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -29,34 +27,56 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # 4. 모델 정의 파일(models.json)이 없으면 더미 파일 생성 (에러 방지용)
-      - name: Create dummy models.json if missing
+      # 3. [구축] 시스템 자동 설치 스크립트 실행 (대량 생성 & 빌드)
+      - name: Run Ultimate Setup Script
         run: |
-          if [ ! -f models.json ]; then
-            echo '{}' > models.json
-          fi
-
-      # 5. [핵심 변경] 시스템 통합 설치 스크립트 실행 (setup_system_final.py)
-      #    이 단계에서 파일 생성, 구버전 청소, Main Class 충돌 해결, Maven 빌드가 일괄 수행됩니다.
-      - name: Run Final System Setup & Mass Build
-        run: |
-          if [ -f setup_system_final.py ]; then
-            echo "🚀 setup_system_final.py 실행 중..."
-            python setup_system_final.py
+          if [ -f setup_ultimate_system.py ]; then
+            echo "🚀 setup_ultimate_system.py 실행 중..."
+            python setup_ultimate_system.py
           else
-            echo "❌ setup_system_final.py 파일이 없습니다. 리포지토리에 파일을 커밋해주세요."
+            echo "❌ 스크립트가 없습니다. setup_ultimate_system.py를 확인하세요."
             exit 1
           fi
 
-      # 6. 결과 검증 (대량 추가된 리소스 확인)
-      #    실제로 Docker Compose 파일과 JAR 파일들이 생성되었는지 확인합니다.
+      # 4. [검증] 대량 생성된 리소스 확인
       - name: Verify Generated Resources
         run: |
-          echo "✅ Docker Compose 생성 확인:"
+          echo "✅ [Check 1] Docker Compose:"
           ls -l docker-compose.yml
           
-          echo "✅ 빌드된 JAR 파일 확인 (7개 서비스):"
-          find ./services -name "*.jar"
+          echo "✅ [Check 2] Dependabot Config:"
+          ls -l .github/dependabot.yml
           
-          echo "✅ 포켓몬 웹 소스 생성 확인:"
-          ls -l services/omni-pokemon-web/src/main/resources/static/index.html
+          echo "✅ [Check 3] Build Artifacts (JARs):"
+          count=$(find ./services -name "*.jar" | wc -l)
+          if [ "$count" -lt 7 ]; then
+            echo "❌ 빌드된 JAR 파일이 부족합니다. (Found: $count)"
+            exit 1
+          fi
+          echo "Found $count JAR files."
+
+      # 5. [테스트] 홈페이지 서버 접속 테스트 (Smoke Test)
+      #    실제 웹 서버를 백그라운드에서 실행하고 curl로 접속을 시도합니다.
+      - name: 🌐 Homepage Access Test (Smoke Test)
+        run: |
+          echo "🔥 포켓몬 웹 서버(omni-pokemon-web) 실행 중..."
+          # 백그라운드 실행 (&)
+          nohup java -jar ./services/omni-pokemon-web/target/omni-pokemon-web-1.0.0.jar > web.log 2>&1 &
+          PID=$!
+          
+          echo "⏳ 서버 부팅 대기 (15초)..."
+          sleep 15
+          
+          echo "📡 홈페이지 접속 시도 (curl localhost:8086)..."
+          # -f: 오류 시 Fail 처리, -s: silent
+          if curl -f -s http://localhost:8086/index.html > /dev/null; then
+            echo "✅ [Success] 홈페이지 접속 성공! (HTTP 200 OK)"
+          else
+            echo "❌ [Fail] 홈페이지 접속 실패. 로그 확인:"
+            cat web.log
+            kill $PID
+            exit 1
+          fi
+          
+          # 프로세스 종료
+          kill $PID
