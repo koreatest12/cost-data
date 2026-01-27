@@ -7,170 +7,274 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      time: "09:00"
+      timezone: "Asia/Seoul"
     labels:
       - "ci"
       - "actions"
     commit-message:
       prefix: "ci"
+      include: "scope"
 
   # =================================================================
-  # [JAVA / MAVEN] MSA Core Microservices (백엔드 서비스)
-  # Spring Boot 및 Cloud 의존성 그룹화 적용
+  # [JAVA / MAVEN] MSA Core Microservices
+  # 공통 적용: 그룹화 강화, 커밋 메시지 통일, PR 제한 설정
   # =================================================================
   
-  # 1. API Gateway (진입점)
+  # 1. API Gateway
   - package-ecosystem: "maven"
     directory: "/services/omni-gateway"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
     groups:
       spring-boot:
         patterns: ["org.springframework.boot*", "org.springframework.cloud*"]
+      testing:
+        patterns: ["org.junit*", "org.mockito*", "org.assertj*"]
+      utils:
+        patterns: ["org.projectlombok*", "org.slf4j*", "ch.qos.logback*"]
     labels: ["backend", "gateway"]
+    commit-message:
+      prefix: "build(deps)"
 
-  # 2. 인증 서비스 (Auth / Security)
+  # 2. 인증 서비스 (Auth)
   - package-ecosystem: "maven"
     directory: "/services/omni-auth-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
     groups:
       spring-boot:
         patterns: ["org.springframework.boot*", "io.jsonwebtoken*"]
+      testing:
+        patterns: ["org.junit*", "org.mockito*"]
     labels: ["backend", "auth"]
+    commit-message:
+      prefix: "build(deps)"
 
   # 3. 비용 핵심 서비스 (Cost Core - Critical)
   - package-ecosystem: "maven"
     directory: "/services/omni-cost-service"
     schedule:
       interval: "daily" # 핵심 서비스는 매일 확인
-    open-pull-requests-limit: 10
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 10 # 중요하므로 제한을 넉넉하게
     groups:
       spring-boot:
         patterns: ["org.springframework.boot*", "io.micrometer*"]
+      testing:
+        patterns: ["org.junit*", "org.mockito*"]
     labels: ["backend", "core", "urgent"]
+    reviewers: # [예시] 핵심 서비스는 리뷰어 강제 지정 권장
+      - "backend-lead" 
+    commit-message:
+      prefix: "build(deps)"
 
-  # 4. 배치 서비스 (High Load Batch)
+  # 4. 배치 서비스 (Batch)
   - package-ecosystem: "maven"
     directory: "/services/omni-batch-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
     groups:
       spring-boot:
         patterns: ["org.springframework.boot*", "org.springframework.batch*"]
+      testing:
+        patterns: ["org.junit*", "org.mockito*"]
     labels: ["backend", "batch"]
+    commit-message:
+      prefix: "build(deps)"
 
-  # 5. 로그 수집 서비스 (Log Aggregator / ELK)
+  # 5. 로그 수집 서비스 (Log)
   - package-ecosystem: "maven"
     directory: "/services/omni-log-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*"]
+      testing:
+        patterns: ["org.junit*", "org.mockito*"]
     labels: ["backend", "logging"]
+    commit-message:
+      prefix: "build(deps)"
 
-  # 6. 결제 서비스 (Payment Gateway)
+  # 6. 결제 서비스 (Payment)
   - package-ecosystem: "maven"
     directory: "/services/omni-payment-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*"]
+      testing:
+        patterns: ["org.junit*", "org.mockito*"]
     labels: ["backend", "payment"]
+    commit-message:
+      prefix: "build(deps)"
 
-  # 7. 포켓몬 IV 매니저 웹 (Pokemon Web)
+  # 7. 포켓몬 IV 매니저 웹
   - package-ecosystem: "maven"
     directory: "/services/omni-pokemon-web"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
     groups:
       spring-boot:
         patterns: ["org.springframework.boot*", "jakarta.*"]
+      testing:
+        patterns: ["org.junit*", "org.mockito*"]
     labels: ["backend", "pokemon"]
+    commit-message:
+      prefix: "build(deps)"
 
-  # 8. [NEW] 알림 서비스 (Notification)
+  # 8. 알림 서비스 (Notification)
   - package-ecosystem: "maven"
     directory: "/services/omni-notification-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*"]
     labels: ["backend", "notification"]
+    commit-message:
+      prefix: "build(deps)"
 
-  # 9. [NEW] 재고 관리 서비스 (Inventory)
+  # 9. 재고 관리 서비스 (Inventory)
   - package-ecosystem: "maven"
     directory: "/services/omni-inventory-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*"]
     labels: ["backend", "inventory"]
+    commit-message:
+      prefix: "build(deps)"
 
-  # 10. [NEW] 채팅 서비스 (Chat / WebSocket)
+  # 10. 채팅 서비스 (Chat)
   - package-ecosystem: "maven"
     directory: "/services/omni-chat-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*"]
     labels: ["backend", "chat"]
+    commit-message:
+      prefix: "build(deps)"
 
-  # 11. [NEW] 설정 서버 (Config Server)
+  # 11. 설정 서버 (Config)
   - package-ecosystem: "maven"
     directory: "/services/omni-config-server"
     schedule:
       interval: "monthly"
+      timezone: "Asia/Seoul"
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*"]
     labels: ["backend", "infra"]
+    commit-message:
+      prefix: "build(deps)"
 
-  # 12. [NEW] 디스커버리 서버 (Eureka / Discovery)
+  # 12. 디스커버리 서버 (Discovery)
   - package-ecosystem: "maven"
     directory: "/services/omni-discovery-server"
     schedule:
       interval: "monthly"
+      timezone: "Asia/Seoul"
+    groups:
+      spring-boot:
+        patterns: ["org.springframework.boot*"]
     labels: ["backend", "infra"]
+    commit-message:
+      prefix: "build(deps)"
 
   # =================================================================
-  # [PYTHON / PIP] AI & Data Science Modules
+  # [PYTHON / PIP] AI & Data Science
   # =================================================================
 
-  # 13. AI 모델 서비스 (FastAPI)
+  # 13. AI 모델 서비스
   - package-ecosystem: "pip"
     directory: "/ai-model"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
     groups:
       ai-core:
         patterns: ["pandas", "numpy", "scikit-learn", "torch", "tensorflow"]
       api-framework:
         patterns: ["fastapi", "uvicorn", "pydantic"]
+      testing:
+        patterns: ["pytest*", "mock*"]
     labels: ["ai", "python"]
+    commit-message:
+      prefix: "chore(python)"
 
-  # 14. [NEW] 데이터 분석 파이프라인 (Data Pipeline)
+  # 14. 데이터 파이프라인
   - package-ecosystem: "pip"
     directory: "/data-pipeline"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
     labels: ["data", "etl"]
+    commit-message:
+      prefix: "chore(python)"
 
   # =================================================================
-  # [NPM / JS] Frontend & Dashboard
+  # [NPM / JS] Frontend
   # =================================================================
 
-  # 15. [NEW] 통합 대시보드 (React/Vue/Next.js)
+  # 15. 통합 대시보드
   - package-ecosystem: "npm"
     directory: "/frontend/dashboard"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
     groups:
       react-core:
         patterns: ["react", "react-dom", "next"]
       ui-libs:
         patterns: ["@mui/*", "tailwindcss", "framer-motion"]
+      testing:
+        patterns: ["jest*", "@testing-library/*"]
     labels: ["frontend", "javascript"]
+    commit-message:
+      prefix: "chore(frontend)"
 
   # =================================================================
-  # [TERRAFORM] Infrastructure as Code (IaC)
+  # [TERRAFORM] Infra
   # =================================================================
 
-  # 16. [NEW] AWS/Cloud 인프라 관리
+  # 16. AWS 인프라
   - package-ecosystem: "terraform"
     directory: "/infra/terraform"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
     labels: ["infra", "terraform"]
+    commit-message:
+      prefix: "chore(infra)"
 
   # =================================================================
   # [DOCKER] Container Images
-  # 모든 마이크로서비스의 Base Image (OpenJDK, Python 등) 최신화
+  # 모든 도커 이미지 업데이트에 'chore(docker)' 접두사 적용
   # =================================================================
   
   # Core Services Docker
@@ -178,71 +282,113 @@ updates:
     directory: "/services/omni-gateway"
     schedule:
       interval: "weekly"
-  
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
+
   - package-ecosystem: "docker"
     directory: "/services/omni-auth-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "docker"
     directory: "/services/omni-cost-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "docker"
     directory: "/services/omni-batch-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "docker"
     directory: "/services/omni-log-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "docker"
     directory: "/services/omni-payment-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "docker"
     directory: "/services/omni-pokemon-web"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   # Extension Services Docker
   - package-ecosystem: "docker"
     directory: "/services/omni-notification-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "docker"
     directory: "/services/omni-inventory-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "docker"
     directory: "/services/omni-chat-service"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
-  # Infra Services Docker
+  # Infra Services Docker (Monthly)
   - package-ecosystem: "docker"
     directory: "/services/omni-config-server"
     schedule:
       interval: "monthly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "docker"
     directory: "/services/omni-discovery-server"
     schedule:
       interval: "monthly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   # AI & Data Docker
   - package-ecosystem: "docker"
     directory: "/ai-model"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "docker"
     directory: "/data-pipeline"
     schedule:
       interval: "weekly"
+      timezone: "Asia/Seoul"
+    commit-message:
+      prefix: "chore(docker)"
