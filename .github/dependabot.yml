@@ -1,44 +1,53 @@
 version: 2
 updates:
   # =================================================================
-  # [GLOBAL] GitHub Actions (CI/CD)
+  # [GLOBAL] GitHub Actions (CI/CD Workflows)
   # =================================================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - "ci"
+      - "actions"
+    commit-message:
+      prefix: "ci"
 
   # =================================================================
-  # [JAVA / MAVEN] MSA Microservices (총 7개 서비스)
-  # setup_system_final.py에 정의된 서비스 목록을 모두 포함
+  # [JAVA / MAVEN] MSA Core Microservices (백엔드 서비스)
+  # Spring Boot 및 Cloud 의존성 그룹화 적용
   # =================================================================
   
-  # 1. API Gateway
+  # 1. API Gateway (진입점)
   - package-ecosystem: "maven"
     directory: "/services/omni-gateway"
     schedule:
       interval: "weekly"
     groups:
       spring-boot:
-        patterns: ["org.springframework.boot*", "io.micrometer*"]
+        patterns: ["org.springframework.boot*", "org.springframework.cloud*"]
+    labels: ["backend", "gateway"]
 
-  # 2. 인증 서비스 (Auth)
+  # 2. 인증 서비스 (Auth / Security)
   - package-ecosystem: "maven"
     directory: "/services/omni-auth-service"
     schedule:
       interval: "weekly"
     groups:
       spring-boot:
-        patterns: ["org.springframework.boot*", "io.micrometer*"]
+        patterns: ["org.springframework.boot*", "io.jsonwebtoken*"]
+    labels: ["backend", "auth"]
 
-  # 3. 비용 핵심 서비스 (Cost Core)
+  # 3. 비용 핵심 서비스 (Cost Core - Critical)
   - package-ecosystem: "maven"
     directory: "/services/omni-cost-service"
     schedule:
-      interval: "daily" # 핵심 서비스이므로 매일 체크
+      interval: "daily" # 핵심 서비스는 매일 확인
+    open-pull-requests-limit: 10
     groups:
       spring-boot:
         patterns: ["org.springframework.boot*", "io.micrometer*"]
+    labels: ["backend", "core", "urgent"]
 
   # 4. 배치 서비스 (High Load Batch)
   - package-ecosystem: "maven"
@@ -47,70 +56,193 @@ updates:
       interval: "weekly"
     groups:
       spring-boot:
-        patterns: ["org.springframework.boot*", "io.micrometer*"]
+        patterns: ["org.springframework.boot*", "org.springframework.batch*"]
+    labels: ["backend", "batch"]
 
-  # 5. 로그 수집 서비스 (Log Aggregator)
+  # 5. 로그 수집 서비스 (Log Aggregator / ELK)
   - package-ecosystem: "maven"
     directory: "/services/omni-log-service"
     schedule:
       interval: "weekly"
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*", "io.micrometer*"]
+    labels: ["backend", "logging"]
 
   # 6. 결제 서비스 (Payment Gateway)
   - package-ecosystem: "maven"
     directory: "/services/omni-payment-service"
     schedule:
       interval: "weekly"
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*", "io.micrometer*"]
+    labels: ["backend", "payment"]
 
-  # 7. 🌟 [NEW] 포켓몬 IV 매니저 웹 (Pokemon Web)
+  # 7. 포켓몬 IV 매니저 웹 (Pokemon Web)
   - package-ecosystem: "maven"
     directory: "/services/omni-pokemon-web"
     schedule:
       interval: "weekly"
     groups:
       spring-boot:
-        patterns: ["org.springframework.boot*", "io.micrometer*"]
+        patterns: ["org.springframework.boot*", "jakarta.*"]
+    labels: ["backend", "pokemon"]
+
+  # 8. [NEW] 알림 서비스 (Notification)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-notification-service"
+    schedule:
+      interval: "weekly"
+    labels: ["backend", "notification"]
+
+  # 9. [NEW] 재고 관리 서비스 (Inventory)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-inventory-service"
+    schedule:
+      interval: "weekly"
+    labels: ["backend", "inventory"]
+
+  # 10. [NEW] 채팅 서비스 (Chat / WebSocket)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-chat-service"
+    schedule:
+      interval: "weekly"
+    labels: ["backend", "chat"]
+
+  # 11. [NEW] 설정 서버 (Config Server)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-config-server"
+    schedule:
+      interval: "monthly"
+    labels: ["backend", "infra"]
+
+  # 12. [NEW] 디스커버리 서버 (Eureka / Discovery)
+  - package-ecosystem: "maven"
+    directory: "/services/omni-discovery-server"
+    schedule:
+      interval: "monthly"
+    labels: ["backend", "infra"]
 
   # =================================================================
-  # [PYTHON / PIP] AI & Data Modules
+  # [PYTHON / PIP] AI & Data Science Modules
   # =================================================================
 
-  # 8. AI 모델 서비스 (FastAPI)
+  # 13. AI 모델 서비스 (FastAPI)
   - package-ecosystem: "pip"
     directory: "/ai-model"
     schedule:
       interval: "weekly"
     groups:
-      ai-libs:
-        patterns: ["pandas", "numpy", "fastapi", "uvicorn"]
+      ai-core:
+        patterns: ["pandas", "numpy", "scikit-learn", "torch", "tensorflow"]
+      api-framework:
+        patterns: ["fastapi", "uvicorn", "pydantic"]
+    labels: ["ai", "python"]
+
+  # 14. [NEW] 데이터 분석 파이프라인 (Data Pipeline)
+  - package-ecosystem: "pip"
+    directory: "/data-pipeline"
+    schedule:
+      interval: "weekly"
+    labels: ["data", "etl"]
 
   # =================================================================
-  # [DOCKER] Container Images (Dockerfile)
-  # 각 서비스의 Dockerfile 내 Base Image 업데이트 추적
+  # [NPM / JS] Frontend & Dashboard
+  # =================================================================
+
+  # 15. [NEW] 통합 대시보드 (React/Vue/Next.js)
+  - package-ecosystem: "npm"
+    directory: "/frontend/dashboard"
+    schedule:
+      interval: "weekly"
+    groups:
+      react-core:
+        patterns: ["react", "react-dom", "next"]
+      ui-libs:
+        patterns: ["@mui/*", "tailwindcss", "framer-motion"]
+    labels: ["frontend", "javascript"]
+
+  # =================================================================
+  # [TERRAFORM] Infrastructure as Code (IaC)
+  # =================================================================
+
+  # 16. [NEW] AWS/Cloud 인프라 관리
+  - package-ecosystem: "terraform"
+    directory: "/infra/terraform"
+    schedule:
+      interval: "weekly"
+    labels: ["infra", "terraform"]
+
+  # =================================================================
+  # [DOCKER] Container Images
+  # 모든 마이크로서비스의 Base Image (OpenJDK, Python 등) 최신화
   # =================================================================
   
-  # 9. 각 서비스별 Dockerfile 감시
+  # Core Services Docker
   - package-ecosystem: "docker"
     directory: "/services/omni-gateway"
     schedule:
       interval: "weekly"
-      
+  
   - package-ecosystem: "docker"
-    directory: "/services/omni-cost-service"
-    schedule:
-      interval: "weekly"
-      
-  - package-ecosystem: "docker"
-    directory: "/services/omni-pokemon-web" # 포켓몬 웹 서버 이미지 관리
+    directory: "/services/omni-auth-service"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "docker"
-    directory: "/ai-model" # AI 모델 이미지 관리
+    directory: "/services/omni-cost-service"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/services/omni-batch-service"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/services/omni-log-service"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/services/omni-payment-service"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/services/omni-pokemon-web"
+    schedule:
+      interval: "weekly"
+
+  # Extension Services Docker
+  - package-ecosystem: "docker"
+    directory: "/services/omni-notification-service"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/services/omni-inventory-service"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/services/omni-chat-service"
+    schedule:
+      interval: "weekly"
+
+  # Infra Services Docker
+  - package-ecosystem: "docker"
+    directory: "/services/omni-config-server"
+    schedule:
+      interval: "monthly"
+
+  - package-ecosystem: "docker"
+    directory: "/services/omni-discovery-server"
+    schedule:
+      interval: "monthly"
+
+  # AI & Data Docker
+  - package-ecosystem: "docker"
+    directory: "/ai-model"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/data-pipeline"
     schedule:
       interval: "weekly"
