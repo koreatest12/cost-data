@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_SEC/primary
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - run: pip install faker pandas requests
@@ -70,7 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_JOB/primary
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: 🧬 Crawl Official News
@@ -109,7 +109,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_ALGO/primary
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: 🧬 Analyze Meta Data
@@ -147,7 +147,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_COST/primary
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: 🧬 Crawl Shop Data

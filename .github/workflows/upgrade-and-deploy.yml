@@ -29,7 +29,7 @@ jobs:
           chmod -R 755 app_root/cost_data
           
       - name: 🐍 파이썬 환경 설정
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.9'
 

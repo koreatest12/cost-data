@@ -22,7 +22,7 @@ jobs:
       - name: 🛠️ Setup Directories
         run: mkdir -p DB_SEC/primary DB_SEC/replica DB_SEC/archive
       
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.11' }
       - run: pip install faker
       
@@ -63,7 +63,7 @@ jobs:
       - name: 🛠️ Setup Directories
         run: mkdir -p DB_JOB/primary DB_JOB/replica DB_JOB/archive
       
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.11' }
       - run: pip install faker
       
@@ -100,7 +100,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_ALGO/primary DB_ALGO/replica
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.11' }
       
       - name: 🧬 Generate Data
@@ -132,7 +132,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_COST/primary DB_COST/replica
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.11' }
       
       - name: 🧬 Generate Data
