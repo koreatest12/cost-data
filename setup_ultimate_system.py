@@ -4,7 +4,6 @@ import json
 import asyncio
 import aiohttp
 import time
-import random
 
 # --- 경로 설정 ---
 BASE_DIR = "services/omni-pokemon-web"
@@ -19,17 +18,16 @@ DIRS = {
     "model": os.path.join(JAVA_ROOT, "model"),
 }
 
-# --- 대량 데이터 타겟 (1세대 전체 + 최신 전설 포켓몬 등) ---
-# API 부하 분산을 위해 주요 포켓몬 위주로 선정 (실제로는 range(1, 1025) 가능)
-TARGET_IDS = list(range(1, 152)) + list(range(1000, 1010)) 
+# --- 🔥 대량 데이터 타겟 (1~251번 + 최신 전설) ---
+TARGET_IDS = list(range(1, 252)) + [257, 384, 483, 484, 493, 1000, 1007, 1008]
 
 def create_structure():
     for path in DIRS.values():
         os.makedirs(path, exist_ok=True)
     os.makedirs(STATIC_DIR, exist_ok=True)
+    print("📁 디렉토리 구조 생성 완료")
 
 def create_pom_xml():
-    # Spring Boot 3.1.5 (Java 17 호환)
     pom = """
     <project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <modelVersion>4.0.0</modelVersion>
@@ -66,7 +64,7 @@ def create_pom_xml():
     with open(os.path.join(BASE_DIR, "pom.xml"), "w", encoding="utf-8") as f:
         f.write(pom)
 
-# --- 비동기 데이터 수집 (초고속) ---
+# --- 비동기 데이터 수집 ---
 async def fetch_pokemon(session, pid):
     try:
         # 1. 기본 정보
@@ -84,14 +82,14 @@ async def fetch_pokemon(session, pid):
                         ko_name = n['name']
                         break
         
-        # 3. 스탯 합계 계산
+        # 3. 데이터 가공
         stats = {s['stat']['name']: s['base_stat'] for s in data['stats']}
         total = sum(stats.values())
         
-        # 4. 등급 판정
         grade = "B"
         if total >= 600: grade = "S (전설급)"
-        elif total >= 500: grade = "A (엘리트)"
+        elif total >= 500: grade = "A (우수)"
+        elif total >= 400: grade = "B+ (준수)"
         
         return {
             "id": pid,
@@ -115,10 +113,10 @@ async def fetch_all():
         results = await asyncio.gather(*tasks)
     
     valid_data = [r for r in results if r is not None]
-    print(f"✅ {len(valid_data)}마리 데이터 확보 완료!")
+    print(f"✅ 총 {len(valid_data)}마리 데이터 수집 완료!")
     return valid_data
 
-# --- Java 소스 생성 (에러 수정 포함) ---
+# --- Java 소스 생성 ---
 def create_java_files(data):
     # 1. Model
     with open(os.path.join(DIRS["model"], "Pokemon.java"), "w", encoding="utf-8") as f:
@@ -143,17 +141,16 @@ def create_java_files(data):
         }
         """)
 
-    # 2. Service (🚨 중요: javax -> jakarta 수정)
+    # 2. Service
     json_data = json.dumps(data, ensure_ascii=False).replace('"', '\\"')
     with open(os.path.join(DIRS["service"], "PokemonService.java"), "w", encoding="utf-8") as f:
         f.write(f"""
         package com.omni.pokemon.service;
-
         import com.fasterxml.jackson.core.type.TypeReference;
         import com.fasterxml.jackson.databind.ObjectMapper;
         import com.omni.pokemon.model.Pokemon;
         import org.springframework.stereotype.Service;
-        import jakarta.annotation.PostConstruct; // ✅ FIXED: javax -> jakarta
+        import jakarta.annotation.PostConstruct;
         import java.util.ArrayList;
         import java.util.List;
         import java.util.stream.Collectors;
@@ -168,6 +165,7 @@ def create_java_files(data):
                 try {{
                     String raw = "{json_data}";
                     db = mapper.readValue(raw, new TypeReference<List<Pokemon>>() {{}});
+                    System.out.println("✅ DB Init: " + db.size() + " items loaded.");
                 }} catch (Exception e) {{ e.printStackTrace(); }}
             }}
 
@@ -180,7 +178,7 @@ def create_java_files(data):
         }}
         """)
 
-    # 3. Controller
+    # 3. Controller (Health Check 추가)
     with open(os.path.join(DIRS["controller"], "PokemonController.java"), "w", encoding="utf-8") as f:
         f.write("""
         package com.omni.pokemon.controller;
@@ -191,19 +189,24 @@ def create_java_files(data):
         import java.util.List;
 
         @RestController
-        @RequestMapping("/api/pokemon")
+        @RequestMapping("/api")
         @RequiredArgsConstructor
         public class PokemonController {
             private final PokemonService service;
             
-            @GetMapping("/search")
+            @GetMapping("/pokemon/search")
             public List<Pokemon> search(@RequestParam(required = false) String keyword) {
                 return service.search(keyword);
+            }
+            
+            @GetMapping("/system/health")
+            public String health() {
+                return "OK";
             }
         }
         """)
 
-    # 4. App
+    # 4. App & Properties
     with open(os.path.join(JAVA_ROOT, "PokemonApp.java"), "w", encoding="utf-8") as f:
         f.write("""
         package com.omni.pokemon;
@@ -214,88 +217,59 @@ def create_java_files(data):
             public static void main(String[] args) { SpringApplication.run(PokemonApp.class, args); }
         }
         """)
-
-    # 5. Properties
+    
     with open(os.path.join(RESOURCES, "application.properties"), "w") as f:
         f.write("server.port=8086")
 
-# --- 프론트엔드 (UI 개선) ---
+# --- 프론트엔드 ---
 def create_frontend():
     html = """
     <!DOCTYPE html>
     <html lang="ko">
     <head>
         <meta charset="UTF-8">
-        <title>Omni Pokedex Pro</title>
+        <title>Omni Massive DB</title>
         <style>
-            :root { --bg: #1e272e; --card: #2f3640; --text: #f5f6fa; }
-            body { background: var(--bg); color: var(--text); font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-            
-            /* 타입별 색상 */
-            .type-fire { border-top: 5px solid #e84118; }
-            .type-water { border-top: 5px solid #0097e6; }
-            .type-grass { border-top: 5px solid #4cd137; }
-            .type-electric { border-top: 5px solid #fbc531; }
-            .type-psychic { border-top: 5px solid #9c88ff; }
-            .type-dragon { border-top: 5px solid #8c7ae6; }
-            
-            .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; max-width: 1400px; margin: 20px auto; }
-            .card { background: var(--card); border-radius: 15px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); transition: 0.3s; position: relative; overflow: hidden; }
-            .card:hover { transform: translateY(-7px); box-shadow: 0 15px 30px rgba(0,0,0,0.5); }
-            
-            img { width: 140px; height: 140px; object-fit: contain; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
-            h3 { margin: 10px 0 5px; font-size: 1.4rem; }
-            
-            .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; background: rgba(255,255,255,0.1); }
-            .stats-bar { display: flex; justify-content: space-between; font-size: 0.9rem; color: #dcdde1; margin-top: 15px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; }
-            
-            input { width: 50%; padding: 15px; border-radius: 30px; border: none; font-size: 1.2rem; background: #dfe4ea; color: #333; outline: none; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+            :root { --bg: #1e272e; --card: #2f3640; --text: #d2dae2; }
+            body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
+            .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; max-width: 1400px; margin: 20px auto; }
+            .card { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s; border-bottom: 3px solid transparent; }
+            .card:hover { transform: translateY(-5px); border-bottom-color: #ffd32a; }
+            img { width: 100px; height: 100px; }
+            .type-badge { font-size: 0.8rem; padding: 3px 8px; background: rgba(255,255,255,0.1); border-radius: 10px; display: inline-block; margin: 5px 0; }
+            input { width: 60%; padding: 15px; font-size: 1.1rem; border-radius: 30px; border: none; background: #485460; color: white; outline: none; }
         </style>
     </head>
     <body>
-        <h1 style="font-size: 3rem; margin-bottom: 10px;">⚡ Omni Pokédex Pro</h1>
-        <p>1세대 전체 ~ 9세대 통합 데이터베이스</p>
-        
-        <input type="text" id="search" placeholder="🔍 포켓몬 이름 또는 번호 검색..." onkeyup="search()">
-        
+        <h1>🔥 Omni Massive Database</h1>
+        <input type="text" id="search" placeholder="🔍 포켓몬 검색..." onkeyup="search()">
+        <div id="count" style="margin: 10px; color: #808e9b;"></div>
         <div id="result" class="grid"></div>
-
         <script>
-            let allData = [];
+            let db = [];
             async function init() {
                 const res = await fetch('/api/pokemon/search');
-                allData = await res.json();
-                render(allData);
+                db = await res.json();
+                document.getElementById('count').innerText = `Total: ${db.length} loaded`;
+                render(db);
             }
-            
             function render(list) {
-                const html = list.map(p => `
-                    <div class="card type-${p.type}">
-                        <div style="text-align:left; color:#718093; font-weight:bold;">#${p.id}</div>
+                document.getElementById('result').innerHTML = list.map(p => `
+                    <div class="card">
+                        <div style="font-size:0.8rem; opacity:0.7">#${p.id}</div>
                         <img src="${p.imageUrl}" loading="lazy">
-                        <h3>${p.name}</h3>
-                        <div class="badge">${p.type.toUpperCase()}</div>
-                        <div class="stats-bar">
-                            <span>❤️ ${p.hp}</span>
-                            <span>⚔️ ${p.attack}</span>
-                            <span>🛡️ ${p.defense}</span>
-                        </div>
-                        <div style="margin-top:10px; font-size:0.9rem;">
-                            총합: <b>${p.total}</b> <span style="color:${p.grade.startsWith('S') ? '#f1c40f' : '#fff'}">${p.grade}</span>
+                        <div style="font-weight:bold; font-size:1.1rem; margin:5px 0;">${p.name}</div>
+                        <div class="type-badge">${p.type}</div>
+                        <div style="font-size:0.9rem;">
+                             종족값: ${p.total} <br>
+                             <span style="color:${p.grade.includes('S')?'#ffdd59':'#d2dae2'}">${p.grade}</span>
                         </div>
                     </div>
                 `).join('');
-                document.getElementById('result').innerHTML = html;
             }
-
             function search() {
-                const query = document.getElementById('search').value.toLowerCase();
-                const filtered = allData.filter(p => 
-                    p.name.includes(query) || 
-                    p.engName.toLowerCase().includes(query) || 
-                    String(p.id).includes(query)
-                );
-                render(filtered);
+                const q = document.getElementById('search').value.toLowerCase();
+                render(db.filter(p => p.name.includes(q) || String(p.id).includes(q) || p.engName.toLowerCase().includes(q)));
             }
             init();
         </script>
@@ -306,19 +280,14 @@ def create_frontend():
         f.write(html)
 
 def main():
-    if os.name == 'nt':
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-        
-    print("🚀 Ultimate System: Fix Compilation & Mass Data Fetch...")
+    if os.name == 'nt': asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    print("🚀 Omni System: Starting Massive Setup...")
     create_structure()
     create_pom_xml()
-    
-    # Run Async Fetch
     data = asyncio.run(fetch_all())
-    
     create_java_files(data)
     create_frontend()
-    print("✅ System Ready for Maven Build!")
+    print("✅ Setup Complete.")
 
 if __name__ == "__main__":
     main()
