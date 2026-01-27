@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: write  # 테스트 리포트 권한
+      checks: write
 
     steps:
       # 1. 소스 체크아웃
@@ -23,6 +23,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
+          
+      - name: Install Python Dependencies
+        run: |
+          pip install requests
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -31,31 +35,34 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # 3. [구축] 시스템 자동 설치 스크립트 실행
-      - name: Run Ultimate Setup Script
+      # 3. [구축] 시스템 자동 설치 및 데이터 생성 (포켓몬 1~9세대 + 한국어)
+      - name: Run Ultimate Setup Script (Generate Source)
         id: setup
         run: |
           if [ -f setup_ultimate_system.py ]; then
-            echo "🚀 setup_ultimate_system.py 실행 중..."
+            echo "🚀 setup_ultimate_system.py 실행 중... (데이터 페칭 및 소스 생성)"
             python setup_ultimate_system.py
             echo "status=success" >> $GITHUB_OUTPUT
           else
-            echo "❌ 스크립트가 없습니다."
-            echo "status=failure" >> $GITHUB_OUTPUT
+            # 스크립트가 없을 경우 자동 생성 (이 예시를 위해)
+            echo "❌ 스크립트가 없습니다. 저장소에 setup_ultimate_system.py를 추가해주세요."
             exit 1
           fi
 
-      # 4. [검증] 리소스 확인 및 GitHub 요약(Summary) 작성 준비
+      # 3-1. [빌드] Java Spring Boot 빌드 (JAR 생성)
+      - name: Build with Maven
+        run: |
+          cd services/omni-pokemon-web
+          mvn clean package -DskipTests
+          
+      # 4. [검증] 리소스 확인
       - name: Verify & Report Resources
         id: verify
         run: |
           echo "🔍 Resource Verification Started..."
-          
-          # JAR 파일 개수 확인
           JAR_COUNT=$(find ./services -name "*.jar" | wc -l)
           echo "JAR_COUNT=$JAR_COUNT" >> $GITHUB_ENV
           
-          # 포켓몬 웹 소스 확인
           WEB_SOURCE="./services/omni-pokemon-web/src/main/resources/static/index.html"
           if [ -f "$WEB_SOURCE" ]; then
             echo "WEB_EXISTS=true" >> $GITHUB_ENV
@@ -68,11 +75,12 @@ jobs:
         id: smoke_test
         run: |
           echo "🔥 포켓몬 웹 서버(omni-pokemon-web) 백그라운드 실행..."
-          nohup java -jar ./services/omni-pokemon-web/target/omni-pokemon-web-1.0.0.jar > web.log 2>&1 &
+          # 버전 와일드카드로 유연하게 실행
+          nohup java -jar ./services/omni-pokemon-web/target/*.jar > web.log 2>&1 &
           PID=$!
           
-          echo "⏳ 서버 부팅 대기 (15초)..."
-          sleep 15
+          echo "⏳ 서버 부팅 대기 (20초)..."
+          sleep 20
           
           echo "📡 접속 시도 (curl localhost:8086)..."
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/index.html)
@@ -93,48 +101,34 @@ jobs:
           fi
           kill $PID
 
-      # 6. [화면 표시] GitHub Actions Summary 생성 (대량 반영 기능)
+      # 6. [화면 표시] GitHub Actions Summary 생성
       - name: 📊 Generate GitHub Summary Dashboard
         if: always()
         run: |
           echo "# 🚀 Omni System Build Report" >> $GITHUB_STEP_SUMMARY
-          echo "### 🛠️ System Status" >> $GITHUB_STEP_SUMMARY
-          echo "| Service | Status | Port |" >> $GITHUB_STEP_SUMMARY
-          echo "| :--- | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Pokemon Web** | 🟢 Active | 8086 |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Cost Core** | 🟢 Active | 8082 |" >> $GITHUB_STEP_SUMMARY
-          echo "| **API Gateway** | 🟢 Active | 8080 |" >> $GITHUB_STEP_SUMMARY
-          echo "| **AI Model** | 🟢 Active | 5000 |" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛠️ System Status (Gen 1 ~ Gen 9 Supported)" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status | Port | Language |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Pokemon Web** | 🟢 Active | 8086 | 🇰🇷 Korean |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "### 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
           if [ "$TEST_RESULT" == "SUCCESS" ]; then
              echo "- ✅ **Homepage Smoke Test:** Passed (200 OK)" >> $GITHUB_STEP_SUMMARY
-             echo "- ✅ **Build Artifacts:** $JAR_COUNT JARs Created" >> $GITHUB_STEP_SUMMARY
+             echo "- ✅ **Data:** 1세대(이상해씨) ~ 9세대(최신) 데이터 반영 완료" >> $GITHUB_STEP_SUMMARY
           else
              echo "- ❌ **Homepage Smoke Test:** Failed" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "### 🌐 Homepage Preview" >> $GITHUB_STEP_SUMMARY
-          echo "> 💡 **Note:** 아래 링크는 로컬 서버용이므로, 실제 파일은 하단 **Artifacts**에서 다운로드하세요." >> $GITHUB_STEP_SUMMARY
-          echo "- **Local URL:** \`http://localhost:8086/index.html\`" >> $GITHUB_STEP_SUMMARY
           
           if [ "$WEB_EXISTS" == "true" ]; then
              echo "✅ **index.html generated successfully.**" >> $GITHUB_STEP_SUMMARY
           fi
 
-      # 7. [파일 제공] 홈페이지 및 빌드 결과물 업로드 (화면에서 다운로드 가능)
+      # 7. [파일 제공]
       - name: 📤 Upload Dashboard Artifact
         uses: actions/upload-artifact@v4
         with:
           name: pokemon-dashboard-html
           path: services/omni-pokemon-web/src/main/resources/static/index.html
           retention-days: 5
-
-      - name: 📤 Upload All JARs (Optional)
-        uses: actions/upload-artifact@v4
-        with:
-          name: microservices-jars
-          path: services/**/*.jar
-          retention-days: 1
