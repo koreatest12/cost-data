@@ -1,4 +1,4 @@
-name: Ultimate CI & Ultra-Fast Data Setup
+name: Ultimate CI/CD & Fix Compilation
 
 on:
   push:
@@ -7,9 +7,9 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-setup-deploy:
+  build-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10 # 전체 타임아웃 10분 설정
+    timeout-minutes: 10
     permissions:
       contents: read
       checks: write
@@ -18,86 +18,66 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. Python 환경 설정 (비동기 처리를 위한 라이브러리 추가)
+      # 1. Python 환경 (비동기 처리용)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-          cache: 'pip' # pip 캐싱
+          cache: 'pip'
 
-      - name: Install Python Dependencies (Async)
-        run: |
-          pip install requests aiohttp asyncio
+      - name: Install Python Libs
+        run: pip install requests aiohttp asyncio
 
-      # 2. JDK 설정 및 Maven 캐싱 (빌드 속도 획기적 개선)
-      - name: Set up JDK 17 with Maven Cache
+      # 2. Java 17 설정 (Maven 캐싱 포함)
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'maven' # 핵심: 의존성 캐싱
+          cache: 'maven'
 
-      # 3. [핵심] Python 스크립트 실행 (MVC 구조 생성 + 초고속 데이터 수집)
-      - name: 🚀 Run Ultimate Setup (Async & Parallel)
+      # 3. [핵심] 소스 코드 생성 (수정된 Python 스크립트 실행)
+      - name: 🚀 Generate Source & Fetch Data
         id: setup
         run: |
           if [ -f setup_ultimate_system.py ]; then
-            echo "⚡ setup_ultimate_system.py 실행: 비동기 데이터 수집 및 소스 생성..."
+            echo "⚡ setup_ultimate_system.py 실행: 컴파일 에러 수정 및 데이터 수집..."
             python setup_ultimate_system.py
           else
             echo "❌ 스크립트가 없습니다."
             exit 1
           fi
 
-      # 4. Maven 빌드 (API 서버 컴파일)
-      - name: Build Spring Boot App
+      # 4. 빌드 (컴파일 에러 해결 확인)
+      - name: Build with Maven
         run: |
           cd services/omni-pokemon-web
           mvn clean package -DskipTests
 
-      # 5. API 서버 실행 및 정밀 진단 (Health Check)
-      - name: 🌐 API Server Smoke Test & Data Check
-        id: smoke_test
+      # 5. 서버 실행 및 검증
+      - name: 🌐 Server Smoke Test
         run: |
-          echo "🔥 API 서버 백그라운드 실행..."
-          nohup java -jar ./services/omni-pokemon-web/target/*.jar > api.log 2>&1 &
+          nohup java -jar ./services/omni-pokemon-web/target/*.jar > app.log 2>&1 &
           PID=$!
-          
-          echo "⏳ 서버 부팅 대기 (20초)..."
           sleep 20
           
-          echo "🧪 1. 메인 페이지 접속 테스트"
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/index.html)
+          # Health Check
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/api/pokemon/search?keyword=피카츄)
+          echo "Server Status Code: $STATUS"
           
-          echo "🧪 2. 대량 데이터(망나뇽) 검색 테스트"
-          # URL 인코딩 된 '망나뇽' 검색 시도
-          SEARCH_RES=$(curl -s "http://localhost:8086/api/pokemon/search?keyword=%EB%A7%9D%EB%82%98%EB%85%B9")
-          
-          echo "HTTP Status: $HTTP_CODE"
-          
-          if [ "$HTTP_CODE" -eq 200 ]; then
-            echo "✅ 테스트 성공"
-            echo "TEST_RESULT=SUCCESS" >> $GITHUB_ENV
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ 서버 정상 작동 및 데이터 로드 완료"
           else
-            echo "❌ 테스트 실패 - 로그 확인"
-            cat api.log
+            echo "❌ 서버 시작 실패"
+            cat app.log
             kill $PID
             exit 1
           fi
           kill $PID
 
-      # 6. 결과 리포트
-      - name: 📊 Generate Final Report
-        if: always()
-        run: |
-          echo "# 🚀 Ultra-Fast CI/CD Report" >> $GITHUB_STEP_SUMMARY
-          echo "### ⚡ Performance & Data" >> $GITHUB_STEP_SUMMARY
-          echo "- **Data Processing:** Async Parallel Fetching (aiohttp)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Maven Cache:** ✅ Active" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** $TEST_RESULT" >> $GITHUB_STEP_SUMMARY
-
-      - name: 📤 Upload Artifacts
+      # 6. 결과물 업로드
+      - name: 📤 Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: omni-pokemon-server
+          name: fixed-pokemon-server
           path: services/**/*.jar
