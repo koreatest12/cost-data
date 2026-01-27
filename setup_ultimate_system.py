@@ -3,31 +3,36 @@ import sys
 import requests
 import json
 import random
-import time
 
 # --- 설정 ---
 BASE_DIR = "services/omni-pokemon-web"
-RESOURCES_DIR = os.path.join(BASE_DIR, "src/main/resources/static")
-JAVA_PKG_DIR = os.path.join(BASE_DIR, "src/main/java/com/omni/pokemon")
-POKEAPI_URL = "https://pokeapi.co/api/v2/pokemon-species/"
+SRC_MAIN = os.path.join(BASE_DIR, "src/main")
+JAVA_ROOT = os.path.join(SRC_MAIN, "java/com/omni/pokemon")
+RESOURCES = os.path.join(SRC_MAIN, "resources")
+STATIC_DIR = os.path.join(RESOURCES, "static")
 
-# CI 속도를 위해 샘플링 (실제 운영 시에는 전체 루프 가능)
-# 1세대(1~151), 2세대(152~251)... 9세대(906~)
-# 여기서는 데모를 위해 각 세대별 대표 포켓몬들을 포함하도록 설정
-TARGET_IDS = list(range(1, 26)) + list(range(150, 152)) + [258, 384, 483, 484, 722, 906, 909, 1000] 
+# 패키지별 폴더
+DIRS = {
+    "controller": os.path.join(JAVA_ROOT, "controller"),
+    "service": os.path.join(JAVA_ROOT, "service"),
+    "model": os.path.join(JAVA_ROOT, "model"),
+}
 
-def create_directory_structure():
-    """Spring Boot 프로젝트 폴더 구조 생성"""
-    os.makedirs(RESOURCES_DIR, exist_ok=True)
-    os.makedirs(JAVA_PKG_DIR, exist_ok=True)
-    print(f"📁 디렉토리 생성 완료: {BASE_DIR}")
+# 데이터 수집 범위 (샘플링: 1~9세대 주요 포켓몬 + 전설)
+TARGET_IDS = list(range(1, 10)) + [25, 133, 143, 149, 150, 151] + \
+             [249, 250, 384, 448, 483, 484, 493, 635, 700, 722, 800, 906, 909, 1000]
+
+def create_structure():
+    """MVC 디렉토리 구조 대량 생성"""
+    for path in DIRS.values():
+        os.makedirs(path, exist_ok=True)
+    os.makedirs(STATIC_DIR, exist_ok=True)
+    print("📁 MVC 디렉토리 구조 생성 완료")
 
 def create_pom_xml():
-    """Maven 빌드 파일 생성 (Spring Boot Web)"""
-    pom_content = """
-    <project xmlns="http://maven.apache.org/POM/4.0.0" 
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    """Lombok 및 Web 의존성이 추가된 Maven 빌드 파일"""
+    pom = """
+    <project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <modelVersion>4.0.0</modelVersion>
         <groupId>com.omni</groupId>
         <artifactId>omni-pokemon-web</artifactId>
@@ -42,10 +47,12 @@ def create_pom_xml():
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
             </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <optional>true</optional>
+            </dependency>
         </dependencies>
-        <properties>
-            <java.version>17</java.version>
-        </properties>
         <build>
             <plugins>
                 <plugin>
@@ -57,18 +64,129 @@ def create_pom_xml():
     </project>
     """
     with open(os.path.join(BASE_DIR, "pom.xml"), "w", encoding="utf-8") as f:
-        f.write(pom_content)
-    print("📄 pom.xml 생성 완료")
+        f.write(pom)
 
-def create_java_application():
-    """간단한 Spring Boot Application Java 파일 생성"""
-    app_code = """
+# ---------------- Java 파일 생성 (MVC 패턴) ----------------
+
+def create_model_class():
+    """DTO/Model 클래스 생성 (개체값 필드 포함)"""
+    code = """
+    package com.omni.pokemon.model;
+
+    import lombok.AllArgsConstructor;
+    import lombok.Data;
+    import lombok.NoArgsConstructor;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public class Pokemon {
+        private int id;
+        private String name;     // 한국어 이름
+        private String type;
+        private String imageUrl;
+        private String generation;
+        
+        // 개체값 (IV) 및 종족값 분석
+        private int hp;
+        private int attack;
+        private int defense;
+        private String potentialGrade; // S, A, B 등급
+    }
+    """
+    with open(os.path.join(DIRS["model"], "Pokemon.java"), "w", encoding="utf-8") as f:
+        f.write(code)
+
+def create_service_class(pokemon_data_json):
+    """비즈니스 로직 및 검색 기능 구현"""
+    # JSON 데이터를 Java 코드 내에 하드코딩하여 DB 없이도 동작하게 함 (배포 용이성)
+    json_str = json.dumps(pokemon_data_json, ensure_ascii=False).replace('"', '\\"')
+    
+    code = f"""
+    package com.omni.pokemon.service;
+
+    import com.fasterxml.jackson.core.type.TypeReference;
+    import com.fasterxml.jackson.databind.ObjectMapper;
+    import com.omni.pokemon.model.Pokemon;
+    import org.springframework.stereotype.Service;
+    import javax.annotation.PostConstruct;
+    import java.util.ArrayList;
+    import java.util.List;
+    import java.util.stream.Collectors;
+
+    @Service
+    public class PokemonService {{
+        private List<Pokemon> pokemonList = new ArrayList<>();
+        private final ObjectMapper mapper = new ObjectMapper();
+
+        @PostConstruct
+        public void init() {{
+            try {{
+                String rawData = "{json_str}";
+                pokemonList = mapper.readValue(rawData, new TypeReference<List<Pokemon>>() {{}});
+                System.out.println("✅ 포켓몬 데이터 로드 완료: " + pokemonList.size() + " 마리");
+            }} catch (Exception e) {{
+                e.printStackTrace();
+            }}
+        }}
+
+        public List<Pokemon> getAllPokemon() {{
+            return pokemonList;
+        }}
+
+        // 한국어 검색 로직
+        public List<Pokemon> searchPokemon(String keyword) {{
+            if (keyword == null || keyword.isEmpty()) {{
+                return pokemonList;
+            }}
+            return pokemonList.stream()
+                    .filter(p -> p.getName().contains(keyword) || String.valueOf(p.getId()).equals(keyword))
+                    .collect(Collectors.toList());
+        }}
+    }}
+    """
+    with open(os.path.join(DIRS["service"], "PokemonService.java"), "w", encoding="utf-8") as f:
+        f.write(code)
+
+def create_controller_class():
+    """REST API 컨트롤러 생성"""
+    code = """
+    package com.omni.pokemon.controller;
+
+    import com.omni.pokemon.model.Pokemon;
+    import com.omni.pokemon.service.PokemonService;
+    import org.springframework.web.bind.annotation.*;
+    import lombok.RequiredArgsConstructor;
+    import java.util.List;
+
+    @RestController
+    @RequestMapping("/api/pokemon")
+    @RequiredArgsConstructor
+    public class PokemonController {
+
+        private final PokemonService service;
+
+        @GetMapping("/list")
+        public List<Pokemon> getAll() {
+            return service.getAllPokemon();
+        }
+
+        @GetMapping("/search")
+        public List<Pokemon> search(@RequestParam String keyword) {
+            return service.searchPokemon(keyword);
+        }
+    }
+    """
+    with open(os.path.join(DIRS["controller"], "PokemonController.java"), "w", encoding="utf-8") as f:
+        f.write(code)
+
+def create_main_app():
+    """메인 실행 파일"""
+    code = """
     package com.omni.pokemon;
 
     import org.springframework.boot.SpringApplication;
     import org.springframework.boot.autoconfigure.SpringBootApplication;
-    import org.springframework.stereotype.Controller;
-    import org.springframework.web.bind.annotation.GetMapping;
 
     @SpringBootApplication
     public class PokemonApplication {
@@ -76,164 +194,144 @@ def create_java_application():
             SpringApplication.run(PokemonApplication.class, args);
         }
     }
-
-    @Controller
-    class WebController {
-        @GetMapping("/")
-        public String index() {
-            return "index.html"; 
-        }
-    }
     """
-    with open(os.path.join(JAVA_PKG_DIR, "PokemonApplication.java"), "w", encoding="utf-8") as f:
-        f.write(app_code)
+    with open(os.path.join(JAVA_ROOT, "PokemonApplication.java"), "w", encoding="utf-8") as f:
+        f.write(code)
     
-    # application.properties (포트 설정)
-    with open(os.path.join(BASE_DIR, "src/main/resources/application.properties"), "w", encoding="utf-8") as f:
+    # application.properties
+    with open(os.path.join(RESOURCES, "application.properties"), "w", encoding="utf-8") as f:
         f.write("server.port=8086")
-    
-    print("☕ Java 소스 코드 생성 완료")
 
-def fetch_pokemon_data_ko():
-    """PokéAPI에서 데이터를 가져와 한국어 이름 매핑"""
-    print("🌐 포켓몬 데이터 수집 중 (한국어 이름 포함)...")
-    pokemon_list = []
-    
-    # 세션 사용으로 연결 재사용
+# ---------------- 데이터 수집 로직 ----------------
+
+def fetch_data():
+    print("🌐 포켓몬 데이터 및 개체값(IV) 수집 중...")
+    results = []
     session = requests.Session()
-
+    
     for pid in TARGET_IDS:
         try:
-            # 1. Species 정보 (한국어 이름)
-            res = session.get(f"{POKEAPI_URL}{pid}")
-            if res.status_code != 200: continue
-            data = res.json()
+            # 기본 정보
+            res = session.get(f"https://pokeapi.co/api/v2/pokemon/{pid}").json()
+            # 종족값 (Base Stats)
+            stats = {s['stat']['name']: s['base_stat'] for s in res['stats']}
             
-            # 한국어 이름 추출
-            ko_name = next((n['name'] for n in data['names'] if n['language']['name'] == 'ko'), f"Pokemon {pid}")
+            # 한국어 이름
+            res_spec = session.get(f"https://pokeapi.co/api/v2/pokemon-species/{pid}").json()
+            ko_name = next((n['name'] for n in res_spec['names'] if n['language']['name'] == 'ko'), res['name'])
             
-            # 2. 이미지 URL (공식 아트워크)
-            img_url = f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/{pid}.png"
-            
-            # 세대 정보 추정 (API 데이터 기반 혹은 ID 기반)
-            generation = "Unknown"
-            if pid <= 151: generation = "1세대 (관동)"
-            elif pid <= 251: generation = "2세대 (성도)"
-            elif pid <= 386: generation = "3세대 (호연)"
-            elif pid <= 493: generation = "4세대 (신오)"
-            elif pid <= 649: generation = "5세대 (하나)"
-            elif pid <= 721: generation = "6세대 (칼로스)"
-            elif pid <= 809: generation = "7세대 (알로라)"
-            elif pid <= 905: generation = "8세대 (가라르)"
-            else: generation = "9세대 (팔데아)"
+            # 개체값(IV) 시뮬레이션 및 등급 판정
+            total_stats = stats.get('hp', 0) + stats.get('attack', 0) + stats.get('defense', 0)
+            grade = "C"
+            if total_stats > 300: grade = "S (전설급)"
+            elif total_stats > 250: grade = "A (우수)"
+            elif total_stats > 200: grade = "B (보통)"
 
-            pokemon_list.append({
+            results.append({
                 "id": pid,
                 "name": ko_name,
-                "img": img_url,
-                "gen": generation
+                "type": res['types'][0]['type']['name'],
+                "imageUrl": res['sprites']['other']['official-artwork']['front_default'],
+                "generation": "Unknown", # 간소화를 위해 생략
+                "hp": stats.get('hp', 0),
+                "attack": stats.get('attack', 0),
+                "defense": stats.get('defense', 0),
+                "potentialGrade": grade
             })
-            sys.stdout.write(f"\r✅ {ko_name} ({pid}) 수집 완료")
+            sys.stdout.write(f"\r✅ {ko_name} 데이터 생성 완료")
             sys.stdout.flush()
-            
-        except Exception as e:
-            print(f"❌ Error fetching {pid}: {e}")
+        except Exception:
+            continue
+    print("\n✨ 데이터 수집 완료")
+    return results
 
-    print("\n✨ 데이터 수집 완료!")
-    return pokemon_list
+# ---------------- 프론트엔드 (AJAX 검색 기능 포함) ----------------
 
-def generate_html_dashboard(data):
-    """HTML 대시보드 생성"""
-    cards_html = ""
-    for p in data:
-        cards_html += f"""
-        <div class="card">
-            <span class="gen-badge">{p['gen']}</span>
-            <img src="{p['img']}" alt="{p['name']}" loading="lazy">
-            <div class="info">
-                <h3>No.{p['id']} {p['name']}</h3>
-            </div>
-        </div>
-        """
-
-    html_content = f"""
+def create_frontend():
+    html = """
     <!DOCTYPE html>
     <html lang="ko">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Omni Pokemon Dashboard</title>
+        <title>Omni IV Checker & Pokedex</title>
         <style>
-            :root {{ --primary: #ffcb05; --secondary: #3b4cca; --bg: #f4f4f4; }}
-            body {{ font-family: 'Noto Sans KR', sans-serif; background: var(--bg); margin: 0; padding: 20px; }}
-            header {{ text-align: center; margin-bottom: 40px; }}
-            h1 {{ color: var(--secondary); font-size: 2.5rem; margin-bottom: 10px; }}
-            p {{ color: #666; }}
-            .container {{ 
-                display: grid; 
-                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
-                gap: 20px; 
-                max-width: 1200px; 
-                margin: 0 auto; 
-            }}
-            .card {{ 
-                background: white; 
-                border-radius: 15px; 
-                padding: 20px; 
-                text-align: center; 
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-                transition: transform 0.2s;
-                position: relative;
-            }}
-            .card:hover {{ transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.2); }}
-            .card img {{ width: 120px; height: 120px; object-fit: contain; }}
-            .info h3 {{ margin: 10px 0 0; color: #333; font-size: 1.1rem; }}
-            .gen-badge {{
-                position: absolute;
-                top: 10px;
-                left: 10px;
-                background: #eee;
-                color: #555;
-                font-size: 0.7rem;
-                padding: 4px 8px;
-                border-radius: 10px;
-            }}
-            .stats {{ margin-top: 30px; text-align: center; font-weight: bold; color: #555; }}
+            body { font-family: 'Noto Sans KR', sans-serif; background: #f0f2f5; text-align: center; padding: 20px; }
+            .search-box { margin: 20px 0; }
+            input { padding: 15px; width: 300px; border-radius: 25px; border: 1px solid #ddd; font-size: 16px; }
+            .container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+            .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .card img { width: 120px; height: 120px; }
+            .stat-box { background: #eee; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9em; }
+            .grade-S { color: #e11d48; font-weight: bold; }
+            .grade-A { color: #2563eb; font-weight: bold; }
         </style>
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     </head>
     <body>
-        <header>
-            <h1>Pokémon Live Dashboard</h1>
-            <p>1세대(관동) ~ 9세대(팔데아) 실시간 통합 데이터</p>
-        </header>
-        
-        <div class="container">
-            {cards_html}
+        <h1>🔍 포켓몬 개체값 & 도감 검색</h1>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="한국어 이름 또는 번호 검색..." onkeyup="search()">
         </div>
+        <div id="results" class="container"></div>
 
-        <div class="stats">
-            총 {len(data)}마리 포켓몬 데이터 로드 완료 | Generated by GitHub Actions
-        </div>
+        <script>
+            let allPokemon = [];
+
+            // 1. 초기 데이터 로드 (API 호출)
+            fetch('/api/pokemon/list')
+                .then(res => res.json())
+                .then(data => {
+                    allPokemon = data;
+                    render(data);
+                });
+
+            // 2. 검색 기능 (API 호출 or 클라이언트 필터링)
+            function search() {
+                const query = document.getElementById('searchInput').value;
+                fetch('/api/pokemon/search?keyword=' + query)
+                    .then(res => res.json())
+                    .then(data => render(data));
+            }
+
+            function render(list) {
+                const container = document.getElementById('results');
+                container.innerHTML = list.map(p => `
+                    <div class="card">
+                        <span style="color:#888;">No.${p.id}</span>
+                        <h3>${p.name}</h3>
+                        <img src="${p.imageUrl}" loading="lazy">
+                        <div class="stat-box">
+                            <div>체력: ${p.hp} | 공격: ${p.attack}</div>
+                            <div>방어: ${p.defense}</div>
+                            <div style="margin-top:5px;">등급: <span class="grade-${p.potentialGrade.charAt(0)}">${p.potentialGrade}</span></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        </script>
     </body>
     </html>
     """
-    
-    with open(os.path.join(RESOURCES_DIR, "index.html"), "w", encoding="utf-8") as f:
-        f.write(html_content)
-    print("🖼️ index.html 대시보드 생성 완료")
+    with open(os.path.join(STATIC_DIR, "index.html"), "w", encoding="utf-8") as f:
+        f.write(html)
 
 def main():
-    print("🚀 Ultimate Setup System 시작...")
-    create_directory_structure()
+    print("🚀 Ultimate System Builder 시작...")
+    create_structure()
     create_pom_xml()
-    create_java_application()
     
-    # 포켓몬 데이터 수집 및 HTML 생성
-    pokemon_data = fetch_pokemon_data_ko()
-    generate_html_dashboard(pokemon_data)
+    # 데이터 확보
+    data = fetch_data()
     
-    print("✅ 모든 설정 및 파일 생성 완료.")
+    # Java 소스 대량 생성
+    create_model_class()
+    create_service_class(data) # 데이터 주입
+    create_controller_class()
+    create_main_app()
+    
+    # 프론트엔드 생성
+    create_frontend()
+    
+    print("✅ 모든 API 서버 및 파일 생성 완료!")
 
 if __name__ == "__main__":
     main()
