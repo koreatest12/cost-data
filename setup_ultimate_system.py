@@ -18,8 +18,10 @@ DIRS = {
     "model": os.path.join(JAVA_ROOT, "model"),
 }
 
-# --- 🔥 대량 데이터 타겟 (1~251번 + 최신 전설) ---
-TARGET_IDS = list(range(1, 252)) + [257, 384, 483, 484, 493, 1000, 1007, 1008]
+# --- 🔥 대량 데이터 타겟 (1~3세대 전체 + 최신) ---
+# 파일로 저장하므로 이제 수천 마리도 문제 없습니다.
+# 1세대(151) + 2세대(100) + 3세대(135) + 9세대 일부
+TARGET_IDS = list(range(1, 387)) + [1000, 1001, 1007, 1008]
 
 def create_structure():
     for path in DIRS.values():
@@ -72,7 +74,7 @@ async def fetch_pokemon(session, pid):
             if res.status != 200: return None
             data = await res.json()
 
-        # 2. 한국어 이름
+        # 2. 한국어 이름 (이름이 없으면 영어 이름 사용)
         ko_name = data['name']
         async with session.get(f"https://pokeapi.co/api/v2/pokemon-species/{pid}") as res_spec:
             if res_spec.status == 200:
@@ -82,13 +84,14 @@ async def fetch_pokemon(session, pid):
                         ko_name = n['name']
                         break
         
-        # 3. 데이터 가공
+        # 3. 스탯 계산
         stats = {s['stat']['name']: s['base_stat'] for s in data['stats']}
         total = sum(stats.values())
         
         grade = "B"
         if total >= 600: grade = "S (전설급)"
-        elif total >= 500: grade = "A (우수)"
+        elif total >= 500: grade = "A (엘리트)"
+        elif total >= 450: grade = "A- (우수)"
         elif total >= 400: grade = "B+ (준수)"
         
         return {
@@ -106,18 +109,24 @@ async def fetch_pokemon(session, pid):
     except Exception:
         return None
 
-async def fetch_all():
-    print(f"🚀 {len(TARGET_IDS)}마리 포켓몬 데이터 수집 시작 (Async)...")
+async def fetch_all_and_save():
+    print(f"🚀 {len(TARGET_IDS)}마리 데이터 수집 중 (Async)...")
     async with aiohttp.ClientSession() as session:
         tasks = [fetch_pokemon(session, pid) for pid in TARGET_IDS]
         results = await asyncio.gather(*tasks)
     
     valid_data = [r for r in results if r is not None]
-    print(f"✅ 총 {len(valid_data)}마리 데이터 수집 완료!")
+    
+    # 🚨 중요: Java 코드 내부가 아닌, JSON 파일로 리소스 폴더에 저장
+    json_path = os.path.join(RESOURCES, "data.json")
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(valid_data, f, ensure_ascii=False)
+        
+    print(f"✅ {len(valid_data)}마리 데이터 -> {json_path} 저장 완료!")
     return valid_data
 
-# --- Java 소스 생성 ---
-def create_java_files(data):
+# --- Java 소스 생성 (Resource 로드 방식 적용) ---
+def create_java_files():
     # 1. Model
     with open(os.path.join(DIRS["model"], "Pokemon.java"), "w", encoding="utf-8") as f:
         f.write("""
@@ -125,8 +134,10 @@ def create_java_files(data):
         import lombok.Data;
         import lombok.AllArgsConstructor;
         import lombok.NoArgsConstructor;
+        import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
         @Data @AllArgsConstructor @NoArgsConstructor
+        @JsonIgnoreProperties(ignoreUnknown = true)
         public class Pokemon {
             private int id;
             private String name;
@@ -141,44 +152,51 @@ def create_java_files(data):
         }
         """)
 
-    # 2. Service
-    json_data = json.dumps(data, ensure_ascii=False).replace('"', '\\"')
+    # 2. Service (🚨 핵심 수정: 파일 읽기 방식)
     with open(os.path.join(DIRS["service"], "PokemonService.java"), "w", encoding="utf-8") as f:
-        f.write(f"""
+        f.write("""
         package com.omni.pokemon.service;
         import com.fasterxml.jackson.core.type.TypeReference;
         import com.fasterxml.jackson.databind.ObjectMapper;
         import com.omni.pokemon.model.Pokemon;
         import org.springframework.stereotype.Service;
         import jakarta.annotation.PostConstruct;
+        import java.io.InputStream;
         import java.util.ArrayList;
         import java.util.List;
         import java.util.stream.Collectors;
 
         @Service
-        public class PokemonService {{
+        public class PokemonService {
             private List<Pokemon> db = new ArrayList<>();
             private final ObjectMapper mapper = new ObjectMapper();
 
             @PostConstruct
-            public void init() {{
-                try {{
-                    String raw = "{json_data}";
-                    db = mapper.readValue(raw, new TypeReference<List<Pokemon>>() {{}});
-                    System.out.println("✅ DB Init: " + db.size() + " items loaded.");
-                }} catch (Exception e) {{ e.printStackTrace(); }}
-            }}
+            public void init() {
+                try {
+                    // 🚨 Resource 폴더의 data.json 파일을 스트림으로 읽음 (용량 제한 없음)
+                    InputStream is = getClass().getResourceAsStream("/data.json");
+                    if (is == null) {
+                        System.err.println("❌ data.json not found!");
+                        return;
+                    }
+                    db = mapper.readValue(is, new TypeReference<List<Pokemon>>() {});
+                    System.out.println("✅ DB Loaded: " + db.size() + " items.");
+                } catch (Exception e) { e.printStackTrace(); }
+            }
 
-            public List<Pokemon> search(String keyword) {{
+            public List<Pokemon> search(String keyword) {
                 if (keyword == null || keyword.isEmpty()) return db;
                 return db.stream()
-                    .filter(p -> p.getName().contains(keyword) || p.getEngName().contains(keyword) || String.valueOf(p.getId()).equals(keyword))
+                    .filter(p -> p.getName().contains(keyword) || 
+                                 (p.getEngName() != null && p.getEngName().toLowerCase().contains(keyword.toLowerCase())) || 
+                                 String.valueOf(p.getId()).equals(keyword))
                     .collect(Collectors.toList());
-            }}
-        }}
+            }
+        }
         """)
 
-    # 3. Controller (Health Check 추가)
+    # 3. Controller
     with open(os.path.join(DIRS["controller"], "PokemonController.java"), "w", encoding="utf-8") as f:
         f.write("""
         package com.omni.pokemon.controller;
@@ -200,9 +218,7 @@ def create_java_files(data):
             }
             
             @GetMapping("/system/health")
-            public String health() {
-                return "OK";
-            }
+            public String health() { return "OK"; }
         }
         """)
 
@@ -221,7 +237,7 @@ def create_java_files(data):
     with open(os.path.join(RESOURCES, "application.properties"), "w") as f:
         f.write("server.port=8086")
 
-# --- 프론트엔드 ---
+# --- 프론트엔드 (UI) ---
 def create_frontend():
     html = """
     <!DOCTYPE html>
@@ -230,46 +246,67 @@ def create_frontend():
         <meta charset="UTF-8">
         <title>Omni Massive DB</title>
         <style>
-            :root { --bg: #1e272e; --card: #2f3640; --text: #d2dae2; }
+            :root { --bg: #2d3436; --card: #353b48; --text: #dfe6e9; --accent: #0984e3; }
             body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
-            .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; max-width: 1400px; margin: 20px auto; }
-            .card { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s; border-bottom: 3px solid transparent; }
-            .card:hover { transform: translateY(-5px); border-bottom-color: #ffd32a; }
-            img { width: 100px; height: 100px; }
-            .type-badge { font-size: 0.8rem; padding: 3px 8px; background: rgba(255,255,255,0.1); border-radius: 10px; display: inline-block; margin: 5px 0; }
-            input { width: 60%; padding: 15px; font-size: 1.1rem; border-radius: 30px; border: none; background: #485460; color: white; outline: none; }
+            .search-container { position: sticky; top: 0; background: var(--bg); padding: 20px; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+            input { width: 60%; padding: 15px; border-radius: 25px; border: 2px solid #636e72; background: var(--card); color: white; font-size: 1.1rem; outline: none; }
+            input:focus { border-color: var(--accent); }
+            
+            .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; max-width: 1500px; margin: 20px auto; }
+            .card { background: var(--card); border-radius: 12px; padding: 15px; transition: 0.2s; position: relative; border-top: 4px solid #7f8c8d; }
+            .card:hover { transform: translateY(-5px); background: #3d4452; }
+            
+            .type-fire { border-color: #e17055; } .type-water { border-color: #74b9ff; } 
+            .type-grass { border-color: #55efc4; } .type-electric { border-color: #ffeaa7; }
+            
+            img { width: 110px; height: 110px; object-fit: contain; }
+            .info { margin-top: 10px; font-size: 0.9rem; }
+            .total-badge { background: #2d3436; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
         </style>
     </head>
     <body>
-        <h1>🔥 Omni Massive Database</h1>
-        <input type="text" id="search" placeholder="🔍 포켓몬 검색..." onkeyup="search()">
-        <div id="count" style="margin: 10px; color: #808e9b;"></div>
+        <div class="search-container">
+            <h1>💎 Omni Global DB (1~3세대 + 전설)</h1>
+            <input type="text" id="search" placeholder="검색 (이름, 번호)..." onkeyup="search()">
+            <div id="stats" style="margin-top:10px; color:#b2bec3;">Loading...</div>
+        </div>
+        
         <div id="result" class="grid"></div>
+
         <script>
             let db = [];
             async function init() {
                 const res = await fetch('/api/pokemon/search');
                 db = await res.json();
-                document.getElementById('count').innerText = `Total: ${db.length} loaded`;
+                document.getElementById('stats').innerText = `Data Loaded: ${db.length} Species`;
                 render(db);
             }
+            
             function render(list) {
-                document.getElementById('result').innerHTML = list.map(p => `
-                    <div class="card">
-                        <div style="font-size:0.8rem; opacity:0.7">#${p.id}</div>
+                // 성능을 위해 최대 100개까지만 렌더링 (검색 시 전체 필터링)
+                const view = list.slice(0, 100); 
+                
+                document.getElementById('result').innerHTML = view.map(p => `
+                    <div class="card type-${p.type}">
+                        <div style="text-align:left; font-size:0.8rem; opacity:0.6;">#${p.id}</div>
                         <img src="${p.imageUrl}" loading="lazy">
-                        <div style="font-weight:bold; font-size:1.1rem; margin:5px 0;">${p.name}</div>
-                        <div class="type-badge">${p.type}</div>
-                        <div style="font-size:0.9rem;">
-                             종족값: ${p.total} <br>
-                             <span style="color:${p.grade.includes('S')?'#ffdd59':'#d2dae2'}">${p.grade}</span>
+                        <h3 style="margin:5px 0">${p.name}</h3>
+                        <div style="font-size:0.8rem; color:#b2bec3;">${p.engName}</div>
+                        <div class="info">
+                            <div>Type: ${p.type}</div>
+                            <div style="margin-top:5px;">
+                                Total: <span class="total-badge">${p.total}</span> 
+                                <span style="color:${p.grade.includes('S')?'#fdcb6e':'inherit'}">${p.grade}</span>
+                            </div>
                         </div>
                     </div>
                 `).join('');
             }
+            
             function search() {
                 const q = document.getElementById('search').value.toLowerCase();
-                render(db.filter(p => p.name.includes(q) || String(p.id).includes(q) || p.engName.toLowerCase().includes(q)));
+                const filtered = db.filter(p => p.name.includes(q) || String(p.id).includes(q) || (p.engName && p.engName.toLowerCase().includes(q)));
+                render(filtered);
             }
             init();
         </script>
@@ -281,13 +318,21 @@ def create_frontend():
 
 def main():
     if os.name == 'nt': asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    print("🚀 Omni System: Starting Massive Setup...")
+    print("🚀 Ultimate Setup: Saving Data to File & Generating Source...")
+    
     create_structure()
     create_pom_xml()
-    data = asyncio.run(fetch_all())
-    create_java_files(data)
+    
+    # 1. 데이터 수집 및 파일 저장
+    asyncio.run(fetch_all_and_save())
+    
+    # 2. 자바 소스 생성 (파일 로드 로직 포함)
+    create_java_files()
+    
+    # 3. 프론트엔드 생성
     create_frontend()
-    print("✅ Setup Complete.")
+    
+    print("✅ Setup Completed Successfully!")
 
 if __name__ == "__main__":
     main()
