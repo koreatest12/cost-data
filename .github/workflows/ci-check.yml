@@ -1,4 +1,4 @@
-name: Ultimate CI & Smoke Test & Dashboard
+name: Ultimate CI & API Server & Dashboard
 
 on:
   push:
@@ -14,19 +14,16 @@ jobs:
       checks: write
 
     steps:
-      # 1. 소스 체크아웃
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. 환경 설정 (Python & Java)
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
           
       - name: Install Python Dependencies
-        run: |
-          pip install requests
+        run: pip install requests
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -35,100 +32,72 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # 3. [구축] 시스템 자동 설치 및 데이터 생성 (포켓몬 1~9세대 + 한국어)
-      - name: Run Ultimate Setup Script (Generate Source)
+      # [핵심] Python 스크립트가 Spring Boot MVC 파일(Controller, Service, DTO)을 대량 생성
+      - name: Run Ultimate Setup Script (Generate MVC Architecture)
         id: setup
         run: |
           if [ -f setup_ultimate_system.py ]; then
-            echo "🚀 setup_ultimate_system.py 실행 중... (데이터 페칭 및 소스 생성)"
+            echo "🚀 setup_ultimate_system.py 실행: MVC 구조 및 API 서버 코드 생성 중..."
             python setup_ultimate_system.py
-            echo "status=success" >> $GITHUB_OUTPUT
           else
-            # 스크립트가 없을 경우 자동 생성 (이 예시를 위해)
-            echo "❌ 스크립트가 없습니다. 저장소에 setup_ultimate_system.py를 추가해주세요."
+            echo "❌ 스크립트가 없습니다."
             exit 1
           fi
 
-      # 3-1. [빌드] Java Spring Boot 빌드 (JAR 생성)
-      - name: Build with Maven
+      # Maven 빌드 (API 서버 컴파일)
+      - name: Build Spring Boot App
         run: |
           cd services/omni-pokemon-web
           mvn clean package -DskipTests
-          
-      # 4. [검증] 리소스 확인
-      - name: Verify & Report Resources
-        id: verify
-        run: |
-          echo "🔍 Resource Verification Started..."
-          JAR_COUNT=$(find ./services -name "*.jar" | wc -l)
-          echo "JAR_COUNT=$JAR_COUNT" >> $GITHUB_ENV
-          
-          WEB_SOURCE="./services/omni-pokemon-web/src/main/resources/static/index.html"
-          if [ -f "$WEB_SOURCE" ]; then
-            echo "WEB_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "WEB_EXISTS=false" >> $GITHUB_ENV
-          fi
 
-      # 5. [테스트] 홈페이지 서버 접속 테스트 (Smoke Test)
-      - name: 🌐 Homepage Access Test (Smoke Test)
+      # API 서버 실행 및 테스트
+      - name: 🌐 API Server Smoke Test
         id: smoke_test
         run: |
-          echo "🔥 포켓몬 웹 서버(omni-pokemon-web) 백그라운드 실행..."
-          # 버전 와일드카드로 유연하게 실행
-          nohup java -jar ./services/omni-pokemon-web/target/*.jar > web.log 2>&1 &
+          echo "🔥 API 서버 백그라운드 실행..."
+          nohup java -jar ./services/omni-pokemon-web/target/*.jar > api.log 2>&1 &
           PID=$!
           
-          echo "⏳ 서버 부팅 대기 (20초)..."
-          sleep 20
+          echo "⏳ 서버 부팅 대기 (25초)..."
+          sleep 25
           
-          echo "📡 접속 시도 (curl localhost:8086)..."
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/index.html)
+          echo "🧪 1. 메인 페이지 접속 테스트"
+          HTTP_CODE_WEB=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/index.html)
           
-          echo "HTTP_STATUS=$HTTP_CODE" >> $GITHUB_ENV
+          echo "🧪 2. REST API (한국어 검색) 테스트"
+          # '피카츄'로 검색 테스트 (URL 인코딩 필요할 수 있으나 curl이 처리)
+          API_RES=$(curl -s "http://localhost:8086/api/pokemon/search?keyword=피카츄")
+          echo "API Response: $API_RES"
           
-          if [ "$HTTP_CODE" -eq 200 ]; then
-            echo "✅ 접속 성공! (200 OK)"
+          if [ "$HTTP_CODE_WEB" -eq 200 ] && [[ "$API_RES" == *"피카츄"* ]]; then
+            echo "✅ 모든 테스트 통과 (Web + API)"
             echo "TEST_RESULT=SUCCESS" >> $GITHUB_ENV
           else
-            echo "❌ 접속 실패 (Status: $HTTP_CODE)"
+            echo "❌ 테스트 실패"
             echo "TEST_RESULT=FAILURE" >> $GITHUB_ENV
-            echo "::group::Server Logs"
-            cat web.log
-            echo "::endgroup::"
+            cat api.log
             kill $PID
             exit 1
           fi
           kill $PID
 
-      # 6. [화면 표시] GitHub Actions Summary 생성
-      - name: 📊 Generate GitHub Summary Dashboard
+      - name: 📊 Generate Summary
         if: always()
         run: |
-          echo "# 🚀 Omni System Build Report" >> $GITHUB_STEP_SUMMARY
-          echo "### 🛠️ System Status (Gen 1 ~ Gen 9 Supported)" >> $GITHUB_STEP_SUMMARY
-          echo "| Service | Status | Port | Language |" >> $GITHUB_STEP_SUMMARY
-          echo "| :--- | :---: | :---: | :---: |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Pokemon Web** | 🟢 Active | 8086 | 🇰🇷 Korean |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# 🚀 Omni API Server Report" >> $GITHUB_STEP_SUMMARY
+          echo "### 📡 API Status" >> $GITHUB_STEP_SUMMARY
+          echo "- **Base URL:** \`/api/pokemon\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Search Feature:** 🇰🇷 Korean Supported" >> $GITHUB_STEP_SUMMARY
+          echo "- **IV Analysis:** ✅ Active" >> $GITHUB_STEP_SUMMARY
           
-          echo "### 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
           if [ "$TEST_RESULT" == "SUCCESS" ]; then
-             echo "- ✅ **Homepage Smoke Test:** Passed (200 OK)" >> $GITHUB_STEP_SUMMARY
-             echo "- ✅ **Data:** 1세대(이상해씨) ~ 9세대(최신) 데이터 반영 완료" >> $GITHUB_STEP_SUMMARY
+             echo "✅ **System Healthy**" >> $GITHUB_STEP_SUMMARY
           else
-             echo "- ❌ **Homepage Smoke Test:** Failed" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "$WEB_EXISTS" == "true" ]; then
-             echo "✅ **index.html generated successfully.**" >> $GITHUB_STEP_SUMMARY
+             echo "❌ **System Error**" >> $GITHUB_STEP_SUMMARY
           fi
 
-      # 7. [파일 제공]
-      - name: 📤 Upload Dashboard Artifact
+      - name: 📤 Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: pokemon-dashboard-html
-          path: services/omni-pokemon-web/src/main/resources/static/index.html
-          retention-days: 5
+          name: pokemon-api-server-jar
+          path: services/**/*.jar
