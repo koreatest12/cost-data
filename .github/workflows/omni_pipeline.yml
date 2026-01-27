@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: 🛠️ Setup
         run: mkdir -p DB_SEC/news/threat_intel DB_SEC/archive
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.11' }
       - run: pip install pandas faker
       - name: 🧬 Run Security News Generator
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: 🛠️ Setup
         run: mkdir -p DB/jobs/pangyo DB/jobs/gangnam DB/jobs/global
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.11' }
       - run: pip install faker
       - name: 🧬 Run Job News Generator
@@ -162,7 +162,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_ALGO/news/ai DB_ALGO/news/engineering
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.11' }
       - run: pip install faker
       - name: 🧬 Run Tech Generator
@@ -225,7 +225,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: mkdir -p DB_COST/market
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.11' }
       - run: pip install faker
       - name: 🧬 Run Market Generator
