@@ -176,7 +176,7 @@ jobs:
 
       - name: 결과물 업로드 (Artifact)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: windows-result-package
           path: '*.zip'
@@ -304,7 +304,7 @@ jobs:
 
       - name: 결과물 업로드 (Artifact)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: linux-result-package
           path: '*.tar.gz'

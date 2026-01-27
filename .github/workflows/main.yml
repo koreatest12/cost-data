@@ -56,7 +56,7 @@ jobs:
           python sec_core.py
       - name: 📦 Archive
         run: tar -czf pkg-sec-primary.tar.gz DB_SEC/primary/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: pkg-sec-primary
           path: pkg-sec-primary.tar.gz
@@ -95,7 +95,7 @@ jobs:
           python job_core.py
       - name: 📦 Archive
         run: tar -czf pkg-job-primary.tar.gz DB_JOB/primary/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: pkg-job-primary
           path: pkg-job-primary.tar.gz
@@ -133,7 +133,7 @@ jobs:
           python algo_core.py
       - name: 📦 Archive
         run: tar -czf pkg-algo-primary.tar.gz DB_ALGO/primary/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: pkg-algo-primary
           path: pkg-algo-primary.tar.gz
@@ -167,7 +167,7 @@ jobs:
           python misc_core.py
       - name: 📦 Archive
         run: tar -czf pkg-cost-primary.tar.gz DB_COST/primary/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: pkg-cost-primary
           path: pkg-cost-primary.tar.gz
@@ -185,7 +185,7 @@ jobs:
           echo "echo '🚀 Updating Server Configs...'" > infra_scripts/update.sh
           chmod +x infra_scripts/*.sh
           tar -czf pkg-infra-scripts.tar.gz infra_scripts/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: pkg-infra
           path: pkg-infra-scripts.tar.gz
@@ -340,7 +340,7 @@ jobs:
           done
 
       - name: 📤 Upload Artifacts (Includes pokemon-go-data)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: enterprise-artifacts
           path: |

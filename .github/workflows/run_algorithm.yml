@@ -182,7 +182,7 @@ jobs:
       # [Step 5] 전체 데이터 아티팩트 저장 (다운로드 가능하도록)
       # ----------------------------------------------------------------------
       - name: 📦 최신 데이터 패키지 업로드
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Latest_Massive_Cost_Data
           path: |
