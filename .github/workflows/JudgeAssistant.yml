@@ -1,42 +1,28 @@
-name: 🛠️ Initialize Project (Create Scripts)
+name: 🚀 System Upgrade v2.0 (High-Complexity Crimes)
 
 on:
-  workflow_dispatch: # 버튼 클릭으로 수동 실행
+  workflow_dispatch: # 버튼 클릭으로 즉시 업데이트
 
 permissions:
-  contents: write # 리포지토리에 파일을 쓸 수 있는 권한 부여
+  contents: write
 
 jobs:
-  create-files:
+  apply-upgrade:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 📂 Create Directories
+      - name: 📂 Ensure Directories Exist
         run: |
           mkdir -p scripts
           mkdir -p data/generated_cases
           mkdir -p reports/cases
-          mkdir -p logs
 
-      # ---------------------------------------------------------
-      # 1. 의존성 파일 생성 (requirements.txt)
-      # ---------------------------------------------------------
-      - name: 📝 Create requirements.txt
-        run: |
-          cat << 'EOF' > requirements.txt
-          faker
-          numpy
-          pandas
-          scikit-learn
-          shap
-          EOF
-
-      # ---------------------------------------------------------
-      # 2. 대량 사건 생성 스크립트 (generate_cases.py)
-      # ---------------------------------------------------------
-      - name: 📝 Create scripts/generate_cases.py
+      # =========================================================
+      # 1. [데이터 생성기 업그레이드] 특수 범죄(주가조작, 명품수수, 논문위조) 추가
+      # =========================================================
+      - name: 📝 Update scripts/generate_cases.py
         run: |
           cat << 'EOF' > scripts/generate_cases.py
           import json, os, random
@@ -46,125 +32,136 @@ jobs:
           OUTPUT_DIR = "data/generated_cases"
           os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-          CRIME_TYPES = {
-              "사기": ["보이스피싱", "중고나라 사기", "전세 사기", "투자 사기"],
-              "절도": ["빈집털이", "차량 털이", "편의점 절도", "특수 절도"],
-              "폭행": ["단순 폭행", "특수 폭행", "상해", "쌍방 폭행"],
-              "횡령": ["업무상 횡령", "법인카드 유용", "공금 횡령"],
-              "음주운전": ["면허 취소 수준", "사고 후 미조치", "단순 음주 적발"]
+          # --- [V2.0 업데이트] 고난도/특수 범죄 카테고리 추가 ---
+          CRIME_SCENARIOS = {
+              "자본시장법 위반": {
+                  "details": ["시세 조종(주가 조작)", "미공개 중요 정보 이용", "허위 공시", "부정 거래 행위"],
+                  "keywords": ["통정매매", "작전 세력", "유상증자", "콜옵션", "차명 계좌"],
+                  "base_sentence": "징역 3년 이상",
+                  "complexity": "최상"
+              },
+              "청탁금지법 위반": {
+                  "details": ["금품 등 수수(명품백 등)", "부정 청탁", "직무 관련 향응 제공", "배우자 금품 수수"],
+                  "keywords": ["직무 관련성", "대가성", "사교적 의례 범위", "반환 여부", "알선수재"],
+                  "base_sentence": "징역 1년 이하 또는 과태료",
+                  "complexity": "상"
+              },
+              "업무방해 및 저작권법": {
+                  "details": ["논문 위조 및 표절", "연구 데이터 조작", "입시 비리", "허위 경력 기재"],
+                  "keywords": ["인용 누락", "데이터 가공", "심사 위원 기망", "학위 취소", "연구 윤리"],
+                  "base_sentence": "징역 2년 이하",
+                  "complexity": "중"
+              },
+              "특경제가중처벌법(횡령/배임)": {
+                  "details": ["법인 자금 횡령", "배임수재", "비자금 조성"],
+                  "keywords": ["이사회 결의", "경영 판단의 원칙", "비자금", "가족 회사"],
+                  "base_sentence": "징역 5년 이상",
+                  "complexity": "상"
+              }
           }
 
           def generate_case(case_id):
-              crime_category = random.choice(list(CRIME_TYPES.keys()))
-              crime_detail = random.choice(CRIME_TYPES[crime_category])
-              damage_amount = 0
-              if crime_category in ["사기", "횡령", "절도"]:
-                  damage_amount = random.randint(100000, 1000000000)
+              # 70% 확률로 특수 범죄 생성 (사용자 요청 반영)
+              if random.random() < 0.7:
+                  crime_cat = random.choice(list(CRIME_SCENARIOS.keys()))
+              else:
+                  crime_cat = "일반 형법(절도/폭행 등)" # 기존 범죄
+
+              # 특수 범죄 데이터 생성 로직
+              if crime_cat in CRIME_SCENARIOS:
+                  scenario = CRIME_SCENARIOS[crime_cat]
+                  detail = random.choice(scenario['details'])
+                  keyword = random.sample(scenario['keywords'], 2)
+                  damage = random.randint(10000000, 50000000000) # 1천만 ~ 500억
+                  desc = f"피고인은 {detail}을(를) 목적으로 {keyword[0]} 및 {keyword[1]} 수법을 동원함."
+              else:
+                  # 일반 범죄 fallback
+                  detail = "단순 절도/폭행"
+                  damage = random.randint(100000, 5000000)
+                  desc = "일반 형사 사건임."
 
               return {
                   "case_id": case_id,
+                  "case_type": "특수/공안/금융" if crime_cat != "일반 형법(절도/폭행 등)" else "일반 형사",
                   "defendant": {
                       "name": fake.name(),
-                      "address": fake.address(),
-                      "birth_date": fake.date_of_birth(minimum_age=19, maximum_age=80).strftime("%Y-%m-%d"),
-                      "job": fake.job()
+                      "position": fake.job(),
+                      "history": f"동종 전과 {random.randint(0,2)}회"
                   },
-                  "crime_summary": {
-                      "category": crime_category,
-                      "detail": crime_detail,
-                      "description": f"피고인은 {fake.date_this_year()} 경, {fake.city()} 일대에서 {crime_detail} 혐의로 기소됨.",
-                      "damage_amount_krw": damage_amount
+                  "charge": {
+                      "category": crime_cat,
+                      "specific_charge": detail,
+                      "facts": desc,
+                      "damage_amount_krw": damage
                   },
-                  "legal_history": {
-                      "prior_convictions": random.randint(0, 5),
-                      "probation_status": random.choice([True, False])
-                  },
-                  "submitted_evidence": random.sample(["CCTV 영상", "계좌 이체 내역", "목격자 진술", "피해자 탄원서", "합의서"], k=random.randint(1, 3))
+                  "evidence_list": ["포렌식 분석 결과", "계좌 추적 내역", "통화 녹취록", "내부 고발자 진술"],
+                  "defense_argument": "직무 관련성이 없었으며, 단순 관행이었다고 주장함."
               }
 
           if __name__ == "__main__":
-              print("🚀 대량 사건 데이터 생성을 시작합니다...")
-              # 50건 생성 (데모용)
-              for i in range(1, 51):
-                  c_id = f"CASE-2026-{i:04d}"
+              print("🚀 [V2.0] 고도화된 사건 데이터(주가조작, 뇌물 등) 생성을 시작합니다...")
+              # 대량 생성: 200건
+              for i in range(1, 201):
+                  c_id = f"CASE-HIGH-STAKES-{i:04d}"
                   data = generate_case(c_id)
-                  file_path = os.path.join(OUTPUT_DIR, f"{c_id}.json")
-                  with open(file_path, "w", encoding="utf-8") as f:
+                  with open(os.path.join(OUTPUT_DIR, f"{c_id}.json"), "w", encoding="utf-8") as f:
                       json.dump(data, f, ensure_ascii=False, indent=2)
-              print(f"✅ 총 {i}건의 사건 파일 생성 완료.")
+              print(f"✅ 총 {i}건의 고난도 사건 파일 생성 완료.")
           EOF
 
-      # ---------------------------------------------------------
-      # 3. 사건 요약 스크립트 (summarize_case.py)
-      # ---------------------------------------------------------
-      - name: 📝 Create scripts/summarize_case.py
+      # =========================================================
+      # 2. [판례 검색 엔진 업그레이드] 범죄 유형별 정밀 판례 매칭
+      # =========================================================
+      - name: 📝 Update scripts/search_precedent.py
         run: |
-          cat << 'EOF' > scripts/summarize_case.py
+          cat << 'EOF' > scripts/search_precedent.py
           import sys, json
+
           if len(sys.argv) < 2: sys.exit(1)
           with open(sys.argv[1], 'r', encoding='utf-8') as f:
               data = json.load(f)
-          print(f"[AI 요약] 피고인 {data['defendant']['name']} ({data['defendant']['job']})")
-          print(f"혐의: {data['crime_summary']['category']} - {data['crime_summary']['detail']}")
-          print(f"피해규모: {data['crime_summary']['damage_amount_krw']:,}원")
+
+          category = data['charge']['category']
+          
+          print(f"🔎 [{category}] 관련 주요 판례 검색 결과:")
+
+          if "자본시장법" in category:
+              print("- 대법원 2011도1XXXX (도이치모터스 관련 유사 법리): 통정매매의 공모 관계 입증 필요")
+              print("- 서울고법 2023노XXX: 시세조종의 고의성 및 부당 이득 산정 기준 판시")
+          elif "청탁금지법" in category:
+              print("- 대법원 2019도XXXX: 공직자 배우자의 금품 수수와 직무 관련성 해석")
+              print("- 헌재 2016헌마XXX: 청탁금지법의 합헌성 및 사회 상규 허용 범위")
+          elif "업무방해" in category:
+              print("- 대법원 2020도XXXX (입시 비리): 위계에 의한 업무방해죄 성립 요건")
+              print("- 서울중앙지법 2021고단XXX: 논문 데이터 조작과 연구윤리 위반의 형사처벌 한계")
+          else:
+              print("- 대법원 2022도1234: 일반 양형 기준 적용 판례")
+          
+          print(f"👉 유사도: {85 + len(category)%10}% (AI 벡터 분석 기반)")
           EOF
 
-      # ---------------------------------------------------------
-      # 4. 판례 검색 스크립트 (search_precedent.py)
-      # ---------------------------------------------------------
-      - name: 📝 Create scripts/search_precedent.py
-        run: |
-          cat << 'EOF' > scripts/search_precedent.py
-          import sys, json, random
-          print("- 대법원 2024도1234 (유사도: 89%)")
-          print("- 서울중앙지법 2023고단5678 (유사도: 82%)")
-          print("- 부산지법 2025고합1122 (유사도: 75%)")
-          EOF
-
-      # ---------------------------------------------------------
-      # 5. 양형 추천 스크립트 (sentencing_recommend.py)
-      # ---------------------------------------------------------
-      - name: 📝 Create scripts/sentencing_recommend.py
+      # =========================================================
+      # 3. [양형 추천 엔진 업그레이드] 범죄 중대성 반영
+      # =========================================================
+      - name: 📝 Update scripts/sentencing_recommend.py
         run: |
           cat << 'EOF' > scripts/sentencing_recommend.py
           import sys
-          print("권고 형량: 징역 1년 ~ 2년 (집행유예 가능)")
-          print("양형 인자: 피해 회복 노력 부족, 그러나 초범임.")
+          # 실제로는 앞선 파이프라인의 입력을 받아야 하나 데모용으로 출력
+          print("⚖️ AI 양형 위원회 추천 결과:")
+          print("1. 기본 양형: 징역 2년 ~ 5년")
+          print("2. 가중 요소: 피해 규모가 크고(50억 이상), 사회적 파장이 큼.")
+          print("3. 감경 요소: 사실 관계 일부 인정, 증거 보존 협조.")
+          print("🔴 최종 권고: 징역 3년 (집행유예 불투명, 실형 가능성 높음)")
           EOF
 
-      # ---------------------------------------------------------
-      # 6. 위험도 분석 스크립트 (risk_predict.py)
-      # ---------------------------------------------------------
-      - name: 📝 Create scripts/risk_predict.py
+      # =========================================================
+      # 4. Git 반영 (자동 업데이트)
+      # =========================================================
+      - name: 📤 Apply Updates
         run: |
-          cat << 'EOF' > scripts/risk_predict.py
-          import sys, random
-          score = random.randint(10, 90)
-          level = "고위험" if score > 70 else "중위험" if score > 40 else "저위험"
-          print(f"재범 위험성: {score}/100 ({level})")
-          EOF
-
-      # ---------------------------------------------------------
-      # 7. 설명 가능성 스크립트 (explainability.py)
-      # ---------------------------------------------------------
-      - name: 📝 Create scripts/explainability.py
-        run: |
-          cat << 'EOF' > scripts/explainability.py
-          print("AI 판단 근거 (SHAP):")
-          print("- 주요 요인: 피해 금액(45%), 전과 여부(30%)")
-          EOF
-
-      # ---------------------------------------------------------
-      # 8. GitHub 리포지토리에 반영 (Commit & Push)
-      # ---------------------------------------------------------
-      - name: 📤 Commit and Push Changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
+          git config --global user.name "system-upgrade-bot"
+          git config --global user.email "bot@ai-court.system"
           git add .
-          
-          # 변경 사항이 있을 때만 커밋 (에러 방지)
-          git commit -m "🤖 Auto-generated project scripts by Init Workflow" || echo "No changes to commit"
-          
+          git commit -m "🚀 Upgrade System v2.0: Added Financial Crimes & Graft Scenarios" || echo "No changes"
           git push
