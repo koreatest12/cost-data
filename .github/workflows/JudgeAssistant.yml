@@ -1,130 +1,156 @@
-name: ⚖️ AI Judge System - Instant Execution & Verdict
+name: 🛠️ Fix & Run - Massive AI Judgment System
 
-# [즉시 수행 기능]
-# 1. 코드가 수정되어 푸시(Push)될 때 즉시 실행
-# 2. 수동 버튼(workflow_dispatch) 클릭 시 즉시 실행
 on:
-  push:
-    paths:
-      - 'scripts/**'
-  workflow_dispatch:
+  workflow_dispatch: # 버튼 클릭으로 즉시 실행
+
+permissions:
+  contents: write
 
 jobs:
-  # ------------------------------------------------------------------
-  # JOB 1: 시스템 최신화 (판결문 스크립트 추가)
-  # ------------------------------------------------------------------
-  setup-system:
+  run-massive-system:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: 📂 Create Directories
-        run: mkdir -p scripts data/generated_cases reports/cases
+      # ----------------------------------------------------------------
+      # 1. 환경 설정 및 필수 디렉토리 강제 생성 (에러 방지 핵심)
+      # ----------------------------------------------------------------
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
 
-      # [NEW] 최종 판결문(선고) 작성 스크립트 생성
-      - name: 📝 Create scripts/final_judgment.py
+      - name: 📂 Force Create Directories
+        run: |
+          echo "Creating necessary directories..."
+          mkdir -p scripts
+          mkdir -p data/generated_cases
+          mkdir -p reports/cases
+          mkdir -p logs
+          echo "✅ Directories created successfully."
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Install Dependencies
+        run: pip install faker numpy pandas scikit-learn
+
+      # ----------------------------------------------------------------
+      # 2. 모든 스크립트 재생성 (파일 누락 방지)
+      # ----------------------------------------------------------------
+      
+      # [스크립트 1] 대량 사건 생성기 (고난도/특수 범죄 포함)
+      - name: 📝 Restore generate_cases.py
+        run: |
+          cat << 'EOF' > scripts/generate_cases.py
+          import json, os, random
+          from faker import Faker
+          fake = Faker('ko_KR')
+          OUTPUT_DIR = "data/generated_cases"
+          
+          # 특수 범죄 시나리오
+          CRIME_SCENARIOS = {
+              "자본시장법 위반": {"detail": "주가 조작 및 시세 조종", "sentence": "징역 5년 이상"},
+              "청탁금지법 위반": {"detail": "명품 가방 및 금품 수수", "sentence": "징역 3년 이하"},
+              "특경법 위반(횡령)": {"detail": "법인 자금 50억 횡령", "sentence": "징역 5년 이상"},
+              "업무방해(채용/입시)": {"detail": "성적 조작 및 위계에 의한 업무방해", "sentence": "징역 2년"}
+          }
+          
+          def generate():
+              for i in range(1, 301): # 300건 대량 생성
+                  if random.random() < 0.6:
+                      cat = random.choice(list(CRIME_SCENARIOS.keys()))
+                      info = CRIME_SCENARIOS[cat]
+                      c_type = "특수/공안"
+                  else:
+                      cat = "일반 형법"
+                      info = {"detail": "단순 절도/폭행", "sentence": "징역 1년"}
+                      c_type = "일반"
+                      
+                  data = {
+                      "case_id": f"CASE-{i:04d}",
+                      "type": c_type,
+                      "category": cat,
+                      "detail": info['detail'],
+                      "defendant": fake.name(),
+                      "job": fake.job(),
+                      "damage": random.randint(1000000, 10000000000)
+                  }
+                  
+                  with open(f"{OUTPUT_DIR}/CASE-{i:04d}.json", "w", encoding="utf-8") as f:
+                      json.dump(data, f, ensure_ascii=False, indent=2)
+
+          if __name__ == "__main__":
+              generate()
+          EOF
+
+      # [스크립트 2] 최종 판결문 작성기 (판사 모드)
+      - name: 📝 Restore final_judgment.py
         run: |
           cat << 'EOF' > scripts/final_judgment.py
           import sys, json, random, datetime
-
-          # 입력 데이터 로드
+          
           if len(sys.argv) < 2: sys.exit(1)
           with open(sys.argv[1], 'r', encoding='utf-8') as f:
-              case_data = json.load(f)
-
-          defendant = case_data['defendant']['name']
-          crime_cat = case_data.get('charge', {}).get('category', '일반 형사')
-          crime_detail = case_data.get('charge', {}).get('specific_charge', '불명')
-
-          # --- 판결 로직 (범죄 유형별 시뮬레이션) ---
-          verdict_text = ""
-          sentence_result = ""
-
-          if "자본시장법" in crime_cat: # 주가 조작 등
-              if random.random() > 0.3:
-                  sentence_result = "징역 3년, 집행유예 5년, 벌금 50억 원"
-                  reason = "자본시장의 건전성을 해쳤으나, 부당이익을 반환한 점 고려"
-              else:
-                  sentence_result = "징역 5년 (실형)"
-                  reason = "다수의 소액 주주에게 막대한 피해를 입힌 점을 고려하여 엄벌"
-          
-          elif "청탁금지법" in crime_cat: # 명품 수수 등
-              if random.random() > 0.5:
-                  sentence_result = "무죄 (증거 불충분)"
-                  reason = "직무 관련성과 대가성이 합리적 의심 없이 증명되었다고 보기 어려움"
-              else:
-                  sentence_result = "징역 1년, 집행유예 2년"
-                  reason = "공직 사회의 신뢰를 훼손하였으나, 반환 의사를 표시한 점 참작"
-          
-          elif "업무방해" in crime_cat: # 논문 위조 등
-              sentence_result = "징역 8월, 집행유예 2년, 사회봉사 120시간"
-              reason = "입시 및 연구의 공정성을 저해하였으나, 초범인 점 참작"
-          
-          else: # 일반 범죄
-              sentence_result = "징역 10월"
-              reason = "피해자와 합의되지 않았으며 죄질이 불량함"
-
-          # --- 판결문(주문) 출력 포맷 ---
-          print(f"# ⚖️ [판결 선고] {datetime.date.today().strftime('%Y년 %m월 %d일')}")
-          print(f"**피고인:** {defendant}")
-          print(f"**사건명:** {crime_cat} 위반 ({crime_detail})")
-          print("---")
-          print(f"### 📢 주 문 (Verdict)")
-          print(f"> **{sentence_result}에 처한다.**")
-          print(f"\n### 📜 양형의 이유")
-          print(f"{reason}")
-          print("\n*본 판결은 AI 사법 보조 시스템의 모의 결과입니다.*")
+              data = json.load(f)
+              
+          cat = data['category']
+          # 랜덤 판결 로직
+          if "자본시장법" in cat:
+              res = "징역 5년, 벌금 100억 원"
+          elif "청탁금지법" in cat:
+              res = "무죄 (직무관련성 입증 부족)" if random.random() > 0.5 else "징역 1년, 집행유예 2년"
+          elif "횡령" in cat:
+              res = "징역 4년 (실형)"
+          else:
+              res = "징역 8월, 집행유예 2년"
+              
+          print(f"### ⚖️ AI 재판부 판결 ({datetime.date.today()})")
+          print(f"- **피고인**: {data['defendant']} ({data['job']})")
+          print(f"- **죄명**: {cat} ({data['detail']})")
+          print(f"- **피해 규모**: {data['damage']:,} 원")
+          print(f"\n> **주문: 피고인을 {res}에 처한다.**")
           EOF
 
-  # ------------------------------------------------------------------
-  # JOB 2: 사건 생성 및 판결 집행 (즉시 수행)
-  # ------------------------------------------------------------------
-  execute-judgment:
-    needs: setup-system
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      - name: 📦 Install Deps
-        run: pip install faker numpy pandas scikit-learn
+      # ----------------------------------------------------------------
+      # 3. 실행 단계 (대량 생성 -> 분석 -> 판결)
+      # ----------------------------------------------------------------
+      - name: 🏭 Generate Massive Data
+        run: |
+          echo "Generating 300 cases..."
+          python scripts/generate_cases.py
+          echo "✅ Generation Completed."
 
-      # 1. 사건 데이터 생성 (기존 로직 활용 + 특수 범죄 포함)
-      - name: 🏭 Generate Cases
-        run: python scripts/generate_cases.py
-
-      # 2. AI 분석 및 판결 루프 실행
-      - name: ⚖️ Analyze & Judge
+      - name: ⚖️ Execute Mass Judgment
         run: |
           echo "Processing judgments..."
+          
+          # 리포트 저장 폴더 재확인 (안전장치)
+          mkdir -p reports/cases
+          
+          count=0
           for file in data/generated_cases/*.json; do
             filename=$(basename "$file" .json)
             
-            # 리포트 파일 생성 시작
-            echo "# ⚖️ AI 재판 기록: $filename" > reports/cases/$filename.md
+            # 판결문 생성 및 저장
+            python scripts/final_judgment.py "$file" > "reports/cases/$filename.md"
             
-            # [Step 1] 사건 요약
-            python scripts/summarize_case.py "$file" >> reports/cases/$filename.md
-            
-            # [Step 2] 유사 판례
-            echo -e "\n## 1. 유사 판례 검토" >> reports/cases/$filename.md
-            python scripts/search_precedent.py "$file" >> reports/cases/$filename.md
-            
-            # [Step 3] AI 양형 의견
-            echo -e "\n## 2. AI 양형 위원회 의견" >> reports/cases/$filename.md
-            python scripts/sentencing_recommend.py >> reports/cases/$filename.md
-            
-            # [Step 4] (NEW) 최종 판결 선고
-            echo -e "\n## 3. 최종 판결 (JUDGMENT)" >> reports/cases/$filename.md
-            python scripts/final_judgment.py "$file" >> reports/cases/$filename.md
-            
+            count=$((count+1))
           done
+          
+          echo "✅ All $count judgments completed."
 
-      # 3. 결과물 업로드
-      - name: 📤 Upload Judgments
+      # ----------------------------------------------------------------
+      # 4. 결과 통합 및 업로드
+      # ----------------------------------------------------------------
+      - name: 📑 Create Summary Report
+        run: |
+          echo "# 📊 AI 판사 대량 판결 요약" > reports/summary.md
+          echo "총 처리 건수: $(ls reports/cases | wc -l)건" >> reports/summary.md
+          echo "---" >> reports/summary.md
+          echo "## 주요 판결 사례 (Top 10)" >> reports/summary.md
+          head -n 50 reports/cases/*.md >> reports/summary.md || true
+
+      - name: 📤 Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Final-Judgments-Report
-          path: reports/cases/
+          name: AI-Massive-Judgments
+          path: reports/
