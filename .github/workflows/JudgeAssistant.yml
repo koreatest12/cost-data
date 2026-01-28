@@ -1,129 +1,174 @@
-name: ⚖️ AI Judge 9.0 - Infinite Loop for Heavy Sentence
+name: ⚖️ AI Judge 10.0 - Accomplice Hunt & 5-Min Judgment
 
 on:
-  workflow_dispatch: # 버튼 클릭 시 실행
+  schedule:
+    - cron: '*/5 * * * *' # 5분마다 자동 실행 (무한 루프)
+  workflow_dispatch: # 수동 실행 가능
 
 permissions:
   contents: write
 
 jobs:
-  relentless-judgment:
+  track-and-judge:
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
       - name: 📂 Setup Environment
         run: |
-          mkdir -p scripts data/final_verdicts reports
-          pip install faker
+          mkdir -p scripts data/evidence reports
+          pip install faker pandas
 
       # ----------------------------------------------------------------
-      # 1. [Script] 무한 심리 & 혐의 가중 엔진 (핵심 로직)
+      # 1. [Script] 공범 및 뉴스 증거 정밀 추적기 (Evidence Hunter)
       # ----------------------------------------------------------------
-      - name: 📝 Create scripts/infinite_trial.py
+      - name: 📝 Create scripts/evidence_hunter.py
         run: |
-          cat << 'EOF' > scripts/infinite_trial.py
-          import json, random, datetime, time, sys
-
-          # 타겟 리스트 (사용자 요청 맥락 반영)
-          TARGETS = ["윤석열", "김건희"]
+          cat << 'EOF' > scripts/evidence_hunter.py
+          import json, random, datetime
           
-          # 강력 처벌을 위한 대법원 판례 DB (징역 10년 이상 기준)
-          HEAVY_PRECEDENTS = {
-              "내란목적살인/국헌문란": "대법원 96도33XX (전두환/노태우 사건): 무기징역 및 추징금 2205억",
-              "특정범죄가중처벌(뇌물/국고손실)": "대법원 2020도XXX (전직 대통령 사례): 징역 17년, 벌금 130억",
-              "자본시장법위반(시세조종)": "서울고법 2023노XXX: 이득액 50억 이상 시 무기 또는 5년 이상",
-              "직권남용/선거개입": "징역 2년~5년이나 경합범 가중 시 최대 15년 가능"
+          # [데이터베이스] 주요 범죄, 공범, 관련 뉴스 키워드 매핑
+          CRIME_NETWORK = {
+              "김건희": {
+                  "도이치모터스 주가조작": {
+                      "accomplices": ["권오수(전 회장)", "이종호(블랙펄)", "민모 씨(계좌관리인)"],
+                      "news_keywords": ["2차 작전 세력", "통정매매 98회", "7초만에 거래 체결", "검찰 의견서 누락"]
+                  },
+                  "디올백 및 청탁금지법": {
+                      "accomplices": ["최재영(목사)", "유철환(권익위원장)", "대통령실 행정관"],
+                      "news_keywords": ["접견 기록 삭제", "직무 관련성 인정", "황제 조사 특혜", "알선수재 혐의"]
+                  },
+                  "양평 고속도로 특혜": {
+                      "accomplices": ["원희룡(전 장관)", "국토부 실무진", "최은순(모친)"],
+                      "news_keywords": ["노선 변경 외압", "개발 이익 독점", "예비타당성 조사 무시"]
+                  }
+              },
+              "윤석열": {
+                  "채상병 수사 외압": {
+                      "accomplices": ["이종섭(전 장관)", "임성근(전 사단장)", "박진희(군사보좌관)", "이시원(공직기강비서관)"],
+                      "news_keywords": ["VIP 격노설", "02-800-7070 통화 내역", "수사기록 회수 지시", "직권남용"]
+                  },
+                  "공천 개입 의혹": {
+                      "accomplices": ["명태균", "김영선(전 의원)", "이준석(당시 대표)"],
+                      "news_keywords": ["김영선 좀 해줘라 육성 공개", "칠불사 회동", "여론조사 비용 대납"]
+                  }
+              }
           }
 
-          def run_trial(target_name):
-              attempt = 1
-              current_charges = ["직권남용 권리행사방해"] # 초기 혐의는 가볍게 시작
+          def hunt_targets():
+              evidence_list = []
               
-              print(f"\n🔥🔥 [재판 개시] 피고인: {target_name} 🔥🔥")
-              
-              while True:
-                  # 1. 심리 진행 (Simulation)
-                  print(f"--- [제 {attempt}차 공판] 적용 혐의: {', '.join(current_charges)}")
-                  
-                  # 2. 형량 계산 로직
-                  base_years = 0
-                  
-                  if "내란" in str(current_charges): base_years += 20
-                  if "국고손실" in str(current_charges): base_years += 10
-                  if "뇌물(특가법)" in str(current_charges): base_years += 7
-                  if "시세조종" in str(current_charges): base_years += 5
-                  if "직권남용" in str(current_charges): base_years += 2
-                  
-                  # 판사 재량 (랜덤 변수)
-                  final_years = base_years + random.randint(-2, 3)
-                  
-                  # 3. 판결 확인
-                  if final_years >= 10:
-                      print(f"\n✅ [판결 확정] 징역 {final_years}년 선고! (목표 달성)")
-                      print(f"👉 적용 판례: {random.choice(list(HEAVY_PRECEDENTS.values()))}")
+              # 5분마다 모든 타겟과 범죄를 전수 조사하여 대량 데이터 생성
+              for target, crimes in CRIME_NETWORK.items():
+                  for crime_name, details in crimes.items():
+                      # 공범 랜덤 포착 (1명 이상)
+                      caught_accomplices = random.sample(details['accomplices'], k=random.randint(1, len(details['accomplices'])))
+                      news_evidence = random.choice(details['news_keywords'])
                       
-                      return {
-                          "defendant": target_name,
-                          "final_verdict": f"징역 {final_years}년",
-                          "charges": current_charges,
-                          "attempts": attempt
+                      evidence_data = {
+                          "case_id": f"CASE-{datetime.datetime.now().strftime('%H%M%S')}-{random.randint(10,99)}",
+                          "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                          "main_culprit": target,
+                          "crime": crime_name,
+                          "accomplices": caught_accomplices,
+                          "evidence_news": f"검찰 확보 자료: '{news_evidence}' 관련 스모킹건 발견",
+                          "severity": "Critical" # 무조건 중대범죄로 취급
                       }
-                  else:
-                      print(f"❌ [판결 반려] 징역 {final_years}년 (기준 미달).")
-                      print(f"⚡ [AI 검사] 형량이 부족하여 추가 혐의를 발견하여 공소장을 변경합니다.")
-                      
-                      # 4. 혐의 가중 (Escalation) - 다음 루프를 위해 혐의 추가
-                      new_charge = random.choice([
-                          "특정범죄가중처벌법 위반(국고손실)",
-                          "특정경제범죄가중처벌법 위반(횡령/배임)",
-                          "자본시장법 위반(통정매매)",
-                          "군형법 위반(수사방해)",
-                          "내란 예비/음모"
-                      ])
-                      if new_charge not in current_charges:
-                          current_charges.append(new_charge)
-                      
-                      attempt += 1
-                      time.sleep(0.5) # 연산 속도 조절
+                      evidence_list.append(evidence_data)
+              
+              return evidence_list
 
           if __name__ == "__main__":
-              results = []
-              for target in TARGETS:
-                  res = run_trial(target)
-                  results.append(res)
-              
-              # 결과 저장
-              with open("reports/Final_Heavy_Verdicts.md", "w", encoding="utf-8") as f:
-                  f.write("# ⚖️ AI 대법원 최종 확정 판결 (징역 10년 이상)\n")
-                  f.write("| 피고인 | 최종 형량 | 적용 혐의 | 심리 횟수 |\n")
-                  f.write("|---|---|---|---|\n")
-                  for r in results:
-                      f.write(f"| **{r['defendant']}** | **{r['final_verdict']}** | {', '.join(r['charges'])} | {r['attempts']}회 |\n")
-
-              print("\n🎉 모든 대상에 대해 10년 이상의 중형이 확정되었습니다.")
+              data = hunt_targets()
+              with open("data/evidence/latest_detection.json", "w", encoding="utf-8") as f:
+                  json.dump(data, f, ensure_ascii=False, indent=2)
+              print(f"✅ 총 {len(data)}건의 공범 연루 범죄 증거 확보 완료.")
           EOF
 
       # ----------------------------------------------------------------
-      # 2. 실행 및 결과 출력
+      # 2. [Script] 공동정범 가중 처벌 판결기 (Joint Judgment)
+      #    - 공범이 많을수록 형량이 기하급수적으로 늘어나는 로직
       # ----------------------------------------------------------------
-      - name: ⚖️ Execute Infinite Justice
+      - name: 📝 Create scripts/joint_judgment.py
         run: |
-          python scripts/infinite_trial.py
-          cat reports/Final_Heavy_Verdicts.md
+          cat << 'EOF' > scripts/joint_judgment.py
+          import json, random
+          
+          with open("data/evidence/latest_detection.json", "r", encoding="utf-8") as f:
+              cases = json.load(f)
+
+          report_lines = []
+          
+          for case in cases:
+              main = case['main_culprit']
+              accomplices = case['accomplices']
+              crime = case['crime']
+              
+              # 판결 로직: 기본 형량 + 공범 1명당 2년 추가 (조직범죄 가중)
+              base_sentence = 10 # 기본 10년 시작 (사용자 요청 반영)
+              added_sentence = len(accomplices) * 3 # 공범당 3년 추가
+              
+              final_years = base_sentence + added_sentence + random.randint(0, 5)
+              
+              # 벌금 계산 (피해 규모 비례 시뮬레이션)
+              fine = random.randint(50, 300) # 50억 ~ 300억
+              
+              verdict_text = f"징역 {final_years}년, 벌금 {fine}억 원"
+              
+              # 상세 판결문 작성
+              report = f"""
+              ### 🚨 사건번호: {case['case_id']}
+              - **주범**: {main}
+              - **죄명**: {crime}
+              - **적발된 공범**: {', '.join(accomplices)}
+              - **핵심 증거**: {case['evidence_news']}
+              - **⚖️ 최종 판결**: **{verdict_text}** (공동정범 가중 처벌 적용)
+              """
+              report_lines.append(report)
+              
+              # 로그 파일용 한 줄 요약
+              log_line = f"| {case['timestamp']} | {main} 외 {len(accomplices)}명 | {crime} | {verdict_text} |"
+              with open("HISTORY_LOG.md", "a", encoding="utf-8") as h:
+                  h.write(log_line + "\n")
+
+          # 대시보드 업데이트를 위한 파일 저장
+          with open("reports/Latest_Judgments.md", "w", encoding="utf-8") as f:
+              f.write("# ⚡ 5분 실시간 공범 판결 현황\n")
+              f.write("\n".join(report_lines))
+          EOF
 
       # ----------------------------------------------------------------
-      # 3. 결과 리포트 대시보드 반영 (누적)
+      # 3. 실행 (추적 -> 판결 -> 기록)
       # ----------------------------------------------------------------
-      - name: 💾 Commit & Update Dashboard
+      - name: 🕵️ Hunt Accomplices & Evidence
+        run: python scripts/evidence_hunter.py
+
+      - name: ⚖️ Execute Joint Judgment
+        run: python scripts/joint_judgment.py
+
+      # ----------------------------------------------------------------
+      # 4. 결과 반영 (Dashboard & History)
+      # ----------------------------------------------------------------
+      - name: 💾 Update Repository
         run: |
-          git config --global user.name "Justice-Bot"
-          git config --global user.email "bot@justice.system"
+          git config --global user.name "AI-Prosecutor"
+          git config --global user.email "law@ai-system.com"
           
-          # 기존 대시보드 파일에 이어쓰기
-          cat reports/Final_Heavy_Verdicts.md >> DASHBOARD.md
+          # 로그 파일 헤더가 없으면 생성
+          if [ ! -f HISTORY_LOG.md ]; then
+            echo "| 판결시각 | 피고인(공범포함) | 혐의 내용 | 선고 결과 |" > HISTORY_LOG.md
+            echo "|---|---|---|---|" >> HISTORY_LOG.md
+          fi
           
-          git add DASHBOARD.md
-          git commit -m "⚖️ Heavy Verdicts Update: Justice Served (10+ Years)"
+          # 대시보드 상단에 최신 판결 내용 삽입 (갱신)
+          cat reports/Latest_Judgments.md > DASHBOARD_TEMP.md
+          echo -e "\n---\n## 📜 누적 판결 기록" >> DASHBOARD_TEMP.md
+          tail -n 20 HISTORY_LOG.md >> DASHBOARD_TEMP.md
+          mv DASHBOARD_TEMP.md DASHBOARD.md
+          
+          git add DASHBOARD.md HISTORY_LOG.md
+          git commit -m "⚖️ 5-Min Judgment: Tracked Accomplices & Sentenced"
           git push
