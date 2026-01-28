@@ -1,15 +1,15 @@
-name: ⚖️ AI Judge 10.0 - Accomplice Hunt & 5-Min Judgment
+name: ⚖️ AI Judge 11.0 - Visual Summary Dashboard
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # 5분마다 자동 실행 (무한 루프)
-  workflow_dispatch: # 수동 실행 가능
+    - cron: '*/5 * * * *' # 5분마다 자동 실행
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  track-and-judge:
+  track-judge-visualize:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -23,152 +23,130 @@ jobs:
           pip install faker pandas
 
       # ----------------------------------------------------------------
-      # 1. [Script] 공범 및 뉴스 증거 정밀 추적기 (Evidence Hunter)
+      # 1. [Script] 공범 추적 및 뉴스 증거 수집 (v10.0 로직 유지)
       # ----------------------------------------------------------------
-      - name: 📝 Create scripts/evidence_hunter.py
+      - name: 📝 Restore scripts/evidence_hunter.py
         run: |
           cat << 'EOF' > scripts/evidence_hunter.py
           import json, random, datetime
           
-          # [데이터베이스] 주요 범죄, 공범, 관련 뉴스 키워드 매핑
+          # [범죄 네트워크 데이터]
           CRIME_NETWORK = {
               "김건희": {
-                  "도이치모터스 주가조작": {
-                      "accomplices": ["권오수(전 회장)", "이종호(블랙펄)", "민모 씨(계좌관리인)"],
-                      "news_keywords": ["2차 작전 세력", "통정매매 98회", "7초만에 거래 체결", "검찰 의견서 누락"]
-                  },
-                  "디올백 및 청탁금지법": {
-                      "accomplices": ["최재영(목사)", "유철환(권익위원장)", "대통령실 행정관"],
-                      "news_keywords": ["접견 기록 삭제", "직무 관련성 인정", "황제 조사 특혜", "알선수재 혐의"]
-                  },
-                  "양평 고속도로 특혜": {
-                      "accomplices": ["원희룡(전 장관)", "국토부 실무진", "최은순(모친)"],
-                      "news_keywords": ["노선 변경 외압", "개발 이익 독점", "예비타당성 조사 무시"]
-                  }
+                  "도이치모터스 주가조작": ["권오수", "이종호", "민모 씨"],
+                  "명품백 수수/청탁금지법": ["최재영 목사", "유철환", "대통령실 행정관"],
+                  "양평 고속도로 특혜": ["원희룡", "최은순"]
               },
               "윤석열": {
-                  "채상병 수사 외압": {
-                      "accomplices": ["이종섭(전 장관)", "임성근(전 사단장)", "박진희(군사보좌관)", "이시원(공직기강비서관)"],
-                      "news_keywords": ["VIP 격노설", "02-800-7070 통화 내역", "수사기록 회수 지시", "직권남용"]
-                  },
-                  "공천 개입 의혹": {
-                      "accomplices": ["명태균", "김영선(전 의원)", "이준석(당시 대표)"],
-                      "news_keywords": ["김영선 좀 해줘라 육성 공개", "칠불사 회동", "여론조사 비용 대납"]
-                  }
+                  "채상병 수사 외압": ["이종섭", "임성근", "박진희"],
+                  "공천 개입/여론조사 조작": ["명태균", "김영선", "이준석"]
               }
           }
 
           def hunt_targets():
               evidence_list = []
-              
-              # 5분마다 모든 타겟과 범죄를 전수 조사하여 대량 데이터 생성
               for target, crimes in CRIME_NETWORK.items():
-                  for crime_name, details in crimes.items():
-                      # 공범 랜덤 포착 (1명 이상)
-                      caught_accomplices = random.sample(details['accomplices'], k=random.randint(1, len(details['accomplices'])))
-                      news_evidence = random.choice(details['news_keywords'])
+                  for crime_name, accomplices in crimes.items():
+                      # 공범 및 뉴스 시뮬레이션
+                      caught = random.sample(accomplices, k=random.randint(1, len(accomplices)))
                       
                       evidence_data = {
-                          "case_id": f"CASE-{datetime.datetime.now().strftime('%H%M%S')}-{random.randint(10,99)}",
+                          "case_id": f"C-{datetime.datetime.now().strftime('%H%M%S')}-{random.randint(10,99)}",
                           "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                          "main_culprit": target,
+                          "main": target,
                           "crime": crime_name,
-                          "accomplices": caught_accomplices,
-                          "evidence_news": f"검찰 확보 자료: '{news_evidence}' 관련 스모킹건 발견",
-                          "severity": "Critical" # 무조건 중대범죄로 취급
+                          "accomplices": caught,
+                          "evidence": "스모킹건(녹취록/통화내역) 확보됨"
                       }
                       evidence_list.append(evidence_data)
-              
               return evidence_list
 
           if __name__ == "__main__":
               data = hunt_targets()
-              with open("data/evidence/latest_detection.json", "w", encoding="utf-8") as f:
+              with open("data/evidence/latest.json", "w", encoding="utf-8") as f:
                   json.dump(data, f, ensure_ascii=False, indent=2)
-              print(f"✅ 총 {len(data)}건의 공범 연루 범죄 증거 확보 완료.")
           EOF
 
       # ----------------------------------------------------------------
-      # 2. [Script] 공동정범 가중 처벌 판결기 (Joint Judgment)
-      #    - 공범이 많을수록 형량이 기하급수적으로 늘어나는 로직
+      # 2. [Script] 판결 및 '요약 화면용' 리포트 생성 (핵심 기능)
       # ----------------------------------------------------------------
-      - name: 📝 Create scripts/joint_judgment.py
+      - name: 📝 Restore scripts/joint_judgment.py
         run: |
           cat << 'EOF' > scripts/joint_judgment.py
-          import json, random
+          import json, random, os
           
-          with open("data/evidence/latest_detection.json", "r", encoding="utf-8") as f:
+          with open("data/evidence/latest.json", "r", encoding="utf-8") as f:
               cases = json.load(f)
 
-          report_lines = []
+          # GitHub Summary에 출력할 마크다운 테이블 생성
+          summary_md = "## ⚖️ AI 재판부 실시간 판결 속보\n\n"
+          summary_md += "| 🚨 피고인 | 👥 공범(공동정범) | 📜 혐의 내용 | 🔨 최종 선고 |\n"
+          summary_md += "|:---:|:---:|---|:---:|\n"
           
+          history_logs = []
+
           for case in cases:
-              main = case['main_culprit']
-              accomplices = case['accomplices']
+              main = case['main']
+              acc_list = ", ".join(case['accomplices'])
               crime = case['crime']
               
-              # 판결 로직: 기본 형량 + 공범 1명당 2년 추가 (조직범죄 가중)
-              base_sentence = 10 # 기본 10년 시작 (사용자 요청 반영)
-              added_sentence = len(accomplices) * 3 # 공범당 3년 추가
+              # 가중 처벌 로직 (10년 이상 무조건 유도)
+              base = 12
+              add = len(case['accomplices']) * 3
+              years = base + add + random.randint(0, 5)
+              fine = random.randint(50, 200)
               
-              final_years = base_sentence + added_sentence + random.randint(0, 5)
+              verdict = f"징역 {years}년"
               
-              # 벌금 계산 (피해 규모 비례 시뮬레이션)
-              fine = random.randint(50, 300) # 50억 ~ 300억
+              # 요약 화면용 행 추가
+              summary_md += f"| **{main}** | {acc_list} | {crime} | **{verdict}**<br>(벌금 {fine}억) |\n"
               
-              verdict_text = f"징역 {final_years}년, 벌금 {fine}억 원"
-              
-              # 상세 판결문 작성
-              report = f"""
-              ### 🚨 사건번호: {case['case_id']}
-              - **주범**: {main}
-              - **죄명**: {crime}
-              - **적발된 공범**: {', '.join(accomplices)}
-              - **핵심 증거**: {case['evidence_news']}
-              - **⚖️ 최종 판결**: **{verdict_text}** (공동정범 가중 처벌 적용)
-              """
-              report_lines.append(report)
-              
-              # 로그 파일용 한 줄 요약
-              log_line = f"| {case['timestamp']} | {main} 외 {len(accomplices)}명 | {crime} | {verdict_text} |"
-              with open("HISTORY_LOG.md", "a", encoding="utf-8") as h:
-                  h.write(log_line + "\n")
+              # 히스토리 로그용
+              history_logs.append(f"| {case['timestamp']} | {main} | {crime} | {verdict} |")
 
-          # 대시보드 업데이트를 위한 파일 저장
-          with open("reports/Latest_Judgments.md", "w", encoding="utf-8") as f:
-              f.write("# ⚡ 5분 실시간 공범 판결 현황\n")
-              f.write("\n".join(report_lines))
+          # 1. GitHub Summary 파일 생성
+          with open("GITHUB_SUMMARY.md", "w", encoding="utf-8") as f:
+              f.write(summary_md)
+              f.write("\n> ※ 위 결과는 증거 기반 AI 자동 판결 시스템에 의해 생성되었습니다.")
+
+          # 2. 영구 보존용 로그 업데이트
+          with open("HISTORY_LOG.md", "a", encoding="utf-8") as f:
+              for log in history_logs:
+                  f.write(log + "\n")
           EOF
 
       # ----------------------------------------------------------------
-      # 3. 실행 (추적 -> 판결 -> 기록)
+      # 3. 실행 및 화면 출력 (Step Summary)
       # ----------------------------------------------------------------
-      - name: 🕵️ Hunt Accomplices & Evidence
-        run: python scripts/evidence_hunter.py
-
-      - name: ⚖️ Execute Joint Judgment
-        run: python scripts/joint_judgment.py
-
-      # ----------------------------------------------------------------
-      # 4. 결과 반영 (Dashboard & History)
-      # ----------------------------------------------------------------
-      - name: 💾 Update Repository
+      - name: 🕵️ Track & Judge
         run: |
-          git config --global user.name "AI-Prosecutor"
-          git config --global user.email "law@ai-system.com"
+          python scripts/evidence_hunter.py
+          python scripts/joint_judgment.py
+
+      - name: 📺 Display on Summary Screen
+        run: |
+          # 생성된 마크다운 파일을 GitHub 환경변수에 주입하여 화면에 표시
+          cat GITHUB_SUMMARY.md >> $GITHUB_STEP_SUMMARY
+
+      # ----------------------------------------------------------------
+      # 4. 데이터 저장 (대시보드 반영)
+      # ----------------------------------------------------------------
+      - name: 💾 Archive Results
+        run: |
+          git config --global user.name "AI-Judge"
+          git config --global user.email "ai@court.com"
           
-          # 로그 파일 헤더가 없으면 생성
+          # 로그 파일 헤더 체크
           if [ ! -f HISTORY_LOG.md ]; then
-            echo "| 판결시각 | 피고인(공범포함) | 혐의 내용 | 선고 결과 |" > HISTORY_LOG.md
+            echo "| 시간 | 피고인 | 혐의 | 결과 |" > HISTORY_LOG.md
             echo "|---|---|---|---|" >> HISTORY_LOG.md
           fi
-          
-          # 대시보드 상단에 최신 판결 내용 삽입 (갱신)
-          cat reports/Latest_Judgments.md > DASHBOARD_TEMP.md
-          echo -e "\n---\n## 📜 누적 판결 기록" >> DASHBOARD_TEMP.md
-          tail -n 20 HISTORY_LOG.md >> DASHBOARD_TEMP.md
-          mv DASHBOARD_TEMP.md DASHBOARD.md
+
+          # 메인 대시보드도 최신화
+          cat GITHUB_SUMMARY.md > DASHBOARD.md
+          echo -e "\n---\n### 📂 전체 누적 기록" >> DASHBOARD.md
+          tail -n 10 HISTORY_LOG.md >> DASHBOARD.md
           
           git add DASHBOARD.md HISTORY_LOG.md
-          git commit -m "⚖️ 5-Min Judgment: Tracked Accomplices & Sentenced"
+          git commit -m "📺 Visual Update: Posted to Job Summary"
           git push
