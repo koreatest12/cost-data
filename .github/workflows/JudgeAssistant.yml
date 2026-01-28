@@ -1,167 +1,130 @@
-name: 🚀 System Upgrade v2.0 (High-Complexity Crimes)
+name: ⚖️ AI Judge System - Instant Execution & Verdict
 
+# [즉시 수행 기능]
+# 1. 코드가 수정되어 푸시(Push)될 때 즉시 실행
+# 2. 수동 버튼(workflow_dispatch) 클릭 시 즉시 실행
 on:
-  workflow_dispatch: # 버튼 클릭으로 즉시 업데이트
-
-permissions:
-  contents: write
+  push:
+    paths:
+      - 'scripts/**'
+  workflow_dispatch:
 
 jobs:
-  apply-upgrade:
+  # ------------------------------------------------------------------
+  # JOB 1: 시스템 최신화 (판결문 스크립트 추가)
+  # ------------------------------------------------------------------
+  setup-system:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      
+      - name: 📂 Create Directories
+        run: mkdir -p scripts data/generated_cases reports/cases
 
-      - name: 📂 Ensure Directories Exist
+      # [NEW] 최종 판결문(선고) 작성 스크립트 생성
+      - name: 📝 Create scripts/final_judgment.py
         run: |
-          mkdir -p scripts
-          mkdir -p data/generated_cases
-          mkdir -p reports/cases
+          cat << 'EOF' > scripts/final_judgment.py
+          import sys, json, random, datetime
 
-      # =========================================================
-      # 1. [데이터 생성기 업그레이드] 특수 범죄(주가조작, 명품수수, 논문위조) 추가
-      # =========================================================
-      - name: 📝 Update scripts/generate_cases.py
-        run: |
-          cat << 'EOF' > scripts/generate_cases.py
-          import json, os, random
-          from faker import Faker
-
-          fake = Faker('ko_KR')
-          OUTPUT_DIR = "data/generated_cases"
-          os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-          # --- [V2.0 업데이트] 고난도/특수 범죄 카테고리 추가 ---
-          CRIME_SCENARIOS = {
-              "자본시장법 위반": {
-                  "details": ["시세 조종(주가 조작)", "미공개 중요 정보 이용", "허위 공시", "부정 거래 행위"],
-                  "keywords": ["통정매매", "작전 세력", "유상증자", "콜옵션", "차명 계좌"],
-                  "base_sentence": "징역 3년 이상",
-                  "complexity": "최상"
-              },
-              "청탁금지법 위반": {
-                  "details": ["금품 등 수수(명품백 등)", "부정 청탁", "직무 관련 향응 제공", "배우자 금품 수수"],
-                  "keywords": ["직무 관련성", "대가성", "사교적 의례 범위", "반환 여부", "알선수재"],
-                  "base_sentence": "징역 1년 이하 또는 과태료",
-                  "complexity": "상"
-              },
-              "업무방해 및 저작권법": {
-                  "details": ["논문 위조 및 표절", "연구 데이터 조작", "입시 비리", "허위 경력 기재"],
-                  "keywords": ["인용 누락", "데이터 가공", "심사 위원 기망", "학위 취소", "연구 윤리"],
-                  "base_sentence": "징역 2년 이하",
-                  "complexity": "중"
-              },
-              "특경제가중처벌법(횡령/배임)": {
-                  "details": ["법인 자금 횡령", "배임수재", "비자금 조성"],
-                  "keywords": ["이사회 결의", "경영 판단의 원칙", "비자금", "가족 회사"],
-                  "base_sentence": "징역 5년 이상",
-                  "complexity": "상"
-              }
-          }
-
-          def generate_case(case_id):
-              # 70% 확률로 특수 범죄 생성 (사용자 요청 반영)
-              if random.random() < 0.7:
-                  crime_cat = random.choice(list(CRIME_SCENARIOS.keys()))
-              else:
-                  crime_cat = "일반 형법(절도/폭행 등)" # 기존 범죄
-
-              # 특수 범죄 데이터 생성 로직
-              if crime_cat in CRIME_SCENARIOS:
-                  scenario = CRIME_SCENARIOS[crime_cat]
-                  detail = random.choice(scenario['details'])
-                  keyword = random.sample(scenario['keywords'], 2)
-                  damage = random.randint(10000000, 50000000000) # 1천만 ~ 500억
-                  desc = f"피고인은 {detail}을(를) 목적으로 {keyword[0]} 및 {keyword[1]} 수법을 동원함."
-              else:
-                  # 일반 범죄 fallback
-                  detail = "단순 절도/폭행"
-                  damage = random.randint(100000, 5000000)
-                  desc = "일반 형사 사건임."
-
-              return {
-                  "case_id": case_id,
-                  "case_type": "특수/공안/금융" if crime_cat != "일반 형법(절도/폭행 등)" else "일반 형사",
-                  "defendant": {
-                      "name": fake.name(),
-                      "position": fake.job(),
-                      "history": f"동종 전과 {random.randint(0,2)}회"
-                  },
-                  "charge": {
-                      "category": crime_cat,
-                      "specific_charge": detail,
-                      "facts": desc,
-                      "damage_amount_krw": damage
-                  },
-                  "evidence_list": ["포렌식 분석 결과", "계좌 추적 내역", "통화 녹취록", "내부 고발자 진술"],
-                  "defense_argument": "직무 관련성이 없었으며, 단순 관행이었다고 주장함."
-              }
-
-          if __name__ == "__main__":
-              print("🚀 [V2.0] 고도화된 사건 데이터(주가조작, 뇌물 등) 생성을 시작합니다...")
-              # 대량 생성: 200건
-              for i in range(1, 201):
-                  c_id = f"CASE-HIGH-STAKES-{i:04d}"
-                  data = generate_case(c_id)
-                  with open(os.path.join(OUTPUT_DIR, f"{c_id}.json"), "w", encoding="utf-8") as f:
-                      json.dump(data, f, ensure_ascii=False, indent=2)
-              print(f"✅ 총 {i}건의 고난도 사건 파일 생성 완료.")
-          EOF
-
-      # =========================================================
-      # 2. [판례 검색 엔진 업그레이드] 범죄 유형별 정밀 판례 매칭
-      # =========================================================
-      - name: 📝 Update scripts/search_precedent.py
-        run: |
-          cat << 'EOF' > scripts/search_precedent.py
-          import sys, json
-
+          # 입력 데이터 로드
           if len(sys.argv) < 2: sys.exit(1)
           with open(sys.argv[1], 'r', encoding='utf-8') as f:
-              data = json.load(f)
+              case_data = json.load(f)
 
-          category = data['charge']['category']
-          
-          print(f"🔎 [{category}] 관련 주요 판례 검색 결과:")
+          defendant = case_data['defendant']['name']
+          crime_cat = case_data.get('charge', {}).get('category', '일반 형사')
+          crime_detail = case_data.get('charge', {}).get('specific_charge', '불명')
 
-          if "자본시장법" in category:
-              print("- 대법원 2011도1XXXX (도이치모터스 관련 유사 법리): 통정매매의 공모 관계 입증 필요")
-              print("- 서울고법 2023노XXX: 시세조종의 고의성 및 부당 이득 산정 기준 판시")
-          elif "청탁금지법" in category:
-              print("- 대법원 2019도XXXX: 공직자 배우자의 금품 수수와 직무 관련성 해석")
-              print("- 헌재 2016헌마XXX: 청탁금지법의 합헌성 및 사회 상규 허용 범위")
-          elif "업무방해" in category:
-              print("- 대법원 2020도XXXX (입시 비리): 위계에 의한 업무방해죄 성립 요건")
-              print("- 서울중앙지법 2021고단XXX: 논문 데이터 조작과 연구윤리 위반의 형사처벌 한계")
-          else:
-              print("- 대법원 2022도1234: 일반 양형 기준 적용 판례")
+          # --- 판결 로직 (범죄 유형별 시뮬레이션) ---
+          verdict_text = ""
+          sentence_result = ""
+
+          if "자본시장법" in crime_cat: # 주가 조작 등
+              if random.random() > 0.3:
+                  sentence_result = "징역 3년, 집행유예 5년, 벌금 50억 원"
+                  reason = "자본시장의 건전성을 해쳤으나, 부당이익을 반환한 점 고려"
+              else:
+                  sentence_result = "징역 5년 (실형)"
+                  reason = "다수의 소액 주주에게 막대한 피해를 입힌 점을 고려하여 엄벌"
           
-          print(f"👉 유사도: {85 + len(category)%10}% (AI 벡터 분석 기반)")
+          elif "청탁금지법" in crime_cat: # 명품 수수 등
+              if random.random() > 0.5:
+                  sentence_result = "무죄 (증거 불충분)"
+                  reason = "직무 관련성과 대가성이 합리적 의심 없이 증명되었다고 보기 어려움"
+              else:
+                  sentence_result = "징역 1년, 집행유예 2년"
+                  reason = "공직 사회의 신뢰를 훼손하였으나, 반환 의사를 표시한 점 참작"
+          
+          elif "업무방해" in crime_cat: # 논문 위조 등
+              sentence_result = "징역 8월, 집행유예 2년, 사회봉사 120시간"
+              reason = "입시 및 연구의 공정성을 저해하였으나, 초범인 점 참작"
+          
+          else: # 일반 범죄
+              sentence_result = "징역 10월"
+              reason = "피해자와 합의되지 않았으며 죄질이 불량함"
+
+          # --- 판결문(주문) 출력 포맷 ---
+          print(f"# ⚖️ [판결 선고] {datetime.date.today().strftime('%Y년 %m월 %d일')}")
+          print(f"**피고인:** {defendant}")
+          print(f"**사건명:** {crime_cat} 위반 ({crime_detail})")
+          print("---")
+          print(f"### 📢 주 문 (Verdict)")
+          print(f"> **{sentence_result}에 처한다.**")
+          print(f"\n### 📜 양형의 이유")
+          print(f"{reason}")
+          print("\n*본 판결은 AI 사법 보조 시스템의 모의 결과입니다.*")
           EOF
 
-      # =========================================================
-      # 3. [양형 추천 엔진 업그레이드] 범죄 중대성 반영
-      # =========================================================
-      - name: 📝 Update scripts/sentencing_recommend.py
-        run: |
-          cat << 'EOF' > scripts/sentencing_recommend.py
-          import sys
-          # 실제로는 앞선 파이프라인의 입력을 받아야 하나 데모용으로 출력
-          print("⚖️ AI 양형 위원회 추천 결과:")
-          print("1. 기본 양형: 징역 2년 ~ 5년")
-          print("2. 가중 요소: 피해 규모가 크고(50억 이상), 사회적 파장이 큼.")
-          print("3. 감경 요소: 사실 관계 일부 인정, 증거 보존 협조.")
-          print("🔴 최종 권고: 징역 3년 (집행유예 불투명, 실형 가능성 높음)")
-          EOF
+  # ------------------------------------------------------------------
+  # JOB 2: 사건 생성 및 판결 집행 (즉시 수행)
+  # ------------------------------------------------------------------
+  execute-judgment:
+    needs: setup-system
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: 📦 Install Deps
+        run: pip install faker numpy pandas scikit-learn
 
-      # =========================================================
-      # 4. Git 반영 (자동 업데이트)
-      # =========================================================
-      - name: 📤 Apply Updates
+      # 1. 사건 데이터 생성 (기존 로직 활용 + 특수 범죄 포함)
+      - name: 🏭 Generate Cases
+        run: python scripts/generate_cases.py
+
+      # 2. AI 분석 및 판결 루프 실행
+      - name: ⚖️ Analyze & Judge
         run: |
-          git config --global user.name "system-upgrade-bot"
-          git config --global user.email "bot@ai-court.system"
-          git add .
-          git commit -m "🚀 Upgrade System v2.0: Added Financial Crimes & Graft Scenarios" || echo "No changes"
-          git push
+          echo "Processing judgments..."
+          for file in data/generated_cases/*.json; do
+            filename=$(basename "$file" .json)
+            
+            # 리포트 파일 생성 시작
+            echo "# ⚖️ AI 재판 기록: $filename" > reports/cases/$filename.md
+            
+            # [Step 1] 사건 요약
+            python scripts/summarize_case.py "$file" >> reports/cases/$filename.md
+            
+            # [Step 2] 유사 판례
+            echo -e "\n## 1. 유사 판례 검토" >> reports/cases/$filename.md
+            python scripts/search_precedent.py "$file" >> reports/cases/$filename.md
+            
+            # [Step 3] AI 양형 의견
+            echo -e "\n## 2. AI 양형 위원회 의견" >> reports/cases/$filename.md
+            python scripts/sentencing_recommend.py >> reports/cases/$filename.md
+            
+            # [Step 4] (NEW) 최종 판결 선고
+            echo -e "\n## 3. 최종 판결 (JUDGMENT)" >> reports/cases/$filename.md
+            python scripts/final_judgment.py "$file" >> reports/cases/$filename.md
+            
+          done
+
+      # 3. 결과물 업로드
+      - name: 📤 Upload Judgments
+        uses: actions/upload-artifact@v4
+        with:
+          name: Final-Judgments-Report
+          path: reports/cases/
