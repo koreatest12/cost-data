@@ -1,173 +1,129 @@
-name: ⚖️ AI Judge 7.0 - News Monitor & Reflection
+name: ⚖️ AI Judge 9.0 - Infinite Loop for Heavy Sentence
 
 on:
-  schedule:
-    - cron: '*/5 * * * *' # 5분마다 갱신
-  workflow_dispatch:
+  workflow_dispatch: # 버튼 클릭 시 실행
 
 permissions:
   contents: write
 
 jobs:
-  news-based-judgment:
+  relentless-judgment:
     runs-on: ubuntu-latest
-    env:
-      TZ: Asia/Seoul
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 📂 Initialize Environment
+      - name: 📂 Setup Environment
         run: |
-          mkdir -p scripts
-          mkdir -p data/news_data
-          mkdir -p reports/special_investigation
-          
-          # 패키지 설치 (크롤링 및 데이터 분석용)
-          pip install requests beautifulsoup4 faker pandas
+          mkdir -p scripts data/final_verdicts reports
+          pip install faker
 
       # ----------------------------------------------------------------
-      # 1. [Script] 뉴스 크롤러 & 키워드 매핑 엔진
-      #    - 실제 뉴스 키워드를 기반으로 범죄 유형을 매핑합니다.
+      # 1. [Script] 무한 심리 & 혐의 가중 엔진 (핵심 로직)
       # ----------------------------------------------------------------
-      - name: 📝 Create scripts/news_monitor.py
+      - name: 📝 Create scripts/infinite_trial.py
         run: |
-          cat << 'EOF' > scripts/news_monitor.py
-          import json, datetime, random
+          cat << 'EOF' > scripts/infinite_trial.py
+          import json, random, datetime, time, sys
+
+          # 타겟 리스트 (사용자 요청 맥락 반영)
+          TARGETS = ["윤석열", "김건희"]
           
-          # 사용자 요청 타겟 키워드 리스트
-          TARGET_KEYWORDS = ["윤석열", "김건희"]
-          
-          # 뉴스 시뮬레이션 데이터 (실제 크롤링 차단 시 Fallback용 DB)
-          # 실제 환경에서는 BeautifulSoup으로 네이버/구글 뉴스를 크롤링하여 채웁니다.
-          NEWS_DATABASE = {
-              "윤석열": [
-                  {"issue": "대통령실 관련 의혹", "type": "직권남용/국정개입", "risk_level": "High"},
-                  {"issue": "채상병 수사 외압 의혹", "type": "직권남용 권리행사방해", "risk_level": "Critical"}
-              ],
-              "김건희": [
-                  {"issue": "도이치모터스 주가 조작 의혹", "type": "자본시장법 위반(시세조종)", "risk_level": "Critical"},
-                  {"issue": "디올백 수수 의혹", "type": "청탁금지법 위반/알선수재", "risk_level": "High"},
-                  {"issue": "양평 고속도로 특혜 의혹", "type": "국고손실/배임", "risk_level": "High"}
-              ]
+          # 강력 처벌을 위한 대법원 판례 DB (징역 10년 이상 기준)
+          HEAVY_PRECEDENTS = {
+              "내란목적살인/국헌문란": "대법원 96도33XX (전두환/노태우 사건): 무기징역 및 추징금 2205억",
+              "특정범죄가중처벌(뇌물/국고손실)": "대법원 2020도XXX (전직 대통령 사례): 징역 17년, 벌금 130억",
+              "자본시장법위반(시세조종)": "서울고법 2023노XXX: 이득액 50억 이상 시 무기 또는 5년 이상",
+              "직권남용/선거개입": "징역 2년~5년이나 경합범 가중 시 최대 15년 가능"
           }
 
-          def fetch_news_context():
-              report = {
-                  "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                  "targets": []
-              }
+          def run_trial(target_name):
+              attempt = 1
+              current_charges = ["직권남용 권리행사방해"] # 초기 혐의는 가볍게 시작
               
-              print(f"🔍 [System] 타겟 모니터링 시작: {', '.join(TARGET_KEYWORDS)}")
+              print(f"\n🔥🔥 [재판 개시] 피고인: {target_name} 🔥🔥")
               
-              for target in TARGET_KEYWORDS:
-                  # 실제 뉴스 데이터를 기반으로 매핑된 혐의점 추출
-                  news_items = NEWS_DATABASE.get(target, [])
+              while True:
+                  # 1. 심리 진행 (Simulation)
+                  print(f"--- [제 {attempt}차 공판] 적용 혐의: {', '.join(current_charges)}")
                   
-                  for item in news_items:
-                      entry = {
-                          "name": target,
-                          "headline": f"[{target}] {item['issue']} 관련 검찰/특검 이슈 부상",
-                          "crime_type": item['type'],
-                          "ai_analysis": f"AI 판단: {item['type']} 혐의는 법리적 다툼이 치열하며, {item['risk_level']} 등급의 사회적 파장이 예상됨."
+                  # 2. 형량 계산 로직
+                  base_years = 0
+                  
+                  if "내란" in str(current_charges): base_years += 20
+                  if "국고손실" in str(current_charges): base_years += 10
+                  if "뇌물(특가법)" in str(current_charges): base_years += 7
+                  if "시세조종" in str(current_charges): base_years += 5
+                  if "직권남용" in str(current_charges): base_years += 2
+                  
+                  # 판사 재량 (랜덤 변수)
+                  final_years = base_years + random.randint(-2, 3)
+                  
+                  # 3. 판결 확인
+                  if final_years >= 10:
+                      print(f"\n✅ [판결 확정] 징역 {final_years}년 선고! (목표 달성)")
+                      print(f"👉 적용 판례: {random.choice(list(HEAVY_PRECEDENTS.values()))}")
+                      
+                      return {
+                          "defendant": target_name,
+                          "final_verdict": f"징역 {final_years}년",
+                          "charges": current_charges,
+                          "attempts": attempt
                       }
-                      report['targets'].append(entry)
-              
-              return report
+                  else:
+                      print(f"❌ [판결 반려] 징역 {final_years}년 (기준 미달).")
+                      print(f"⚡ [AI 검사] 형량이 부족하여 추가 혐의를 발견하여 공소장을 변경합니다.")
+                      
+                      # 4. 혐의 가중 (Escalation) - 다음 루프를 위해 혐의 추가
+                      new_charge = random.choice([
+                          "특정범죄가중처벌법 위반(국고손실)",
+                          "특정경제범죄가중처벌법 위반(횡령/배임)",
+                          "자본시장법 위반(통정매매)",
+                          "군형법 위반(수사방해)",
+                          "내란 예비/음모"
+                      ])
+                      if new_charge not in current_charges:
+                          current_charges.append(new_charge)
+                      
+                      attempt += 1
+                      time.sleep(0.5) # 연산 속도 조절
 
           if __name__ == "__main__":
-              data = fetch_news_context()
+              results = []
+              for target in TARGETS:
+                  res = run_trial(target)
+                  results.append(res)
               
-              # 뉴스 분석 결과 저장
-              with open("data/news_data/daily_briefing.json", "w", encoding="utf-8") as f:
-                  json.dump(data, f, ensure_ascii=False, indent=2)
-                  
-              print("✅ 뉴스 데이터 분석 완료.")
+              # 결과 저장
+              with open("reports/Final_Heavy_Verdicts.md", "w", encoding="utf-8") as f:
+                  f.write("# ⚖️ AI 대법원 최종 확정 판결 (징역 10년 이상)\n")
+                  f.write("| 피고인 | 최종 형량 | 적용 혐의 | 심리 횟수 |\n")
+                  f.write("|---|---|---|---|\n")
+                  for r in results:
+                      f.write(f"| **{r['defendant']}** | **{r['final_verdict']}** | {', '.join(r['charges'])} | {r['attempts']}회 |\n")
+
+              print("\n🎉 모든 대상에 대해 10년 이상의 중형이 확정되었습니다.")
           EOF
 
       # ----------------------------------------------------------------
-      # 2. [Script] AI 판결 엔진 (뉴스 반영 모드)
-      #    - 뉴스에서 감지된 혐의(주가조작 등)에 대해 가중 처벌 로직 적용
+      # 2. 실행 및 결과 출력
       # ----------------------------------------------------------------
-      - name: 📝 Create scripts/special_judgment.py
+      - name: ⚖️ Execute Infinite Justice
         run: |
-          cat << 'EOF' > scripts/special_judgment.py
-          import json, sys, datetime, random
+          python scripts/infinite_trial.py
+          cat reports/Final_Heavy_Verdicts.md
+
+      # ----------------------------------------------------------------
+      # 3. 결과 리포트 대시보드 반영 (누적)
+      # ----------------------------------------------------------------
+      - name: 💾 Commit & Update Dashboard
+        run: |
+          git config --global user.name "Justice-Bot"
+          git config --global user.email "bot@justice.system"
           
-          # 뉴스 데이터 로드
-          with open("data/news_data/daily_briefing.json", "r", encoding="utf-8") as f:
-              news_data = json.load(f)
-
-          print("# ⚖️ AI 특별 법정 판결 리포트 (News Reflection)")
-          print(f"**분석 시점:** {news_data['timestamp']}\n")
-          print("---")
-
-          for item in news_data['targets']:
-              target_name = item['name']
-              crime = item['crime_type']
-              headline = item['headline']
-              
-              # 판결 시뮬레이션 로직
-              # AI는 뉴스 데이터를 근거로 가상의 판결 결과를 도출합니다.
-              
-              if "주가 조작" in crime or "자본시장법" in crime:
-                  verdict = "징역 5년, 벌금 50억 원 (추징금 별도)"
-                  reason = "다수의 피해자를 양산하고 자본시장의 공정성을 훼손함. 공범들과의 통정매매 정황이 인정됨."
-              elif "청탁금지법" in crime or "수수" in crime:
-                  if random.random() > 0.5:
-                      verdict = "징역 1년, 집행유예 2년 (물품 몰수)"
-                      reason = "직무 관련성이 일부 인정되나, 반환 의사를 표명한 점 등 참작 여지 검토."
-                  else:
-                      verdict = "무죄 (증거 불충분)"
-                      reason = "직무 관련성 및 대가성에 대한 엄격한 증명이 부족함."
-              elif "직권남용" in crime:
-                  verdict = "징역 3년 (실형)"
-                  reason = "헌법 수호의 책무를 위반하고 수사 기관의 독립성을 침해함."
-              else:
-                  verdict = "수사 미진으로 인한 판결 보류"
-                  reason = "추가적인 특검 및 증거 확보가 필요함."
-
-              # Markdown 출력
-              print(f"### 🚨 모니터링 대상: {target_name}")
-              print(f"- **관련 뉴스**: {headline}")
-              print(f"- **혐의점**: {crime}")
-              print(f"- **📉 AI 판결 예측 (Simulation)**")
-              print(f"> **주문: {verdict}**")
-              print(f"> **이유**: {reason}")
-              print("\n---\n")
-
-          print("*※ 본 결과는 AI가 뉴스 데이터를 기반으로 법리를 해석한 시뮬레이션이며, 실제 사법 결과와는 다를 수 있습니다.*")
-          EOF
-
-      # ----------------------------------------------------------------
-      # 3. 실행 및 리포트 생성
-      # ----------------------------------------------------------------
-      - name: 📡 1. Monitor News & Issues
-        run: python scripts/news_monitor.py
-
-      - name: ⚖️ 2. Execute Special Judgment
-        run: |
-          python scripts/special_judgment.py > reports/special_investigation/News_Analysis_Report.md
-          cat reports/special_investigation/News_Analysis_Report.md
-
-      # ----------------------------------------------------------------
-      # 4. 결과 누적 및 업로드
-      # ----------------------------------------------------------------
-      - name: 💾 Archive Results
-        run: |
-          # 히스토리 로그에 추가
-          NOW=$(date +'%Y-%m-%d %H:%M')
-          echo "## [$NOW] 특별 모니터링 결과" >> HISTORY_LOG.md
-          cat reports/special_investigation/News_Analysis_Report.md >> HISTORY_LOG.md
+          # 기존 대시보드 파일에 이어쓰기
+          cat reports/Final_Heavy_Verdicts.md >> DASHBOARD.md
           
-          git config --global user.name "AI-News-Bot"
-          git config --global user.email "bot@ai-news.com"
-          git add HISTORY_LOG.md
-          git commit -m "🚨 Add Special Report: Yoon & Kim News Analysis"
+          git add DASHBOARD.md
+          git commit -m "⚖️ Heavy Verdicts Update: Justice Served (10+ Years)"
           git push
-
-      - name: 📤 Upload Report Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Special-Investigation-Report
-          path: reports/special_investigation/
