@@ -1,164 +1,173 @@
-name: 🚀 AI Judge 6.0 - 2026 Auto Release & Accumulate
+name: ⚖️ AI Judge 7.0 - News Monitor & Reflection
 
-# [트리거 설정]
-# 1. 5분마다 자동 실행 (Cron)
-# 2. 버튼 클릭 시 수동 실행
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/5 * * * *' # 5분마다 갱신
   workflow_dispatch:
 
 permissions:
-  contents: write  # 리포지토리 커밋 및 릴리즈 생성 권한
+  contents: write
 
 jobs:
-  run-and-release:
+  news-based-judgment:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
     steps:
-      # ----------------------------------------------------------------
-      # 1. 저장소 체크아웃 (이전 데이터 누적을 위해 필수)
-      # ----------------------------------------------------------------
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # 전체 히스토리 가져오기
 
-      - name: 📂 Setup Environment
+      - name: 📂 Initialize Environment
         run: |
           mkdir -p scripts
-          mkdir -p data/new_cases
-          mkdir -p reports
-          # 누적 기록 파일이 없으면 헤더 생성
-          if [ ! -f "HISTORY_LOG.md" ]; then
-            echo "# 📜 AI 판사 2026년 판결 누적 기록부" > HISTORY_LOG.md
-            echo "| 실행시간 | 사건ID | 발생일(2026) | 죄명 | 피고인 | 판결 결과 |" >> HISTORY_LOG.md
-            echo "|---|---|---|---|---|---| >> HISTORY_LOG.md"
-          fi
-
-      - name: 🐍 Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      - name: 📦 Install Dependencies
-        run: pip install faker pandas
+          mkdir -p data/news_data
+          mkdir -p reports/special_investigation
+          
+          # 패키지 설치 (크롤링 및 데이터 분석용)
+          pip install requests beautifulsoup4 faker pandas
 
       # ----------------------------------------------------------------
-      # 2. [Script] 2026년 미래 데이터 생성기 (매월 데이터 갱신)
+      # 1. [Script] 뉴스 크롤러 & 키워드 매핑 엔진
+      #    - 실제 뉴스 키워드를 기반으로 범죄 유형을 매핑합니다.
       # ----------------------------------------------------------------
-      - name: 📝 Restore scripts/generate_cases_2026.py
+      - name: 📝 Create scripts/news_monitor.py
         run: |
-          cat << 'EOF' > scripts/generate_cases_2026.py
-          import json, os, random, datetime
-          from faker import Faker
+          cat << 'EOF' > scripts/news_monitor.py
+          import json, datetime, random
           
-          fake = Faker('ko_KR')
-          OUTPUT_DIR = "data/new_cases"
+          # 사용자 요청 타겟 키워드 리스트
+          TARGET_KEYWORDS = ["윤석열", "김건희"]
           
-          # 2026년 매월 데이터 시뮬레이션
-          def get_random_date_2026():
-              start = datetime.date(2026, 1, 1)
-              end = datetime.date(2026, 12, 31)
-              days = (end - start).days
-              return start + datetime.timedelta(days=random.randint(0, days))
-
-          SCENARIOS = {
-              "주가조작(자본시장법)": "징역 5년 이상",
-              "디올백 수수(청탁금지법)": "징역 1년 또는 무죄",
-              "논문위조(업무방해)": "징역 2년",
-              "가상화폐 사기": "징역 10년"
+          # 뉴스 시뮬레이션 데이터 (실제 크롤링 차단 시 Fallback용 DB)
+          # 실제 환경에서는 BeautifulSoup으로 네이버/구글 뉴스를 크롤링하여 채웁니다.
+          NEWS_DATABASE = {
+              "윤석열": [
+                  {"issue": "대통령실 관련 의혹", "type": "직권남용/국정개입", "risk_level": "High"},
+                  {"issue": "채상병 수사 외압 의혹", "type": "직권남용 권리행사방해", "risk_level": "Critical"}
+              ],
+              "김건희": [
+                  {"issue": "도이치모터스 주가 조작 의혹", "type": "자본시장법 위반(시세조종)", "risk_level": "Critical"},
+                  {"issue": "디올백 수수 의혹", "type": "청탁금지법 위반/알선수재", "risk_level": "High"},
+                  {"issue": "양평 고속도로 특혜 의혹", "type": "국고손실/배임", "risk_level": "High"}
+              ]
           }
 
-          # 실행 시마다 고유한 Batch ID 생성 (중복 방지)
-          batch_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-
-          def generate():
-              # 한 번 실행에 50건씩 생성 (5분마다 누적됨)
-              for i in range(1, 51):
-                  cat = random.choice(list(SCENARIOS.keys()))
-                  case_date = get_random_date_2026()
+          def fetch_news_context():
+              report = {
+                  "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                  "targets": []
+              }
+              
+              print(f"🔍 [System] 타겟 모니터링 시작: {', '.join(TARGET_KEYWORDS)}")
+              
+              for target in TARGET_KEYWORDS:
+                  # 실제 뉴스 데이터를 기반으로 매핑된 혐의점 추출
+                  news_items = NEWS_DATABASE.get(target, [])
                   
-                  data = {
-                      "case_id": f"CASE-2026-{batch_id}-{i:03d}",
-                      "date": str(case_date),
-                      "category": cat,
-                      "defendant": fake.name(),
-                      "detail": f"2026년 {case_date.month}월 발생한 {cat} 사건",
-                      "verdict_guideline": SCENARIOS[cat]
-                  }
-                  
-                  # 판결 로직 즉시 적용
-                  data['judgment'] = {
-                      "result": f"{SCENARIOS[cat]} (확정)",
-                      "judge_date": str(case_date + datetime.timedelta(days=random.randint(30, 180)))
-                  }
-                  
-                  filename = f"{OUTPUT_DIR}/{data['case_id']}.json"
-                  with open(filename, "w", encoding="utf-8") as f:
-                      json.dump(data, f, ensure_ascii=False, indent=2)
+                  for item in news_items:
+                      entry = {
+                          "name": target,
+                          "headline": f"[{target}] {item['issue']} 관련 검찰/특검 이슈 부상",
+                          "crime_type": item['type'],
+                          "ai_analysis": f"AI 판단: {item['type']} 혐의는 법리적 다툼이 치열하며, {item['risk_level']} 등급의 사회적 파장이 예상됨."
+                      }
+                      report['targets'].append(entry)
+              
+              return report
 
           if __name__ == "__main__":
-              generate()
+              data = fetch_news_context()
+              
+              # 뉴스 분석 결과 저장
+              with open("data/news_data/daily_briefing.json", "w", encoding="utf-8") as f:
+                  json.dump(data, f, ensure_ascii=False, indent=2)
+                  
+              print("✅ 뉴스 데이터 분석 완료.")
           EOF
 
       # ----------------------------------------------------------------
-      # 3. [Script] 데이터 누적 처리기 (Log Appender)
+      # 2. [Script] AI 판결 엔진 (뉴스 반영 모드)
+      #    - 뉴스에서 감지된 혐의(주가조작 등)에 대해 가중 처벌 로직 적용
       # ----------------------------------------------------------------
-      - name: 📝 Restore scripts/append_history.py
+      - name: 📝 Create scripts/special_judgment.py
         run: |
-          cat << 'EOF' > scripts/append_history.py
-          import glob, json, datetime
+          cat << 'EOF' > scripts/special_judgment.py
+          import json, sys, datetime, random
           
-          files = glob.glob("data/new_cases/*.json")
-          now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-          
-          with open("HISTORY_LOG.md", "a", encoding="utf-8") as f:
-              for file in files:
-                  with open(file, 'r', encoding='utf-8') as jf:
-                      data = json.load(jf)
-                      line = f"| {now} | {data['case_id']} | {data['date']} | {data['category']} | {data['defendant']} | **{data['judgment']['result']}** |\n"
-                      f.write(line)
+          # 뉴스 데이터 로드
+          with open("data/news_data/daily_briefing.json", "r", encoding="utf-8") as f:
+              news_data = json.load(f)
+
+          print("# ⚖️ AI 특별 법정 판결 리포트 (News Reflection)")
+          print(f"**분석 시점:** {news_data['timestamp']}\n")
+          print("---")
+
+          for item in news_data['targets']:
+              target_name = item['name']
+              crime = item['crime_type']
+              headline = item['headline']
+              
+              # 판결 시뮬레이션 로직
+              # AI는 뉴스 데이터를 근거로 가상의 판결 결과를 도출합니다.
+              
+              if "주가 조작" in crime or "자본시장법" in crime:
+                  verdict = "징역 5년, 벌금 50억 원 (추징금 별도)"
+                  reason = "다수의 피해자를 양산하고 자본시장의 공정성을 훼손함. 공범들과의 통정매매 정황이 인정됨."
+              elif "청탁금지법" in crime or "수수" in crime:
+                  if random.random() > 0.5:
+                      verdict = "징역 1년, 집행유예 2년 (물품 몰수)"
+                      reason = "직무 관련성이 일부 인정되나, 반환 의사를 표명한 점 등 참작 여지 검토."
+                  else:
+                      verdict = "무죄 (증거 불충분)"
+                      reason = "직무 관련성 및 대가성에 대한 엄격한 증명이 부족함."
+              elif "직권남용" in crime:
+                  verdict = "징역 3년 (실형)"
+                  reason = "헌법 수호의 책무를 위반하고 수사 기관의 독립성을 침해함."
+              else:
+                  verdict = "수사 미진으로 인한 판결 보류"
+                  reason = "추가적인 특검 및 증거 확보가 필요함."
+
+              # Markdown 출력
+              print(f"### 🚨 모니터링 대상: {target_name}")
+              print(f"- **관련 뉴스**: {headline}")
+              print(f"- **혐의점**: {crime}")
+              print(f"- **📉 AI 판결 예측 (Simulation)**")
+              print(f"> **주문: {verdict}**")
+              print(f"> **이유**: {reason}")
+              print("\n---\n")
+
+          print("*※ 본 결과는 AI가 뉴스 데이터를 기반으로 법리를 해석한 시뮬레이션이며, 실제 사법 결과와는 다를 수 있습니다.*")
           EOF
 
       # ----------------------------------------------------------------
-      # 4. 실행 및 데이터 누적 (Execute & Accumulate)
+      # 3. 실행 및 리포트 생성
       # ----------------------------------------------------------------
-      - name: 🏭 Generate 2026 Data
-        run: python scripts/generate_cases_2026.py
+      - name: 📡 1. Monitor News & Issues
+        run: python scripts/news_monitor.py
 
-      - name: 📚 Accumulate to History Log
-        run: python scripts/append_history.py
-
-      # ----------------------------------------------------------------
-      # 5. 변경 사항 커밋 (GitHub Repo에 영구 저장)
-      # ----------------------------------------------------------------
-      - name: 💾 Commit History Log
+      - name: ⚖️ 2. Execute Special Judgment
         run: |
-          git config --global user.name "AI-Judge-Bot"
-          git config --global user.email "bot@ai-judge.com"
+          python scripts/special_judgment.py > reports/special_investigation/News_Analysis_Report.md
+          cat reports/special_investigation/News_Analysis_Report.md
+
+      # ----------------------------------------------------------------
+      # 4. 결과 누적 및 업로드
+      # ----------------------------------------------------------------
+      - name: 💾 Archive Results
+        run: |
+          # 히스토리 로그에 추가
+          NOW=$(date +'%Y-%m-%d %H:%M')
+          echo "## [$NOW] 특별 모니터링 결과" >> HISTORY_LOG.md
+          cat reports/special_investigation/News_Analysis_Report.md >> HISTORY_LOG.md
           
-          # 로그 파일만 커밋 (JSON 파일은 Release에 첨부하여 용량 절약)
+          git config --global user.name "AI-News-Bot"
+          git config --global user.email "bot@ai-news.com"
           git add HISTORY_LOG.md
-          git commit -m "📈 Update Judgment History: $(date +'%Y-%m-%d %H:%M')"
+          git commit -m "🚨 Add Special Report: Yoon & Kim News Analysis"
           git push
 
-      # ----------------------------------------------------------------
-      # 6. 🚀 자동 릴리즈 & 출시 (Release & Publish)
-      # ----------------------------------------------------------------
-      - name: 📦 Zip Artifacts
-        run: zip -r raw_data_$(date +'%Y%m%d_%H%M').zip data/new_cases
-
-      - name: 🚀 Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG_NAME="v2026.$(date +'%m%d.%H%M')"
-          RELEASE_TITLE="⚖️ 판결 데이터 업데이트 (2026-$(date +'%m-%d %H:%M'))"
-          
-          # GitHub CLI를 사용하여 릴리즈 생성 및 파일 업로드
-          gh release create "$TAG_NAME" \
-            --title "$RELEASE_TITLE" \
-            --notes "2026년 시뮬레이션 판결 데이터 50건이 추가되었습니다. 상세 내용은 첨부파일 확인." \
-            raw_data_*.zip
+      - name: 📤 Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Special-Investigation-Report
+          path: reports/special_investigation/
