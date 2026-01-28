@@ -1,0 +1,131 @@
+name: ⚖️ AI Judge Assistant — MASSIVE BATCH
+
+on:
+  workflow_dispatch:
+    inputs:
+      total_cases:
+        description: "총 사건 수"
+        required: true
+        default: "500"
+      judge_name:
+        description: "담당 판사"
+        required: true
+        default: "Human Judge"
+
+permissions:
+  contents: write
+
+env:
+  TZ: Asia/Seoul
+
+jobs:
+  # ============================================================
+  # 1. 사건 대량 생성
+  # ============================================================
+  generate-cases:
+    runs-on: ubuntu-latest
+    outputs:
+      case-list: ${{ steps.case-list.outputs.matrix }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      - name: 🔧 Generate Cases
+        run: |
+          pip install faker
+          python scripts/generate_cases.py
+
+      - name: 📤 Build Case Matrix
+        id: case-list
+        run: |
+          echo "matrix=$(ls data/generated_cases | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+
+  # ============================================================
+  # 2. 사건별 AI 분석 (병렬)
+  # ============================================================
+  analyze-cases:
+    needs: generate-cases
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        case_file: ${{ fromJson(needs.generate-cases.outputs.case-list) }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      - name: 📦 Install Deps
+        run: |
+          pip install numpy pandas scikit-learn shap
+
+      - name: ⚖️ Analyze Case
+        run: |
+          CASE_PATH="data/generated_cases/${{ matrix.case_file }}"
+          CASE_ID=$(jq -r '.case_id' $CASE_PATH)
+
+          mkdir -p reports/cases logs
+
+          python scripts/summarize_case.py $CASE_PATH > /tmp/summary.txt
+          python scripts/search_precedent.py $CASE_PATH > /tmp/precedent.txt
+          python scripts/sentencing_recommend.py /tmp/precedent.txt > /tmp/sentencing.txt
+          python scripts/risk_predict.py $CASE_PATH > /tmp/risk.txt
+          python scripts/explainability.py > /tmp/explain.txt
+
+          cat << EOF > reports/cases/${CASE_ID}.md
+          # ⚖️ 사건 리포트 — ${CASE_ID}
+
+          ## 사건 요약
+          $(cat /tmp/summary.txt)
+
+          ## 유사 판례
+          $(cat /tmp/precedent.txt)
+
+          ## 양형 추천
+          $(cat /tmp/sentencing.txt)
+
+          ## 재범 위험도
+          $(cat /tmp/risk.txt)
+
+          ## 설명 가능성
+          $(cat /tmp/explain.txt)
+
+          ⚠️ 참고용 AI 분석 결과이며,
+          최종 판단은 인간 판사가 수행합니다.
+          EOF
+
+          echo "[${CASE_ID}] COMPLETED $(date)" >> logs/${CASE_ID}.log
+          echo "[${CASE_ID}] COMPLETED $(date)" >> logs/master_audit.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: case-${{ matrix.case_file }}
+          path: |
+            reports/cases/
+            logs/
+
+  # ============================================================
+  # 3. 전체 종합 리포트
+  # ============================================================
+  summary:
+    needs: analyze-cases
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 📑 Generate Summary
+        run: |
+          mkdir -p reports
+          echo "# ⚖️ AI 판결 보조 — 종합 리포트" > reports/summary_report.md
+          echo "담당 판사: ${{ github.event.inputs.judge_name }}" >> reports/summary_report.md
+          echo "---" >> reports/summary_report.md
+          ls reports/cases | wc -l | xargs echo "총 처리 사건 수:" >> reports/summary_report.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: final-summary
+          path: reports/
