@@ -1,6 +1,5 @@
-requests
-beautifulsoup4
-fake-useragent
+faker
+numpy
 pandas
-tabulate
-lxml
+scikit-learn
+shap
