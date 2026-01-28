@@ -1,92 +1,102 @@
-name: ⚖️ AI Judge 5.0 - Massive Verdict & Visualization
+name: 🚀 AI Judge 6.0 - 2026 Auto Release & Accumulate
 
+# [트리거 설정]
+# 1. 5분마다 자동 실행 (Cron)
+# 2. 버튼 클릭 시 수동 실행
 on:
-  workflow_dispatch: # 버튼 클릭으로 실행
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: write  # 리포지토리 커밋 및 릴리즈 생성 권한
 
 jobs:
-  execute-ai-court:
+  run-and-release:
     runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Seoul
     steps:
       # ----------------------------------------------------------------
-      # 1. 환경 설정 및 디렉토리 초기화 (에러 방지)
+      # 1. 저장소 체크아웃 (이전 데이터 누적을 위해 필수)
       # ----------------------------------------------------------------
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 전체 히스토리 가져오기
 
-      - name: 📂 Initialize Directories
+      - name: 📂 Setup Environment
         run: |
-          rm -rf data reports scripts # 기존 데이터 삭제 (Clean Start)
           mkdir -p scripts
-          mkdir -p data/generated_cases
-          mkdir -p reports/cases
-          echo "✅ Clean environment ready."
+          mkdir -p data/new_cases
+          mkdir -p reports
+          # 누적 기록 파일이 없으면 헤더 생성
+          if [ ! -f "HISTORY_LOG.md" ]; then
+            echo "# 📜 AI 판사 2026년 판결 누적 기록부" > HISTORY_LOG.md
+            echo "| 실행시간 | 사건ID | 발생일(2026) | 죄명 | 피고인 | 판결 결과 |" >> HISTORY_LOG.md
+            echo "|---|---|---|---|---|---| >> HISTORY_LOG.md"
+          fi
 
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
+      
       - name: 📦 Install Dependencies
         run: pip install faker pandas
 
       # ----------------------------------------------------------------
-      # 2. [Script] 고난도 사건 대량 생성기 (주가조작, 뇌물 등)
+      # 2. [Script] 2026년 미래 데이터 생성기 (매월 데이터 갱신)
       # ----------------------------------------------------------------
-      - name: 📝 Create scripts/generate_cases.py
+      - name: 📝 Restore scripts/generate_cases_2026.py
         run: |
-          cat << 'EOF' > scripts/generate_cases.py
-          import json, os, random
+          cat << 'EOF' > scripts/generate_cases_2026.py
+          import json, os, random, datetime
           from faker import Faker
-          fake = Faker('ko_KR')
-          OUTPUT_DIR = "data/generated_cases"
           
-          # 최신 범죄 트렌드 반영 시나리오
+          fake = Faker('ko_KR')
+          OUTPUT_DIR = "data/new_cases"
+          
+          # 2026년 매월 데이터 시뮬레이션
+          def get_random_date_2026():
+              start = datetime.date(2026, 1, 1)
+              end = datetime.date(2026, 12, 31)
+              days = (end - start).days
+              return start + datetime.timedelta(days=random.randint(0, days))
+
           SCENARIOS = {
-              "자본시장법 위반": {
-                  "details": ["주가 조작(시세조종)", "미공개 정보 이용", "통정 매매", "허위 공시"],
-                  "base_penalty": "중형"
-              },
-              "청탁금지법 위반": {
-                  "details": ["명품 가방 수수", "직무 관련 금품 수수", "제3자 뇌물 제공"],
-                  "base_penalty": "논란"
-              },
-              "업무방해(입시/채용)": {
-                  "details": ["논문 데이터 위조", "표창장 위조", "채용 점수 조작"],
-                  "base_penalty": "실형"
-              },
-              "특정경제범죄(횡령/배임)": {
-                  "details": ["회삿돈 횡령", "배임수재", "비자금 조성"],
-                  "base_penalty": "고액벌금"
-              }
+              "주가조작(자본시장법)": "징역 5년 이상",
+              "디올백 수수(청탁금지법)": "징역 1년 또는 무죄",
+              "논문위조(업무방해)": "징역 2년",
+              "가상화폐 사기": "징역 10년"
           }
 
+          # 실행 시마다 고유한 Batch ID 생성 (중복 방지)
+          batch_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
           def generate():
-              # 500건 대량 생성
-              for i in range(1, 501):
-                  if random.random() < 0.7: # 70%는 특수 범죄
-                      cat = random.choice(list(SCENARIOS.keys()))
-                      detail = random.choice(SCENARIOS[cat]["details"])
-                      c_type = "특수형사"
-                  else:
-                      cat = "일반 형법"
-                      detail = random.choice(["특수 절도", "상해 치사", "사기", "음주운전"])
-                      c_type = "일반형사"
+              # 한 번 실행에 50건씩 생성 (5분마다 누적됨)
+              for i in range(1, 51):
+                  cat = random.choice(list(SCENARIOS.keys()))
+                  case_date = get_random_date_2026()
                   
                   data = {
-                      "case_id": f"CASE-{i:04d}",
-                      "type": c_type,
+                      "case_id": f"CASE-2026-{batch_id}-{i:03d}",
+                      "date": str(case_date),
                       "category": cat,
-                      "detail": detail,
                       "defendant": fake.name(),
-                      "job": fake.job(),
-                      "damage_amount": random.randint(1000000, 50000000000), # 100만 ~ 500억
-                      "priors": random.randint(0, 5) # 전과
+                      "detail": f"2026년 {case_date.month}월 발생한 {cat} 사건",
+                      "verdict_guideline": SCENARIOS[cat]
                   }
                   
-                  with open(f"{OUTPUT_DIR}/CASE-{i:04d}.json", "w", encoding="utf-8") as f:
+                  # 판결 로직 즉시 적용
+                  data['judgment'] = {
+                      "result": f"{SCENARIOS[cat]} (확정)",
+                      "judge_date": str(case_date + datetime.timedelta(days=random.randint(30, 180)))
+                  }
+                  
+                  filename = f"{OUTPUT_DIR}/{data['case_id']}.json"
+                  with open(filename, "w", encoding="utf-8") as f:
                       json.dump(data, f, ensure_ascii=False, indent=2)
 
           if __name__ == "__main__":
@@ -94,126 +104,61 @@ jobs:
           EOF
 
       # ----------------------------------------------------------------
-      # 3. [Script] AI 판사: 정밀 판결 및 선고 (결과 도출 핵심)
+      # 3. [Script] 데이터 누적 처리기 (Log Appender)
       # ----------------------------------------------------------------
-      - name: 📝 Create scripts/final_judgment.py
+      - name: 📝 Restore scripts/append_history.py
         run: |
-          cat << 'EOF' > scripts/final_judgment.py
-          import sys, json, random
+          cat << 'EOF' > scripts/append_history.py
+          import glob, json, datetime
           
-          if len(sys.argv) < 2: sys.exit(1)
-          file_path = sys.argv[1]
+          files = glob.glob("data/new_cases/*.json")
+          now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
           
-          with open(file_path, 'r', encoding='utf-8') as f:
-              data = json.load(f)
-              
-          cat = data['category']
-          detail = data['detail']
-          damage = data['damage_amount']
-          priors = data['priors']
-          
-          # --- 판결 로직 (Sentencing Logic) ---
-          verdict = ""
-          reason = ""
-          
-          if "자본시장법" in cat:
-              if damage > 5000000000: # 50억 이상
-                  verdict = "징역 7년, 벌금 100억 원"
-                  reason = "다수의 투자자에게 막대한 피해를 입힘"
-              else:
-                  verdict = "징역 3년, 집행유예 5년"
-                  reason = "부당 이득을 반환하고 반성함"
-                  
-          elif "청탁금지법" in cat:
-              # 직무 관련성 여부에 따른 판결 갈림 시뮬레이션
-              if random.random() > 0.4:
-                  verdict = "무죄"
-                  reason = "직무 관련성이 입증되지 않았으며 단순 선물로 판단됨"
-              else:
-                  verdict = "징역 1년, 집행유예 2년"
-                  reason = "공직자의 배우자로서 부적절한 처신"
-                  
-          elif "업무방해" in cat: # 논문 위조 등
-              verdict = "징역 2년 (법정 구속)"
-              reason = "입시 공정성을 심각하게 훼손함"
-              
-          else: # 일반 범죄
-              if priors > 2:
-                  verdict = "징역 1년 6월"
-                  reason = "누범 기간 중 재범"
-              else:
-                  verdict = "벌금 500만 원"
-                  reason = "초범이며 피해자와 합의함"
-
-          # 결과 데이터 추가하여 덮어쓰기 (집계용)
-          data['judgment'] = {
-              "verdict": verdict,
-              "reason": reason
-          }
-          
-          with open(file_path, 'w', encoding='utf-8') as f:
-              json.dump(data, f, ensure_ascii=False, indent=2)
-              
-          # 리포트용 텍스트 출력
-          print(f"## ⚖️ 판결 선고")
-          print(f"- **죄명**: {cat} ({detail})")
-          print(f"- **주문**: {verdict}")
-          print(f"- **이유**: {reason}")
+          with open("HISTORY_LOG.md", "a", encoding="utf-8") as f:
+              for file in files:
+                  with open(file, 'r', encoding='utf-8') as jf:
+                      data = json.load(jf)
+                      line = f"| {now} | {data['case_id']} | {data['date']} | {data['category']} | {data['defendant']} | **{data['judgment']['result']}** |\n"
+                      f.write(line)
           EOF
 
       # ----------------------------------------------------------------
-      # 4. [Script] 결과 집계 및 시각화 (도표 생성)
+      # 4. 실행 및 데이터 누적 (Execute & Accumulate)
       # ----------------------------------------------------------------
-      - name: 📝 Create scripts/aggregate_results.py
+      - name: 🏭 Generate 2026 Data
+        run: python scripts/generate_cases_2026.py
+
+      - name: 📚 Accumulate to History Log
+        run: python scripts/append_history.py
+
+      # ----------------------------------------------------------------
+      # 5. 변경 사항 커밋 (GitHub Repo에 영구 저장)
+      # ----------------------------------------------------------------
+      - name: 💾 Commit History Log
         run: |
-          cat << 'EOF' > scripts/aggregate_results.py
-          import glob, json
+          git config --global user.name "AI-Judge-Bot"
+          git config --global user.email "bot@ai-judge.com"
           
-          print("# 📊 AI 대법원 판결 종합 상황판")
-          print(f"### 총 처리 사건: {len(glob.glob('data/generated_cases/*.json'))}건")
-          print("\n| 사건번호 | 죄명(혐의) | 피고인 | 피해규모 | **판결 결과(주문)** | 비고 |")
-          print("|---|---|---|---|---|---|")
-          
-          files = sorted(glob.glob("data/generated_cases/*.json"))
-          
-          # 상위 100건만 출력 (너무 길어짐 방지)
-          for file in files[:100]:
-              with open(file, 'r', encoding='utf-8') as f:
-                  d = json.load(f)
-                  
-                  # 결과가 없는 경우(혹시 모를 에러) 방지
-                  judgment = d.get('judgment', {'verdict': '판결 보류', 'reason': '-'})
-                  
-                  dmg = f"{d['damage_amount']:,}원" if d['damage_amount'] > 0 else "-"
-                  print(f"| {d['case_id']} | {d['category']}<br>({d['detail']}) | {d['defendant']} | {dmg} | **{judgment['verdict']}** | {judgment['reason'][:15]}... |")
-          
-          print("\n*(지면 관계상 상위 100건만 표시됩니다. 전체 데이터는 첨부파일을 확인하세요)*")
-          EOF
+          # 로그 파일만 커밋 (JSON 파일은 Release에 첨부하여 용량 절약)
+          git add HISTORY_LOG.md
+          git commit -m "📈 Update Judgment History: $(date +'%Y-%m-%d %H:%M')"
+          git push
 
       # ----------------------------------------------------------------
-      # 5. 실행 (Generate -> Judge -> Aggregate)
+      # 6. 🚀 자동 릴리즈 & 출시 (Release & Publish)
       # ----------------------------------------------------------------
-      - name: 🏭 1. Generate 500 Cases
-        run: python scripts/generate_cases.py
+      - name: 📦 Zip Artifacts
+        run: zip -r raw_data_$(date +'%Y%m%d_%H%M').zip data/new_cases
 
-      - name: ⚖️ 2. Execute Judgments
+      - name: 🚀 Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Processing 500 judgments..."
-          for file in data/generated_cases/*.json; do
-            filename=$(basename "$file" .json)
-            python scripts/final_judgment.py "$file" > "reports/cases/$filename.md"
-          done
-
-      - name: 📊 3. Visualize Results (Table)
-        run: |
-          python scripts/aggregate_results.py > reports/Final_Summary_Table.md
-          cat reports/Final_Summary_Table.md # 로그에 출력해서 바로 보기
-
-      # ----------------------------------------------------------------
-      # 6. 결과 업로드
-      # ----------------------------------------------------------------
-      - name: 📤 Upload Reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: AI-Judge-Final-Report
-          path: reports/
+          TAG_NAME="v2026.$(date +'%m%d.%H%M')"
+          RELEASE_TITLE="⚖️ 판결 데이터 업데이트 (2026-$(date +'%m-%d %H:%M'))"
+          
+          # GitHub CLI를 사용하여 릴리즈 생성 및 파일 업로드
+          gh release create "$TAG_NAME" \
+            --title "$RELEASE_TITLE" \
+            --notes "2026년 시뮬레이션 판결 데이터 50건이 추가되었습니다. 상세 내용은 첨부파일 확인." \
+            raw_data_*.zip
