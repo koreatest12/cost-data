@@ -1,0 +1,44 @@
+name: 🤖 Claude Code Reviewer
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # 전체 히스토리 가져오기
+
+      - name: Setup Claude Code
+        uses: ./.github/actions/setup-claude
+        with:
+          anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Analyze Diff and Comment
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. 변경사항 추출
+          git diff origin/${{ github.base_ref }} > diff.txt
+          
+          # 2. Claude에게 리뷰 요청 (Unix 파이프라인 활용)
+          # -p 옵션은 프롬프트를 의미합니다.
+          cat diff.txt | claude -p "
+            너는 시니어 개발자야. 아래 git diff를 분석해줘.
+            1. 치명적인 버그나 보안 취약점만 찾아내.
+            2. 스타일 지적은 하지 마.
+            3. 결과를 Markdown 리스트로 요약해서 출력해줘.
+          " > review_result.md
+          
+          # 3. PR에 코멘트 달기 (gh CLI 사용)
+          if [ -s review_result.md ]; then
+            gh pr comment $PR_NUMBER --body-file review_result.md
+          else
+            echo "No major issues found."
+          fi
