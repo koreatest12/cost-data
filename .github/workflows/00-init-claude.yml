@@ -1,0 +1,235 @@
+name: ⚡ Bootstrap Claude Integration
+description: "Executes the setup script to generate all Claude Code workflows and actions."
+on:
+  workflow_dispatch: # 수동 실행 버튼
+
+permissions:
+  contents: write # 파일 생성 및 푸시 권한 필요
+
+jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Generate Setup Script
+        run: |
+          cat << 'END_OF_SCRIPT' > generate_workflows.sh
+          #!/bin/bash
+          
+          echo "🔄 Initializing Claude Code Integration..."
+
+          # 1. 디렉토리 구조 생성
+          mkdir -p .github/workflows
+          mkdir -p .github/actions/setup-claude
+
+          # ==============================================================================
+          # 2. Setup Action 생성
+          # ==============================================================================
+          echo "⚙️  Generating Setup Action..."
+          cat << 'EOF' > .github/actions/setup-claude/action.yml
+          name: 'Setup Claude Code'
+          description: 'Installs Claude Code CLI and persists authentication globally'
+          inputs:
+            anthropic-key:
+              description: 'API Key for Authentication'
+              required: true
+
+          runs:
+            using: "composite"
+            steps:
+              - name: Install Claude Code
+                shell: bash
+                run: |
+                  echo "⬇️ Installing Claude Code..."
+                  curl -fsSL https://claude.ai/install.sh | bash
+                  echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+              - name: Configure Global Authentication
+                shell: bash
+                run: |
+                  echo "ANTHROPIC_API_KEY=${{ inputs.anthropic-key }}" >> $GITHUB_ENV
+                  echo "CI=true" >> $GITHUB_ENV
+                  echo "CLAUDE_HEADLESS=true" >> $GITHUB_ENV
+                  git config --global user.name "Claude Bot"
+                  git config --global user.email "bot@claude.ai"
+                  echo "✅ Auth configured."
+
+              - name: Verify Installation
+                shell: bash
+                run: claude --version
+          EOF
+
+          # ==============================================================================
+          # 3. Workflow: Feature Builder
+          # ==============================================================================
+          echo "🏗️  Generating Feature Builder Workflow..."
+          cat << 'EOF' > .github/workflows/03-feature-builder.yml
+          name: 🏗️ Feature Builder (Dispatch)
+          on:
+            workflow_dispatch:
+              inputs:
+                requirement:
+                  description: '구현할 기능 설명'
+                  required: true
+                branch_name:
+                  description: '브랜치 이름 (옵션)'
+                  required: false
+
+          jobs:
+            build-feature:
+              runs-on: ubuntu-latest
+              permissions:
+                contents: write
+                pull-requests: write
+              steps:
+                - uses: actions/checkout@v3
+                - uses: ./.github/actions/setup-claude
+                  with:
+                    anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
+                - name: Create Branch & Code
+                  id: coding
+                  env:
+                    BRANCH_NAME: ${{ inputs.branch_name || format('feature/claude-{0}', github.run_id) }}
+                  run: |
+                    git checkout -b $BRANCH_NAME
+                    claude -p "TASK: ${{ inputs.requirement }} \n CONTEXT: CI Environment. \n ACTION: Implement feature. No user input."
+                    if [[ -n $(git status --porcelain) ]]; then
+                      git add .
+                      COMMIT_MSG=$(git diff --staged | claude -p "Generate commit message (max 50 chars)")
+                      git commit -m "$COMMIT_MSG"
+                      git push origin $BRANCH_NAME
+                      echo "pushed=true" >> $GITHUB_OUTPUT
+                      echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+                    else
+                      echo "pushed=false" >> $GITHUB_OUTPUT
+                    fi
+                - name: Create PR
+                  if: steps.coding.outputs.pushed == 'true'
+                  env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    BRANCH_NAME: ${{ steps.coding.outputs.branch }}
+                  run: |
+                    gh pr create --title "✨ Feature: $BRANCH_NAME" --body "Implemented by Claude Code: ${{ inputs.requirement }}" --head $BRANCH_NAME --base main
+          EOF
+
+          # ==============================================================================
+          # 4. Workflow: Auto Review
+          # ==============================================================================
+          echo "🤖 Generating PR Review Workflow..."
+          cat << 'EOF' > .github/workflows/01-pr-auto-review.yml
+          name: 🤖 Claude Code Reviewer
+          on:
+            pull_request:
+              types: [opened, synchronize]
+              paths-ignore: ['*.md', '.github/**']
+          jobs:
+            review:
+              runs-on: ubuntu-latest
+              permissions:
+                contents: read
+                pull-requests: write
+              steps:
+                - uses: actions/checkout@v3
+                  with: { fetch-depth: 0 }
+                - uses: ./.github/actions/setup-claude
+                  with:
+                    anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
+                - name: Analyze Diff
+                  env:
+                    PR_NUMBER: ${{ github.event.pull_request.number }}
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  run: |
+                    git diff origin/${{ github.base_ref }} > diff.txt
+                    if [ ! -s diff.txt ]; then exit 0; fi
+                    cat diff.txt | claude -p "Review diff for bugs/security. Output Markdown. If good, say 'LGTM'." > review.md
+                    if ! grep -q "LGTM" review.md; then gh pr comment $PR_NUMBER --body-file review.md; fi
+          EOF
+
+          # ==============================================================================
+          # 5. Workflow: Issue Triage
+          # ==============================================================================
+          echo "🚑 Generating Issue Triage Workflow..."
+          cat << 'EOF' > .github/workflows/02-issue-triage.yml
+          name: 🚑 Issue Auto-Triage
+          on:
+            issues: { types: [opened] }
+          jobs:
+            triage:
+              runs-on: ubuntu-latest
+              permissions:
+                issues: write
+                contents: read
+              steps:
+                - uses: actions/checkout@v3
+                - uses: ./.github/actions/setup-claude
+                  with:
+                    anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
+                - name: Suggest Solution
+                  env:
+                    ISSUE_NUMBER: ${{ github.event.issue.number }}
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  run: |
+                    echo "${{ github.event.issue.title }} \n ${{ github.event.issue.body }}" > issue.txt
+                    claude -p "Analyze issue and suggest code fix. Context: $(cat issue.txt)" > solution.md
+                    gh issue comment $ISSUE_NUMBER --body-file solution.md
+          EOF
+
+          # ==============================================================================
+          # 6. Workflow: Nightly Refactor
+          # ==============================================================================
+          echo "🧹 Generating Nightly Refactor Workflow..."
+          cat << 'EOF' > .github/workflows/99-nightly-refactor.yml
+          name: 🧹 Nightly Refactor
+          on:
+            schedule:
+              - cron: '0 18 * * *'
+          jobs:
+            refactor:
+              runs-on: ubuntu-latest
+              permissions:
+                contents: write
+                pull-requests: write
+              steps:
+                - uses: actions/checkout@v3
+                - uses: ./.github/actions/setup-claude
+                  with:
+                    anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
+                - name: Cleanup Code
+                  run: |
+                    BRANCH="refactor/nightly-$(date +%Y%m%d)"
+                    git checkout -b $BRANCH
+                    claude -p "Scan codebase for unused vars/imports and fix them."
+                    if [[ -n $(git status --porcelain) ]]; then
+                      git add .
+                      git commit -m "🧹 Nightly cleanup"
+                      git push origin $BRANCH
+                      gh pr create --title "🧹 Nightly Refactor" --body "Automated cleanup" --base main
+                    fi
+                  env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EOF
+          
+          END_OF_SCRIPT
+          
+          # 스크립트 실행 권한 부여
+          chmod +x generate_workflows.sh
+
+      - name: Execute Setup Script
+        run: ./generate_workflows.sh
+
+      - name: Commit & Push Generated Workflows
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          
+          git add .
+          
+          # 변경사항이 있을 때만 커밋
+          if [[ -n $(git status --porcelain) ]]; then
+            git commit -m "🚀 Bootstrap: Initialize Claude Code Workflows"
+            git push
+          else
+            echo "Everything is already up to date."
+          fi
