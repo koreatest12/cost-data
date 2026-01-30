@@ -1,0 +1,37 @@
+name: 🚑 Issue Auto-Triage
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-claude
+        with:
+          anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Analyze Issue
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          echo "Title: $ISSUE_TITLE" > issue_context.txt
+          echo "Body: $ISSUE_BODY" >> issue_context.txt
+          
+          # Claude가 코드베이스를 탐색하여 해결책 제안
+          claude -p "
+            현재 프로젝트의 코드베이스를 기반으로 다음 이슈를 분석해줘.
+            이슈 내용: $(cat issue_context.txt)
+            
+            어떤 파일이 문제일 가능성이 높은지, 그리고 어떻게 수정하면 좋을지
+            구체적인 코드 스니펫을 포함해서 답변해줘.
+          " > solution.md
+          
+          gh issue comment $ISSUE_NUMBER --body-file solution.md
