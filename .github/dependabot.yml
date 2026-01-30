@@ -8,7 +8,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily" # CI 도구는 보안이 중요하므로 매일 체크
+      interval: "daily" # 보안 및 최신 기능(Claude Action 등) 반영을 위해 매일 확인
       time: "09:00"
       timezone: "Asia/Seoul"
     labels:
@@ -21,7 +21,7 @@ updates:
 
   # =================================================================
   # [ROOT] Dev Tools & Claude Code CLI (NPM)
-  # 루트 레벨의 package.json에서 Claude Code나 Husky 등을 관리할 경우 대비
+  # Scaffold Generator나 Doc Generator가 사용하는 CLI 도구 관리
   # =================================================================
   - package-ecosystem: "npm"
     directory: "/"
@@ -29,13 +29,52 @@ updates:
       interval: "weekly"
       timezone: "Asia/Seoul"
     groups:
-      claude-tools:
-        patterns: ["@anthropic-ai/*", "claude-code*"]
+      claude-tools: # [중요] Claude Code CLI 및 SDK 자동 업데이트 그룹
+        patterns: ["@anthropic-ai/*", "claude-code*", "langchain*"]
       dev-tools:
-        patterns: ["husky", "lint-staged", "prettier", "eslint"]
-    labels: ["devtools", "javascript"]
+        patterns: ["husky", "lint-staged", "prettier", "eslint", "typescript"]
+    labels: ["devtools", "javascript", "claude"]
     commit-message:
       prefix: "chore(deps)"
+
+  # =================================================================
+  # [NEW] Docker Compose (Orchestration)
+  # Scaffold로 생성된 로컬 개발 환경용 docker-compose.yml 이미지 관리
+  # =================================================================
+  - package-ecosystem: "docker"
+    directory: "/" # 루트의 docker-compose.yml (전체 서비스 오케스트레이션)
+    schedule:
+      interval: "weekly"
+      timezone: "Asia/Seoul"
+    labels: ["docker", "compose"]
+    commit-message:
+      prefix: "chore(docker-compose)"
+
+  # =================================================================
+  # [NEW] Dev Containers (Development Environment)
+  # Claude Code를 Codespaces나 VS Code Container에서 실행할 때 환경 관리
+  # =================================================================
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      timezone: "Asia/Seoul"
+    labels: ["devcontainer", "env"]
+    commit-message:
+      prefix: "chore(devcontainer)"
+
+  # =================================================================
+  # [NEW] Automation Scripts (Python)
+  # .github/scripts 폴더 내의 자동화 스크립트 의존성 관리
+  # =================================================================
+  - package-ecosystem: "pip"
+    directory: "/.github/scripts" # (존재하지 않아도 미리 설정 가능)
+    schedule:
+      interval: "monthly"
+      timezone: "Asia/Seoul"
+    labels: ["automation", "python"]
+    commit-message:
+      prefix: "chore(scripts)"
 
   # =================================================================
   # [JAVA / MAVEN] MSA Core Microservices
@@ -293,7 +332,7 @@ updates:
     schedule:
       interval: "weekly"
       timezone: "Asia/Seoul"
-    groups: # [New] AWS Provider 그룹화
+    groups:
       aws-provider:
         patterns: ["hashicorp/aws"]
     labels: ["infra", "terraform"]
@@ -306,7 +345,6 @@ updates:
   # =================================================================
   
   # [New] Claude Automation Agent (CI/CD용 컨테이너)
-  # 만약 .github/actions/setup-claude 에서 커스텀 이미지를 쓴다면 유용함
   - package-ecosystem: "docker"
     directory: "/infra/docker/claude-agent" # (가정된 경로)
     schedule:
