@@ -2,19 +2,40 @@ version: 2
 updates:
   # =================================================================
   # [GLOBAL] GitHub Actions (CI/CD Workflows)
+  # Claude Code 워크플로우(.github/workflows/*.yml)에서 사용하는
+  # actions/checkout, gh-cli 등의 버전을 자동으로 관리합니다.
   # =================================================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily" # CI 도구는 보안이 중요하므로 매일 체크
       time: "09:00"
       timezone: "Asia/Seoul"
     labels:
       - "ci"
       - "actions"
+      - "claude-automation"
     commit-message:
-      prefix: "ci"
+      prefix: "ci(actions)"
       include: "scope"
+
+  # =================================================================
+  # [ROOT] Dev Tools & Claude Code CLI (NPM)
+  # 루트 레벨의 package.json에서 Claude Code나 Husky 등을 관리할 경우 대비
+  # =================================================================
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      timezone: "Asia/Seoul"
+    groups:
+      claude-tools:
+        patterns: ["@anthropic-ai/*", "claude-code*"]
+      dev-tools:
+        patterns: ["husky", "lint-staged", "prettier", "eslint"]
+    labels: ["devtools", "javascript"]
+    commit-message:
+      prefix: "chore(deps)"
 
   # =================================================================
   # [JAVA / MAVEN] MSA Core Microservices
@@ -206,23 +227,26 @@ updates:
       prefix: "build(deps)"
 
   # =================================================================
-  # [PYTHON / PIP] AI & Data Science
+  # [PYTHON / PIP] AI & Data Science & Claude Automation
+  # Claude SDK 및 AI 관련 라이브러리 집중 관리
   # =================================================================
 
-  # 13. AI 모델 서비스
+  # 13. AI 모델 서비스 (Claude SDK 포함)
   - package-ecosystem: "pip"
     directory: "/ai-model"
     schedule:
       interval: "weekly"
       timezone: "Asia/Seoul"
     groups:
+      claude-sdk: # [New] Claude 및 LLM SDK 그룹
+        patterns: ["anthropic*", "langchain*", "openai*"]
       ai-core:
         patterns: ["pandas", "numpy", "scikit-learn", "torch", "tensorflow"]
       api-framework:
         patterns: ["fastapi", "uvicorn", "pydantic"]
       testing:
         patterns: ["pytest*", "mock*"]
-    labels: ["ai", "python"]
+    labels: ["ai", "python", "claude"]
     commit-message:
       prefix: "chore(python)"
 
@@ -260,6 +284,7 @@ updates:
 
   # =================================================================
   # [TERRAFORM] Infra
+  # AWS Bedrock(Claude) 관련 리소스 관리를 위해 중요
   # =================================================================
 
   # 16. AWS 인프라
@@ -268,15 +293,29 @@ updates:
     schedule:
       interval: "weekly"
       timezone: "Asia/Seoul"
+    groups: # [New] AWS Provider 그룹화
+      aws-provider:
+        patterns: ["hashicorp/aws"]
     labels: ["infra", "terraform"]
     commit-message:
       prefix: "chore(infra)"
 
   # =================================================================
   # [DOCKER] Container Images
-  # 모든 도커 이미지 업데이트에 'chore(docker)' 접두사 적용
+  # Claude Automation Agent용 컨테이너 이미지 관리 추가
   # =================================================================
   
+  # [New] Claude Automation Agent (CI/CD용 컨테이너)
+  # 만약 .github/actions/setup-claude 에서 커스텀 이미지를 쓴다면 유용함
+  - package-ecosystem: "docker"
+    directory: "/infra/docker/claude-agent" # (가정된 경로)
+    schedule:
+      interval: "weekly"
+      timezone: "Asia/Seoul"
+    labels: ["docker", "ci-agent"]
+    commit-message:
+      prefix: "chore(docker-agent)"
+
   # Core Services Docker
   - package-ecosystem: "docker"
     directory: "/services/omni-gateway"
