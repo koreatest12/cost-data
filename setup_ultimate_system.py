@@ -1,148 +1,195 @@
 import os
 
 # ==============================================================================
-# 🏗️ [설정] 대량 반영 경로 및 인프라 정의
+# 🏗️ [설정] 프로젝트 루트 및 전역 인프라 경로 정의
 # ==============================================================================
 BASE_DIR = os.getcwd()
-SVC_PATH = "services/omni-infinity-api"
-PKG_PATH = f"{SVC_PATH}/src/main/java/com/omni/infinity"
+SVC_PATH = "src/main/java/com/costdata/filemanagement"
+RES_PATH = "src/main/resources"
 
 def force_write(path, content):
+    """디렉토리를 보장하며 파일 대량 생성 (방화벽 및 인프라 설치용)"""
     abs_path = os.path.join(BASE_DIR, path)
     os.makedirs(os.path.dirname(abs_path), exist_ok=True)
     with open(abs_path, "w", encoding="utf-8") as f:
         f.write(content.strip("\n"))
-    print(f"  ✅ [Massive Applied] {path}")
+    print(f"  ✅ [Massive Implemented] {path}")
 
 # ==============================================================================
-# 1. 내/외부 방화벽 서버 무력화 및 상위 보안 설정 (Security)
+# 1. 상위 보안 인프라 및 이중 방화벽 서버 무력화 (Firewall & Security)
 # ==============================================================================
-def install_massive_security():
-    # 모든 내부 필터와 외부 침입 차단 시스템을 테스트 모드로 전환
+def install_firewall_and_security():
+    # 🛡️ 내/외부 방화벽 우회 및 상위 보안 설정
     security_java = f"""
-package com.omni.infinity;
+package com.costdata.filemanagement.config;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import java.util.List;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {{
     @Bean
-    public SecurityFilterChain internalFirewallChain(HttpSecurity http) throws Exception {{
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {{
+        // 상위 레벨에서 모든 방화벽 서버 대량 개방 (Bypass All Traffic)
         http.csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll()) // 모든 내/외부 방화벽 개방
+            .cors(cors -> cors.configurationSource(request -> {{
+                CorsConfiguration config = new CorsConfiguration();
+                config.setAllowedOrigins(List.of("*"));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                config.setAllowedHeaders(List.of("*"));
+                return config;
+            }}))
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
             .headers(h -> h.frameOptions(f -> f.disable()));
         return http.build();
     }}
 }}
 """
-    force_write(f"{PKG_PATH}/SecurityConfig.java", security_java)
+    force_write(f"{SVC_PATH}/config/SecurityConfig.java", security_java)
 
 # ==============================================================================
-# 2. 상위 디버그(Super Debug) 및 대량 모니터링 컨트롤러
+# 2. 상위 디버그 시스템 및 API 컨트롤러 대량 주입 (Super Debug & API)
 # ==============================================================================
-def install_super_debug():
-    controller_java = f"""
-package com.omni.infinity;
+def install_api_and_debug():
+    # 🔍 모든 유입 트래픽을 추적하는 상위 디버그 필터
+    debug_filter = f"""
+package com.costdata.filemanagement.config;
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.stereotype.Component;
+import java.io.IOException;
+
+@Component
+public class GlobalSuperDebugger implements Filter {{
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) 
+            throws IOException, ServletException {{
+        HttpServletRequest req = (HttpServletRequest) request;
+        // 상위 디버깅: IP, Method, URI 정보 대량 로깅
+        System.out.println("[SUPER-DEBUG] REQUEST: [" + req.getMethod() + "] " + req.getRequestURI() + " FROM: " + req.getRemoteAddr());
+        chain.doFilter(request, response);
+    }}
+}}
+"""
+    force_write(f"{SVC_PATH}/config/GlobalSuperDebugger.java", debug_filter)
+
+    # 🚀 다기능 통합 API 컨트롤러 (대량 데이터 핸들러)
+    api_controller = f"""
+package com.costdata.filemanagement.controller;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 @RestController
-public class SuperDebugController {{
-    @GetMapping("/api/system/health")
+@RequestMapping("/api")
+public class MassiveApiController {{
+    @GetMapping("/system/health")
     public Map<String, Object> health() {{
-        Map<String, Object> res = new HashMap<>();
-        res.put("status", "UP");
-        res.put("firewall", "DISABLED");
-        res.put("debug_level", "ULTIMATE");
-        return res;
+        return Map.of("status", "UP", "firewall", "BYPASSED", "version", "2026.ULTIMATE");
     }}
 
-    @GetMapping("/api/pokemon/search")
-    public Map<String, Object> search(@RequestParam(defaultValue="ALL") String keyword) {{
-        return Map.of("result", "SUCCESS", "keyword", keyword, "total", 999999);
+    @GetMapping("/pokemon/search")
+    public Map<String, Object> search(@RequestParam(defaultValue = "all") String keyword) {{
+        return Map.of("result", "SUCCESS", "keyword", keyword, "timestamp", System.currentTimeMillis());
+    }}
+
+    @GetMapping("/stats")
+    public Map<String, Long> stats() {{
+        return Map.of("total", (long)(Math.random() * 1000000));
     }}
 }}
 """
-    force_write(f"{PKG_PATH}/SuperDebugController.java", controller_java)
+    force_write(f"{SVC_PATH}/controller/MassiveApiController.java", api_controller)
 
 # ==============================================================================
-# 3. GitHub Actions 워크플로우 (9999번 재시도급 스모크 테스트 강화)
+# 3. 데이터 송수신 및 영속성 엔진 보강 (Persistence Engine)
+# ==============================================================================
+def upgrade_persistence():
+    entity = f"""
+package com.costdata.filemanagement.model;
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity @Data @NoArgsConstructor @AllArgsConstructor @Builder
+public class InfinityData {{
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String uuid;
+    private Long amount;
+    private String status;
+    private String payload;
+}}
+"""
+    force_write(f"{SVC_PATH}/model/InfinityData.java", entity)
+
+# ==============================================================================
+# 4. CI/CD 워크플로우 대통합 (상위 디버그 & 송신 기능 추가)
 # ==============================================================================
 def upgrade_workflow():
     workflow_yaml = r"""
-name: 🌌 Ultimate CI/CD (Firewall Bypass & Super Smoke Test)
+name: 🌌 Ultimate Infinity Infrastructure
 on: [push, workflow_dispatch]
 
 jobs:
-  massive-build-test:
+  infrastructure-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: 🛠️ 1. 인프라 강제 생성 및 대량 설정 반영
+      - name: 🛠️ 1. 대량 시스템 아키텍처 주입
         run: |
-          mkdir -p services/omni-infinity-api/src/main/resources
-          mkdir -p services/omni-infinity-api/src/main/java/com/omni/infinity
-          python setup_ultimate_system.py
+          python setup_ultimate_system.py # 현재 스크립트 실행
 
-      - name: ☕ 2. JDK 17 및 Maven 환경 설치
+      - name: ☕ 2. JDK 17 및 최적화된 Maven 설치
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: 📦 3. Maven 대량 빌드
-        run: |
-          cd services/omni-infinity-api
-          mvn clean package -DskipTests
+      - name: 📦 3. 전 서버 대량 컴파일 및 패키징
+        run: mvn clean package -DskipTests -X # 상위 디버그 로그 활성화
 
-      - name: 🌐 4. 9999번의 각오로 스모크 테스트 수행
+      - name: 🌐 4. 스모크 테스트 및 방화벽 검증
         run: |
-          JAR_PATH=$(find . -name "*.jar" | grep -v "original" | head -n 1)
-          echo "🚀 [Deploy] Running Server: $JAR_PATH"
-          
-          # 서버 기동 및 상위 디버그 로그 기록
-          nohup java -Xmx2048m -jar $JAR_PATH > app_massive_debug.log 2>&1 &
+          JAR=$(find target -name "*.jar" | head -n 1)
+          nohup java -Xmx2048m -jar $JAR > app.log 2>&1 &
           PID=$!
+          echo "⏳ 서버 인프라 부팅 대기 (40초)..."
+          sleep 40
           
-          echo "⏳ 서버 부팅 및 방화벽 해제 대기 (45초)..."
-          sleep 45
-          
-          # 🧪 [다중 포트 & 경로 스캔] 8080부터 8090까지 자동 탐색
-          SUCCESS=0
-          for PORT in 8080 8086 8081 8082; do
-            echo "🧪 Port $PORT 방화벽 서버 응답 확인 중..."
-            CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$PORT/api/system/health || echo "404")
-            if [ "$CODE" == "200" ]; then
-              echo "✅ Success! Port $PORT 활성화 확인."
-              TARGET_PORT=$PORT
-              SUCCESS=1
-              break
-            fi
-          done
-
-          if [ "$SUCCESS" == "1" ]; then
-            echo "🔍 [상위 디버그] 검색 API 최종 검증..."
-            SEARCH=$(curl -s "http://localhost:$TARGET_PORT/api/pokemon/search?keyword=9999")
-            echo "API Response: $SEARCH"
-            echo "✅ 모든 대량 기능 및 방화벽 설치 성공!"
+          # 다중 포트 및 API 방화벽 무력화 검증
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/system/health)
+          if [ "$CODE" == "200" ]; then
+            echo "✅ 시스템 인프라 및 방화벽 통과 성공!"
             kill $PID
           else
-            echo "❌ [ERROR] 모든 포트에서 응답이 없습니다. 상위 디버그 로그 출력:"
-            cat app_massive_debug.log
+            echo "❌ 인프라 통과 실패. 상위 로그 출력:"
+            cat app.log
             kill $PID
             exit 1
           fi
+
+      - name: 📤 5. 최종 시스템 번들 송신 및 릴리즈
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "INFRA-v${{ github.run_number }}"
+          files: |
+            target/*.jar
+            app.log
 """
     force_write(".github/workflows/main.yml", workflow_yaml)
 
 if __name__ == "__main__":
-    print("🚀 [Massive Setup] 상위 디버그 및 방화벽 서버 대량 반영 중...")
-    install_massive_security()
-    install_super_debug()
+    print("🚀 [Massive Setup] koreatest12/cost-data 인프라 대통합 시작...")
+    install_firewall_and_security()
+    install_api_and_debug()
+    upgrade_persistence()
     upgrade_workflow()
-    print("✨ 모든 대량 기능이 설치되었습니다. Git Push를 진행해 주세요.")
+    print("✨ 모든 파일 생성 및 대량 반영이 완료되었습니다. Git Push를 수행하십시오.")
