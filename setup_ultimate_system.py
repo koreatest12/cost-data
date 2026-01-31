@@ -6,13 +6,9 @@ import os
 BASE_DIR = os.getcwd()
 PROJECT_NAME = "services/omni-pokemon-web"
 PROJECT_ROOT = os.path.join(BASE_DIR, PROJECT_NAME)
-
+GITHUB_WORKFLOWS = os.path.join(BASE_DIR, ".github/workflows")
 SRC_MAIN = os.path.join(PROJECT_ROOT, "src/main")
-JAVA_PKG = os.path.join(SRC_MAIN, "java/com/omni/pokemon")
-JAVA_MODEL = os.path.join(JAVA_PKG, "model")
-JAVA_SERVICE = os.path.join(JAVA_PKG, "service")
-JAVA_CONTROLLER = os.path.join(JAVA_PKG, "controller")
-RESOURCES = os.path.join(SRC_MAIN, "resources")
+JAVA_CONTROLLER = os.path.join(SRC_MAIN, "java/com/omni/pokemon/controller")
 
 def write_file(path, content):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -21,246 +17,137 @@ def write_file(path, content):
     print(f"✅ 수정 완료: {os.path.basename(path)}")
 
 # ==============================================================================
-# 1. 🚨 [FIX] Java Model (컴파일 에러 원인 해결)
+# 1. 🤖 CI/CD 워크플로우 수정 (Exit Code 7 해결)
 # ==============================================================================
-def fix_java_model():
-    # 문법 오류가 있던 코드를 정석적인 포맷으로 변경
-    write_file(os.path.join(JAVA_MODEL, "Pokemon.java"), """
-package com.omni.pokemon.model;
+def fix_github_action():
+    # Health Check 로직을 'Wait-for-it' 방식으로 변경
+    write_file(os.path.join(GITHUB_WORKFLOWS, "ci-fix-connection.yml"), """
+name: Ultimate CI (Connection Fix)
+on: [push, pull_request]
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import java.util.List;
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Pokemon {
-    private int id;
-    private String name;
-    private List<String> types;
-    private String image;
-    private int total;
-    private int hp;
-    private int attack;
-    private int speed;
-}
+      - name: 🔨 Build with Maven
+        working-directory: ./services/omni-pokemon-web
+        run: mvn clean package -DskipTests
+
+      - name: 🌐 Server Start & Smart Health Check
+        working-directory: ./services/omni-pokemon-web
+        run: |
+          echo "🔥 서버 시작 (JVM 메모리 옵션 추가)..."
+          # -Xmx512m: 힙 메모리 제한 (GitHub Runner 환경 고려)
+          # -Dfile.encoding=UTF-8: 한글 깨짐 방지
+          nohup java -Xmx512m -Dfile.encoding=UTF-8 -jar target/*.jar > app.log 2>&1 &
+          PID=$!
+          echo "PID: $PID"
+          
+          echo "⏳ 부팅 대기 (최대 120초 polling)..."
+          
+          # 스마트 재시도 루프 (Connection Refused 방지)
+          for i in {1..24}; do
+            sleep 5
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/api/system/health || echo "000")
+            echo "Attempt $i: HTTP $HTTP_CODE"
+            
+            if [ "$HTTP_CODE" -eq 200 ]; then
+              echo "✅ 서버 가동 확인 완료!"
+              break
+            fi
+            
+            if [ $i -eq 24 ]; then
+              echo "❌ 타임아웃: 서버가 120초 내에 응답하지 않았습니다."
+              echo "=== 앱 로그 (app.log) ==="
+              cat app.log
+              kill $PID
+              exit 1
+            fi
+          done
+          
+          echo "🧪 데이터 검색 테스트"
+          SEARCH_RES=$(curl -s -G --data-urlencode "keyword=피카츄" http://localhost:8086/api/pokemon/search)
+          
+          if [[ "$SEARCH_RES" == *"피카츄"* ]]; then
+             echo "✅ 테스트 성공! (피카츄 발견)"
+          else
+             echo "❌ 검색 실패 (데이터 로드 문제)"
+             echo "응답: $SEARCH_RES"
+             cat app.log
+             kill $PID
+             exit 1
+          fi
+          
+          kill $PID
 """)
 
 # ==============================================================================
-# 2. 🛡️ [FIX] Service & Controller (안정성 강화)
+# 2. 🛡️ Controller 경로 수정 (404 방지)
 # ==============================================================================
-def fix_java_service():
-    write_file(os.path.join(JAVA_SERVICE, "PokemonService.java"), """
-package com.omni.pokemon.service;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.omni.pokemon.model.Pokemon;
-import org.springframework.stereotype.Service;
-import jakarta.annotation.PostConstruct;
-import java.io.InputStream;
-import java.util.*;
-import java.util.stream.Collectors;
-
-@Service
-public class PokemonService {
-    private List<Pokemon> db = new ArrayList<>();
-    private final ObjectMapper mapper = new ObjectMapper();
-
-    @PostConstruct
-    public void init() {
-        try {
-            InputStream is = getClass().getResourceAsStream("/data.json");
-            if (is != null) {
-                db = mapper.readValue(is, new TypeReference<List<Pokemon>>(){});
-                System.out.println("✅ Data Loaded: " + db.size() + " pokemons.");
-            } else {
-                System.err.println("⚠️ Warning: data.json not found in resources.");
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Error loading data: " + e.getMessage());
-        }
-    }
-
-    public List<Pokemon> search(String keyword) {
-        if (db.isEmpty()) return Collections.emptyList();
-        if (keyword == null || keyword.isBlank()) return db;
-        
-        String k = keyword.toLowerCase();
-        return db.stream()
-                .filter(p -> p.getName().contains(k) || String.valueOf(p.getId()).equals(k))
-                .collect(Collectors.toList());
-    }
-}
-""")
-
-    write_file(os.path.join(JAVA_CONTROLLER, "PokemonController.java"), """
+def fix_controller_path():
+    # API 경로가 /api/system/health 인지 /api/health 인지 확실히 매핑
+    write_file(os.path.join(JAVA_CONTROLLER, "SystemController.java"), """
 package com.omni.pokemon.controller;
 
-import com.omni.pokemon.model.Pokemon;
-import com.omni.pokemon.service.PokemonService;
-import org.springframework.web.bind.annotation.*;
-import lombok.RequiredArgsConstructor;
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
-@RequiredArgsConstructor
-public class PokemonController {
+@RequestMapping("/api/system")
+public class SystemController {
     
-    private final PokemonService service;
-
-    @GetMapping("/pokemon")
-    public List<Pokemon> getPokemons(@RequestParam(required = false) String k) {
-        return service.search(k);
-    }
-
     @GetMapping("/health")
     public String health() {
         return "OK";
     }
-}
-""")
-
-    write_file(os.path.join(JAVA_PKG, "OmniDexApp.java"), """
-package com.omni.pokemon;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class OmniDexApp {
-    public static void main(String[] args) {
-        SpringApplication.run(OmniDexApp.class, args);
-    }
-}
-""")
-
-# ==============================================================================
-# 3. ⚙️ [FIX] POM.xml (의존성 충돌 방지)
-# ==============================================================================
-def fix_pom():
-    write_file(os.path.join(PROJECT_ROOT, "pom.xml"), """
-<project xmlns="http://maven.apache.org/POM/4.0.0" 
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
     
-    <groupId>com.omni</groupId>
-    <artifactId>omni-pokemon-web</artifactId>
-    <version>1.0.0</version>
-    <packaging>jar</packaging>
-
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.1</version>
-        <relativePath/> 
-    </parent>
-
-    <properties>
-        <java.version>17</java.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-</project>
-""")
-
-# ==============================================================================
-# 4. 🧪 [NEW] Test Code (빌드 검증용)
-# ==============================================================================
-def generate_tests():
-    test_path = os.path.join(SRC_MAIN, "../test/java/com/omni/pokemon")
-    write_file(os.path.join(test_path, "OmniDexAppTests.java"), """
-package com.omni.pokemon;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-@SpringBootTest
-class OmniDexAppTests {
-    @Test
-    void contextLoads() {
-        // Context loading test to ensure build integrity
+    @GetMapping("/info")
+    public Map<String, String> info() {
+        return Map.of("status", "UP", "version", "v3.0-FIX");
     }
 }
 """)
 
 # ==============================================================================
-# 5. 🚀 Git Push Script
+# 3. 🚀 Git Push Script
 # ==============================================================================
 def generate_push_script():
-    write_file(os.path.join(BASE_DIR, "push_fix.sh"), """
+    script_path = os.path.join(BASE_DIR, "push_connection_fix.sh")
+    write_file(script_path, """
 #!/bin/bash
-echo "🔧 Fixing Compile Errors & Pushing..."
+echo "🔧 Applying Connection Fix & Pushing..."
 
-# 1. Config Check
 git config --global user.email "bot@omni.com"
 git config --global user.name "Omni Bot"
 
-# 2. Add fixes
 git add .
-git commit -m "Fix: Resolve Maven compilation error in Pokemon.java"
-
-# 3. Push
+git commit -m "Fix: Add Smart Health Check (Loop) & JVM Options"
 git push
-echo "✅ Pushed to GitHub. Check Actions tab now."
+
+echo "✅ Pushed! Check GitHub Actions now."
 """)
     if os.name != 'nt':
-        os.chmod(os.path.join(BASE_DIR, "push_fix.sh"), 0o755)
+        os.chmod(script_path, 0o755)
 
 # ==============================================================================
-# Main Execution
+# Main
 # ==============================================================================
 if __name__ == "__main__":
-    print("🚀 Repairing Project Files...")
-    fix_java_model()
-    fix_java_service()
-    fix_pom()
-    generate_tests()
+    print("🚀 Fixing Connection Refused Error...")
+    fix_github_action()
+    fix_controller_path()
     generate_push_script()
-    print("\n🎉 모든 파일이 복구되었습니다.")
-    print("👉 아래 명령어를 실행하여 GitHub에 수정사항을 반영하세요:\n")
-    print("    ./push_fix.sh")
+    print("\n🎉 수정 파일 생성 완료.")
+    print("👉 아래 명령어를 실행하여 GitHub에 반영하세요:")
+    print("    ./push_connection_fix.sh")
