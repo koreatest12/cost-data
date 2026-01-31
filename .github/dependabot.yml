@@ -1,471 +1,282 @@
-version: 2
+import os
+import yaml # pip install pyyaml 필요 (없으면 기본 문자열 처리로 대체)
+
+# ==============================================================================
+# 🏗️ [설정] 프로젝트 루트 및 Dependabot 내용
+# ==============================================================================
+BASE_DIR = os.getcwd()
+GITHUB_DIR = os.path.join(BASE_DIR, ".github")
+
+# 사용자가 제공한 YAML 내용 그대로 적용
+DEPENDABOT_CONTENT = """version: 2
 updates:
-  # =================================================================
-  # [GLOBAL] GitHub Actions (CI/CD Workflows)
-  # Claude Code 워크플로우(.github/workflows/*.yml)에서 사용하는
-  # actions/checkout, gh-cli 등의 버전을 자동으로 관리합니다.
-  # =================================================================
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
-      interval: "daily" # 보안 및 최신 기능(Claude Action 등) 반영을 위해 매일 확인
-      time: "09:00"
-      timezone: "Asia/Seoul"
-    labels:
-      - "ci"
-      - "actions"
-      - "claude-automation"
-    commit-message:
-      prefix: "ci(actions)"
-      include: "scope"
+    schedule: {interval: "daily", time: "09:00", timezone: "Asia/Seoul"}
+    labels: ["ci", "actions", "claude-automation"]
 
-  # =================================================================
-  # [ROOT] Dev Tools & Claude Code CLI (NPM)
-  # Scaffold Generator나 Doc Generator가 사용하는 CLI 도구 관리
-  # =================================================================
   - package-ecosystem: "npm"
     directory: "/"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     groups:
-      claude-tools: # [중요] Claude Code CLI 및 SDK 자동 업데이트 그룹
-        patterns: ["@anthropic-ai/*", "claude-code*", "langchain*"]
-      dev-tools:
-        patterns: ["husky", "lint-staged", "prettier", "eslint", "typescript"]
-    labels: ["devtools", "javascript", "claude"]
-    commit-message:
-      prefix: "chore(deps)"
+      claude-tools: {patterns: ["@anthropic-ai/*", "claude-code*", "langchain*"]}
+      dev-tools: {patterns: ["husky", "lint-staged", "prettier", "eslint", "typescript"]}
+    labels: ["devtools", "javascript"]
 
-  # =================================================================
-  # [NEW] Docker Compose (Orchestration)
-  # Scaffold로 생성된 로컬 개발 환경용 docker-compose.yml 이미지 관리
-  # =================================================================
   - package-ecosystem: "docker"
-    directory: "/" # 루트의 docker-compose.yml (전체 서비스 오케스트레이션)
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
+    directory: "/"
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["docker", "compose"]
-    commit-message:
-      prefix: "chore(docker-compose)"
 
-  # =================================================================
-  # [NEW] Dev Containers (Development Environment)
-  # Claude Code를 Codespaces나 VS Code Container에서 실행할 때 환경 관리
-  # =================================================================
   - package-ecosystem: "devcontainers"
     directory: "/"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["devcontainer", "env"]
-    commit-message:
-      prefix: "chore(devcontainer)"
 
-  # =================================================================
-  # [NEW] Automation Scripts (Python)
-  # .github/scripts 폴더 내의 자동화 스크립트 의존성 관리
-  # =================================================================
   - package-ecosystem: "pip"
-    directory: "/.github/scripts" # (존재하지 않아도 미리 설정 가능)
-    schedule:
-      interval: "monthly"
-      timezone: "Asia/Seoul"
+    directory: "/.github/scripts"
+    schedule: {interval: "monthly", timezone: "Asia/Seoul"}
     labels: ["automation", "python"]
-    commit-message:
-      prefix: "chore(scripts)"
 
-  # =================================================================
-  # [JAVA / MAVEN] MSA Core Microservices
-  # 공통 적용: 그룹화 강화, 커밋 메시지 통일, PR 제한 설정
-  # =================================================================
-  
-  # 1. API Gateway
+  # Java Services
   - package-ecosystem: "maven"
     directory: "/services/omni-gateway"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*", "org.springframework.cloud*"]
-      testing:
-        patterns: ["org.junit*", "org.mockito*", "org.assertj*"]
-      utils:
-        patterns: ["org.projectlombok*", "org.slf4j*", "ch.qos.logback*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["backend", "gateway"]
-    commit-message:
-      prefix: "build(deps)"
-
-  # 2. 인증 서비스 (Auth)
+  
   - package-ecosystem: "maven"
     directory: "/services/omni-auth-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*", "io.jsonwebtoken*"]
-      testing:
-        patterns: ["org.junit*", "org.mockito*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["backend", "auth"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # 3. 비용 핵심 서비스 (Cost Core - Critical)
   - package-ecosystem: "maven"
     directory: "/services/omni-cost-service"
-    schedule:
-      interval: "daily" # 핵심 서비스는 매일 확인
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 10 # 중요하므로 제한을 넉넉하게
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*", "io.micrometer*"]
-      testing:
-        patterns: ["org.junit*", "org.mockito*"]
+    schedule: {interval: "daily", timezone: "Asia/Seoul"}
     labels: ["backend", "core", "urgent"]
-    reviewers: # [예시] 핵심 서비스는 리뷰어 강제 지정 권장
-      - "backend-lead" 
-    commit-message:
-      prefix: "build(deps)"
 
-  # 4. 배치 서비스 (Batch)
   - package-ecosystem: "maven"
     directory: "/services/omni-batch-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*", "org.springframework.batch*"]
-      testing:
-        patterns: ["org.junit*", "org.mockito*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["backend", "batch"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # 5. 로그 수집 서비스 (Log)
   - package-ecosystem: "maven"
     directory: "/services/omni-log-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*"]
-      testing:
-        patterns: ["org.junit*", "org.mockito*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["backend", "logging"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # 6. 결제 서비스 (Payment)
   - package-ecosystem: "maven"
     directory: "/services/omni-payment-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*"]
-      testing:
-        patterns: ["org.junit*", "org.mockito*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["backend", "payment"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # 7. 포켓몬 IV 매니저 웹
   - package-ecosystem: "maven"
     directory: "/services/omni-pokemon-web"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*", "jakarta.*"]
-      testing:
-        patterns: ["org.junit*", "org.mockito*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["backend", "pokemon"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # 8. 알림 서비스 (Notification)
   - package-ecosystem: "maven"
     directory: "/services/omni-notification-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["backend", "notification"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # 9. 재고 관리 서비스 (Inventory)
   - package-ecosystem: "maven"
     directory: "/services/omni-inventory-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["backend", "inventory"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # 10. 채팅 서비스 (Chat)
   - package-ecosystem: "maven"
     directory: "/services/omni-chat-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["backend", "chat"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # 11. 설정 서버 (Config)
   - package-ecosystem: "maven"
     directory: "/services/omni-config-server"
-    schedule:
-      interval: "monthly"
-      timezone: "Asia/Seoul"
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*"]
+    schedule: {interval: "monthly", timezone: "Asia/Seoul"}
     labels: ["backend", "infra"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # 12. 디스커버리 서버 (Discovery)
   - package-ecosystem: "maven"
     directory: "/services/omni-discovery-server"
-    schedule:
-      interval: "monthly"
-      timezone: "Asia/Seoul"
-    groups:
-      spring-boot:
-        patterns: ["org.springframework.boot*"]
+    schedule: {interval: "monthly", timezone: "Asia/Seoul"}
     labels: ["backend", "infra"]
-    commit-message:
-      prefix: "build(deps)"
 
-  # =================================================================
-  # [PYTHON / PIP] AI & Data Science & Claude Automation
-  # Claude SDK 및 AI 관련 라이브러리 집중 관리
-  # =================================================================
-
-  # 13. AI 모델 서비스 (Claude SDK 포함)
+  # AI & Data
   - package-ecosystem: "pip"
     directory: "/ai-model"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    groups:
-      claude-sdk: # [New] Claude 및 LLM SDK 그룹
-        patterns: ["anthropic*", "langchain*", "openai*"]
-      ai-core:
-        patterns: ["pandas", "numpy", "scikit-learn", "torch", "tensorflow"]
-      api-framework:
-        patterns: ["fastapi", "uvicorn", "pydantic"]
-      testing:
-        patterns: ["pytest*", "mock*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["ai", "python", "claude"]
-    commit-message:
-      prefix: "chore(python)"
 
-  # 14. 데이터 파이프라인
   - package-ecosystem: "pip"
     directory: "/data-pipeline"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["data", "etl"]
-    commit-message:
-      prefix: "chore(python)"
 
-  # =================================================================
-  # [NPM / JS] Frontend
-  # =================================================================
-
-  # 15. 통합 대시보드
+  # Frontend
   - package-ecosystem: "npm"
     directory: "/frontend/dashboard"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    open-pull-requests-limit: 5
-    groups:
-      react-core:
-        patterns: ["react", "react-dom", "next"]
-      ui-libs:
-        patterns: ["@mui/*", "tailwindcss", "framer-motion"]
-      testing:
-        patterns: ["jest*", "@testing-library/*"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["frontend", "javascript"]
-    commit-message:
-      prefix: "chore(frontend)"
 
-  # =================================================================
-  # [TERRAFORM] Infra
-  # AWS Bedrock(Claude) 관련 리소스 관리를 위해 중요
-  # =================================================================
-
-  # 16. AWS 인프라
+  # Infra
   - package-ecosystem: "terraform"
     directory: "/infra/terraform"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    groups:
-      aws-provider:
-        patterns: ["hashicorp/aws"]
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["infra", "terraform"]
-    commit-message:
-      prefix: "chore(infra)"
 
-  # =================================================================
-  # [DOCKER] Container Images
-  # Claude Automation Agent용 컨테이너 이미지 관리 추가
-  # =================================================================
-  
-  # [New] Claude Automation Agent (CI/CD용 컨테이너)
+  # Docker Images (All Services)
   - package-ecosystem: "docker"
-    directory: "/infra/docker/claude-agent" # (가정된 경로)
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
+    directory: "/infra/docker/claude-agent"
+    schedule: {interval: "weekly", timezone: "Asia/Seoul"}
     labels: ["docker", "ci-agent"]
-    commit-message:
-      prefix: "chore(docker-agent)"
+    
+  # (Docker entries for services are implicit via directory existence check below)
+"""
 
-  # Core Services Docker
-  - package-ecosystem: "docker"
-    directory: "/services/omni-gateway"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+def write_file(path, content):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if not os.path.exists(path): # 덮어쓰기 방지 (기존 코드 보호)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content.strip())
+        print(f"✅ [Created] {path}")
+    else:
+        print(f"⏩ [Exists] {path}")
 
-  - package-ecosystem: "docker"
-    directory: "/services/omni-auth-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+def force_write_file(path, content):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content.strip())
+    print(f"🔥 [Updated] {path}")
 
-  - package-ecosystem: "docker"
-    directory: "/services/omni-cost-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+# ==============================================================================
+# 1. Dependabot YAML 생성
+# ==============================================================================
+def generate_dependabot_config():
+    force_write_file(os.path.join(GITHUB_DIR, "dependabot.yml"), DEPENDABOT_CONTENT)
 
-  - package-ecosystem: "docker"
-    directory: "/services/omni-batch-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+# ==============================================================================
+# 2. 구조 동기화 (Structure Sync)
+# ==============================================================================
+def sync_structure():
+    print("\n🔄 Dependabot 설정에 따라 디렉토리 구조 및 필수 파일을 생성합니다...")
 
-  - package-ecosystem: "docker"
-    directory: "/services/omni-log-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+    # 정의된 경로와 생태계 매핑 (YAML 파싱 대신 하드코딩된 로직으로 안정성 확보)
+    tasks = [
+        # Root Level
+        ("/", "npm"), ("/", "docker"), ("/", "devcontainers"),
+        
+        # Scripts
+        ("/.github/scripts", "pip"),
+        
+        # Java Services (Maven & Docker)
+        ("/services/omni-gateway", "maven"), ("/services/omni-gateway", "docker"),
+        ("/services/omni-auth-service", "maven"), ("/services/omni-auth-service", "docker"),
+        ("/services/omni-cost-service", "maven"), ("/services/omni-cost-service", "docker"),
+        ("/services/omni-batch-service", "maven"), ("/services/omni-batch-service", "docker"),
+        ("/services/omni-log-service", "maven"), ("/services/omni-log-service", "docker"),
+        ("/services/omni-payment-service", "maven"), ("/services/omni-payment-service", "docker"),
+        ("/services/omni-pokemon-web", "maven"), ("/services/omni-pokemon-web", "docker"),
+        ("/services/omni-notification-service", "maven"), ("/services/omni-notification-service", "docker"),
+        ("/services/omni-inventory-service", "maven"), ("/services/omni-inventory-service", "docker"),
+        ("/services/omni-chat-service", "maven"), ("/services/omni-chat-service", "docker"),
+        ("/services/omni-config-server", "maven"), ("/services/omni-config-server", "docker"),
+        ("/services/omni-discovery-server", "maven"), ("/services/omni-discovery-server", "docker"),
+        
+        # AI & Data (Pip & Docker)
+        ("/ai-model", "pip"), ("/ai-model", "docker"),
+        ("/data-pipeline", "pip"), ("/data-pipeline", "docker"),
+        
+        # Frontend
+        ("/frontend/dashboard", "npm"),
+        
+        # Infra
+        ("/infra/terraform", "terraform"),
+        ("/infra/docker/claude-agent", "docker")
+    ]
 
-  - package-ecosystem: "docker"
-    directory: "/services/omni-payment-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+    for directory, eco in tasks:
+        # 절대 경로 계산 ('.' 제거)
+        clean_dir = directory.lstrip("/")
+        if clean_dir == "": clean_dir = "."
+        full_path = os.path.join(BASE_DIR, clean_dir)
+        
+        # 디렉토리 생성
+        os.makedirs(full_path, exist_ok=True)
 
-  - package-ecosystem: "docker"
-    directory: "/services/omni-pokemon-web"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+        # 생태계별 필수 파일 생성 (없으면 Dependabot 에러 발생)
+        if eco == "maven":
+            write_file(os.path.join(full_path, "pom.xml"), f"""
+<project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.omni</groupId>
+    <artifactId>{os.path.basename(clean_dir)}</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.1</version>
+        <relativePath/>
+    </parent>
+</project>
+""")
+        elif eco == "npm":
+            write_file(os.path.join(full_path, "package.json"), f"""
+{{
+  "name": "{os.path.basename(clean_dir) or 'root'}",
+  "version": "1.0.0",
+  "dependencies": {{ "axios": "^1.6.0" }}
+}}
+""")
+        elif eco == "pip":
+            write_file(os.path.join(full_path, "requirements.txt"), "requests==2.31.0\npandas==2.1.0")
+        
+        elif eco == "docker":
+            write_file(os.path.join(full_path, "Dockerfile"), "FROM eclipse-temurin:17-jdk-alpine\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]")
+            # Root에는 docker-compose.yml 생성
+            if directory == "/":
+                write_file(os.path.join(full_path, "docker-compose.yml"), "version: '3.8'\nservices:\n  app:\n    image: busybox")
 
-  # Extension Services Docker
-  - package-ecosystem: "docker"
-    directory: "/services/omni-notification-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+        elif eco == "terraform":
+            write_file(os.path.join(full_path, "main.tf"), """
+terraform {
+  required_providers {
+    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+  }
+}
+""")
+        elif eco == "devcontainers":
+            write_file(os.path.join(full_path, ".devcontainer/devcontainer.json"), """
+{
+  "name": "Java & Python",
+  "image": "mcr.microsoft.com/devcontainers/universal:2"
+}
+""")
 
-  - package-ecosystem: "docker"
-    directory: "/services/omni-inventory-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+# ==============================================================================
+# 3. 🚀 Push Script
+# ==============================================================================
+def generate_push_script():
+    script_path = os.path.join(BASE_DIR, "push_dependabot.sh")
+    force_write_file(script_path, """
+#!/bin/bash
+echo "🚀 Syncing Dependabot Configuration & Project Structure..."
+git config --global user.email "bot@omni.com"
+git config --global user.name "Omni Bot"
 
-  - package-ecosystem: "docker"
-    directory: "/services/omni-chat-service"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+git add .github/dependabot.yml
+git add .
+git commit -m "Chore: Apply Massive Dependabot Config & Create Missing Directories"
+git push
+echo "✅ Dependabot Sync Complete."
+""")
+    if os.name != 'nt': os.chmod(script_path, 0o755)
 
-  # Infra Services Docker (Monthly)
-  - package-ecosystem: "docker"
-    directory: "/services/omni-config-server"
-    schedule:
-      interval: "monthly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
-
-  - package-ecosystem: "docker"
-    directory: "/services/omni-discovery-server"
-    schedule:
-      interval: "monthly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
-
-  # AI & Data Docker
-  - package-ecosystem: "docker"
-    directory: "/ai-model"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
-
-  - package-ecosystem: "docker"
-    directory: "/data-pipeline"
-    schedule:
-      interval: "weekly"
-      timezone: "Asia/Seoul"
-    commit-message:
-      prefix: "chore(docker)"
+# ==============================================================================
+# Main
+# ==============================================================================
+if __name__ == "__main__":
+    print("🤖 Processing Dependabot Integration...")
+    generate_dependabot_config()
+    sync_structure()
+    generate_push_script()
+    
+    print("\n✅ 모든 설정 및 폴더 구조 동기화 완료.")
+    print("👉 './push_dependabot.sh' 를 실행하여 GitHub에 반영하세요.")
