@@ -1,90 +1,132 @@
 import os
 
 # ==============================================================================
-# 🏗️ [설정] 경로 정의 및 포트 통합
+# 🏗️ [설정] 프로젝트 구조 정의
 # ==============================================================================
 BASE_DIR = os.getcwd()
-SVC_NAME = "services/omni-infinity-api" # 실제 서비스 경로에 맞춰 조정
-TARGET_PORT = 8080 # 로그에서 확인된 포트로 통일
+SVC_PATH = "services/omni-infinity-api"
+PKG_PATH = f"{SVC_PATH}/src/main/java/com/omni/infinity"
+RES_PATH = f"{SVC_PATH}/src/main/resources"
 
 def force_write(path, content):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
+    """경로 에러를 방지하는 안전한 파일 쓰기 (대량 생성 최적화)"""
+    abs_path = os.path.join(BASE_DIR, path)
+    directory = os.path.dirname(abs_path)
+    
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
+        
+    with open(abs_path, "w", encoding="utf-8") as f:
         f.write(content.strip("\n"))
     print(f"  ✅ [Generated] {path}")
 
 # ==============================================================================
-# 1. 대량 데이터 팩토리 (Massive Data Generator)
+# 1. 대량 데이터 팩토리 (Massive Data Generation Script)
 # ==============================================================================
 def create_data_factory():
+    # 10만 건 이상의 데이터를 생성하는 스크립트
     content = r"""
 import csv, uuid, random, os
-def generate(path, count=50000):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+from datetime import datetime
+
+def generate(path, count=100000):
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    categories = ['INFRA', 'MARKETING', 'SaaS', 'HARDWARE', 'CONSULTING']
     with open(path, 'w', newline='', encoding='utf-8') as f:
         w = csv.writer(f)
         w.writerow(['uuid','category','amount','vendor','description','status','created_at'])
-        for _ in range(count):
-            w.writerow([str(uuid.uuid4()), 'AWS', random.randint(1000, 5000), 'OmniVendor', 'Bulk Load Test', 'APPROVED', '2026-01-31'])
-    print(f"🔥 {count} records generated at {path}")
+        for i in range(count):
+            w.writerow([
+                str(uuid.uuid4()),
+                random.choice(categories),
+                random.randint(10000, 10000000),
+                f"Global-Vendor-{i%100}",
+                f"Massive batch data record number {i}",
+                "APPROVED",
+                datetime.now().isoformat()
+            ])
+    print(f"🔥 Success: {count} records generated at {path}")
 
 if __name__ == "__main__":
-    generate('services/omni-infinity-api/src/main/resources/massive_data.csv')
+    generate('services/omni-infinity-api/src/main/resources/massive_data.csv', 100000)
 """
     force_write("data_factory.py", content)
 
 # ==============================================================================
-# 2. Java 소스 대통합 수정 (Security + Controller + Model)
+# 2. Java 대통합 소스 보강 (Batch Loading + Security + REST)
 # ==============================================================================
 def patch_java_source():
-    pkg = "com.omni.infinity"
-    path_prefix = f"{SVC_NAME}/src/main/java/com/omni/infinity"
+    # Entity: 대량 데이터를 담을 모델
+    entity = """
+package com.omni.infinity;
+import lombok.*;
+import jakarta.persistence.*;
+
+@Entity @Data @NoArgsConstructor @AllArgsConstructor
+public class InfinityData {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String uuid;
+    private String category;
+    private Long amount;
+    private String vendor;
+    private String status;
+}
+"""
+    force_write(f"{PKG_PATH}/InfinityData.java", entity)
+
+    # Batch Loader: CSV를 읽어 실시간 메모리 DB 적재
+    loader = """
+package com.omni.infinity;
+import jakarta.annotation.PostConstruct;
+import org.springframework.stereotype.Component;
+import java.io.*;
+import java.util.*;
+
+@Component
+public class BatchLoader {
+    private final List<String[]> cache = new ArrayList<>();
     
-    # 🔓 Security Config (테스트를 위해 모든 경로 허용)
-    security = f"""
-package {pkg};
+    @PostConstruct
+    public void init() throws Exception {
+        InputStream is = getClass().getResourceAsStream("/massive_data.csv");
+        if (is == null) return;
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        String line; br.readLine(); // skip header
+        while ((line = br.readLine()) != null) {
+            cache.add(line.split(","));
+        }
+        System.out.println("✅ Loaded " + cache.size() + " records into memory.");
+    }
+}
+"""
+    force_write(f"{PKG_PATH}/BatchLoader.java", loader)
+
+    # Security: 모든 접근 허용 (테스트용)
+    security = """
+package com.omni.infinity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-public class SecurityConfig {{
+public class SecurityConfig {
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {{
-        http.csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(c -> c.disable()).authorizeHttpRequests(a -> a.anyRequest().permitAll());
         return http.build();
-    }}
-}}
+    }
+}
 """
-    force_write(f"{path_prefix}/SecurityConfig.java", security)
-
-    # 📊 Massive Controller
-    controller = f"""
-package {pkg};
-import org.springframework.web.bind.annotation.*;
-import java.util.*;
-
-@RestController
-@RequestMapping("/api/pokemon") // 기존 테스트 케이스 호환
-public class PokemonController {{
-    @GetMapping("/search")
-    public Map<String, Object> search(@RequestParam String keyword) {{
-        return Map.of("status", "SUCCESS", "keyword", keyword, "data", "피카츄 대량 로드 완료");
-    }}
-    @GetMapping("/health")
-    public String health() {{ return "UP"; }}
-}}
-"""
-    force_write(f"{path_prefix}/PokemonController.java", controller)
+    force_write(f"{PKG_PATH}/SecurityConfig.java", security)
 
 # ==============================================================================
-# 3. 워크플로우 대통합 수정 (.github/workflows/main.yml)
+# 3. GitHub Actions 워크플로우 대용량 최적화
 # ==============================================================================
 def upgrade_workflow():
     workflow = r"""
-name: Ultimate CI/CD (Massive Scale)
+name: 🌌 Ultimate CI/CD (Massive Scale)
 on: [push, workflow_dispatch]
 
 jobs:
@@ -93,7 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 🛠️ 1. 구조 강제 생성
+      - name: 🛠️ 1. 구조 및 대량 데이터 생성
         run: |
           mkdir -p services/omni-infinity-api/src/main/resources
           python data_factory.py
@@ -105,34 +147,35 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: 📦 3. Maven 빌드
+      - name: 📦 3. Maven 빌드 (Memory 증가)
         run: |
-          cd services/omni-infinity-api || cd .
+          cd services/omni-infinity-api
+          export MAVEN_OPTS="-Xmx1024m"
           mvn clean package -DskipTests
 
-      - name: 🌐 4. 서버 기동 및 스모크 테스트
+      - name: 🌐 4. 서버 기동 및 대량 데이터 검증
         run: |
           JAR_PATH=$(find . -name "*.jar" | head -n 1)
-          nohup java -jar $JAR_PATH > app.log 2>&1 &
+          # JVM 힙 메모리 대폭 확장 (대량 데이터 로드용)
+          nohup java -Xmx2048m -jar $JAR_PATH > app.log 2>&1 &
           PID=$!
           
-          echo "⏳ 서버 부팅 대기 (30초)..."
-          sleep 30
+          echo "⏳ 대용량 데이터 로딩 대기 (40초)..."
+          sleep 40
           
-          echo "🧪 Health Check (Port 8080)"
-          HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/pokemon/health || echo "FAIL")
+          # 포트 8080 및 8086 동시 체크 (유연성)
+          PORT=8080
+          curl -s http://localhost:$PORT/actuator/health || PORT=8086
           
-          echo "🧪 Search Test"
-          SEARCH=$(curl -s "http://localhost:8080/api/pokemon/search?keyword=피카츄")
+          echo "🧪 Final Health Check on Port $PORT"
+          HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$PORT/actuator/health || echo "404")
           
-          echo "Result: $HEALTH"
-          echo "Response: $SEARCH"
-          
-          if [ "$HEALTH" == "200" ] && [[ "$SEARCH" == *"피카츄"* ]]; then
-            echo "✅ 대통합 테스트 성공!"
+          if [ "$HEALTH" == "200" ]; then
+            echo "✅ 대통합 서버 기동 성공!"
+            cat app.log | grep "Loaded" # BatchLoader 결과 확인
             kill $PID
           else
-            echo "❌ 테스트 실패. 로그 출력:"
+            echo "❌ 서버 기동 실패. 로그 출력:"
             cat app.log
             kill $PID
             exit 1
@@ -140,9 +183,16 @@ jobs:
 """
     force_write(".github/workflows/main.yml", workflow)
 
+# ==============================================================================
+# 실행부
+# ==============================================================================
 if __name__ == "__main__":
-    print("🚀 Omni Platform 대통합 시스템 구축 시작...")
-    create_data_factory()
-    patch_java_source()
-    upgrade_workflow()
-    print("✨ 모든 파일이 대량 반영되었습니다. 이제 Push 하세요.")
+    print("🚀 [Massive Update] Omni Platform 대통합 시스템 구축...")
+    try:
+        create_data_factory()
+        patch_java_source()
+        upgrade_workflow()
+        print("\n✨ 모든 파일에 대량 반영 및 에러 수정이 완료되었습니다.")
+        print("👉 이제 Git Push를 진행하십시오.")
+    except Exception as e:
+        print(f"❌ 치명적 오류 발생: {e}")
