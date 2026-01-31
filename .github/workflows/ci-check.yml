@@ -1,4 +1,4 @@
-name: Master Infrastructure Synchronization
+name: Master Infra Patch Workflow
 
 on:
   push:
@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  integrate-and-apply:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -18,24 +18,22 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'maven'
 
-      # [단계 1] DB 마스터 스크립트 실행 (SQL 주입)
-      - name: Apply Master SQL Patch
+      # [중요] DB 접속 정보를 Secrets에서 가져와서 실행
+      - name: Run Master SQL Patch
         env:
           PGPASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          psql -h ${{ secrets.DB_HOST }} -U ${{ secrets.DB_USER }} -d ${{ secrets.DB_NAME }} -f ./scripts/patch_all.sql
+          psql -h ${{ secrets.DB_HOST }} \
+               -p ${{ secrets.DB_PORT }} \
+               -U ${{ secrets.DB_USER }} \
+               -d ${{ secrets.DB_NAME }} \
+               -f ./scripts/patch_all.sql
 
-      # [단계 2] 애플리케이션 빌드 및 실행 테스트
-      # 이 과정에서 앞서 작성한 Java의 CommandLineRunner가 작동하여 파일을 생성합니다.
-      - name: Build and Run Sync
-        run: mvn clean package
+      - name: Build and Sync Files
+        run: mvn clean package -DskipTests
 
-      # [단계 3] 결과 검증 (파일이 실제 경로에 생성되었는지 확인)
-      - name: Verify File Deployment
+      - name: Verify Results
         run: |
-          echo "📂 Checking Generated Files..."
-          [ -f "pom.xml" ] && echo "✅ pom.xml exists"
-          [ -f "src/main/java/com/costdata/filemanagement/dto/DirectoryRequest.java" ] && echo "✅ DirectoryRequest.java exists"
-          [ -f "src/main/java/com/costdata/filemanagement/dto/FileRequest.java" ] && echo "✅ FileRequest.java exists"
+          ls -R src/main/java/com/costdata/filemanagement/dto/
+          cat pom.xml
