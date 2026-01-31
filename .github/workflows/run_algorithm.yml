@@ -8,7 +8,7 @@ on:
         required: true
         default: '200000'
       chunk_size:
-        description: '분할 적재 단위'
+        description: '분할 적재 단위 (과부하 방지)'
         required: true
         default: '50000'
 
@@ -18,7 +18,7 @@ env:
   VERSION: "v2026.${{ github.run_number }}"
 
 jobs:
-  # [Step 1] 초거대 데이터 생산 및 물리적 분할
+  # [Job 1] 초거대 데이터 생산 및 물리적 분할 (Python Generator)
   data-factory:
     runs-on: ubuntu-latest
     steps:
@@ -44,15 +44,16 @@ jobs:
                   'status': np.random.choice(['ACTIVE', 'PENDING', 'COMPLETED'], size=size)
               })
               df.to_csv(f'data_chunks/chunk_{i//CHUNK}.csv', index=False)
+          print(f"✅ Generated {TOTAL} records in {TOTAL//CHUNK + 1} chunks.")
           EOF
           RECORD_COUNT=${{ github.event.inputs.record_count }} CHUNK_SIZE=${{ github.event.inputs.chunk_size }} python generator.py
-      - name: 📤 분할 데이터 아티팩트 저장
+      - name: 📤 데이터 아티팩트 저장
         uses: actions/upload-artifact@v4
         with:
           name: partitioned-data
           path: data_chunks/
 
-  # [Step 2] 시스템 빌드, 적재 엔진 및 대시보드 통합 배포
+  # [Job 2] 시스템 빌드 및 통합 배포 (Spring Boot + Docker + Dashboard)
   system-deployment:
     needs: data-factory
     runs-on: ubuntu-latest
@@ -73,19 +74,25 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: 🏗️ 풀스택 시스템 자동 생성
+      - name: 🏗️ 풀스택 아키텍처 및 의존성 자동 생성
         run: |
-          BASE="src/main/java/com/omni/infinity"
-          RES="src/main/resources"
-          mkdir -p $BASE/model $BASE/repository $BASE/service $BASE/controller $RES/static
+          BASE_PATH="src/main/java/com/omni/infinity"
+          RES_PATH="src/main/resources"
+          mkdir -p $BASE_PATH/model $BASE_PATH/repository $BASE_PATH/service $BASE_PATH/controller $RES_PATH/static
 
-          # 1. Maven Project 설정 (컴파일 에러 해결의 핵심)
+          # 1. Maven pom.xml (컴파일 에러 해결 핵심)
           cat <<EOF > pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
             <modelVersion>4.0.0</modelVersion>
-            <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.2</version></parent>
-            <groupId>com.omni</groupId><artifactId>infinity-api</artifactId><version>1.0.0</version>
+            <parent>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-parent</artifactId>
+                <version>3.2.2</version>
+            </parent>
+            <groupId>com.omni</groupId>
+            <artifactId>infinity-api</artifactId>
+            <version>1.0.0</version>
             <dependencies>
                 <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
                 <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
@@ -96,8 +103,8 @@ jobs:
           </project>
           EOF
 
-          # 2. 고속 배치 삽입 최적화 설정
-          cat <<EOF > $RES/application.properties
+          # 2. 성능 최적화 설정
+          cat <<EOF > $RES_PATH/application.properties
           spring.datasource.url=jdbc:h2:mem:infinitydb;DB_CLOSE_DELAY=-1;rewriteBatchedStatements=true
           spring.jpa.properties.hibernate.jdbc.batch_size=1000
           spring.jpa.properties.hibernate.order_inserts=true
@@ -105,8 +112,8 @@ jobs:
           server.port=8080
           EOF
 
-          # 3. Entity & Repository
-          cat <<EOF > $BASE/model/InfinityData.java
+          # 3. Java 소스 코드 (Entity, Repository, Service, Controller)
+          cat <<EOF > $BASE_PATH/model/InfinityData.java
           package com.omni.infinity.model;
           import jakarta.persistence.*;
           import lombok.*;
@@ -117,10 +124,10 @@ jobs:
               public InfinityData(String u, Long a, String s) { this.uuid=u; this.amount=a; this.status=s; }
           }
           EOF
-          echo "package com.omni.infinity.repository; import com.omni.infinity.model.InfinityData; import org.springframework.data.jpa.repository.JpaRepository; public interface DataRepository extends JpaRepository<InfinityData, Long> {}" > $BASE/repository/DataRepository.java
 
-          # 4. 대용량 적재 엔진 (메모리 관리 포함)
-          cat <<EOF > $BASE/service/IngestionService.java
+          echo "package com.omni.infinity.repository; import com.omni.infinity.model.InfinityData; import org.springframework.data.jpa.repository.JpaRepository; import org.springframework.stereotype.Repository; @Repository public interface DataRepository extends JpaRepository<InfinityData, Long> {}" > $BASE_PATH/repository/DataRepository.java
+
+          cat <<EOF > $BASE_PATH/service/IngestionService.java
           package com.omni.infinity.service;
           import com.omni.infinity.model.InfinityData;
           import jakarta.persistence.EntityManager;
@@ -155,8 +162,7 @@ jobs:
           }
           EOF
 
-          # 5. Controller & Monitoring Homepage
-          cat <<EOF > $BASE/controller/ApiController.java
+          cat <<EOF > $BASE_PATH/controller/ApiController.java
           package com.omni.infinity.controller;
           import com.omni.infinity.repository.DataRepository;
           import lombok.RequiredArgsConstructor;
@@ -165,29 +171,30 @@ jobs:
           @RestController @RequiredArgsConstructor @RequestMapping("/api")
           public class ApiController {
               private final DataRepository repo;
-              @GetMapping("/stats") public Map<String, Object> stats() { return Map.of("total", repo.count()); }
+              @GetMapping("/stats") public Map<String, Object> stats() { return Map.of("total", repo.count(), "status", "ACTIVE"); }
           }
           EOF
-          cat <<EOF > $BASE/App.java
+
+          cat <<EOF > $BASE_PATH/App.java
           package com.omni.infinity;
           import org.springframework.boot.SpringApplication;
           import org.springframework.boot.autoconfigure.SpringBootApplication;
           @SpringBootApplication public class App { public static void main(String[] args) { SpringApplication.run(App.class, args); } }
           EOF
-          cat <<EOF > $RES/static/index.html
-          <!DOCTYPE html><html><head><title>Infinity Monitor</title></head>
-          <body style="background:#0b0f19; color:#00d2ff; text-align:center; font-family:sans-serif;">
-              <h1>🌌 Real-time Data Ingestion</h1>
-              <div style="font-size:4em;" id="c">0</div><script>
-              setInterval(() => { fetch('/api/stats').then(r=>r.json()).then(d=>document.getElementById('c').innerText=d.total.toLocaleString()); }, 1000);
-              </script>
+
+          # 4. 실시간 대시보드 홈페이지
+          cat <<EOF > $RES_PATH/static/index.html
+          <!DOCTYPE html><html><head><title>Infinity Monitor</title>
+          <style>body{background:#0b0f19;color:#00d2ff;text-align:center;font-family:sans-serif;} .stat{font-size:5rem;margin:20px;}</style></head>
+          <body><h1>🌌 Infinity Scale Monitoring</h1><div class="stat" id="c">0</div><p>Records Loaded Automatically</p>
+          <script>setInterval(()=>{fetch('/api/stats').then(r=>r.json()).then(d=>document.getElementById('c').innerText=d.total.toLocaleString())},1000);</script>
           </body></html>
           EOF
 
-      - name: 🔨 시스템 빌드
+      - name: 🔨 Maven 시스템 빌드
         run: mvn clean package -DskipTests
 
-      - name: 🐳 Docker화 및 컨테이너 생성
+      - name: 🐳 Docker 이미지 빌드 및 아티팩트화
         run: |
           cat <<EOF > Dockerfile
           FROM eclipse-temurin:17-jdk-alpine
@@ -202,6 +209,12 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.VERSION }}
+          name: 🚀 Release ${{ env.VERSION }}
+          body: |
+            ### 🌌 시스템 배포 완료
+            - **전송 서버**: EntityManager 기반 Batch Ingestion (OOM 방지)
+            - **데이터 분할**: Chunk 단위 생성 및 적재
+            - **대시보드**: 실시간 웹 모니터링 포함
           files: |
             target/*.jar
             system_bundle.tar
