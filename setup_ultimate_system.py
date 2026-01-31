@@ -3,13 +3,12 @@ import json
 import asyncio
 import aiohttp
 import time
-import textwrap
 
 # ==============================================================================
 # 🏗️ [설정] 프로젝트 경로 및 타겟
 # ==============================================================================
 BASE_DIR = os.getcwd()
-PROJECT_NAME = "services/omni-pokemon-web"
+PROJECT_NAME = "services/omni-pokemon-web-v2"
 PROJECT_ROOT = os.path.join(BASE_DIR, PROJECT_NAME)
 
 SRC_MAIN = os.path.join(PROJECT_ROOT, "src/main")
@@ -18,25 +17,20 @@ RESOURCES = os.path.join(SRC_MAIN, "resources")
 STATIC_DIR = os.path.join(RESOURCES, "static")
 
 # DevOps & Scripts
-GITHUB_ROOT = os.path.join(BASE_DIR, ".github")
-WORKFLOWS_DIR = os.path.join(GITHUB_ROOT, "workflows")
-ACTIONS_DIR = os.path.join(GITHUB_ROOT, "actions/setup-claude")
 SCRIPTS_DIR = os.path.join(PROJECT_ROOT, "scripts")
 
-# 타겟 포켓몬 ID (1~151: 관동 지방 + 주요 전설) - 테스트 속도를 위해 151로 조정, 필요시 1025로 변경
-TARGET_IDS = list(range(1, 152)) 
+# 🎯 타겟: 전체 포켓몬 (1 ~ 1025)
+TARGET_IDS = list(range(1, 1026))
 
 def create_directories():
-    print(f"📂 [Init] 디렉토리 구조 생성 중... ({PROJECT_ROOT})")
+    print(f"📂 [Init] 디렉토리 및 패키지 구조 생성... ({PROJECT_ROOT})")
     dirs = [
         os.path.join(JAVA_PATH, "controller"),
         os.path.join(JAVA_PATH, "service"),
         os.path.join(JAVA_PATH, "model"),
-        os.path.join(JAVA_PATH, "config"),     # [NEW] 설정
-        os.path.join(JAVA_PATH, "exception"),  # [NEW] 예외처리
+        os.path.join(JAVA_PATH, "config"),
         STATIC_DIR,
-        WORKFLOWS_DIR,
-        ACTIONS_DIR,
+        os.path.join(STATIC_DIR, "icons"), # PWA 아이콘용
         SCRIPTS_DIR
     ]
     for d in dirs:
@@ -47,16 +41,16 @@ def write_file(path, content):
         f.write(content.strip())
 
 # ==============================================================================
-# 1. 🛡️ Maven & MCP Context (AI 친화적 설정)
+# 1. 🛡️ Maven & Configuration (PWA & Cache)
 # ==============================================================================
-def generate_config_files():
-    # 1. pom.xml: SpringDoc OpenAPI (MCP 연동용 명세) 추가
+def generate_config():
+    # pom.xml
     write_file(os.path.join(PROJECT_ROOT, "pom.xml"), """
 <project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.omni</groupId>
     <artifactId>omni-pokemon-web</artifactId>
-    <version>2.0.0-MCP</version>
+    <version>2.0.0-PWA</version>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -69,16 +63,8 @@ def generate_config_files():
     </properties>
     <dependencies>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
-        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency>
-        
         <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
         <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId></dependency>
-
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.3.0</version>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -88,43 +74,22 @@ def generate_config_files():
 </project>
 """)
 
-    # 2. application.properties
+    # application.properties (캐싱 및 압축 활성화)
     write_file(os.path.join(RESOURCES, "application.properties"), """
 server.port=8086
-spring.application.name=OmniDex-MCP
-management.endpoints.web.exposure.include=health,info,metrics
-# Swagger / MCP Context
-springdoc.api-docs.path=/v3/api-docs
-springdoc.swagger-ui.path=/swagger-ui.html
-""")
-
-    # 3. [NEW] PROJECT_CONTEXT.md (AI 에이전트용)
-    write_file(os.path.join(PROJECT_ROOT, "PROJECT_CONTEXT.md"), """
-# OmniDex Project Context (for Claude/MCP)
-
-## Architecture
-- **Type**: Spring Boot 3.2 Web Application
-- **Frontend**: Plain HTML5 + TailwindCSS + Chart.js (Single Page Dashboard)
-- **Data Source**: Embedded JSON (fetched from PokéAPI during build)
-- **Port**: 8086
-
-## Key Commands
-- Build: `./scripts/compile.sh`
-- Run: `./scripts/run.sh`
-- API Docs: `http://localhost:8086/v3/api-docs`
-
-## Design Patterns
-- Service Layer Pattern
-- Global Exception Handling (@ControllerAdvice)
-- DTO-less Simple Model (for lightweight performance)
+server.compression.enabled=true
+server.compression.mime-types=text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+spring.mvc.static-path-pattern=/**
 """)
 
 # ==============================================================================
-# 2. ⚡ 데이터 수집 (비동기 엔진)
+# 2. ⚡ 대량 데이터 수집 (1,025마리)
 # ==============================================================================
 async def fetch_data():
-    print(f"🚀 [Data] {len(TARGET_IDS)}마리 포켓몬 데이터 수집 시작 (Async)...")
-    semaphore = asyncio.Semaphore(50)
+    print(f"🚀 [Data] 1,025마리 데이터 대량 수집 시작 (Gemini Engine)...")
+    print("⏳ 약 30~60초 소요될 수 있습니다. 잠시만 기다려주세요.")
+    
+    semaphore = asyncio.Semaphore(60) # 동시성 제어
     
     async with aiohttp.ClientSession() as session:
         async def fetch(pid):
@@ -134,16 +99,18 @@ async def fetch_data():
                         if res.status != 200: return None
                         d = await res.json()
                         
-                        # 한글 매핑 (샘플)
-                        name_map = {1:"이상해씨", 4:"파이리", 7:"꼬부기", 25:"피카츄", 133:"이브이", 143:"잠만보", 150:"뮤츠"}
-                        name = name_map.get(pid, d['name'])
-
+                        # 주요 포켓몬 한글 매핑 (데이터 양이 많으므로 주요 개체만 예시)
+                        name = d['name']
+                        if pid == 25: name = "피카츄"
+                        elif pid == 1: name = "이상해씨"
+                        elif pid == 1000: name = "타부자고"
+                        
                         stats = {s['stat']['name']: s['base_stat'] for s in d['stats']}
                         return {
                             "id": d['id'],
-                            "name": name, 
+                            "name": name,
                             "types": [t['type']['name'] for t in d['types']],
-                            "image": d['sprites']['other']['official-artwork']['front_default'],
+                            "image": d['sprites']['other']['official-artwork']['front_default'] or d['sprites']['front_default'],
                             "hp": stats.get('hp', 0),
                             "attack": stats.get('attack', 0),
                             "defense": stats.get('defense', 0),
@@ -159,50 +126,13 @@ async def fetch_data():
     
     with open(os.path.join(RESOURCES, "data.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, indent=0, ensure_ascii=False)
-    print(f"✅ 데이터 저장 완료: {len(data)}건 -> resources/data.json")
+    print(f"✅ 대량 데이터 저장 완료: {len(data)}건 (resources/data.json)")
 
 # ==============================================================================
-# 3. ☕ Java Backend (Massive Generation)
+# 3. ☕ Java Backend (고성능 검색 및 페이징)
 # ==============================================================================
 def generate_java():
-    # 1. Config (OpenAPI)
-    write_file(os.path.join(JAVA_PATH, "config/OpenApiConfig.java"), """
-package com.omni.pokemon.config;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-@Configuration
-public class OpenApiConfig {
-    @Bean
-    public OpenAPI omniDexOpenAPI() {
-        return new OpenAPI()
-                .info(new Info().title("OmniDex API").description("Pokemon Data Service for MCP & Web").version("v2.0"));
-    }
-}
-""")
-
-    # 2. Exception Handling
-    write_file(os.path.join(JAVA_PATH, "exception/GlobalExceptionHandler.java"), """
-package com.omni.pokemon.exception;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-import java.util.Map;
-
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Object> handleAll(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", ex.getMessage(), "status", 500));
-    }
-}
-""")
-
-    # 3. Model
+    # Model
     write_file(os.path.join(JAVA_PATH, "model/Pokemon.java"), """
 package com.omni.pokemon.model;
 import lombok.Data;
@@ -215,7 +145,7 @@ public class Pokemon {
 }
 """)
 
-    # 4. Service (Enhanced Searching)
+    # Service (In-Memory Indexing)
     write_file(os.path.join(JAVA_PATH, "service/PokemonService.java"), """
 package com.omni.pokemon.service;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -237,10 +167,12 @@ public class PokemonService {
         try {
             InputStream is = getClass().getResourceAsStream("/data.json");
             if(is != null) db = mapper.readValue(is, new TypeReference<List<Pokemon>>(){});
-        } catch (Exception e) { System.err.println("❌ DB Load Failed: " + e.getMessage()); }
+            System.out.println("✅ DB Loaded: " + db.size() + " items");
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
-    public List<Pokemon> search(String keyword, String sort, int limit) {
+    // Paging & Filtering
+    public Map<String, Object> search(String keyword, String sort, int page, int size) {
         var stream = db.stream();
         if (keyword != null && !keyword.isBlank()) {
             String k = keyword.toLowerCase();
@@ -250,73 +182,48 @@ public class PokemonService {
         Comparator<Pokemon> comp = Comparator.comparingInt(Pokemon::getId);
         if ("total".equals(sort)) comp = Comparator.comparingInt(Pokemon::getTotal).reversed();
         else if ("speed".equals(sort)) comp = Comparator.comparingInt(Pokemon::getSpeed).reversed();
-        else if ("attack".equals(sort)) comp = Comparator.comparingInt(Pokemon::getAttack).reversed();
-        else if ("name".equals(sort)) comp = Comparator.comparing(Pokemon::getName);
         
-        return stream.sorted(comp).limit(limit).collect(Collectors.toList());
-    }
-    
-    public Map<String, Object> getStats() {
-        return Map.of(
-            "totalCount", db.size(),
-            "avgTotal", db.stream().mapToInt(Pokemon::getTotal).average().orElse(0),
-            "topAttacker", db.stream().max(Comparator.comparingInt(Pokemon::getAttack)).map(Pokemon::getName).orElse("None")
-        );
+        List<Pokemon> filtered = stream.sorted(comp).collect(Collectors.toList());
+        
+        int start = Math.min((page - 1) * size, filtered.size());
+        int end = Math.min(start + size, filtered.size());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("total", filtered.size());
+        response.put("data", filtered.subList(start, end));
+        response.put("page", page);
+        return response;
     }
 }
 """)
 
-    # 5. Controller
+    # Controller
     write_file(os.path.join(JAVA_PATH, "controller/PokemonController.java"), """
 package com.omni.pokemon.controller;
-import com.omni.pokemon.model.Pokemon;
 import com.omni.pokemon.service.PokemonService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
-import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/pokemon")
-@Tag(name = "Pokemon API", description = "Operations for Pokemon Data")
 @RequiredArgsConstructor
 public class PokemonController {
     private final PokemonService service;
 
-    @Operation(summary = "Search Pokemon", description = "Search by keyword (name, type, id) with sorting")
     @GetMapping("/search")
-    public List<Pokemon> search(
+    public Map<String, Object> search(
         @RequestParam(required = false) String keyword,
         @RequestParam(required = false, defaultValue = "id") String sort,
-        @RequestParam(required = false, defaultValue = "100") int limit
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "20") int size
     ) {
-        return service.search(keyword, sort, limit);
-    }
-
-    @Operation(summary = "Get Statistics", description = "Returns aggregated statistics of the dataset")
-    @GetMapping("/stats")
-    public Map<String, Object> getStats() {
-        return service.getStats();
+        return service.search(keyword, sort, page, size);
     }
 }
 """)
-    
-    # 6. System Controller
-    write_file(os.path.join(JAVA_PATH, "controller/SystemController.java"), """
-package com.omni.pokemon.controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-public class SystemController {
-    @GetMapping("/api/system/health")
-    public String health() { return "OK"; }
-}
-""")
-
-    # 7. Main App
+    # App
     write_file(os.path.join(JAVA_PATH, "OmniDexApp.java"), """
 package com.omni.pokemon;
 import org.springframework.boot.SpringApplication;
@@ -328,169 +235,226 @@ public class OmniDexApp {
 """)
 
 # ==============================================================================
-# 4. 📜 Scripts (운영 및 컴파일 자동화)
+# 4. 📱 PWA & Frontend (설치 기능 구현)
 # ==============================================================================
-def generate_scripts():
-    # 1. Compile Script
-    write_file(os.path.join(SCRIPTS_DIR, "compile.sh"), """
-#!/bin/bash
-echo "🔨 Building OmniDex..."
-cd "$(dirname "$0")/../"
-if [ -f "mvnw" ]; then
-    ./mvnw clean package -DskipTests
-else
-    mvn clean package -DskipTests
-fi
-echo "✅ Build Complete!"
+def generate_pwa_frontend():
+    # 1. Manifest (앱 설치 정보)
+    write_file(os.path.join(STATIC_DIR, "manifest.json"), """
+{
+  "name": "OmniDex Ultimate",
+  "short_name": "OmniDex",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "description": "The Ultimate Pokemon Database",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
 """)
 
-    # 2. Run Script
-    write_file(os.path.join(SCRIPTS_DIR, "run.sh"), """
-#!/bin/bash
-cd "$(dirname "$0")/../"
-JAR_FILE=$(find target -name "*.jar" | head -n 1)
-if [ -z "$JAR_FILE" ]; then
-    echo "❌ JAR file not found. Run compile.sh first."
-    exit 1
-fi
-echo "🚀 Starting OmniDex on port 8086..."
-java -jar "$JAR_FILE"
-""")
-    
-    # 실행 권한 부여 (Linux/Mac)
-    if os.name != 'nt':
-        os.chmod(os.path.join(SCRIPTS_DIR, "compile.sh"), 0o755)
-        os.chmod(os.path.join(SCRIPTS_DIR, "run.sh"), 0o755)
+    # 2. Service Worker (오프라인 지원 & 캐싱)
+    write_file(os.path.join(STATIC_DIR, "sw.js"), """
+const CACHE_NAME = 'omnidex-v2';
+const ASSETS = ['/', '/index.html', '/manifest.json'];
 
-# ==============================================================================
-# 5. 🤖 GitHub Actions (Claude MCP 연동 & CI)
-# ==============================================================================
-def generate_devops():
-    # setup-claude Action
-    write_file(os.path.join(ACTIONS_DIR, "action.yml"), """
-name: 'Setup Claude Code'
-description: 'Installs Claude Code CLI for MCP interactions'
-inputs:
-  anthropic-key:
-    description: 'Anthropic API Key'
-    required: true
-runs:
-  using: "composite"
-  steps:
-    - shell: bash
-      run: |
-        if ! command -v claude &> /dev/null; then
-             echo "⬇️ Installing Claude Code..."
-             curl -fsSL https://claude.ai/install.sh | bash
-             echo "$HOME/.local/bin" >> $GITHUB_PATH
-        fi
-        echo "ANTHROPIC_API_KEY=${{ inputs.anthropic-key }}" >> $GITHUB_ENV
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+});
+
+self.addEventListener('fetch', (e) => {
+  // API 요청은 네트워크 우선, 나머지는 캐시 우선
+  if (e.request.url.includes('/api/')) {
+    e.respondWith(fetch(e.request));
+  } else {
+    e.respondWith(
+      caches.match(e.request).then((res) => res || fetch(e.request))
+    );
+  }
+});
 """)
 
-    # CI Workflow
-    write_file(os.path.join(WORKFLOWS_DIR, "ci-mcp-check.yml"), """
-name: Ultimate CI (MCP & Build)
-on: [push, pull_request]
-
-jobs:
-  build-and-verify:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Build with Maven
-        run: |
-          cd services/omni-pokemon-web
-          mvn clean package -DskipTests
-
-      - name: 🔍 Verify Artifacts
-        run: |
-          if [ ! -f services/omni-pokemon-web/target/*.jar ]; then
-            echo "❌ Build Failed: JAR not found"
-            exit 1
-          fi
-          echo "✅ JAR File created successfully."
-
-      # (Optional) Claude Code Setup Example
-      # - name: Setup Claude Code
-      #   uses: ./.github/actions/setup-claude
-      #   with:
-      #     anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
-""")
-
-# ==============================================================================
-# 6. 🎨 Frontend (HTML) - 간소화
-# ==============================================================================
-def generate_frontend():
-    # 기존 코드와 동일하거나 유사한 형태의 UI 생성 (여기서는 핵심만 포함)
+    # 3. HTML (PWA Install Button + Infinite Scroll)
     write_file(os.path.join(STATIC_DIR, "index.html"), """
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>OmniDex MCP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniDex V2</title>
+    <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0f172a; color: white; -webkit-tap-highlight-color: transparent; }
+        .card { transition: all 0.2s; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
+        .card:active { transform: scale(0.95); }
+        /* Install Prompt */
+        #installBtn { display: none; }
+    </style>
 </head>
-<body class="bg-slate-900 text-white p-10">
-    <h1 class="text-3xl font-bold mb-5">OmniDex Dashboard (MCP Enabled)</h1>
-    <p class="mb-5 text-slate-400">Powered by Spring Boot 3 & OpenAPI</p>
-    
-    <div class="flex gap-2 mb-8">
-        <input id="q" type="text" placeholder="Search..." class="p-2 rounded bg-slate-800 border border-slate-600 w-full max-w-md">
-        <button onclick="search()" class="bg-blue-600 px-4 py-2 rounded">Search</button>
+<body class="min-h-screen flex flex-col">
+    <nav class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-700 px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-2 font-bold text-xl text-blue-400">
+            <i class="fa-solid fa-bolt"></i> OmniDex
+        </div>
+        <button id="installBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg transition animate-pulse">
+            <i class="fa-solid fa-download"></i> Install App
+        </button>
+    </nav>
+
+    <div class="p-4 sticky top-14 z-40 bg-slate-900/80 backdrop-blur-sm">
+        <div class="relative max-w-2xl mx-auto">
+            <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400"></i>
+            <input type="text" id="query" placeholder="Search (1-1025)..." 
+                class="w-full bg-slate-800 rounded-full py-3 pl-12 pr-4 outline-none border border-slate-600 focus:border-blue-500 transition shadow-xl"
+                oninput="resetAndLoad()">
+        </div>
     </div>
-    
-    <div id="grid" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+
+    <main class="flex-1 p-4 max-w-7xl mx-auto w-full">
+        <div id="grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+        <div id="loader" class="text-center py-8 hidden"><i class="fa-solid fa-circle-notch fa-spin text-2xl text-blue-500"></i></div>
+        <button id="loadMore" onclick="loadNextPage()" class="w-full py-4 mt-4 text-slate-400 font-bold hidden">Load More</button>
+    </main>
 
     <script>
-        async function search() {
-            const q = document.getElementById('q').value;
-            const res = await fetch(`/api/pokemon/search?keyword=${q}`);
-            const data = await res.json();
-            const grid = document.getElementById('grid');
-            grid.innerHTML = data.map(p => `
-                <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
-                    <img src="${p.image}" class="w-24 h-24 mx-auto">
-                    <h3 class="text-center font-bold mt-2">${p.name}</h3>
-                    <p class="text-center text-xs text-slate-500">ID: ${p.id} | Total: ${p.total}</p>
-                </div>
-            `).join('');
+        let page = 1;
+        let isLoading = false;
+        let deferredPrompt;
+
+        // PWA Install Logic
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const btn = document.getElementById('installBtn');
+            btn.style.display = 'block';
+            
+            btn.addEventListener('click', () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                    btn.style.display = 'none';
+                });
+            });
+        });
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
         }
-        search(); // init
+
+        // Data Logic
+        async function loadData(isAppend = false) {
+            if (isLoading) return;
+            isLoading = true;
+            document.getElementById('loader').style.display = 'block';
+
+            const q = document.getElementById('query').value;
+            try {
+                const res = await fetch(`/api/pokemon/search?keyword=${q}&page=${page}&size=20`);
+                const json = await res.json();
+                
+                const grid = document.getElementById('grid');
+                if (!isAppend) grid.innerHTML = '';
+
+                if (json.data.length === 0 && !isAppend) {
+                    grid.innerHTML = '<div class="col-span-full text-center py-10 text-slate-500">No Pokemon Found</div>';
+                }
+
+                json.data.forEach(p => {
+                    const el = document.createElement('div');
+                    el.className = 'card rounded-xl p-4 flex flex-col items-center border border-slate-700/50';
+                    el.innerHTML = `
+                        <div class="w-full flex justify-between text-xs font-mono text-slate-500 mb-2">
+                            <span>#${p.id}</span>
+                            <span>TOTAL ${p.total}</span>
+                        </div>
+                        <img src="${p.image}" class="w-32 h-32 object-contain drop-shadow-xl mb-2" loading="lazy">
+                        <h3 class="font-bold text-lg capitalize mb-1">${p.name}</h3>
+                        <div class="flex gap-1">${p.types.map(t => `<span class="px-2 py-0.5 rounded-md text-[10px] uppercase font-bold bg-slate-700 text-slate-300">${t}</span>`).join('')}</div>
+                    `;
+                    grid.appendChild(el);
+                });
+
+                if (json.data.length < 20) {
+                    document.getElementById('loadMore').style.display = 'none';
+                } else {
+                    document.getElementById('loadMore').style.display = 'block';
+                }
+
+            } catch(e) { console.error(e); }
+            finally {
+                isLoading = false;
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        function resetAndLoad() {
+            page = 1;
+            loadData(false);
+        }
+
+        function loadNextPage() {
+            page++;
+            loadData(true);
+        }
+
+        // Init
+        loadData();
     </script>
 </body>
 </html>
 """)
 
 # ==============================================================================
+# 5. 실행 스크립트
+# ==============================================================================
+def generate_scripts():
+    write_file(os.path.join(SCRIPTS_DIR, "run_all.sh"), """
+#!/bin/bash
+echo "🔥 Building OmniDex V2..."
+cd "$(dirname "$0")/../"
+mvn clean package -DskipTests
+echo "🚀 Starting Server..."
+java -jar target/*.jar
+""")
+    if os.name != 'nt': os.chmod(os.path.join(SCRIPTS_DIR, "run_all.sh"), 0o755)
+
+# ==============================================================================
 # 🔥 메인 실행
 # ==============================================================================
 async def main():
-    print("🚀 [Ultimate Setup] MCP 기반 대규모 프로젝트 생성 시작...")
+    print("===========================================")
+    print("🚀 OmniDex V2: Massive Data & PWA Setup")
+    print("===========================================")
     
     create_directories()
-    generate_config_files()  # Maven + MCP Docs
-    await fetch_data()       # Async Data Fetch
-    generate_java()          # Massive Java Code
-    generate_scripts()       # Shell Scripts
-    generate_devops()        # CI/CD
-    generate_frontend()      # HTML
+    generate_config()
+    await fetch_data() # 1025마리 수집
+    generate_java()
+    generate_pwa_frontend()
+    generate_scripts()
 
-    print("\n" + "="*50)
-    print("🎉 생성 완료! 다음 단계를 수행하세요:")
-    print("1. cd services/omni-pokemon-web")
-    print("2. chmod +x scripts/*.sh (Linux/Mac)")
-    print("3. ./scripts/compile.sh")
-    print("4. ./scripts/run.sh")
-    print(f"5. 접속: http://localhost:8086 (UI) / http://localhost:8086/v3/api-docs (MCP Context)")
-    print("="*50)
+    print("\n✅ 설치 완료!")
+    print(f"👉 폴더 이동: cd {PROJECT_NAME}")
+    print("👉 실행 방법 (Mac/Linux): ./scripts/run_all.sh")
+    print("👉 실행 방법 (Windows): mvn clean package && java -jar target/*.jar")
+    print("👉 브라우저 접속: http://localhost:8086")
+    print("👉 **앱 설치 확인**: 브라우저 주소창 우측 '앱 설치' 아이콘 또는 메뉴 확인")
 
 if __name__ == "__main__":
     if os.name == 'nt': asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
