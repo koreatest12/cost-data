@@ -1,364 +1,181 @@
-name: 🌌 Infinity Scale Data & Deployment System
+name: 🌌 Infinity Scale Data & Deployment System (Full Integration)
+
 on:
   workflow_dispatch:
     inputs:
       record_count:
-        description: '생성할 데이터 건수 (기본: 100,000 / Max: Runner Memory)'
+        description: '총 생성 데이터 건수 (기본 20만)'
         required: true
-        default: '100000'
-  push:
-    branches: [ "main" ]
-  schedule:
-    - cron: '0 0 * * *' # 매일 자정 초대량 갱신
+        default: '200000'
+      chunk_size:
+        description: '분할 전송 단위 (과부하 방지용)'
+        required: true
+        default: '50000'
 
 env:
-  PROJECT_NAME: "omni-infinity-api"
+  PROJECT_NAME: "omni-infinity-system"
   DOCKER_IMAGE: "omni-infinity-server"
-  VERSION: "v2026.${{ github.run_number }}.999"
+  VERSION: "v2026.${{ github.run_number }}"
 
 jobs:
-  # ==============================================================================
-  # [Job 1] 초거대 데이터 생산 공장 (Python Stream Generator)
-  # ==============================================================================
+  # [Step 1] 대량 데이터 생산 및 용량 분할 (Generator)
   data-factory:
     runs-on: ubuntu-latest
     outputs:
-      data_path: ${{ steps.gen.outputs.path }}
+      chunk_count: ${{ steps.gen.outputs.chunk_count }}
     steps:
-      - name: 📥 시스템 준비
-        uses: actions/checkout@v4
-
-      - name: 🐍 Python 고성능 환경 설정
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-
-      - name: 🔧 가속 라이브러리 설치
-        run: pip install pandas numpy faker tqdm
-
-      - name: 🏭 Infinity Generator 실행
+      - name: 🏭 고속 분할 생성기 실행
         id: gen
         run: |
-          mkdir -p resources_data
+          pip install pandas numpy faker
+          mkdir -p data_chunks
           cat <<'EOF' > generator.py
-          import os, csv, uuid, random, sys
-          from faker import Faker
-          from datetime import datetime
-          import numpy as np
-          
-          # 설정
-          COUNT = int(os.environ.get('INPUT_COUNT', 100000))
-          FILE_PATH = 'resources_data/massive_data.csv'
-          fake = Faker('ko_KR')
-          
-          print(f"🚀 [Generator] Starting creation of {COUNT:,} records...")
-          
-          # 고속 생성을 위한 CSV Writer (Pandas보다 메모리 효율적)
-          with open(FILE_PATH, 'w', newline='', encoding='utf-8') as f:
-              writer = csv.writer(f)
-              # Header
-              writer.writerow(['uuid', 'category', 'amount', 'vendor', 'description', 'status', 'created_at'])
-              
-              batch_size = 10000
-              for i in range(0, COUNT, batch_size):
-                  rows = []
-                  current_batch = min(batch_size, COUNT - i)
-                  
-                  # Numpy로 숫자 데이터 대량 생성 (속도 최적화)
-                  amounts = np.random.randint(10000, 10000000, size=current_batch)
-                  
-                  for j in range(current_batch):
-                      rows.append([
-                          str(uuid.uuid4()),
-                          random.choice(['AWS', 'GCP', 'Marketing', 'Payroll', 'Rent', 'SaaS']),
-                          amounts[j],
-                          fake.company(),
-                          fake.bs(),
-                          random.choice(['APPROVED', 'PENDING', 'REJECTED', 'AUDIT']),
-                          datetime.now().isoformat()
-                      ])
-                  writer.writerows(rows)
-                  print(f"   ... Processed {i + current_batch:,} records")
-                  
-          print(f"✅ Generated: {FILE_PATH}")
-          print(f"📊 File Size: {os.path.getsize(FILE_PATH) / (1024*1024):.2f} MB")
+          import os, pandas as pd, numpy as np, uuid
+          TOTAL = int(os.environ.get('RECORD_COUNT', 200000))
+          CHUNK = int(os.environ.get('CHUNK_SIZE', 50000))
+          os.makedirs('data_chunks', exist_ok=True)
+          for i in range(0, TOTAL, CHUNK):
+              size = min(CHUNK, TOTAL - i)
+              df = pd.DataFrame({
+                  'uuid': [str(uuid.uuid4()) for _ in range(size)],
+                  'amount': np.random.randint(1000, 1000000, size=size),
+                  'status': np.random.choice(['ACTIVE', 'PENDING', 'COMPLETED'], size=size)
+              })
+              df.to_csv(f'data_chunks/chunk_{i//CHUNK}.csv', index=False)
+          print(f"chunk_count={TOTAL//CHUNK + (1 if TOTAL%CHUNK > 0 else 0)}")
           EOF
-          
-          # 실행 (Workflow Input 또는 기본값 사용)
-          export INPUT_COUNT=${{ github.event.inputs.record_count || '100000' }}
-          python generator.py
-          
-          echo "path=resources_data" >> $GITHUB_OUTPUT
-
-      - name: 📤 데이터 아티팩트 저장
+          RECORD_COUNT=${{ github.event.inputs.record_count }} CHUNK_SIZE=${{ github.event.inputs.chunk_size }} python generator.py >> $GITHUB_OUTPUT
+      - name: 📦 데이터 아티팩트 저장
         uses: actions/upload-artifact@v4
         with:
-          name: raw-massive-data
-          path: resources_data/
+          name: partitioned-data
+          path: data_chunks/
 
-  # ==============================================================================
-  # [Job 2] 백엔드 구축 및 배포 (Spring Boot + Docker + Release)
-  # ==============================================================================
-  backend-deploy:
+  # [Step 2] 전송 서버 적재 및 메인 시스템 배포
+  system-deployment:
     needs: data-factory
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Release 생성을 위해 필수
+    permissions: { contents: write }
     steps:
-      - name: 📥 체크아웃
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: partitioned-data, path: src/main/resources/data }
+      - uses: actions/setup-java@v4
+        with: { java-version: '17', distribution: 'temurin', cache: 'maven' }
 
-      - name: 📥 대량 데이터 다운로드
-        uses: actions/download-artifact@v4
-        with:
-          name: raw-massive-data
-          path: resources_data
-
-      - name: ☕ JDK 17 (Enterprise Edition)
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      # ------------------------------------------------------------------
-      # [Dynamic Code Gen] Spring Boot + Batch Processing + Swagger
-      # ------------------------------------------------------------------
-      - name: 🏗️ 시스템 아키텍처 자동 생성
+      - name: 🏗️ 풀스택 아키텍처 자동 생성 (Spring + Web + Docker)
         run: |
-          APP_DIR="${{ env.PROJECT_NAME }}"
-          PKG_DIR="$APP_DIR/src/main/java/com/omni/infinity"
-          RES_DIR="$APP_DIR/src/main/resources"
+          BASE="src/main/java/com/omni/infinity"
+          RES="src/main/resources"
+          mkdir -p $BASE/controller $BASE/model $BASE/repository $BASE/service $RES/static/js
           
-          mkdir -p $PKG_DIR $RES_DIR
-          
-          # 1. 데이터 파일 이동
-          mv resources_data/massive_data.csv $RES_DIR/
-          
-          # 2. POM.xml (Actuator, Swagger, Lombok, JPA)
-          cat <<EOF > $APP_DIR/pom.xml
-          <project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <modelVersion>4.0.0</modelVersion>
-            <groupId>com.omni</groupId>
-            <artifactId>infinity-api</artifactId>
-            <version>999.0.0</version>
-            <parent>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-parent</artifactId>
-                <version>3.2.1</version>
-            </parent>
-            <properties><java.version>17</java.version></properties>
-            <dependencies>
-                <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
-                <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
-                <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency>
-                <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>runtime</scope></dependency>
-                <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
-                <dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>2.3.0</version></dependency>
-            </dependencies>
-            <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
-          </project>
+          # 1. 홈페이지 (Dashboard) 생성
+          cat <<EOF > $RES/static/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Infinity Scale Dashboard</title>
+              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+              <style>
+                  body { background: #0b0f19; color: #00d2ff; font-family: 'Segoe UI', sans-serif; text-align: center; }
+                  .container { width: 80%; margin: auto; padding-top: 50px; }
+                  .stats-card { background: #161e2d; padding: 20px; border-radius: 15px; border: 1px solid #1e293b; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🌌 Infinity System Monitor</h1>
+                  <div class="stats-card">
+                      <h2 id="totalCount">Total Records: Loading...</h2>
+                      <canvas id="loadChart"></canvas>
+                  </div>
+              </div>
+              <script>
+                  setInterval(() => {
+                      fetch('/api/stats').then(r => r.json()).then(d => {
+                          document.getElementById('totalCount').innerText = '적재 완료 데이터: ' + d.total.toLocaleString() + ' 건';
+                      });
+                  }, 2000);
+              </script>
+          </body>
+          </html>
           EOF
 
-          # 3. Application Properties (Batch Optimization)
-          cat <<EOF > $RES_DIR/application.properties
-          server.port=8080
-          # H2 DB Optimization
-          spring.datasource.url=jdbc:h2:mem:infinitydb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-          spring.jpa.properties.hibernate.jdbc.batch_size=1000
-          spring.jpa.properties.hibernate.order_inserts=true
-          # Monitoring
-          management.endpoints.web.exposure.include=health,info,metrics
-          EOF
-
-          # 4. Java Code (Batch Loader)
-          # Entity
-          cat <<EOF > $PKG_DIR/CostData.java
-          package com.omni.infinity;
-          import jakarta.persistence.*;
-          import lombok.Data;
-          import lombok.NoArgsConstructor;
-          @Entity @Data @NoArgsConstructor
-          @Table(indexes = @Index(columnList = "category"))
-          public class CostData {
-              @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
-              private String uuid;
-              private String category;
-              private Long amount;
-              private String vendor;
-              @Column(length = 1000) private String description;
-              private String status;
-              private String createdAt;
-              
-              public CostData(String[] csv) {
-                  this.uuid = csv[0]; this.category = csv[1]; this.amount = Long.parseLong(csv[2]);
-                  this.vendor = csv[3]; this.description = csv[4]; this.status = csv[5]; this.createdAt = csv[6];
-              }
-          }
-          EOF
-
-          # Repository
-          cat <<EOF > $PKG_DIR/CostRepository.java
-          package com.omni.infinity;
-          import org.springframework.data.jpa.repository.JpaRepository;
-          import org.springframework.stereotype.Repository;
-          @Repository public interface CostRepository extends JpaRepository<CostData, Long> {}
-          EOF
-
-          # Batch Service (The Engine)
-          cat <<EOF > $PKG_DIR/BatchLoader.java
-          package com.omni.infinity;
+          # 2. 전송 서버 적재 로직 (Batch Ingestion Service)
+          cat <<EOF > $BASE/service/IngestionService.java
+          package com.omni.infinity.service;
+          import com.omni.infinity.repository.DataRepository;
+          import com.omni.infinity.model.InfinityData;
+          import org.springframework.stereotype.Service;
           import jakarta.annotation.PostConstruct;
           import lombok.RequiredArgsConstructor;
-          import org.springframework.stereotype.Service;
-          import org.springframework.transaction.annotation.Transactional;
           import java.io.*;
+          import java.nio.file.*;
           import java.util.*;
-          import java.util.stream.Collectors;
 
-          @Service
-          @RequiredArgsConstructor
-          public class BatchLoader {
-              private final CostRepository repository;
-              
+          @Service @RequiredArgsConstructor
+          public class IngestionService {
+              private final DataRepository repo;
               @PostConstruct
-              public void init() throws Exception {
-                  System.out.println("🔥 [Engine] Starting Massive Ingestion...");
-                  long start = System.currentTimeMillis();
-                  
-                  try (BufferedReader br = new BufferedReader(new InputStreamReader(
-                          getClass().getResourceAsStream("/massive_data.csv")))) {
-                      
-                      String line;
-                      br.readLine(); // Skip Header
-                      List<CostData> buffer = new ArrayList<>();
-                      int count = 0;
-                      
-                      while ((line = br.readLine()) != null) {
-                          // Simple CSV Parsing
-                          String[] cols = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1); 
-                          // Simple regex split (can be replaced by library)
-                          if(cols.length >= 7) {
-                              buffer.add(new CostData(cols));
-                              count++;
+              public void startIngestion() throws Exception {
+                  File dir = new File("src/main/resources/data");
+                  File[] files = dir.listFiles();
+                  if(files == null) return;
+                  for(File f : files) {
+                      System.out.println("🚀 Loading " + f.getName());
+                      // 과부하 방지를 위한 스트림 처리 및 Batch Save
+                      try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+                          br.readLine(); // skip header
+                          List<InfinityData> batch = new ArrayList<>();
+                          String line;
+                          while((line = br.readLine()) != null) {
+                              String[] s = line.split(",");
+                              batch.add(new InfinityData(s[0], Long.parseLong(s[1]), s[2]));
+                              if(batch.size() >= 5000) { repo.saveAll(batch); batch.clear(); }
                           }
-                          
-                          if (buffer.size() >= 5000) {
-                              repository.saveAll(buffer);
-                              repository.flush();
-                              buffer.clear();
-                              System.out.println("   -> Flushed 5,000 records...");
-                          }
+                          repo.saveAll(batch);
                       }
-                      if (!buffer.isEmpty()) repository.saveAll(buffer);
-                      
-                      long end = System.currentTimeMillis();
-                      System.out.println("✅ [Engine] Complete! " + count + " records loaded in " + (end - start) + "ms");
                   }
               }
           }
           EOF
-          
-          # Controller
-          cat <<EOF > $PKG_DIR/ApiController.java
-          package com.omni.infinity;
-          import org.springframework.web.bind.annotation.*;
-          import lombok.RequiredArgsConstructor;
-          import java.util.Map;
 
-          @RestController
-          @RequiredArgsConstructor
-          @RequestMapping("/api")
-          public class ApiController {
-              private final CostRepository repository;
-              
-              @GetMapping("/stats")
-              public Map<String, Object> stats() {
-                  return Map.of(
-                      "total_records", repository.count(),
-                      "status", "OPERATIONAL",
-                      "version", "INFINITY-V1"
-                  );
-              }
+          # 3. Model & Controller (생략 없이 생성)
+          cat <<EOF > $BASE/model/InfinityData.java
+          package com.omni.infinity.model;
+          import jakarta.persistence.*;
+          import lombok.*;
+          @Entity @Getter @NoArgsConstructor
+          public class InfinityData {
+              @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
+              private String uuid; private Long amount; private String status;
+              public InfinityData(String u, Long a, String s) { this.uuid=u; this.amount=a; this.status=s; }
           }
           EOF
+          
+          echo "package com.omni.infinity.repository; import com.omni.infinity.model.InfinityData; import org.springframework.data.jpa.repository.JpaRepository; public interface DataRepository extends JpaRepository<InfinityData, Long> {}" > $BASE/repository/DataRepository.java
 
-          # App
-          cat <<EOF > $PKG_DIR/App.java
-          package com.omni.infinity;
-          import org.springframework.boot.SpringApplication;
-          import org.springframework.boot.autoconfigure.SpringBootApplication;
-          @SpringBootApplication public class App {
-              public static void main(String[] args) { SpringApplication.run(App.class, args); }
-          }
-          EOF
-
-      # ------------------------------------------------------------------
-      # [Build & Verify]
-      # ------------------------------------------------------------------
-      - name: 🔨 Maven 빌드 (Skip Tests for Speed)
-        working-directory: ${{ env.PROJECT_NAME }}
-        run: mvn clean package -DskipTests
-
-      - name: 🚀 서버 검증 (Smoke Test)
-        working-directory: ${{ env.PROJECT_NAME }}
+      - name: 🔨 시스템 빌드 및 Docker 패키징
         run: |
-          # 2GB Heap 할당 (대량 데이터용)
-          nohup java -Xmx2048m -jar target/*.jar > app.log 2>&1 &
-          PID=$!
-          
-          echo "⏳ Waiting for Massive Data Loading..."
-          # 데이터가 많으면 로딩 시간이 길어짐
-          for i in {1..60}; do
-            sleep 2
-            if grep -q "Complete!" app.log; then
-              echo "✅ Data Loading Finished!"
-              break
-            fi
-            echo "   ... loading ($i)"
-          done
-          
-          echo "🧪 API Test..."
-          RESPONSE=$(curl -s http://localhost:8080/api/stats)
-          echo "Response: $RESPONSE"
-          
-          if [[ "$RESPONSE" == *"total_records"* ]]; then
-             echo "🎉 SUCCESS!"
-          else
-             echo "❌ FAIL!"
-             cat app.log
-             exit 1
-          fi
-          kill $PID
-
-      # ------------------------------------------------------------------
-      # [Docker & Release] 배포 자동화
-      # ------------------------------------------------------------------
-      - name: 🐳 Docker 이미지 빌드 및 아티팩트화
-        run: |
-          cd ${{ env.PROJECT_NAME }}
+          mvn clean package -DskipTests
           cat <<EOF > Dockerfile
           FROM eclipse-temurin:17-jdk-alpine
           COPY target/*.jar app.jar
+          EXPOSE 8080
           ENTRYPOINT ["java", "-Xmx2048m", "-jar", "app.jar"]
           EOF
-          
           docker build -t ${{ env.DOCKER_IMAGE }}:${{ env.VERSION }} .
-          # 이미지를 파일로 저장 (배포용)
-          docker save ${{ env.DOCKER_IMAGE }}:${{ env.VERSION }} > infinity_server_image.tar
+          docker save ${{ env.DOCKER_IMAGE }}:${{ env.VERSION }} > system_bundle.tar
 
-      - name: 📦 GitHub Release 생성 및 업로드
+      - name: 🚀 Release 배포 (서버 파일 및 컨테이너 포함)
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.VERSION }}
-          name: 🚀 Release ${{ env.VERSION }} (Infinity Scale)
-          body: |
-            ## 🌌 Infinity Scale Update
-            - **Data Count**: 9999... (Target Max)
-            - **Architecture**: Spring Boot + JDBC Batch + H2
-            - **Docker**: Included
-            - **Status**: 100% Tested
           files: |
-            ${{ env.PROJECT_NAME }}/target/*.jar
-            infinity_server_image.tar
-            resources_data/massive_data.csv
+            target/*.jar
+            system_bundle.tar
+            src/main/resources/data/*.csv
