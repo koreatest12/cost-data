@@ -1,19 +1,17 @@
-name: 🔄 리포지토리 데이터 동기화 및 대량 생성/반영 시스템
-
+name: 🔄 Ultimate Spring Boot & Massive Data Pipeline
 on:
-  workflow_dispatch:        # 수동 실행
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   schedule:
-    - cron: '0 */4 * * *'   # 4시간마다 최신 데이터 생성 및 반영
+    - cron: '0 */6 * * *' # 6시간마다 대량 갱신
 
 env:
-  PIP_ROOT_USER_ACTION: ignore
-  PYTHONUNBUFFERED: 1
-  TZ: 'Asia/Seoul'
+  DATA_COUNT: 50000       # 생성할 데이터 개수 (CI 메모리 고려 5만건 설정, 필요시 증량)
+  PROJECT_NAME: "omni-cost-api"
 
 jobs:
-  massive-data-sync:
+  full-stack-deployment:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     
@@ -22,171 +20,264 @@ jobs:
         uses: actions/checkout@v4
 
       # ----------------------------------------------------------------------
-      # [Step 1] 타겟 리포지토리 데이터 다운로드 (Source Download)
+      # [Step 1] 환경 설정 (Java 17 + Python)
       # ----------------------------------------------------------------------
-      - name: 📥 koreatest12/cost-data 다운로드
-        uses: actions/checkout@v4
+      - name: ☕ JDK 17 설정
+        uses: actions/setup-java@v4
         with:
-          repository: koreatest12/cost-data
-          path: app_root/source_repo
-          fetch-depth: 0 
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
 
-      - name: 🔧 환경 및 권한 설정
+      - name: 🐍 Python 설정
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+
+      - name: 🔧 필수 라이브러리 설치
         run: |
-          echo ">>> [Init] Setting up directories..."
-          chmod -R 755 app_root/source_repo
           python -m pip install --upgrade pip
-          pip install pandas numpy faker openpyxl tabulate
+          pip install pandas numpy faker
 
       # ----------------------------------------------------------------------
-      # [Step 2] 데이터 증식 및 반영 엔진 생성 (Python Engine)
+      # [Step 2] 대량 데이터 생성 엔진 (Python Engine)
       # ----------------------------------------------------------------------
-      - name: 🛠️ mass_generator.py 생성
+      - name: 🏭 Massive Data Factory 실행
         run: |
-          cat <<'EOF' > mass_generator.py
-          import os, glob, json, random, shutil, uuid
+          cat <<'EOF' > data_factory.py
+          import os, json, random, uuid
           import pandas as pd
           import numpy as np
           from datetime import datetime, timedelta
           from faker import Faker
-          
-          # 한국어 더미 데이터 생성기
+
           fake = Faker('ko_KR')
+          TARGET_COUNT = int(os.environ.get('DATA_COUNT', 10000))
+          OUTPUT_DIR = "generated_resources"
+          os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+          print(f"🚀 [Factory] Generating {TARGET_COUNT} massive records...")
+
+          # 1. 데이터 생성 로직
+          data_list = []
+          sql_statements = []
+
+          categories = ["Server", "Marketing", "Labor", "License", "Office"]
           
-          # ==============================================================================
-          # [1] 디렉토리 구조 정의 (Data Lake Architecture)
-          # ==============================================================================
-          ROOT = "app_root"
-          SOURCE_DIR = os.path.join(ROOT, "source_repo")
+          # 배치 처리를 위한 버퍼
+          for i in range(TARGET_COUNT):
+              item = {
+                  "id": i + 1,
+                  "uuid": str(uuid.uuid4()),
+                  "created_at": fake.date_time_between(start_date="-1y", end_date="now").isoformat(),
+                  "category": random.choice(categories),
+                  "amount": int(np.random.normal(1000000, 500000)),
+                  "vendor": fake.company(),
+                  "description": fake.catch_phrase().replace("'", ""), # SQL Escape
+                  "status": random.choice(["PENDING", "APPROVED", "REJECTED"])
+              }
+              data_list.append(item)
+              
+              # SQL 생성 (H2 Database Init 용)
+              sql = f"INSERT INTO cost_data (category, amount, vendor, description, status, created_at) VALUES ('{item['category']}', {item['amount']}, '{item['vendor']}', '{item['description']}', '{item['status']}', '{item['created_at']}');"
+              sql_statements.append(sql)
+
+              if i % 10000 == 0:
+                  print(f"   ... Processed {i} records")
+
+          # 2. JSON 저장 (Data Lake 용)
+          with open(os.path.join(OUTPUT_DIR, "massive_data.json"), "w", encoding='utf-8') as f:
+              json.dump(data_list, f, ensure_ascii=False, indent=2)
+
+          # 3. SQL 저장 (Spring Boot 주입 용)
+          with open(os.path.join(OUTPUT_DIR, "import.sql"), "w", encoding='utf-8') as f:
+              f.write("\n".join(sql_statements))
+
+          # 4. CSV 분석 리포트
+          df = pd.DataFrame(data_list)
+          df.to_csv(os.path.join(OUTPUT_DIR, "analytics.csv"), index=False, encoding='utf-8-sig')
           
-          # 날짜별 파티셔닝
-          TODAY = datetime.now().strftime("%Y-%m-%d")
+          print(f"✅ Data Generation Complete! SQL size: {len(sql_statements)}")
+          EOF
           
-          DIRS = {
-              "RAW":      os.path.join(ROOT, "data_lake", "raw", TODAY),
-              "PROCESSED": os.path.join(ROOT, "data_lake", "processed", TODAY),
-              "ANALYTICS": os.path.join(ROOT, "data_warehouse", "analytics"),
-              "LATEST":   os.path.join(ROOT, "latest_sync_data")
+          python data_factory.py
+
+      # ----------------------------------------------------------------------
+      # [Step 3] Spring Boot 애플리케이션 동적 생성 (Dynamic Generator)
+      # ----------------------------------------------------------------------
+      - name: 🏗️ Spring Boot 프로젝트 구조 생성
+        run: |
+          echo ">>> [Init] Creating Spring Boot Project Structure..."
+          APP_ROOT="${{ env.PROJECT_NAME }}"
+          mkdir -p $APP_ROOT/src/main/java/com/omni/cost
+          mkdir -p $APP_ROOT/src/main/resources
+          
+          # 1. POM.xml 생성
+          cat <<EOF > $APP_ROOT/pom.xml
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.omni</groupId>
+            <artifactId>cost-api</artifactId>
+            <version>1.0.0-MASSIVE</version>
+            <parent>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-parent</artifactId>
+                <version>3.2.0</version>
+            </parent>
+            <properties>
+                <java.version>17</java.version>
+            </properties>
+            <dependencies>
+                <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+                <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
+                <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>runtime</scope></dependency>
+                <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
+            </dependencies>
+            <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
+          </project>
+          EOF
+
+          # 2. Entity 생성 (CostData.java)
+          cat <<EOF > $APP_ROOT/src/main/java/com/omni/cost/CostData.java
+          package com.omni.cost;
+          import jakarta.persistence.*;
+          import lombok.Data;
+          import java.time.LocalDateTime;
+
+          @Entity @Data
+          public class CostData {
+              @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+              private Long id;
+              private String category;
+              private Long amount;
+              private String vendor;
+              private String description;
+              private String status;
+              private String createdAt;
           }
-          
-          # ==============================================================================
-          # [2] 데이터 분석 및 증식 로직
-          # ==============================================================================
-          class DataExpander:
-              def __init__(self):
-                  for d in DIRS.values(): os.makedirs(d, exist_ok=True)
-                  print(f">>> [Init] Data Pipeline ready for date: {TODAY}")
+          EOF
 
-              def load_source_patterns(self):
-                  """기존 리포지토리 데이터 읽기"""
-                  print(">>> [Step 1] Analyze Source Data...")
-                  files = glob.glob(os.path.join(SOURCE_DIR, "**", "*.json"), recursive=True)
-                  print(f"    - Found {len(files)} JSON source files.")
-                  # 패턴 학습 로직 (여기서는 단순 카운트만 활용)
-                  return len(files)
+          # 3. Repository 생성
+          cat <<EOF > $APP_ROOT/src/main/java/com/omni/cost/CostRepository.java
+          package com.omni.cost;
+          import org.springframework.data.jpa.repository.JpaRepository;
+          import org.springframework.stereotype.Repository;
+          @Repository
+          public interface CostRepository extends JpaRepository<CostData, Long> {}
+          EOF
 
-              def generate_massive_data(self, base_count):
-                  """최신 데이터 대량 생성 (Massive Generation)"""
-                  target_count = max(1000, base_count * 100) # 최소 1000건, 원본의 100배
-                  print(f">>> [Step 2] Generating {target_count} NEW records based on source...")
-                  
-                  generated_data = []
-                  
-                  for i in range(target_count):
-                      # 비용 데이터 시뮬레이션
-                      cost_item = {
-                          "id": str(uuid.uuid4()),
-                          "created_at": datetime.now().isoformat(),
-                          "category": random.choice(["Development", "Marketing", "Server", "Labor", "Tax"]),
-                          "amount": int(np.random.normal(5000000, 2000000)), # 평균 500만원
-                          "currency": "KRW",
-                          "vendor": fake.company(),
-                          "requester": fake.name(),
-                          "description": fake.bs(),
-                          "is_processed": False
-                      }
-                      generated_data.append(cost_item)
-                  
-                  return generated_data
+          # 4. Controller 생성 (API)
+          cat <<EOF > $APP_ROOT/src/main/java/com/omni/cost/CostController.java
+          package com.omni.cost;
+          import org.springframework.web.bind.annotation.*;
+          import lombok.RequiredArgsConstructor;
+          import java.util.List;
 
-              def reflect_and_load(self, data):
-                  """데이터 반영 및 적재 (Load & Partition)"""
-                  print(">>> [Step 3] Reflecting & Loading Data...")
-                  
-                  # 1. Raw Zone 적재 (JSON 분할 저장)
-                  chunk_size = 500
-                  for i in range(0, len(data), chunk_size):
-                      chunk = data[i:i+chunk_size]
-                      fname = f"cost_batch_{i//chunk_size:04d}.json"
-                      with open(os.path.join(DIRS["RAW"], fname), "w", encoding='utf-8') as f:
-                          json.dump(chunk, f, ensure_ascii=False, indent=2)
-                  
-                  # 2. Processed Zone 적재 (CSV 변환)
-                  df = pd.DataFrame(data)
-                  csv_path = os.path.join(DIRS["PROCESSED"], "daily_cost_summary.csv")
-                  df.to_csv(csv_path, index=False, encoding='utf-8-sig')
-                  
-                  # 3. Analytics Zone 적재 (요약 통계)
-                  summary = df.groupby('category')['amount'].sum().reset_index()
-                  summary['updated_at'] = TODAY
-                  
-                  analytics_path = os.path.join(DIRS["ANALYTICS"], f"report_{TODAY}.json")
-                  summary.to_json(analytics_path, orient='records', force_ascii=False)
-                  
-                  # 4. Latest Sync 폴더로 최신본 복사
-                  shutil.copy(csv_path, os.path.join(DIRS["LATEST"], "latest_full_data.csv"))
-                  
-                  print(f"✅ Data Loaded: {len(data)} records processed.")
-                  print(f"    - Raw Path: {DIRS['RAW']}")
-                  print(f"    - Processed: {csv_path}")
+          @RestController
+          @RequestMapping("/api/costs")
+          @RequiredArgsConstructor
+          public class CostController {
+              private final CostRepository repository;
 
-          if __name__ == "__main__":
-              expander = DataExpander()
-              count = expander.load_source_patterns()
-              new_data = expander.generate_massive_data(count)
-              expander.reflect_and_load(new_data)
+              @GetMapping("/summary")
+              public String getSummary() {
+                  long count = repository.count();
+                  return String.format("✅ Massive Data Loaded: %d records found in DB.", count);
+              }
+
+              @GetMapping
+              public List<CostData> getAll() {
+                  return repository.findAll();
+              }
+          }
+          EOF
+
+          # 5. Application.java
+          cat <<EOF > $APP_ROOT/src/main/java/com/omni/cost/Application.java
+          package com.omni.cost;
+          import org.springframework.boot.SpringApplication;
+          import org.springframework.boot.autoconfigure.SpringBootApplication;
+          @SpringBootApplication
+          public class Application {
+              public static void main(String[] args) { SpringApplication.run(Application.class, args); }
+          }
+          EOF
+
+          # 6. 설정 파일 (H2 DB + Init Script)
+          cat <<EOF > $APP_ROOT/src/main/resources/application.properties
+          server.port=8080
+          spring.datasource.url=jdbc:h2:mem:testdb
+          spring.datasource.driverClassName=org.h2.Driver
+          spring.datasource.username=sa
+          spring.datasource.password=
+          spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+          # 중요: import.sql 자동 실행 설정
+          spring.sql.init.mode=always
+          spring.jpa.defer-datasource-initialization=true
           EOF
 
       # ----------------------------------------------------------------------
-      # [Step 3] 파이프라인 가동
+      # [Step 4] 데이터 주입 및 빌드 (Injection & Build)
       # ----------------------------------------------------------------------
-      - name: 🚀 데이터 생성 및 반영 실행
-        run: python mass_generator.py
-
-      # ----------------------------------------------------------------------
-      # [Step 4] 결과 확인 (Verification)
-      # ----------------------------------------------------------------------
-      - name: 📊 생성된 데이터 현황 리포트
+      - name: 💉 대량 데이터 주입 (Python -> Spring Boot)
         run: |
-          echo "======================================================="
-          echo "   🏭 Massive Data Generation Report"
-          echo "======================================================="
+          echo ">>> Injecting massive SQL data into Spring Boot..."
+          # Python에서 생성한 import.sql을 Spring Resources로 이동
+          cp generated_resources/import.sql ${{ env.PROJECT_NAME }}/src/main/resources/import.sql
           
-          echo "[1] Source Data (koreatest12/cost-data):"
-          find app_root/source_repo -type f | wc -l
-          
-          echo ""
-          echo "[2] Raw Data Lake (Generated JSON Batches):"
-          ls -1 app_root/data_lake/raw/$(date +%Y-%m-%d)/ | head -n 10
-          echo "... and many more files."
-          
-          echo ""
-          echo "[3] Processed Data (Latest CSV):"
-          ls -lh app_root/latest_sync_data/
-          
-          echo ""
-          echo "[4] Analytics Report:"
-          ls -lh app_root/data_warehouse/analytics/
+          # 사이즈 확인
+          echo "SQL File Size:"
+          ls -lh ${{ env.PROJECT_NAME }}/src/main/resources/import.sql
+
+      - name: 🔨 Maven 빌드
+        working-directory: ${{ env.PROJECT_NAME }}
+        run: mvn clean package -DskipTests
 
       # ----------------------------------------------------------------------
-      # [Step 5] 전체 데이터 아티팩트 저장 (다운로드 가능하도록)
+      # [Step 5] 서버 기동 및 데이터 검증 (Verification)
       # ----------------------------------------------------------------------
-      - name: 📦 최신 데이터 패키지 업로드
+      - name: 🚀 서버 시작 및 데이터 검증
+        run: |
+          echo ">>> Starting Spring Boot Application..."
+          nohup java -jar ${{ env.PROJECT_NAME }}/target/*.jar > app.log 2>&1 &
+          PID=$!
+          
+          echo ">>> Waiting for server boot (DB Injection takes time)..."
+          # 대량 데이터(5만건 이상) Insert 시간이 필요하므로 넉넉히 대기
+          for i in {1..60}; do
+            sleep 2
+            if grep -q "Started Application" app.log; then
+              echo "✅ Server started!"
+              break
+            fi
+            echo "   ... loading data ($i)"
+          done
+
+          echo ">>> 🧪 Verification Request..."
+          RESULT=$(curl -s http://localhost:8080/api/costs/summary)
+          echo "API Response: $RESULT"
+          
+          if [[ "$RESULT" == *"Massive Data Loaded"* ]]; then
+            echo "🎉 SUCCESS: Massive data reflected successfully."
+          else
+            echo "❌ FAIL: Data not loaded properly."
+            cat app.log
+            exit 1
+          fi
+          
+          kill $PID
+
+      # ----------------------------------------------------------------------
+      # [Step 6] 결과물 저장
+      # ----------------------------------------------------------------------
+      - name: 📦 아티팩트 업로드
         uses: actions/upload-artifact@v4
         with:
-          name: Latest_Massive_Cost_Data
+          name: massive-spring-boot-package
           path: |
-             app_root/data_lake/
-             app_root/data_warehouse/
-             app_root/latest_sync_data/
-          retention-days: 7
+            ${{ env.PROJECT_NAME }}/target/*.jar
+            generated_resources/
+            app.log
+          retention-days: 1
