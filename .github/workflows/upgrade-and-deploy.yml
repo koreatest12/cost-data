@@ -1,4 +1,4 @@
-name: 🏢 세금 마스터 시스템 (전체 프로젝트 생성기 포함)
+name: 🧠 INTELLIGENT TAX-MASTER ENTERPRISE WORKFLOW
 
 on:
   workflow_dispatch:
@@ -6,305 +6,177 @@ on:
     branches: [ "main" ]
 
 jobs:
-  master-processing:
+  intelligent-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    
+    timeout-minutes: 120
+
     steps:
-      - name: 📥 메인 시스템 체크아웃
+      - name: 📥 [1] 소스 및 데이터 체크아웃
         uses: actions/checkout@v4
 
-      # ----------------------------------------------------------------------
-      # [Step 1] 데이터 준비 (Deep Scan용)
-      # ----------------------------------------------------------------------
-      - name: 📥 데이터 마이그레이션 (koreatest12/cost-data)
+      - name: 📥 [2] 원천 데이터 마이그레이션
         uses: actions/checkout@v4
         with:
           repository: koreatest12/cost-data
           path: app_root/cost_data
-          fetch-depth: 0 
 
-      - name: 🔧 파일 권한 및 환경 설정
-        run: |
-          chmod -R 755 app_root/cost_data
-          
-      - name: 🐍 파이썬 환경 설정
+      - name: 🐍 [3] Python 고성능 환경 설정
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
+          cache: 'pip'
+      - run: pip install flask pandas sqlalchemy aiosmtpd numpy
 
-      # ----------------------------------------------------------------------
-      # [Step 2] 프로젝트 생성 스크립트 작성 및 실행
-      # ----------------------------------------------------------------------
-      - name: 🛠️ generate_full_project.py 생성
+      - name: 🛠️ [4] 지능형 프로젝트 생성기 실행
         run: |
-          # 프로젝트 루트에 생성 스크립트 작성
-          cat <<EOF > generate_full_project.py
+          mkdir -p app_root/receipts
+          cat <<EOF > generate_intelligent_system.py
           import os
 
-          # ==============================================================================
-          # [1] 소스 코드 정의 (Engine, App, Configs)
-          # ==============================================================================
-          
-          REQ_TXT = """
-          flask
-          pandas
-          openpyxl
-          pdfplumber
-          tabulate
-          """
+          # [엔진: 지식 베이스 및 계산 로직 내장]
+          ENGINE = r'''
+          import sqlite3, json, os
 
-          DOCKERFILE = """
-          FROM python:3.9-slim
-          WORKDIR /app
-          COPY requirements.txt .
-          RUN pip install --no-cache-dir -r requirements.txt
-          COPY . .
-          RUN chmod -R 755 cost_data
-          EXPOSE 8080
-          CMD ["python", "app.py"]
-          """
+          def setup_intelligence():
+              conn = sqlite3.connect('tax_master.db')
+              cur = conn.cursor()
 
-          # 엔진: 모든 폴더 스캔 + 영수증 발급 기능 포함
-          ENGINE_PY = r'''
-          import os, glob, json, re
-          import pandas as pd
-          import pdfplumber
-          from collections import defaultdict
-          from tabulate import tabulate
+              # 1. 세무 지식 베이스 테이블 (세율 및 규정)
+              cur.execute("DROP TABLE IF EXISTS tax_knowledge")
+              cur.execute("""CREATE TABLE tax_knowledge (
+                  id INTEGER PRIMARY KEY,
+                  category TEXT,
+                  threshold_min INTEGER,
+                  threshold_max INTEGER,
+                  tax_rate REAL,
+                  deduction_fixed INTEGER
+              )""")
 
-          DATA_DIR = 'cost_data'
-          RECEIPT_DIR = 'receipts'
+              # 2026년 최신 세율 지식 대량 주입 (예시 데이터)
+              tax_rules = [
+                  ('INCOME_TAX', 0, 14000000, 0.06, 0),
+                  ('INCOME_TAX', 14000000, 50000000, 0.15, 1260000),
+                  ('INCOME_TAX', 50000000, 88000000, 0.24, 5760000),
+                  ('INCOME_TAX', 88000000, 150000000, 0.35, 15440000)
+              ]
+              cur.executemany("INSERT INTO tax_knowledge (category, threshold_min, threshold_max, tax_rate, deduction_fixed) VALUES (?,?,?,?,?)", tax_rules)
 
-          db = defaultdict(lambda: {
-              'salary': 0, 'pension': 0, 'insurance': 0,
-              'medical': 0, 'card': 0, 'donation': 0,
-              'pre_paid': 0, 'files': set()
-          })
-
-          def extract_number(text, keywords, min_value=0):
-              best_val = 0
-              for key in keywords:
-                  matches = re.finditer(key + r'[^0-9\n]*([0-9,]+)', text)
-                  for match in matches:
-                      try:
-                          val = int(match.group(1).replace(',', ''))
-                          if val >= min_value: best_val = max(best_val, val)
-                      except: pass
-              return best_val
-
-          def migrate_data():
-              # [기능] 모든 하위 디렉토리 재귀 검색
-              search_path = os.path.join(DATA_DIR, '**', '*')
-              all_files = [f for f in glob.glob(search_path, recursive=True) if os.path.isfile(f)]
-              print(f">>> [Migration] 총 {len(all_files)}개 파일 스캔 중...")
-
-              for filepath in all_files:
-                  try:
-                      fname = os.path.basename(filepath)
-                      _, ext = os.path.splitext(filepath)
-                      ext = ext.lower()
-                      name = None
-                      
-                      if ext == '.json':
-                          with open(filepath, 'r', encoding='utf-8') as f:
-                              js = json.load(f)
-                              name = js.get('name')
-                              if name:
-                                  db[name]['salary'] = max(db[name]['salary'], int(js.get('total_salary', 0)))
-                                  db[name]['card'] += int(js.get('credit', 0)) + int(js.get('debit', 0))
-                      elif ext in ['.xlsx', '.xls']:
-                          df = pd.read_excel(filepath)
-                          row = df.iloc[0]
-                          for col in ['name', '성명', '이름']:
-                              if col in df.columns: name = row[col]; break
-                          if name:
-                              if 'total_salary' in row: db[name]['salary'] = max(db[name]['salary'], int(row['total_salary']))
-                              if 'credit' in row: db[name]['card'] += int(row['credit'])
-                      elif ext == '.pdf':
-                          with pdfplumber.open(filepath) as pdf:
-                              text = "".join([p.extract_text() or "" for p in pdf.pages])
-                              nm_match = re.search(r'성\s*명\s*[:]?\s*([가-힣]{2,4})', text)
-                              if nm_match: name = nm_match.group(1)
-                              else:
-                                  nm_file = re.match(r'([가-힣]{2,4})', fname)
-                                  if nm_file: name = nm_file.group(1)
-                              if name:
-                                  salary = extract_number(text, ['총급여', '급여계'], 1000000)
-                                  if salary > 0: db[name]['salary'] = max(db[name]['salary'], salary)
-                                  db[name]['insurance'] += extract_number(text, ['보장성', '보험료'])
-                                  db[name]['pension'] += extract_number(text, ['국민연금', '연금'])
-                                  db[name]['medical'] += extract_number(text, ['의료비'])
-                                  db[name]['card'] += extract_number(text, ['신용카드', '현금영수증'])
-                                  db[name]['donation'] += extract_number(text, ['기부금'])
-                      if name: db[name]['files'].add(fname)
-                  except: pass
-              return db
-
-          def generate_receipt_html(r):
-              # [기능] 영수증 HTML 생성
-              color = "blue" if r['final_money'] < 0 else "red"
-              res_txt = "환급 (받을 돈)" if r['final_money'] < 0 else "징수 (낼 돈)"
+              # 2. 계산 엔진 로직 (DB 함수 형태 또는 트리거 대비용 테이블)
+              cur.execute("""CREATE TABLE IF NOT EXISTS tax_records (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name TEXT,
+                  salary INTEGER,
+                  calculated_tax INTEGER,
+                  tax_bracket REAL,
+                  advice TEXT
+              )""")
               
-              html = f"""
-              <html><head><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-              <style>body{{background:#eee;padding:40px}}.paper{{background:white;width:700px;margin:0 auto;padding:40px;box-shadow:0 0 10px rgba(0,0,0,0.1)}}</style>
-              </head><body><div class="paper">
-              <h2 class="text-center border-bottom pb-3">🧾 근로소득 원천징수 영수증</h2>
-              <table class="table mt-4">
-              <tr><th>성명</th><td>{r['name']}</td><th>총급여</th><td>{r['salary']:,} 원</td></tr>
-              <tr><th>결정세액</th><td>{r['tax']['determined']:,}</td><th>기납부</th><td>{r['tax']['pre_paid']:,}</td></tr>
-              <tr class="fs-4 fw-bold"><td colspan="2">최종 결과 ({res_txt})</td><td colspan="2" style="color:{color}">{abs(r['final_money']):,} 원</td></tr>
-              </table>
-              <div class="text-center mt-4"><button onclick="window.print()" class="btn btn-dark">🖨️ 인쇄</button></div>
-              </div></body></html>
-              """
-              with open(os.path.join(RECEIPT_DIR, f"{r['name']}.html"), "w", encoding="utf-8") as f:
-                  f.write(html)
+              conn.commit()
+              conn.close()
 
-          def run_simulation():
-              migrate_data()
-              results = []
-              print(">>> [Simulation] 시뮬레이션 및 영수증 발급 시작...")
-              
-              for name, data in db.items():
-                  if not name or len(name) < 2: continue
-                  
-                  salary = data['salary'] if data['salary'] > 0 else 40000000
-                  is_estimated = (data['salary'] == 0)
-                  
-                  # 간이 세금 계산
-                  if salary <= 5000000: income_ded = salary * 0.7
-                  elif salary <= 100000000: income_ded = 12000000 + (salary - 45000000) * 0.05
-                  else: income_ded = 14750000 + (salary - 100000000) * 0.02
-                  
-                  tax_base = max(salary - (income_ded + 1500000 + data['pension'] + data['card']*0.15), 0)
-                  calc_tax = tax_base * 0.15 if tax_base > 14000000 else tax_base * 0.06
-                  
-                  determined = int(max(calc_tax - data['insurance']*0.12, 0))
-                  pre_paid = data['pre_paid'] if data['pre_paid'] > 0 else int(salary * 0.045)
-                  final = determined - pre_paid
-                  
-                  entry = {
-                      "name": name, "salary": salary, "salary_note": "(추정)" if is_estimated else "",
-                      "files_count": len(data['files']),
-                      "tax": {"determined": determined, "pre_paid": pre_paid},
-                      "final_money": final, "type": "환급" if final < 0 else "징수"
-                  }
-                  generate_receipt_html(entry)
-                  results.append(entry)
-              
-              return results
+          def process_with_intelligence():
+              setup_intelligence()
+              conn = sqlite3.connect('tax_master.db')
+              conn.row_factory = sqlite3.Row
+              cur = conn.cursor()
 
-          if __name__ == "__main__":
-              res = run_simulation()
-              with open('final_result.json', 'w', encoding='utf-8') as f: json.dump(res, f, ensure_ascii=False)
+              # 대량 데이터 로드 (cost_data 폴더 스캔 가정)
+              # 예시: 임의의 대량 데이터 생성 및 지능형 계산 적용
+              raw_data = [('홍길동', 45000000), ('이순신', 75000000), ('강감찬', 120000000)]
               
-              table = [[r['name'], f"{r['salary']:,}", r['type'], f"{abs(r['final_money']):,}"] for r in res]
-              if res: print(tabulate(table, headers=["이름", "급여", "결과", "금액"], tablefmt="grid"))
-              else: print("데이터 없음")
+              for name, salary in raw_data:
+                  # 지식 베이스에서 세율 계산 로직 추출
+                  cur.execute("SELECT * FROM tax_knowledge WHERE ? > threshold_min AND ? <= threshold_max", (salary, salary))
+                  rule = cur.fetchone()
+                  
+                  if rule:
+                      tax = int(salary * rule['tax_rate'] - rule['deduction_fixed'])
+                      rate = rule['tax_rate']
+                      advice = f"연봉 {salary:,}원 기준 {rate*100}% 세율이 적용되었습니다."
+                  else:
+                      tax, rate, advice = 0, 0, "계산 불가"
+
+                  cur.execute("INSERT INTO tax_records (name, salary, calculated_tax, tax_bracket, advice) VALUES (?,?,?,?,?)",
+                             (name, salary, tax, rate, advice))
+              
+              conn.commit()
+              conn.close()
+
+          if __name__ == "__main__": process_with_intelligence()
           '''
 
-          # 웹 UI: 영수증 다운로드 기능 포함
-          APP_PY = r'''
-          from flask import Flask, render_template_string, send_from_directory
-          import json, os
+          # [앱: 지식 기반 대시보드]
+          APP = r'''
+          from flask import Flask, render_template_string
+          import sqlite3
+
           app = Flask(__name__)
 
           @app.route('/')
-          def index():
-              try:
-                  with open('final_result.json', 'r', encoding='utf-8') as f: results = json.load(f)
-              except: results = []
-              
-              refund = sum([abs(r['final_money']) for r in results if r['final_money'] < 0])
-              collect = sum([r['final_money'] for r in results if r['final_money'] >= 0])
-              
-              html = """
-              <!DOCTYPE html><html><head><title>Tax Master</title>
-              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-              </head><body class="p-5 bg-light"><div class="container bg-white p-5 shadow rounded">
-              <h2 class="mb-4">🏢 연말정산 마스터 리포트 <span class="badge bg-dark">v3.0 Full Project</span></h2>
-              <div class="row mb-4 text-center text-white">
-                  <div class="col-6"><div class="card bg-primary p-3"><h3>환급 총액</h3><h1>{{ "{:,}".format(refund) }} 원</h1></div></div>
-                  <div class="col-6"><div class="card bg-danger p-3"><h3>징수 총액</h3><h1>{{ "{:,}".format(collect) }} 원</h1></div></div>
-              </div>
-              <table class="table table-hover align-middle">
-              <thead><tr><th>성명</th><th>급여</th><th>결과</th><th>금액</th><th>영수증</th></tr></thead>
-              <tbody>{% for r in results %}
-              <tr><td class="fw-bold">{{ r.name }}</td><td>{{ "{:,}".format(r.salary) }}</td>
-              <td><span class="badge bg-{{ 'primary' if r.final_money < 0 else 'danger' }}">{{ r.type }}</span></td>
-              <td class="fw-bold">{{ "{:,}".format(abs(r.final_money)) }}</td>
-              <td><a href="/receipt/{{ r.name }}" target="_blank" class="btn btn-sm btn-outline-dark">📄 조회</a></td>
-              </tr>{% endfor %}</tbody></table>
-              </div></body></html>
-              """
-              return render_template_string(html, results=results, refund=refund, collect=collect)
-
-          @app.route('/receipt/<name>')
-          def get_receipt(name):
-              return send_from_directory('receipts', f"{name}.html")
+          def dashboard():
+              conn = sqlite3.connect('tax_master.db'); conn.row_factory = sqlite3.Row
+              records = conn.execute("SELECT * FROM tax_records").fetchall()
+              rules = conn.execute("SELECT * FROM tax_knowledge").fetchall()
+              conn.close()
+              return render_template_string("""
+                  <html><head><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"></head>
+                  <body class="p-5 bg-dark text-white">
+                      <div class="container bg-secondary p-5 rounded shadow">
+                          <h1>🧠 Intelligent Tax Master v4.0</h1>
+                          <hr>
+                          <h3>📘 세무 지식 베이스 (Tax Rules)</h3>
+                          <table class="table table-dark table-striped mb-5">
+                              <thead><tr><th>구분</th><th>범위</th><th>세율</th><th>누진공제</th></tr></thead>
+                              <tbody>
+                                  {% for r in rules %}
+                                  <tr><td>{{r.category}}</td><td>{{r.threshold_min}}~{{r.threshold_max}}</td><td>{{r.tax_rate*100}}%</td><td>{{r.deduction_fixed}}</td></tr>
+                                  {% endfor %}
+                              </tbody>
+                          </table>
+                          <h3>📊 지능형 계산 결과</h3>
+                          <table class="table table-light table-hover text-dark">
+                              <thead><tr><th>성명</th><th>급여</th><th>계산세액</th><th>적용세율</th><th>AI 어드바이스</th></tr></thead>
+                              <tbody>
+                                  {% for d in records %}
+                                  <tr><td>{{d.name}}</td><td>{{d.salary:,}}</td><td>{{d.calculated_tax:,}}</td><td>{{d.tax_bracket*100}}%</td><td>{{d.advice}}</td></tr>
+                                  {% endfor %}
+                              </tbody>
+                          </table>
+                      </div>
+                  </body></html>
+              """, records=records, rules=rules)
 
           if __name__ == '__main__': app.run(host='0.0.0.0', port=8080)
           '''
 
-          # ==============================================================================
-          # [2] 프로젝트 생성 실행기 (File Writer)
-          # ==============================================================================
-          def create_full_project():
-              base_dir = "app_root"
-              
-              # 디렉토리 구조 생성
-              os.makedirs(os.path.join(base_dir, "templates"), exist_ok=True)
-              os.makedirs(os.path.join(base_dir, "static"), exist_ok=True)
-              os.makedirs(os.path.join(base_dir, "receipts"), exist_ok=True)
-              
-              # 파일 작성 헬퍼
-              def write_file(path, content):
-                  with open(os.path.join(base_dir, path), "w", encoding="utf-8") as f:
-                      f.write(content.strip())
-                  print(f"✅ Created: {path}")
-
-              # 각 파일 생성
-              write_file("requirements.txt", REQ_TXT)
-              write_file("Dockerfile", DOCKERFILE)
-              write_file("engine.py", ENGINE_PY)
-              write_file("app.py", APP_PY)
-              
-              print(f"\n🎉 프로젝트 생성 완료! ({os.path.abspath(base_dir)})")
-
-          if __name__ == "__main__":
-              create_full_project()
+          with open('app_root/engine.py', 'w', encoding='utf-8') as f: f.write(ENGINE)
+          with open('app_root/app.py', 'w', encoding='utf-8') as f: f.write(APP)
           EOF
+          python generate_intelligent_system.py
 
-      - name: 🏗️ 프로젝트 생성기 실행
-        run: |
-          # 위에서 만든 generate_full_project.py를 실행하여 실제 파일들을 생성
-          python generate_full_project.py
-
-      # ----------------------------------------------------------------------
-      # [Step 3] 생성된 시스템 구동
-      # ----------------------------------------------------------------------
-      - name: 🚀 엔진 구동 & 리포트 생성
+      - name: 🗄️ [5] 지능형 데이터 적재 및 자동 계산 실행
         run: |
           cd app_root
-          pip install -r requirements.txt
           python engine.py
 
-      # ----------------------------------------------------------------------
-      # [Step 4] 결과물 패키징
-      # ----------------------------------------------------------------------
-      - name: 🐳 Docker 이미지 빌드
+      - name: 🐳 [6] Docker 빌드 및 패키징
         run: |
           cd app_root
-          docker build -t tax-master-system:latest .
-          docker save -o tax-master-system.tar tax-master-system:latest
+          cat <<EOF > Dockerfile
+          FROM python:3.9-slim
+          WORKDIR /app
+          COPY . .
+          RUN pip install flask sqlalchemy pandas
+          EXPOSE 8080
+          CMD ["python", "app.py"]
+          EOF
+          docker build -t tax-intel:latest .
+          docker save -o tax-intel.tar tax-intel:latest
 
-      - name: 📦 실행 파일 및 생성기 저장
+      - name: 📦 [7] 최종 아티팩트 보관
         uses: actions/upload-artifact@v4
         with:
-          name: 세금 마스터 시스템 앱
+          name: Intelligent-Tax-Asset
           path: |
-             app_root/tax-master-system.tar
-             generate_full_project.py
-          retention-days: 7
+            app_root/tax_master.db
+            app_root/tax-intel.tar
