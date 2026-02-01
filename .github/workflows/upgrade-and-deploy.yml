@@ -1,4 +1,4 @@
-name: 🚀 Enterprise Intelligent Tax-Nuxt Integration
+name: 🚀 Nuxt & Intelligent Tax-Engine Enterprise v5.5
 
 on:
   push:
@@ -15,101 +15,127 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # [Job 1] 지능형 데이터 처리 및 세무 엔진 구동
-  tax-engine-processing:
+  # [Step 1] 대량 데이터 분석 및 지능형 DB 구축 (백엔드 엔진)
+  intelligent-engine-processing:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Clone External Data Source
+      - name: Clone Deep Data Source
         run: git clone https://github.com/koreatest12/cost-data.git data_source
 
-      - name: Setup Python for Tax Engine
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
 
-      - name: Install Engine Dependencies
-        run: pip install pandas openpyxl sqlalchemy flask aiosmtpd
+      - name: Install Advanced Engine Dependencies
+        run: pip install pandas openpyxl sqlalchemy numpy aiosmtpd
 
-      - name: 지능형 엔진 (Deep Scan + DB 적재 + 계산)
+      - name: 🛠️ 실행: 지능형 세무 지식 베이스 및 대량 연산 엔진
         run: |
-          cat <<'EOF' > engine_core.py
+          cat <<'EOF' > full_upgrade_engine.py
           import os, sqlite3, json, glob
           import pandas as pd
 
-          def run_system():
+          def build_enterprise_system():
               conn = sqlite3.connect('tax_master.db')
               cur = conn.cursor()
-              # 지식 베이스 및 데이터 스키마 생성
-              cur.executescript("""
-                  CREATE TABLE IF NOT EXISTS tax_knowledge (id INTEGER PRIMARY KEY, min_val INTEGER, max_val INTEGER, rate REAL, ded INTEGER);
-                  CREATE TABLE IF NOT EXISTS tax_results (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, salary INTEGER, tax INTEGER, advice TEXT);
-              """)
-              # 2026 최신 세율 지식 주입
-              knowledge = [(1, 0, 14000000, 0.06, 0), (2, 14000000, 50000000, 0.15, 1260000), (3, 50000000, 88000000, 0.24, 5760000)]
-              cur.executemany("INSERT OR REPLACE INTO tax_knowledge VALUES (?,?,?,?,?)", knowledge)
+              # 고성능 PRAGMA 설정
+              cur.execute("PRAGMA journal_mode=WAL")
               
-              # Deep Scan: 모든 데이터 파일 탐색
+              # 스키마 대량 생성 및 업그레이드
+              cur.executescript("""
+                  DROP TABLE IF EXISTS tax_knowledge;
+                  CREATE TABLE tax_knowledge (id INTEGER PRIMARY KEY, min_val INTEGER, max_val INTEGER, rate REAL, ded INTEGER);
+                  CREATE TABLE IF NOT EXISTS tax_results (
+                      id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                      name TEXT, salary INTEGER, tax INTEGER, advice TEXT, processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                  );
+                  CREATE INDEX IF NOT EXISTS idx_salary ON tax_results(salary);
+              """)
+
+              # 2026 최신 누진 세율 지식 대량 주입 (대량 업그레이드 반영)
+              knowledge = [
+                  (1, 0, 14000000, 0.06, 0),
+                  (2, 14000000, 50000000, 0.15, 1260000),
+                  (3, 50000000, 88000000, 0.24, 5760000),
+                  (4, 88000000, 150000000, 0.35, 15440000),
+                  (5, 150000000, 300000000, 0.38, 19940000)
+              ]
+              cur.executemany("INSERT INTO tax_knowledge VALUES (?,?,?,?,?)", knowledge)
+              
+              # Deep Scan: 모든 경로의 대량 파일 자동 분석
               files = glob.glob('data_source/**/*', recursive=True)
               for f in files:
-                  if os.path.isfile(f) and f.endswith('.json'):
-                      with open(f, 'r') as jf:
-                          d = json.load(jf)
-                          name, sal = d.get('name', 'N/A'), int(d.get('total_salary', 0))
-                          # 계산 로직
-                          cur.execute("SELECT * FROM tax_knowledge WHERE ? > min_val AND ? <= max_val", (sal, sal))
-                          rule = cur.fetchone()
-                          tax = int(sal * rule[3] - rule[4]) if rule else 0
-                          cur.execute("INSERT INTO tax_results (name, salary, tax, advice) VALUES (?,?,?,?)", (name, sal, tax, 'AI 분석 완료'))
+                  if os.path.isfile(f):
+                      ext = os.path.splitext(f)[1].lower()
+                      try:
+                          if ext == '.json':
+                              with open(f, 'r', encoding='utf-8') as jf:
+                                  d = json.load(jf)
+                                  items = d if isinstance(d, list) else [d]
+                                  for i in items:
+                                      process_data(cur, i.get('name', 'N/A'), int(i.get('total_salary', 0)))
+                      except: continue
               conn.commit()
               conn.close()
-          if __name__ == "__main__": run_system()
-          EOF
-          python engine_core.py
 
-      - name: Archive Tax Database
+          def process_data(cur, name, sal):
+              if sal <= 0: return
+              cur.execute("SELECT * FROM tax_knowledge WHERE ? > min_val AND ? <= max_val", (sal, sal))
+              rule = cur.fetchone()
+              tax = int(sal * rule[3] - rule[4]) if rule else 0
+              advice = f"적용세율 {int(rule[3]*100) if rule else 0}% 최적화 알고리즘 반영"
+              cur.execute("INSERT INTO tax_results (name, salary, tax, advice) VALUES (?,?,?,?)", (name, sal, tax, advice))
+
+          if __name__ == "__main__": build_enterprise_system()
+          EOF
+          python full_upgrade_engine.py
+
+      - name: Upload Intelligent DB
         uses: actions/upload-artifact@v4
         with:
-          name: tax-db
+          name: tax-enterprise-db
           path: tax_master.db
 
-  # [Job 2] Nuxt 빌드 (세무 데이터 포함)
+  # [Step 2] Nuxt 프론트엔드 대량 빌드 (DB 데이터 포함)
   build:
-    needs: tax-engine-processing
+    needs: intelligent-engine-processing
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Tax DB
+      - name: Download Intelligent DB
         uses: actions/download-artifact@v4
         with:
-          name: tax-db
+          name: tax-enterprise-db
 
-      - name: Setup Node
+      - name: Setup Node (Optimized Cache)
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Install Nuxt Dependencies
         run: npm ci
 
-      - name: Generate Nuxt Static Site
-        # 여기서 생성된 tax_master.db를 Nuxt의 public 폴더나 api 경로에 포함시킬 수 있습니다.
+      - name: Generate Static Nuxt Site with Data Integration
         run: |
           mkdir -p public/data
-          mv tax_master.db public/data/
+          cp tax_master.db public/data/
+          # DB 데이터를 기반으로 정적 JSON 파일 대량 생성 (Nuxt에서 접근 가능하도록)
+          python -c "import sqlite3, json; conn=sqlite3.connect('tax_master.db'); conn.row_factory=sqlite3.Row; data=[dict(r) for r in conn.execute('SELECT * FROM tax_results').fetchall()]; open('public/data/report.json', 'w').write(json.dumps(data))"
           npm run generate
 
-      - name: Upload artifact
+      - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./.output/public
 
-  # [Job 3] 배포
+  # [Step 3] 최종 배포
   deploy:
     environment:
       name: github-pages
