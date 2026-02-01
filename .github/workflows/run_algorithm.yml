@@ -40,7 +40,6 @@ jobs:
           import os, json, yaml
           from pathlib import Path
           
-          # Dependabot 설정 자동 생성
           Path(".github").mkdir(exist_ok=True)
           config = {
               "version": 2,
@@ -52,34 +51,25 @@ jobs:
           with open(".github/dependabot.yml", "w") as f:
               yaml.dump(config, f, sort_keys=False)
           
-          # 실행 리포트 생성
           with open("dependabot_report.json", "w") as f:
               json.dump({"status": "synced", "timestamp": "${{ env.VERSION }}"}, f)
           EOF
 
-      - name: 🏭 고속 분할 데이터 생성기 실행 (os 에러 수정 완료)
+      - name: 🏭 고속 분할 데이터 생성기 실행
         run: |
           mkdir -p data_chunks
           python - <<EOF
-          import pandas as pd
-          import numpy as np
-          import uuid
-          import os  # 에러 해결: os 모듈 명시적 임포트
-          
+          import pandas as pd, numpy as np, uuid, os
           TOTAL = int(os.environ.get('RECORD_COUNT', 200000))
           CHUNK_SIZE = 50000
-          
-          print(f"🚀 총 {TOTAL}건 데이터 생성 시작...")
-          
           for i in range(0, TOTAL, CHUNK_SIZE):
-              current_size = min(CHUNK_SIZE, TOTAL - i)
+              size = min(CHUNK_SIZE, TOTAL - i)
               df = pd.DataFrame({
-                  'uuid': [str(uuid.uuid4()) for _ in range(current_size)],
-                  'amount': np.random.randint(1000, 1000000, size=current_size),
-                  'status': np.random.choice(['ACTIVE', 'PENDING', 'COMPLETED'], size=current_size)
+                  'uuid': [str(uuid.uuid4()) for _ in range(size)],
+                  'amount': np.random.randint(1000, 1000000, size=size),
+                  'status': np.random.choice(['ACTIVE', 'PENDING', 'COMPLETED'], size=size)
               })
               df.to_csv(f'data_chunks/chunk_{i//CHUNK_SIZE}.csv', index=False)
-              print(f"✅ Chunk {i//CHUNK_SIZE} 생성 완료 ({current_size} records)")
           EOF
 
       - name: 📤 아티팩트 저장
@@ -91,12 +81,21 @@ jobs:
             .github/dependabot.yml
             dependabot_report.json
 
-      - name: 🚀 Commit & Push Management Config
+      - name: 🚀 Commit & Push Management Config (Force Add)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/dependabot.yml dependabot_report.json
-          git diff --staged --quiet || (git commit -m "chore: auto-sync system config [${{ env.VERSION }}]" && git push origin main)
+          
+          # [핵심 수정] .gitignore를 무시하고 강제로 리포트 파일 추가
+          git add -f .github/dependabot.yml dependabot_report.json
+          
+          # 변경사항이 있을 때만 커밋 및 푸시
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: auto-sync system config [${{ env.VERSION }}]"
+            git push origin main
+          else
+            echo "⚠️ 변경사항이 없어 스킵합니다."
+          fi
 
   # [Job 2] 시스템 빌드 및 배포
   system-deployment:
@@ -119,15 +118,13 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: 🏗️ 시스템 아키텍처 재구축 (컴파일 에러 방지 필드 추가)
+      - name: 🏗️ 시스템 아키텍처 재구축 (컴파일 무결성 보장)
         run: |
           BASE="src/main/java/com/costdata/filemanagement"
-          mkdir -p $BASE/config $BASE/controller $BASE/dto $BASE/model $BASE/repository src/main/resources/data
+          mkdir -p $BASE/config $BASE/controller $BASE/dto $BASE/model src/main/resources/data
           
-          # 데이터 파일 이동
           cp assets/data_chunks/*.csv src/main/resources/data/
 
-          # [1] pom.xml 구성
           cat <<EOF > pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -143,20 +140,13 @@ jobs:
           </project>
           EOF
 
-          # [2] DTO 수정 (getPath, getContent 에러 해결)
           cat <<EOF > $BASE/dto/FileRequest.java
           package com.costdata.filemanagement.dto;
           import jakarta.validation.constraints.NotBlank;
           import lombok.Data;
-          @Data
-          public class FileRequest {
-              @NotBlank private String fileName;
-              @NotBlank private String path;      // getPath() 매핑용
-              @NotBlank private String content;   // getContent() 매핑용
-          }
+          @Data public class FileRequest { @NotBlank private String fileName; @NotBlank private String path; @NotBlank private String content; }
           EOF
 
-          # [3] Controller 구현
           cat <<EOF > $BASE/controller/FileManagementController.java
           package com.costdata.filemanagement.controller;
           import com.costdata.filemanagement.dto.FileRequest;
@@ -172,7 +162,6 @@ jobs:
           }
           EOF
 
-          # [4] Main App
           cat <<EOF > $BASE/Application.java
           package com.costdata.filemanagement;
           import org.springframework.boot.SpringApplication;
@@ -180,15 +169,13 @@ jobs:
           @SpringBootApplication public class Application { public static void main(String[] args) { SpringApplication.run(Application.class, args); } }
           EOF
 
-          # [5] Security Config
           cat <<EOF > $BASE/config/SecurityConfig.java
           package com.costdata.filemanagement.config;
           import org.springframework.context.annotation.Bean;
           import org.springframework.context.annotation.Configuration;
           import org.springframework.security.config.annotation.web.builders.HttpSecurity;
           import org.springframework.security.web.SecurityFilterChain;
-          @Configuration
-          public class SecurityConfig {
+          @Configuration public class SecurityConfig {
               @Bean public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                   http.csrf(csrf -> csrf.disable()).authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
                   return http.build();
