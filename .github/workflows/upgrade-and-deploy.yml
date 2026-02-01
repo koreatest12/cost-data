@@ -1,4 +1,4 @@
-name: 🚀 TOTAL ENTERPRISE TAX-INTELLIGENCE WORKFLOW
+name: 🚀 ULTIMATE TAX-INTELLIGENCE SYSTEM (FIXED & UPGRADED)
 
 on:
   workflow_dispatch:
@@ -8,27 +8,24 @@ on:
 jobs:
   total-system-integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 180 # 대규모 스캔 및 계산을 위해 충분한 시간 할당
+    timeout-minutes: 180
 
     steps:
-      - name: 📥 [1] 메인 저장소 체크아웃
+      - name: 📥 [1] 저장소 체크아웃 및 데이터 클론
         uses: actions/checkout@v4
-
-      - name: 📥 [2] 외부 데이터 저장소 전체 클론 (Deep Scan 대상)
-        run: |
+      - run: |
           git clone https://github.com/koreatest12/cost-data.git data_source
-          echo "외부 데이터 소스 확보 완료."
+          mkdir -p app_root/receipts
 
-      - name: 🐍 [3] Python 고성능 분석 환경 구성
+      - name: 🐍 [2] Python 분석 환경 구성
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
           cache: 'pip'
-      - run: pip install flask pandas openpyxl sqlalchemy pdfplumber aiosmtpd numpy tabulate
+      - run: pip install flask pandas openpyxl sqlalchemy pdfplumber numpy
 
-      - name: 🛠️ [4] 통합 생성기 및 지능형 엔진 작성
+      - name: 🛠️ [3] 지능형 생성기 및 업그레이드 스크립트 실행
         run: |
-          mkdir -p app_root/receipts
           cat <<EOF > generate_and_upgrade.py
           import os, sqlite3, json, glob
           import pandas as pd
@@ -39,7 +36,10 @@ jobs:
           def build_intelligent_db():
               conn = sqlite3.connect(DB_PATH)
               cur = conn.cursor()
-              # 1. 스키마 확장 (지식 베이스 + 원천 데이터 + 계산 결과)
+              # 대량 연산을 위한 고성능 PRAGMA 설정
+              cur.execute("PRAGMA journal_mode=WAL")
+              cur.execute("PRAGMA synchronous=NORMAL")
+              
               cur.executescript("""
                   CREATE TABLE IF NOT EXISTS tax_knowledge (
                       id INTEGER PRIMARY KEY, category TEXT, threshold_min INTEGER, 
@@ -49,13 +49,18 @@ jobs:
                       id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, salary INTEGER, 
                       source_path TEXT, final_tax INTEGER, advice TEXT, processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                   );
+                  CREATE INDEX IF NOT EXISTS idx_salary ON tax_records(salary);
               """)
               
-              # 2. 최신 세무 지식 대량 업데이트 (2026 기준)
-              knowledge = [('INCOME', 0, 14000000, 0.06, 0), ('INCOME', 14000000, 50000000, 0.15, 1260000), 
-                           ('INCOME', 50000000, 88000000, 0.24, 5760000), ('INCOME', 88000000, 150000000, 0.35, 15440000)]
-              cur.executemany("INSERT OR REPLACE INTO tax_knowledge VALUES (?,?,?,?,?,?)", 
-                              [(i+1, k[0], k[1], k[2], k[3], k[4]) for i, k in enumerate(knowledge)])
+              # 2026 최신 세무 지식 (대량 주입)
+              knowledge = [
+                  (1, 'INCOME', 0, 14000000, 0.06, 0),
+                  (2, 'INCOME', 14000000, 50000000, 0.15, 1260000),
+                  (3, 'INCOME', 50000000, 88000000, 0.24, 5760000),
+                  (4, 'INCOME', 88000000, 150000000, 0.35, 15440000),
+                  (5, 'INCOME', 150000000, 300000000, 0.38, 19940000)
+              ]
+              cur.executemany("INSERT OR REPLACE INTO tax_knowledge VALUES (?,?,?,?,?,?)", knowledge)
               conn.commit()
               conn.close()
 
@@ -64,38 +69,39 @@ jobs:
               conn.row_factory = sqlite3.Row
               cur = conn.cursor()
               
-              # 모든 하위 폴더/파일 스캔 (JSON, CSV, XLSX 등)
+              # 모든 하위 폴더 재귀적 탐색 (대량 파일 스캔 최적화)
               files = glob.glob('data_source/**/*', recursive=True)
-              print(f">>> 총 {len(files)}개의 소스 파일 스캔 시작...")
-
               for f in files:
                   if os.path.isdir(f): continue
                   fname = os.path.basename(f)
                   ext = os.path.splitext(f)[1].lower()
-                  
                   try:
-                      # 파일 타입별 데이터 추출 및 지능형 계산 매칭
                       salary, name = 0, "Unknown"
                       if ext == '.json':
-                          with open(f, 'r') as jf:
-                              d = json.load(jf); name = d.get('name', 'N/A'); salary = int(d.get('total_salary', 0))
-                      elif ext in ['.csv', '.xlsx']:
-                          df = pd.read_excel(f) if ext == '.xlsx' else pd.read_csv(f)
-                          name = str(df.iloc[0,0]); salary = int(df.iloc[0,1]) # 단순화된 추출
-                      
-                      if salary > 0:
-                          # 지식 기반 세액 계산
-                          cur.execute("SELECT * FROM tax_knowledge WHERE ? > threshold_min AND ? <= threshold_max", (salary, salary))
-                          rule = cur.fetchone()
-                          tax = int(salary * rule['tax_rate'] - rule['deduction_fixed']) if rule else 0
-                          advice = f"적용세율 {int(rule['tax_rate']*100) if rule else 0}% 최적화 완료"
-                          
-                          cur.execute("INSERT INTO tax_records (name, salary, source_path, final_tax, advice) VALUES (?,?,?,?,?)",
-                                     (name, salary, f, tax, advice))
+                          with open(f, 'r', encoding='utf-8') as jf:
+                              d = json.load(jf)
+                              items = d if isinstance(d, list) else [d]
+                              for i in items:
+                                  name, salary = i.get('name', 'N/A'), int(i.get('total_salary', 0))
+                                  process_entry(cur, name, salary, f)
+                      elif ext in ['.xlsx', '.xls', '.csv']:
+                          df = pd.read_excel(f) if 'xl' in ext else pd.read_csv(f)
+                          for _, row in df.iterrows():
+                              name, salary = str(row.iloc[0]), int(row.iloc[1])
+                              process_entry(cur, name, salary, f)
                   except: continue
-              
               conn.commit()
               conn.close()
+
+          def process_entry(cur, name, salary, path):
+              if salary <= 0: return
+              # 지식 베이스 매칭 연산
+              cur.execute("SELECT * FROM tax_knowledge WHERE ? > threshold_min AND ? <= threshold_max", (salary, salary))
+              rule = cur.fetchone()
+              tax = int(salary * rule['tax_rate'] - rule['deduction_fixed']) if rule else 0
+              advice = f"적용세율 {int(rule['tax_rate']*100) if rule else 0}% 최적화"
+              cur.execute("INSERT INTO tax_records (name, salary, source_path, final_tax, advice) VALUES (?,?,?,?,?)",
+                         (name, salary, path, tax, advice))
 
           if __name__ == "__main__":
               build_intelligent_db()
@@ -103,9 +109,21 @@ jobs:
           EOF
           python generate_and_upgrade.py
 
-      - name: 🚀 [5] 웹 서비스 및 API 엔진 생성
+      - name: 🐳 [4] Dockerfile 수정 및 빌드 (HEREDOC 방식 적용)
         run: |
-          cat <<EOF > app_root/app.py
+          cd app_root
+          # 기존 에러 원인 해결: 줄바꿈이 정상적으로 포함된 Dockerfile 생성
+          cat <<EOF > Dockerfile
+          FROM python:3.9-slim
+          WORKDIR /app
+          COPY . .
+          RUN pip install --no-cache-dir flask pandas sqlalchemy openpyxl
+          EXPOSE 8080
+          CMD ["python", "app.py"]
+          EOF
+          
+          # 앱 실행 파일 생성
+          cat <<EOF > app.py
           from flask import Flask, render_template_string
           import sqlite3
           app = Flask(__name__)
@@ -113,21 +131,18 @@ jobs:
           def index():
               conn = sqlite3.connect('tax_master.db'); conn.row_factory = sqlite3.Row
               data = conn.execute("SELECT * FROM tax_records ORDER BY salary DESC").fetchall()
-              return render_template_string('<h1>Total Intelligence Dashboard</h1><table border="1">{% for r in data %}<tr><td>{{r.name}}</td><td>{{r.salary}}</td><td>{{r.final_tax}}</td><td>{{r.advice}}</td></tr>{% endfor %}</table>', data=data)
-          if __name__ == '__main__': app.run(host='0.0.0.0', port=8080)
+              conn.close()
+              return render_template_string('<h1>Intelligent Tax Report</h1><table border="1">{% for r in data %}<tr><td>{{r.name}}</td><td>{{r.salary:,}}</td><td>{{r.final_tax:,}}</td><td>{{r.advice}}</td></tr>{% endfor %}</table>', data=data)
+          if __name__ == "__main__": app.run(host='0.0.0.0', port=8080)
           EOF
 
-      - name: 🐳 [6] Docker 엔터프라이즈 이미지 빌드
-        run: |
-          cd app_root
-          echo "FROM python:3.9-slim\nWORKDIR /app\nCOPY . .\nRUN pip install flask pandas sqlalchemy openpyxl\nEXPOSE 8080\nCMD [\"python\", \"app.py\"]" > Dockerfile
           docker build -t tax-master-ultimate:latest .
           docker save -o tax-master-ultimate.tar tax-master-ultimate:latest
 
-      - name: 📦 [7] 최종 자산 업로드 (DB 및 실행 이미지)
+      - name: 📦 [5] 최종 아티팩트 업로드
         uses: actions/upload-artifact@v4
         with:
-          name: Ultimate-Tax-Intelligence-Package
+          name: Full-System-Assets
           path: |
             app_root/tax_master.db
             app_root/tax-master-ultimate.tar
