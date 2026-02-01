@@ -1,4 +1,4 @@
-name: 🚀 Enterprise Tax-AI Full-Stack Automation
+name: 🚀 TAX-MASTER ENTERPRISE TOTAL REPAIR (v14.0)
 
 on:
   push:
@@ -15,33 +15,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # [Phase 1] 데이터 처리 및 이메일 발송 엔진
+  # [Phase 1] 데이터 처리 및 지능형 엔진 가동
   intelligence-processing:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 소스 체크아웃
+      - name: 📥 소스 체크아웃 및 데이터 소스 클론
         uses: actions/checkout@v4
-
-      - name: 📥 외부 데이터 소스 클론
-        run: |
+      - run: |
           git clone https://github.com/koreatest12/cost-data.git data_source
           mkdir -p public/data receipts
 
-      - name: 🐍 파이썬 환경 구성
+      - name: 🐍 파이썬 분석 환경 구성 및 라이브러리 설치
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
+      - run: |
+          pip install --upgrade pip
+          pip install pandas openpyxl sqlalchemy numpy aiosmtpd flask
 
-      - name: 📦 필수 라이브러리 및 이메일 서버 설치
-        run: |
-          pip install pandas openpyxl sqlalchemy numpy aiosmtpd
-
-      - name: 📧 가상 SMTP 서버 백그라운드 가동 (Port: 1025)
+      - name: 📧 가상 SMTP 서버 백그라운드 구동 (Port 1025)
         run: |
           python -m aiosmtpd -n -l localhost:1025 &
-          sleep 5 # 서버 안정화 대기
+          sleep 5
 
-      - name: 🛠️ [엔진 실행] 지능형 세무 연산 및 메일 자동 발송
+      - name: 🛠️ [정비완료] 지능형 세무 엔진 & 자동 발송 스크립트 작성
         run: |
           cat <<'EOF' > tax_engine.py
           import os, sqlite3, json, glob, smtplib, random
@@ -53,7 +50,7 @@ jobs:
               cur = conn.cursor()
               cur.execute("PRAGMA journal_mode=WAL")
               
-              # 1. DB 스키마 (세무 정보 + 발송 이력)
+              # 스키마 정비: 지식 베이스 및 결과 테이블
               cur.executescript("""
                   CREATE TABLE IF NOT EXISTS tax_knowledge (id INTEGER PRIMARY KEY, min_val INTEGER, max_val INTEGER, rate REAL, ded INTEGER);
                   CREATE TABLE IF NOT EXISTS tax_results (
@@ -62,83 +59,83 @@ jobs:
                   );
               """)
 
-              # 2. 2026 최신 세율 지식 주입
-              knowledge = [
-                  (1, 0, 14000000, 0.06, 0),
-                  (2, 14000000, 50000000, 0.15, 1260000),
-                  (3, 50000000, 88000000, 0.24, 5760000),
-                  (4, 88000000, 150000000, 0.35, 15440000)
-              ]
+              # 2026 최신 세율 지식 주입
+              knowledge = [(1, 0, 14000000, 0.06, 0), (2, 14000000, 50000000, 0.15, 1260000), 
+                           (3, 50000000, 88000000, 0.24, 5760000), (4, 88000000, 150000000, 0.35, 15440000)]
               cur.executemany("INSERT OR REPLACE INTO tax_knowledge VALUES (?,?,?,?,?)", knowledge)
               
-              # 3. 데이터 스캔 및 대량 산출 (시뮬레이션 포함)
-              for i in range(1, 31):
-                  name = f"임직원_{i:02d}"
-                  email = f"user{i:02d}@enterprise-tax.local"
-                  sal = random.randint(30000000, 120000000)
-                  
-                  cur.execute("SELECT * FROM tax_knowledge WHERE ? > min_val AND ? <= max_val", (sal, sal))
-                  rule = cur.fetchone()
-                  tax = int(sal * rule[3] - rule[4]) if rule else int(sal * 0.38 - 19400000)
-                  net_pay = sal - tax
-                  
-                  # 4. 가상 이메일 서버 발송 수행
-                  mail_sent = "FAILED"
-                  try:
-                      msg = MIMEText(f"안녕하세요 {name}님. 귀하의 산출 세액은 {tax:,}원이며, 예상 실수령액은 {net_pay:,}원입니다.")
-                      msg['Subject'] = f"[보안] {name}님 맞춤형 세무 분석 리포트"
-                      msg['From'] = "admin@enterprise-tax.local"
-                      msg['To'] = email
-                      
-                      with smtplib.SMTP('localhost', 1025) as server:
-                          server.send_message(msg)
-                          mail_sent = "SUCCESS"
-                  except:
-                      mail_sent = "ERROR"
-
-                  cur.execute("INSERT INTO tax_results (name, email, salary, tax, net_pay, mail_status) VALUES (?,?,?,?,?,?)", 
-                             (name, email, sal, tax, net_pay, mail_sent))
+              # 데이터 Deep Scan 및 계산 (JSON/Excel 지원)
+              for f in glob.glob('data_source/**/*', recursive=True):
+                  if os.path.isfile(f) and f.lower().endswith('.json'):
+                      try:
+                          with open(f, 'r', encoding='utf-8') as jf:
+                              d = json.load(jf)
+                              items = d if isinstance(d, list) else [d]
+                              for i in items:
+                                  name, sal = i.get('name', 'User'), int(i.get('total_salary', 0))
+                                  if sal > 0: process_entry(cur, name, sal)
+                      except: continue
               
+              # 데이터 부족 시 시뮬레이션 데이터 30건 강제 생성
+              cur.execute("SELECT COUNT(*) FROM tax_results")
+              if cur.fetchone()[0] < 5:
+                  for i in range(1, 31):
+                      process_entry(cur, f"임직원_{i:02d}", random.randint(35000000, 150000000))
+
               conn.commit()
               conn.close()
+
+          def process_entry(cur, name, sal):
+              email = f"{name.replace(' ', '_')}@tax-master.local"
+              cur.execute("SELECT * FROM tax_knowledge WHERE ? > min_val AND ? <= max_val", (sal, sal))
+              rule = cur.fetchone()
+              tax = int(sal * rule[3] - rule[4]) if rule else int(sal * 0.38 - 19000000)
+              net_pay = sal - tax
+              
+              # 가상 메일 발송
+              status = "SUCCESS"
+              try:
+                  msg = MIMEText(f"{name}님, 귀하의 산출 세액은 {tax:,}원입니다.")
+                  msg['Subject'] = "[보안] 연말정산 산출 리포트"
+                  msg['From'] = "admin@tax-master.local"
+                  msg['To'] = email
+                  with smtplib.SMTP('localhost', 1025) as server:
+                      server.send_message(msg)
+              except: status = "ERROR"
+              
+              cur.execute("INSERT INTO tax_results (name, email, salary, tax, net_pay, mail_status) VALUES (?,?,?,?,?,?)", 
+                         (name, email, sal, tax, net_pay, status))
+
           if __name__ == "__main__": run_system()
           EOF
           python tax_engine.py
 
-      - name: 📊 데이터 정적화 (report.json 생성)
+      - name: 📊 데이터 정적화 (report.json)
         run: |
           python3 -c "import sqlite3, json; conn=sqlite3.connect('tax_master.db'); conn.row_factory=sqlite3.Row; data=[dict(r) for r in conn.execute('SELECT * FROM tax_results').fetchall()]; open('public/data/report.json', 'w').write(json.dumps(data))"
 
-      - name: 📤 데이터베이스 및 리포트 보관
+      - name: 📤 데이터 보관
         uses: actions/upload-artifact@v4
         with:
-          name: tax-assets
+          name: tax-data
           path: |
             tax_master.db
             public/data/report.json
 
-  # [Phase 2] Nuxt 프론트엔드 빌드 및 배포
+  # [Phase 2] Nuxt 정적 사이트 빌드 및 배포
   build-and-deploy:
     needs: intelligence-processing
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 소스 체크아웃
+      - name: 📥 소스 체크아웃 및 데이터 다운로드
         uses: actions/checkout@v4
-
-      - name: 📥 처리된 데이터 다운로드
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: tax-assets
+          name: tax-data
           path: public/data
 
-      - name: 🛠️ Nuxt 환경 구성 (Node.js)
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: 🛠️ 프로젝트 소스 대량 생성
+      - name: 🛠️ [정비완료] 프로젝트 소스 및 설정 대량 생성
         run: |
-          # package.json 생성
           cat <<'EOF' > package.json
           {
             "name": "tax-master-enterprise",
@@ -149,54 +146,42 @@ jobs:
           }
           EOF
 
-          # Nuxt 대시보드 페이지 생성
           mkdir -p pages
           cat <<'EOF' > pages/index.vue
           <template>
-            <div class="dashboard-root">
-              <header class="header">
-                <h1>🏢 TAX-MASTER Enterprise Dashboard</h1>
-                <div class="summary-bar">
-                  <span>총 대상: {{ reports.length }}명</span> | 
-                  <span>메일 발송 완료: {{ successMails }}건</span>
-                </div>
+            <div class="root">
+              <header>
+                <h1>🏢 TAX-MASTER Intelligent Dashboard</h1>
+                <p>전체 처리 데이터: {{ reports.length }}건 | 발송 완료: {{ successCount }}건</p>
               </header>
-              <div class="table-card">
-                <table>
-                  <thead>
-                    <tr><th>성명</th><th>연봉</th><th>산출세액</th><th>실수령액</th><th>메일 상태</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="r in reports" :key="r.id">
-                      <td>{{ r.name }}</td>
-                      <td>{{ r.salary.toLocaleString() }}</td>
-                      <td class="red">{{ r.tax.toLocaleString() }}</td>
-                      <td class="green">{{ r.net_pay.toLocaleString() }}</td>
-                      <td><span :class="['status', r.mail_status]">{{ r.mail_status }}</span></td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div class="grid">
+                <div v-for="r in reports" :key="r.id" class="card">
+                  <h3>{{ r.name }}</h3>
+                  <div class="row"><span>급여:</span> {{ r.salary.toLocaleString() }}원</div>
+                  <div class="row"><span>세액:</span> <b class="red">{{ r.tax.toLocaleString() }}원</b></div>
+                  <div class="row"><span>실수령:</span> <b class="green">{{ r.net_pay.toLocaleString() }}원</b></div>
+                  <div class="status" :class="r.mail_status">Mail: {{ r.mail_status }}</div>
+                </div>
               </div>
             </div>
           </template>
           <script setup>
           import reportData from '~/public/data/report.json'
           const reports = reportData
-          const successMails = reports.filter(r => r.mail_status === 'SUCCESS').length
+          const successCount = reports.filter(i => i.mail_status === 'SUCCESS').length
           </script>
           <style scoped>
-            .dashboard-root { padding: 40px; background: #f4f7f6; min-height: 100vh; font-family: sans-serif; }
-            .header { margin-bottom: 30px; border-bottom: 2px solid #34495e; padding-bottom: 10px; }
-            .summary-bar { font-size: 1.1em; color: #7f8c8d; }
-            .table-card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }
-            table { width: 100%; border-collapse: collapse; }
-            th { background: #34495e; color: white; padding: 15px; text-align: left; }
-            td { padding: 15px; border-bottom: 1px solid #eee; }
-            .red { color: #e74c3c; font-weight: bold; }
-            .green { color: #27ae60; font-weight: bold; }
-            .status { padding: 3px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
-            .status.SUCCESS { background: #d4edda; color: #155724; }
-            .status.FAILED { background: #f8d7da; color: #721c24; }
+            .root { padding: 40px; background: #f8f9fa; font-family: sans-serif; min-height: 100vh; }
+            header { text-align: center; margin-bottom: 40px; color: #2c3e50; }
+            .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+            .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+            .row { margin: 8px 0; font-size: 0.9em; }
+            .row span { color: #7f8c8d; }
+            .red { color: #e74c3c; }
+            .green { color: #27ae60; }
+            .status { margin-top: 15px; font-size: 0.8em; font-weight: bold; text-align: center; border-radius: 4px; padding: 4px; }
+            .SUCCESS { background: #d4edda; color: #155724; }
+            .ERROR { background: #f8d7da; color: #721c24; }
           </style>
           EOF
 
@@ -205,10 +190,11 @@ jobs:
           npm install
           npm run generate
 
-      - name: 📤 GitHub Pages 아티팩트 업로드
+      - name: 📤 Pages 아티팩트 업로드
         uses: actions/upload-pages-artifact@v3
         with:
           path: .output/public
 
-      - name: 🚀 최종 배포
+      - name: 🚀 최종 배포 실행
+        id: deployment
         uses: actions/deploy-pages@v4
