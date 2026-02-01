@@ -29,7 +29,7 @@ jobs:
     name: 🛡️ Security Data Scraper
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: mkdir -p DB_SEC/primary
       - uses: actions/setup-python@v5
         with:
@@ -68,7 +68,7 @@ jobs:
     name: 💼 Event & News Scraper
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: mkdir -p DB_JOB/primary
       - uses: actions/setup-python@v5
         with:
@@ -107,7 +107,7 @@ jobs:
     name: 🧮 Meta & Tier Analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: mkdir -p DB_ALGO/primary
       - uses: actions/setup-python@v5
         with:
@@ -145,7 +145,7 @@ jobs:
     name: 💰 Shop Economy Engine
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: mkdir -p DB_COST/primary
       - uses: actions/setup-python@v5
         with:
@@ -199,7 +199,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔄 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
@@ -357,7 +357,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         continue-on-error: true
       - name: 📥 Download
         uses: actions/download-artifact@v4
@@ -393,7 +393,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true

@@ -21,7 +21,7 @@ jobs:
     name: 🛡️ Security Engine
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: 🛠️ Setup
         run: mkdir -p DB_SEC/news/threat_intel DB_SEC/archive
       - uses: actions/setup-python@v5
@@ -90,7 +90,7 @@ jobs:
     name: 💼 Job Fortress
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: 🛠️ Setup
         run: mkdir -p DB/jobs/pangyo DB/jobs/gangnam DB/jobs/global
       - uses: actions/setup-python@v5
@@ -160,7 +160,7 @@ jobs:
     name: 🧮 Algo Engine
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: mkdir -p DB_ALGO/news/ai DB_ALGO/news/engineering
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
@@ -223,7 +223,7 @@ jobs:
     name: 💰 Cost Engine
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: mkdir -p DB_COST/market
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
@@ -266,7 +266,7 @@ jobs:
     name: ☕ Java API Build (Full Loaded)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       # 1. 모든 아티팩트 다운로드
       - uses: actions/download-artifact@v4
@@ -379,7 +379,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with: { fetch-depth: 0 }
       - uses: actions/download-artifact@v4
         with: { pattern: 'db-*', merge-multiple: true }

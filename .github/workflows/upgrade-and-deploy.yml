@@ -12,13 +12,13 @@ jobs:
     
     steps:
       - name: 📥 메인 시스템 체크아웃
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # ----------------------------------------------------------------------
       # [Step 1] 데이터 준비 (Deep Scan용)
       # ----------------------------------------------------------------------
       - name: 📥 데이터 마이그레이션 (koreatest12/cost-data)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: koreatest12/cost-data
           path: app_root/cost_data

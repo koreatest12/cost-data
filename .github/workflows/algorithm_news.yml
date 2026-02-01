@@ -18,7 +18,7 @@ jobs:
     name: 🛡️ Security Engine (3-Way DR)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: 🛠️ Setup Directories
         run: mkdir -p DB_SEC/primary DB_SEC/replica DB_SEC/archive
       
@@ -59,7 +59,7 @@ jobs:
     name: 💼 Job Fortress (3-Way DR)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: 🛠️ Setup Directories
         run: mkdir -p DB_JOB/primary DB_JOB/replica DB_JOB/archive
       
@@ -98,7 +98,7 @@ jobs:
     name: 🧮 Algo Engine (3-Way DR)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: mkdir -p DB_ALGO/primary DB_ALGO/replica
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
@@ -130,7 +130,7 @@ jobs:
     name: 💰 Cost Engine (3-Way DR)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: mkdir -p DB_COST/primary DB_COST/replica
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
@@ -165,7 +165,7 @@ jobs:
     steps:
       # [Fix] 들여쓰기 및 구문 오류 완벽 수정
       - name: 🔄 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 1
@@ -291,7 +291,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
