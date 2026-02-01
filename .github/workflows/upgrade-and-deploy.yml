@@ -33,7 +33,7 @@ jobs:
       - name: Install Advanced Engine Dependencies
         run: pip install pandas openpyxl sqlalchemy numpy aiosmtpd
 
-      - name: 🛠️ 실행: 지능형 세무 지식 베이스 및 대량 연산 엔진
+      - name: 지능형 세무 지식 베이스 및 대량 연산 엔진
         run: |
           cat <<'EOF' > full_upgrade_engine.py
           import os, sqlite3, json, glob
