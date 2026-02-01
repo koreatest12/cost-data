@@ -18,54 +18,87 @@ env:
   VERSION: "v2026.${{ github.run_number }}"
 
 jobs:
+  # [Job 1] 데이터 생산 및 관리 설정 동기화
   factory-and-sync:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+
       - name: 📦 Install Python Dependencies
         run: pip install pandas numpy pyyaml
 
-      - name: 🤖 Run Dependabot Manager & Self-Sync
+      - name: 🤖 Run Dependabot Manager (Self-Correcting)
         run: |
           python - <<EOF
           import os, json, yaml
           from pathlib import Path
-          # Dependabot & Report 로직 (생략 없이 유지)
-          config = {"version": 2, "updates": [{"package-ecosystem": "github-actions", "directory": "/", "schedule": {"interval": "daily"}}]}
+          
+          # Dependabot 설정 자동 생성
           Path(".github").mkdir(exist_ok=True)
-          with open(".github/dependabot.yml", "w") as f: yaml.dump(config, f)
-          with open("dependabot_report.json", "w") as f: json.dump({"status": "synced"}, f)
+          config = {
+              "version": 2,
+              "updates": [
+                  {"package-ecosystem": "github-actions", "directory": "/", "schedule": {"interval": "daily"}},
+                  {"package-ecosystem": "maven", "directory": "/", "schedule": {"interval": "weekly"}}
+              ]
+          }
+          with open(".github/dependabot.yml", "w") as f:
+              yaml.dump(config, f, sort_keys=False)
+          
+          # 실행 리포트 생성
+          with open("dependabot_report.json", "w") as f:
+              json.dump({"status": "synced", "timestamp": "${{ env.VERSION }}"}, f)
           EOF
 
-      - name: 🏭 고속 분할 데이터 생성기 실행
+      - name: 🏭 고속 분할 데이터 생성기 실행 (os 에러 수정 완료)
         run: |
           mkdir -p data_chunks
           python - <<EOF
-          import pandas as pd, numpy as np, uuid
+          import pandas as pd
+          import numpy as np
+          import uuid
+          import os  # 에러 해결: os 모듈 명시적 임포트
+          
           TOTAL = int(os.environ.get('RECORD_COUNT', 200000))
-          df = pd.DataFrame({
-              'uuid': [str(uuid.uuid4()) for _ in range(TOTAL)],
-              'amount': np.random.randint(1000, 1000000, size=TOTAL),
-              'status': np.random.choice(['ACTIVE', 'PENDING', 'COMPLETED'], size=TOTAL)
-          })
-          df.to_csv('data_chunks/infinity_data.csv', index=False)
+          CHUNK_SIZE = 50000
+          
+          print(f"🚀 총 {TOTAL}건 데이터 생성 시작...")
+          
+          for i in range(0, TOTAL, CHUNK_SIZE):
+              current_size = min(CHUNK_SIZE, TOTAL - i)
+              df = pd.DataFrame({
+                  'uuid': [str(uuid.uuid4()) for _ in range(current_size)],
+                  'amount': np.random.randint(1000, 1000000, size=current_size),
+                  'status': np.random.choice(['ACTIVE', 'PENDING', 'COMPLETED'], size=current_size)
+              })
+              df.to_csv(f'data_chunks/chunk_{i//CHUNK_SIZE}.csv', index=False)
+              print(f"✅ Chunk {i//CHUNK_SIZE} 생성 완료 ({current_size} records)")
           EOF
 
       - name: 📤 아티팩트 저장
         uses: actions/upload-artifact@v4
         with:
-          name: partitioned-data-and-config
+          name: system-assets
           path: |
             data_chunks/
             .github/dependabot.yml
             dependabot_report.json
 
+      - name: 🚀 Commit & Push Management Config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/dependabot.yml dependabot_report.json
+          git diff --staged --quiet || (git commit -m "chore: auto-sync system config [${{ env.VERSION }}]" && git push origin main)
+
+  # [Job 2] 시스템 빌드 및 배포
   system-deployment:
     needs: factory-and-sync
     runs-on: ubuntu-latest
@@ -73,11 +106,12 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: 📥 데이터 다운로드
+
+      - name: 📥 자산 다운로드
         uses: actions/download-artifact@v4
         with:
-          name: partitioned-data-and-config
-          path: src/main/resources/data
+          name: system-assets
+          path: assets/
 
       - uses: actions/setup-java@v4
         with:
@@ -85,58 +119,15 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: 🏗️ 시스템 아키텍처 재구축 (컴파일 에러 완전 해결)
+      - name: 🏗️ 시스템 아키텍처 재구축 (컴파일 에러 방지 필드 추가)
         run: |
           BASE="src/main/java/com/costdata/filemanagement"
-          mkdir -p $BASE/config $BASE/controller $BASE/dto $BASE/model $BASE/repository $BASE/service src/main/resources/static
+          mkdir -p $BASE/config $BASE/controller $BASE/dto $BASE/model $BASE/repository src/main/resources/data
           
-          # [1] DTO 수정 (getPath, getContent 메서드 에러 해결)
-          cat <<EOF > $BASE/dto/FileRequest.java
-          package com.costdata.filemanagement.dto;
-          import jakarta.validation.constraints.NotBlank;
-          import lombok.Data;
+          # 데이터 파일 이동
+          cp assets/data_chunks/*.csv src/main/resources/data/
 
-          @Data
-          public class FileRequest {
-              @NotBlank private String fileName;
-              @NotBlank private String path;      // 에러 해결: getPath() 생성
-              @NotBlank private String content;   // 에러 해결: getContent() 생성
-          }
-          EOF
-
-          # [2] Controller 구현 (에러 지점 수정)
-          cat <<EOF > $BASE/controller/FileManagementController.java
-          package com.costdata.filemanagement.controller;
-          import com.costdata.filemanagement.dto.FileRequest;
-          import jakarta.validation.Valid;
-          import org.springframework.web.bind.annotation.*;
-          import java.util.Map;
-
-          @RestController
-          @RequestMapping("/api")
-          public class FileManagementController {
-              @PostMapping("/files")
-              public Map<String, String> createFile(@Valid @RequestBody FileRequest request) {
-                  // 이제 request.getPath(), request.getContent() 사용 가능
-                  return Map.of("status", "success", "path", request.getPath());
-              }
-              
-              @GetMapping("/stats")
-              public Map<String, Object> getStats() {
-                  return Map.of("total", 200000, "status", "stable");
-              }
-          }
-          EOF
-
-          # [3] Repository 생성 (JPA 통합)
-          cat <<EOF > $BASE/repository/InfinityRepository.java
-          package com.costdata.filemanagement.repository;
-          import com.costdata.filemanagement.model.InfinityData;
-          import org.springframework.data.jpa.repository.JpaRepository;
-          public interface InfinityRepository extends JpaRepository<InfinityData, Long> {}
-          EOF
-
-          # [4] pom.xml & SecurityConfig (이전과 동일하게 유지)
+          # [1] pom.xml 구성
           cat <<EOF > pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
             xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -145,30 +136,43 @@ jobs:
             <groupId>com.costdata</groupId><artifactId>infinity-api</artifactId><version>1.0.0</version>
             <dependencies>
                 <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
-                <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
                 <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency>
                 <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency>
-                <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>runtime</scope></dependency>
                 <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
             </dependencies>
           </project>
           EOF
 
-          # SecurityConfig 및 Application 클래스 생성 (생략)
-          cat <<EOF > $BASE/config/SecurityConfig.java
-          package com.costdata.filemanagement.config;
-          import org.springframework.context.annotation.Bean;
-          import org.springframework.context.annotation.Configuration;
-          import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-          import org.springframework.security.web.SecurityFilterChain;
-          @Configuration public class SecurityConfig {
-              @Bean public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-                  http.csrf(c -> c.disable()).authorizeHttpRequests(a -> a.anyRequest().permitAll());
-                  return http.build();
+          # [2] DTO 수정 (getPath, getContent 에러 해결)
+          cat <<EOF > $BASE/dto/FileRequest.java
+          package com.costdata.filemanagement.dto;
+          import jakarta.validation.constraints.NotBlank;
+          import lombok.Data;
+          @Data
+          public class FileRequest {
+              @NotBlank private String fileName;
+              @NotBlank private String path;      // getPath() 매핑용
+              @NotBlank private String content;   // getContent() 매핑용
+          }
+          EOF
+
+          # [3] Controller 구현
+          cat <<EOF > $BASE/controller/FileManagementController.java
+          package com.costdata.filemanagement.controller;
+          import com.costdata.filemanagement.dto.FileRequest;
+          import jakarta.validation.Valid;
+          import org.springframework.web.bind.annotation.*;
+          import java.util.Map;
+          @RestController @RequestMapping("/api")
+          public class FileManagementController {
+              @PostMapping("/files")
+              public Map<String, String> createFile(@Valid @RequestBody FileRequest request) {
+                  return Map.of("status", "success", "processed_path", request.getPath());
               }
           }
           EOF
-          
+
+          # [4] Main App
           cat <<EOF > $BASE/Application.java
           package com.costdata.filemanagement;
           import org.springframework.boot.SpringApplication;
@@ -176,15 +180,31 @@ jobs:
           @SpringBootApplication public class Application { public static void main(String[] args) { SpringApplication.run(Application.class, args); } }
           EOF
 
-      - name: 🔨 Maven 빌드 (수정판)
+          # [5] Security Config
+          cat <<EOF > $BASE/config/SecurityConfig.java
+          package com.costdata.filemanagement.config;
+          import org.springframework.context.annotation.Bean;
+          import org.springframework.context.annotation.Configuration;
+          import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+          import org.springframework.security.web.SecurityFilterChain;
+          @Configuration
+          public class SecurityConfig {
+              @Bean public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                  http.csrf(csrf -> csrf.disable()).authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                  return http.build();
+              }
+          }
+          EOF
+
+      - name: 🔨 Maven 빌드
         run: mvn clean package -DskipTests
 
-      - name: 🐳 Docker화 및 Release
+      - name: 🐳 Docker 이미지 빌드 및 Release
         run: |
           cat <<EOF > Dockerfile
           FROM eclipse-temurin:17-jdk-alpine
           COPY target/*.jar app.jar
-          ENTRYPOINT ["java", "-jar", "app.jar"]
+          ENTRYPOINT ["java", "-Xmx2g", "-jar", "app.jar"]
           EOF
           docker build -t ${{ env.DOCKER_IMAGE }}:${{ env.VERSION }} .
           docker save ${{ env.DOCKER_IMAGE }}:${{ env.VERSION }} > system_bundle.tar
@@ -196,3 +216,4 @@ jobs:
           files: |
             target/*.jar
             system_bundle.tar
+            dependabot_report.json
