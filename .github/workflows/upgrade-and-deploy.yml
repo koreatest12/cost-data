@@ -33,7 +33,7 @@ jobs:
       - name: Install Engine Dependencies
         run: pip install pandas openpyxl sqlalchemy flask aiosmtpd
 
-      - name: 🛠️ 실행: 지능형 엔진 (Deep Scan + DB 적재 + 계산)
+      - name: 지능형 엔진 (Deep Scan + DB 적재 + 계산)
         run: |
           cat <<'EOF' > engine_core.py
           import os, sqlite3, json, glob
