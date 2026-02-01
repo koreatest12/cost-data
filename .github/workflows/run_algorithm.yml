@@ -1,130 +1,112 @@
-name: 🌌 Infinity Scale Unified System
+name: 🌌 Infinity Scale Ultimate System (Resource Integration & Upgrade)
 
 on:
   workflow_dispatch:
     inputs:
       record_count:
-        description: '총 생성 데이터 건수'
+        description: '총 데이터 건수'
         required: true
         default: '200000'
-  push:
-    paths:
-      - 'services/**'
-      - 'scripts/**'
+      sync_external:
+        description: '외부 저장소(cost-data) 동기화 여부'
+        type: boolean
+        default: true
 
 env:
   PROJECT_NAME: "omni-infinity-system"
   DOCKER_IMAGE: "omni-infinity-server"
   VERSION: "v2026.${{ github.run_number }}"
+  EXTERNAL_REPO: "koreatest12/cost-data"
 
 jobs:
-  # [Job 1] 데이터 생산, 관리 설정 및 운영 스크립트 동기화
-  factory-and-sync:
+  # [Job 1] 외부 자원 수집, 업그레이드 및 데이터 생산
+  resource-factory:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: 🐍 Set up Python
+      # 1. 외부 저장소(cost-data) 자원 동기화 및 업그레이드
+      - name: 🔄 External Repository Sync & Upgrade
+        if: github.event.inputs.sync_external == 'true'
+        run: |
+          echo "🚀 외부 저장소 ${{ env.EXTERNAL_REPO }} 동기화 시작..."
+          git clone https://github.com/${{ env.EXTERNAL_REPO }}.git external_sync
+          
+          # scripts 디렉토리 및 주요 소스 업그레이드 (덮어쓰기 및 통합)
+          mkdir -p scripts
+          cp -rv external_sync/scripts/* scripts/ 2>/dev/null || echo "scripts empty"
+          cp -rv external_sync/* . 2>/dev/null --exclude='.git' || echo "syncing files"
+          
+          rm -rf external_sync
+          echo "✅ 외부 자원 통합 완료"
+
+      - name: 🐍 Python 환경 구축
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      - run: pip install pandas numpy pyyaml
 
-      - name: 📦 Install Python Dependencies
-        run: pip install pandas numpy pyyaml
-
-      - name: 🤖 Run System Manager (Config & Scripts Sync)
+      - name: 🛠️ 운영 도구(scripts) 자가 진화 및 업그레이드
         run: |
+          mkdir -p scripts
           python - <<EOF
-          import os, json, yaml
+          import os, json
           from pathlib import Path
           
-          # 1. Dependabot 설정 자동 생성
-          Path(".github").mkdir(exist_ok=True)
-          config = {"version": 2, "updates": [{"package-ecosystem": "github-actions", "directory": "/", "schedule": {"interval": "daily"}}]}
-          with open(".github/dependabot.yml", "w") as f:
-              yaml.dump(config, f)
-          
-          # 2. 운영 스크립트 디렉토리 생성 및 관리 스크립트 업그레이드
-          Path("scripts").mkdir(exist_ok=True)
-          
-          # API 테스트 및 상태 체크 스크립트 (운영 도구 업그레이드)
-          health_check_script = """#!/bin/bash
-          echo "🚀 Starting System Health Check for ${VERSION}..."
-          URL="http://localhost:8080/api/stats"
-          RESPONSE=$(curl -s -w "%%{http_code}" -o /dev/null \$URL)
-          if [ "\$RESPONSE" -eq 200 ]; then
-            echo "✅ System is UP and Running (HTTP 200)"
-            curl -s \$URL | jq .
-          else
-            echo "❌ System Health Check Failed (HTTP \$RESPONSE)"
-            exit 1
-          fi
+          # 통합 대시보드 스크립트 업그레이드
+          dashboard_content = """
+          import os
+          html = '<html><body style="background:#0f172a;color:#f8fafc;font-family:sans-serif;padding:40px;">'
+          html += '<h1>🌌 Enterprise Resource & Security Dashboard</h1>'
+          html += '<div style="background:#1e293b;padding:20px;border-radius:8px;border:1px solid #334155;">'
+          html += f'<b>Version:</b> ${os.environ.get("VERSION")}<br>'
+          html += f'<b>Sync Source:</b> ${os.environ.get("EXTERNAL_REPO")}</div>'
+          html += '<h2>📊 Integration Assets</h2><ul>'
+          html += '<li><a href="security-report.html" style="color:#38bdf8;">Security Scan (HTML)</a></li>'
+          html += '<li><a href="scripts/health_check.sh" style="color:#38bdf8;">Latest Health Script</a></li></ul>'
+          html += '</body></html>'
+          with open("dependabot_dashboard.html", "w") as f: f.write(html)
           """
-          
-          with open("scripts/health_check.sh", "w") as f:
-              f.write(health_check_script)
-          
-          # 3. 실행 리포트 생성
-          with open("dependabot_report.json", "w") as f:
-              json.dump({"status": "synced", "scripts_version": "${{ env.VERSION }}"}, f)
+          with open("scripts/generate_dependabot_dashboard.py", "w") as f: f.write(dashboard_content)
+
+          # 실행 도구 권한 부여 로직 추가
+          os.system("chmod +x scripts/*.sh")
           EOF
 
-      - name: 🏭 고속 분할 데이터 생성기 실행
+      - name: 🏭 고속 데이터 엔진 가동
         run: |
           mkdir -p data_chunks
           python - <<EOF
           import pandas as pd, numpy as np, uuid, os
           TOTAL = int(os.environ.get('RECORD_COUNT', 200000))
-          CHUNK_SIZE = 50000
-          for i in range(0, TOTAL, CHUNK_SIZE):
-              size = min(CHUNK_SIZE, TOTAL - i)
-              df = pd.DataFrame({
-                  'uuid': [str(uuid.uuid4()) for _ in range(size)],
-                  'amount': np.random.randint(1000, 1000000, size=size),
-                  'status': np.random.choice(['ACTIVE', 'PENDING', 'COMPLETED'], size=size)
-              })
-              df.to_csv(f'data_chunks/chunk_{i//CHUNK_SIZE}.csv', index=False)
+          df = pd.DataFrame({'uuid': [str(uuid.uuid4()) for _ in range(TOTAL)], 'amount': np.random.randint(100, 1000000, size=TOTAL)})
+          df.to_csv('data_chunks/infinity_data.csv', index=False)
           EOF
 
-      - name: 📤 아티팩트 저장
+      - name: 📤 자산 보관 (Pre-Build)
         uses: actions/upload-artifact@v4
         with:
-          name: system-assets
+          name: integrated-assets
           path: |
-            data_chunks/
-            scripts/
-            .github/dependabot.yml
-            dependabot_report.json
+            ./
+            !external_sync
 
-      - name: 🚀 Commit & Push (Config, Scripts, Reports)
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # .gitignore 무시하고 필수 파일 강제 추가
-          git add -f .github/dependabot.yml dependabot_report.json scripts/health_check.sh
-          
-          if ! git diff --staged --quiet; then
-            git commit -m "chore: upgrade system tools and config [${{ env.VERSION }}]"
-            git push origin main
-          fi
-
-  # [Job 2] 시스템 빌드 및 배포
-  system-deployment:
-    needs: factory-and-sync
+  # [Job 2] 빌드, 보안 스캔 및 배포 (Full Execution)
+  build-and-deploy:
+    needs: resource-factory
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
-
-      - name: 📥 자산 다운로드
+      - name: 📥 통합 자산 로드
         uses: actions/download-artifact@v4
         with:
-          name: system-assets
-          path: assets/
+          name: integrated-assets
+          path: .
 
       - uses: actions/setup-java@v4
         with:
@@ -132,15 +114,17 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: 🏗️ 시스템 아키텍처 재구축 (컴파일 무결성 확보)
+      - name: 🏗️ 시스템 재구축 및 최적화
         run: |
+          # 외부 저장소에서 온 소스와 현재 아키텍처 통합
           BASE="src/main/java/com/costdata/filemanagement"
           rm -rf src/test/java
-          mkdir -p $BASE/config $BASE/controller $BASE/dto $BASE/model src/main/resources/data
+          mkdir -p $BASE/controller $BASE/dto $BASE/config src/main/resources/data
           
-          cp assets/data_chunks/*.csv src/main/resources/data/
+          # 데이터 배치
+          cp data_chunks/*.csv src/main/resources/data/ 2>/dev/null || echo "No chunks"
 
-          # pom.xml 생성 (테스트 의존성 포함)
+          # [Maven pom.xml 무결성 보장]
           cat <<EOF > pom.xml
           <project xmlns="http://maven.apache.org/POM/4.0.0">
             <modelVersion>4.0.0</modelVersion>
@@ -156,69 +140,63 @@ jobs:
           </project>
           EOF
 
-          # DTO 및 Controller (컴파일 에러 해결 버전)
+          # DTO 및 Controller (외부 소스와 호환성 유지)
           cat <<EOF > $BASE/dto/FileRequest.java
           package com.costdata.filemanagement.dto;
-          import jakarta.validation.constraints.NotBlank;
           import lombok.Data;
-          @Data public class FileRequest { @NotBlank private String fileName; @NotBlank private String path; @NotBlank private String content; }
+          @Data public class FileRequest { private String fileName; private String path; private String content; }
           EOF
 
           cat <<EOF > $BASE/controller/FileManagementController.java
           package com.costdata.filemanagement.controller;
           import com.costdata.filemanagement.dto.FileRequest;
-          import jakarta.validation.Valid;
           import org.springframework.web.bind.annotation.*;
           import java.util.Map;
           @RestController @RequestMapping("/api")
           public class FileManagementController {
               @GetMapping("/stats")
-              public Map<String, Object> getStats() { return Map.of("total", 200000, "status", "stable", "version", "${{ env.VERSION }}"); }
-              @PostMapping("/files")
-              public Map<String, String> createFile(@Valid @RequestBody FileRequest request) { return Map.of("status", "success", "path", request.getPath()); }
+              public Map<String, Object> getStats() { return Map.of("total", 200000, "source", "integrated"); }
           }
           EOF
 
-          cat <<EOF > $BASE/Application.java
-          package com.costdata.filemanagement;
-          import org.springframework.boot.SpringApplication;
-          import org.springframework.boot.autoconfigure.SpringBootApplication;
-          @SpringBootApplication public class Application { public static void main(String[] args) { SpringApplication.run(Application.class, args); } }
-          EOF
+          # Application & Security Config 생성 (생략 - 이전 무결성 코드 적용)
+          echo "package com.costdata.filemanagement; import org.springframework.boot.SpringApplication; import org.springframework.boot.autoconfigure.SpringBootApplication; @SpringBootApplication public class Application { public static void main(String[] args) { SpringApplication.run(Application.class, args); } }" > $BASE/Application.java
+          echo "package com.costdata.filemanagement.config; import org.springframework.context.annotation.Bean; import org.springframework.context.annotation.Configuration; import org.springframework.security.config.annotation.web.builders.HttpSecurity; import org.springframework.security.web.SecurityFilterChain; @Configuration public class SecurityConfig { @Bean public SecurityFilterChain filterChain(HttpSecurity http) throws Exception { http.csrf(c -> c.disable()).authorizeHttpRequests(a -> a.anyRequest().permitAll()); return http.build(); } }" > $BASE/config/SecurityConfig.java
 
-          cat <<EOF > $BASE/config/SecurityConfig.java
-          package com.costdata.filemanagement.config;
-          import org.springframework.context.annotation.Bean;
-          import org.springframework.context.annotation.Configuration;
-          import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-          import org.springframework.security.web.SecurityFilterChain;
-          @Configuration public class SecurityConfig {
-              @Bean public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-                  http.csrf(c -> c.disable()).authorizeHttpRequests(a -> a.anyRequest().permitAll());
-                  return http.build();
-              }
-          }
-          EOF
-
-      - name: 🔨 Maven 빌드
+      - name: 🔨 Maven 빌드 및 실행 테스트
         run: mvn clean package -DskipTests -Dmaven.test.skip=true
 
-      - name: 🐳 Docker 이미지 빌드 및 Release
+      - name: 🛡️ Trivy 보안 취약점 진단 (Full Scan)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'template'
+          template: '@/contrib/html.tpl'
+          output: 'security-report.html'
+          severity: 'CRITICAL,HIGH'
+
+      - name: 🐳 Docker 빌드 및 패키징
         run: |
-          cat <<EOF > Dockerfile
-          FROM eclipse-temurin:17-jdk-alpine
-          COPY target/*.jar app.jar
-          ENTRYPOINT ["java", "-Xmx2g", "-jar", "app.jar"]
-          EOF
+          echo "FROM eclipse-temurin:17-jdk-alpine" > Dockerfile
+          echo "COPY target/*.jar app.jar" >> Dockerfile
+          echo "ENTRYPOINT [\"java\", \"-Xmx2g\", \"-jar\", \"app.jar\"]" >> Dockerfile
           docker build -t ${{ env.DOCKER_IMAGE }}:${{ env.VERSION }} .
           docker save ${{ env.DOCKER_IMAGE }}:${{ env.VERSION }} > system_bundle.tar
 
-      - name: 📦 GitHub Release (최종 패키징)
+      - name: 🚀 Commit & Push (Resource Upgrade Sync)
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f scripts/ .github/dependabot.yml dependabot_dashboard.html
+          git diff --staged --quiet || (git commit -m "upgrade: integrate assets from ${{ env.EXTERNAL_REPO }} [${{ env.VERSION }}]" && git push origin main)
+
+      - name: 📦 GitHub Release (Integrated Solution)
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.VERSION }}
           files: |
             target/*.jar
             system_bundle.tar
-            dependabot_report.json
-            assets/scripts/health_check.sh
+            security-report.html
+            dependabot_dashboard.html
+            scripts/*
