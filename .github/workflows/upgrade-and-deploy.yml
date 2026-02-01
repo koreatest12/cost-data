@@ -1,4 +1,4 @@
-name: 🏢 ENTERPRISE FULL-STACK SYSTEM (FIXED & UPGRADED)
+name: 🚀 AI-TAX INTEGRATED ENTERPRISE SYSTEM
 
 on:
   push:
@@ -11,104 +11,100 @@ permissions:
   id-token: write
 
 jobs:
-  # [Phase 1] 지능형 세무 엔진 및 소스 파일 대량 생성
-  system-generation:
+  # [Phase 1] 데이터 클론, 지능형 엔진 가동 및 DB 구축
+  system-intelligence:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 소스 체크아웃 및 데이터 클론
+      - name: 📥 [1] 저장소 체크아웃 및 외부 앱 복제
         uses: actions/checkout@v4
-      - run: |
+      
+      - name: 📥 [2] 외부 자산 및 데이터 소스 클론 (Deep Clone)
+        run: |
           git clone https://github.com/koreatest12/cost-data.git data_source
+          git clone https://github.com/leonoffou/ollama-TTS-STT-App.git ai_app
           mkdir -p public/data receipts
 
-      - name: 🐍 파이썬 환경 설정
+      - name: 🐍 [3] 파이썬 환경 구성 및 라이브러리 전수 설치
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
+      
+      - name: 📦 [수정반영] 필수 라이브러리 강제 설치 (에러 해결)
+        run: |
+          pip install --upgrade pip
+          pip install pandas openpyxl sqlalchemy numpy flask
 
-      - name: 🛠️ [수정반영] 지능형 세무 엔진 작성 (문법 오류 수정)
+      - name: 🛠️ [4] 지능형 세무 엔진 생성 및 실행 (권한 자동 부여)
         run: |
           cat <<'EOF' > tax_engine.py
           import os, sqlite3, json, glob
           import pandas as pd
 
-          def run_intelligence():
-              # DB 초기화 및 고성능 설정
+          def run_system():
               conn = sqlite3.connect('tax_master.db')
               cur = conn.cursor()
-              cur.execute("PRAGMA journal_mode=WAL")
-              
-              # 스키마 및 2026 지식 베이스 대량 반영
+              # 지식 베이스 및 스키마 구축
               cur.executescript("""
                   CREATE TABLE IF NOT EXISTS tax_knowledge (id INTEGER PRIMARY KEY, min_val INTEGER, max_val INTEGER, rate REAL, ded INTEGER);
                   CREATE TABLE IF NOT EXISTS tax_results (
                       id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, salary INTEGER, tax INTEGER, advice TEXT
                   );
               """)
-              knowledge = [(1, 0, 14000000, 0.06, 0), (2, 14000000, 50000000, 0.15, 1260000), 
-                           (3, 50000000, 88000000, 0.24, 5760000), (4, 88000000, 150000000, 0.35, 15440000)]
-              cur.executemany("INSERT OR REPLACE INTO tax_knowledge VALUES (?,?,?,?,?)", knowledge)
+              # 2026년 최신 세율 주입
+              rules = [(1, 0, 14000000, 0.06, 0), (2, 14000000, 50000000, 0.15, 1260000), (3, 50000000, 88000000, 0.24, 5760000)]
+              cur.executemany("INSERT OR REPLACE INTO tax_knowledge VALUES (?,?,?,?,?)", rules)
               
-              # Deep Scan: 데이터 소스 전수 조사
-              files = glob.glob('data_source/**/*', recursive=True)
-              for f in files:
-                  if os.path.isfile(f) and f.lower().endswith(('.json', '.csv', '.xlsx')):
+              # 모든 경로 데이터 Deep Scan
+              for f in glob.glob('data_source/**/*', recursive=True):
+                  if os.path.isfile(f) and f.lower().endswith('.json'):
                       try:
-                          name, sal = "Unknown", 0
-                          if f.endswith('.json'):
-                              with open(f, 'r', encoding='utf-8') as jf:
-                                  d = json.load(jf)
-                                  name, sal = d.get('name', 'N/A'), int(d.get('total_salary', 0))
-                          
-                          if sal > 0:
+                          with open(f, 'r', encoding='utf-8') as jf:
+                              d = json.load(jf)
+                              name, sal = d.get('name', 'Unknown'), int(d.get('total_salary', 0))
                               cur.execute("SELECT * FROM tax_knowledge WHERE ? > min_val AND ? <= max_val", (sal, sal))
                               rule = cur.fetchone()
                               tax = int(sal * rule[3] - rule[4]) if rule else 0
-                              cur.execute("INSERT INTO tax_results (name, salary, tax, advice) VALUES (?,?,?,?)", 
-                                         (name, sal, tax, 'AI 지능형 세무 분석 완료'))
-                      except Exception as e:
-                          print(f"Error processing {f}: {e}")
+                              cur.execute("INSERT INTO tax_results (name, salary, tax, advice) VALUES (?,?,?,?)", (name, sal, tax, 'AI 분석 완료'))
+                      except: continue
               conn.commit()
               conn.close()
-          if __name__ == "__main__": run_intelligence()
+          if __name__ == "__main__": run_system()
           EOF
+          
+          chmod 755 tax_engine.py
           python tax_engine.py
 
-      - name: 🛠️ [수정반영] Nuxt 설정 및 소스 대량 생성 (의존성 파일 포함)
+      - name: 🛠️ [5] Nuxt 소스 대량 생성 (Full UI 반영)
         run: |
-          # package.json 생성 (의존성 오류 방지)
           cat <<'EOF' > package.json
           {
-            "name": "tax-master-nuxt",
+            "name": "ai-tax-master",
             "private": true,
             "type": "module",
-            "scripts": {
-              "build": "nuxt build",
-              "generate": "nuxt generate"
-            },
-            "devDependencies": {
-              "nuxt": "^3.10.0"
-            }
+            "scripts": { "build": "nuxt build", "generate": "nuxt generate" },
+            "devDependencies": { "nuxt": "^3.10.0" }
           }
           EOF
 
-          # Nuxt 메인 페이지 (Vue3 소스 반영)
           mkdir -p pages
           cat <<'EOF' > pages/index.vue
           <template>
-            <div class="container">
-              <h1>🏢 AI 세무 지능형 대시보드 v8.0</h1>
-              <div class="card">
-                <table>
+            <div class="main-container">
+              <header>
+                <h1>🎙️ AI-TAX Intelligent Dashboard</h1>
+                <p>TTS/STT 연동형 세무 지능 시스템 v9.0</p>
+              </header>
+              <div class="data-card">
+                <table class="tax-table">
                   <thead>
-                    <tr><th>성명</th><th>연봉</th><th>산출세액</th><th>AI 분석</th></tr>
+                    <tr><th>성명</th><th>연봉</th><th>산출세액</th><th>AI 어드바이스</th></tr>
                   </thead>
                   <tbody>
-                    <tr v-for="item in taxData" :key="item.id">
+                    <tr v-for="item in reports" :key="item.id">
                       <td>{{ item.name }}</td>
                       <td>{{ item.salary.toLocaleString() }}원</td>
-                      <td class="tax-text">{{ item.tax.toLocaleString() }}원</td>
-                      <td class="advice">{{ item.advice }}</td>
+                      <td class="highlight">{{ item.tax.toLocaleString() }}원</td>
+                      <td>{{ item.advice }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -117,25 +113,25 @@ jobs:
           </template>
           <script setup>
           import reportData from '~/public/data/report.json'
-          const taxData = reportData
+          const reports = reportData
           </script>
           <style scoped>
-          .container { padding: 40px; font-family: 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; }
-          .card { background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
-          table { width: 100%; border-collapse: collapse; }
-          th { background: #1a73e8; color: white; padding: 15px; text-align: left; }
-          td { padding: 15px; border-bottom: 1px solid #eee; }
-          .tax-text { color: #d93025; font-weight: bold; }
-          .advice { font-style: italic; color: #5f6368; }
+            .main-container { padding: 40px; background: #f8f9fa; min-height: 100vh; font-family: 'Inter', sans-serif; }
+            header { margin-bottom: 30px; text-align: center; }
+            .data-card { background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; }
+            .tax-table { width: 100%; border-collapse: collapse; }
+            th { background: #007bff; color: white; padding: 15px; text-align: left; }
+            td { padding: 15px; border-bottom: 1px solid #eee; }
+            .highlight { color: #dc3545; font-weight: bold; }
           </style>
           EOF
 
-      - name: 📊 데이터 통합 및 JSON 리포트 생성
+      - name: 📊 [6] 데이터 통합 및 권한 설정
         run: |
-          # DB 데이터를 홈페이지용 JSON으로 변환
           python3 -c "import sqlite3, json; conn=sqlite3.connect('tax_master.db'); conn.row_factory=sqlite3.Row; data=[dict(r) for r in conn.execute('SELECT * FROM tax_results').fetchall()]; open('public/data/report.json', 'w').write(json.dumps(data))"
+          chmod -R 755 public/data ai_app
 
-      - name: 🚀 Nuxt 빌드 및 정적 사이트 생성
+      - name: 🚀 [7] Nuxt 빌드 및 정적 사이트 배포
         run: |
           npm install
           npm run generate
@@ -145,9 +141,9 @@ jobs:
         with:
           path: .output/public
 
-  # [Phase 2] 배포 실행
+  # [Phase 2] 최종 배포
   deploy:
-    needs: system-generation
+    needs: system-intelligence
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
