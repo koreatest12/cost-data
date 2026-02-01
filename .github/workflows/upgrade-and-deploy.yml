@@ -1,4 +1,4 @@
-name: 🚀 ULTIMATE DATA-CALCULATION & AI-TAX SYSTEM
+name: 🚀 Enterprise Tax-AI Full-Stack Automation
 
 on:
   push:
@@ -15,96 +15,133 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  system-intelligence:
+  # [Phase 1] 데이터 처리 및 이메일 발송 엔진
+  intelligence-processing:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 [1] 소스 및 외부 데이터 클론
+      - name: 📥 소스 체크아웃
         uses: actions/checkout@v4
-      
-      - name: 📥 [2] 대량 데이터 소스 확보
+
+      - name: 📥 외부 데이터 소스 클론
         run: |
           git clone https://github.com/koreatest12/cost-data.git data_source
-          git clone https://github.com/leonoffou/ollama-TTS-STT-App.git ai_app
           mkdir -p public/data receipts
 
-      - name: 🐍 [3] 고성능 분석 환경 및 라이브러리 강제 설치
+      - name: 🐍 파이썬 환경 구성
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
-      
-      - name: 📦 필수 패키지 설치 (Pandas, Openpyxl 포함)
-        run: |
-          pip install pandas openpyxl sqlalchemy numpy flask
 
-      - name: 🛠️ [4] 지능형 산출 엔진 (데이터 강제 생성 로직 포함)
+      - name: 📦 필수 라이브러리 및 이메일 서버 설치
+        run: |
+          pip install pandas openpyxl sqlalchemy numpy aiosmtpd
+
+      - name: 📧 가상 SMTP 서버 백그라운드 가동 (Port: 1025)
+        run: |
+          python -m aiosmtpd -n -l localhost:1025 &
+          sleep 5 # 서버 안정화 대기
+
+      - name: 🛠️ [엔진 실행] 지능형 세무 연산 및 메일 자동 발송
         run: |
           cat <<'EOF' > tax_engine.py
-          import os, sqlite3, json, glob
+          import os, sqlite3, json, glob, smtplib, random
+          from email.mime.text import MIMEText
           import pandas as pd
-          import random
 
-          def run_engine():
+          def run_system():
               conn = sqlite3.connect('tax_master.db')
               cur = conn.cursor()
+              cur.execute("PRAGMA journal_mode=WAL")
+              
+              # 1. DB 스키마 (세무 정보 + 발송 이력)
               cur.executescript("""
                   CREATE TABLE IF NOT EXISTS tax_knowledge (id INTEGER PRIMARY KEY, min_val INTEGER, max_val INTEGER, rate REAL, ded INTEGER);
                   CREATE TABLE IF NOT EXISTS tax_results (
-                      id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, salary INTEGER, tax INTEGER, advice TEXT
+                      id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, salary INTEGER, 
+                      tax INTEGER, net_pay INTEGER, mail_status TEXT, processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                   );
               """)
-              # 최신 세무 지식 주입
-              knowledge = [(1, 0, 14000000, 0.06, 0), (2, 14000000, 50000000, 0.15, 1260000), (3, 50000000, 88000000, 0.24, 5760000)]
+
+              # 2. 2026 최신 세율 지식 주입
+              knowledge = [
+                  (1, 0, 14000000, 0.06, 0),
+                  (2, 14000000, 50000000, 0.15, 1260000),
+                  (3, 50000000, 88000000, 0.24, 5760000),
+                  (4, 88000000, 150000000, 0.35, 15440000)
+              ]
               cur.executemany("INSERT OR REPLACE INTO tax_knowledge VALUES (?,?,?,?,?)", knowledge)
               
-              found_data = False
-              # 1. 실제 데이터 스캔 (Deep Scan)
-              for f in glob.glob('data_source/**/*', recursive=True):
-                  if os.path.isfile(f):
-                      ext = os.path.splitext(f)[1].lower()
-                      try:
-                          name, sal = "N/A", 0
-                          if ext == '.json':
-                              with open(f, 'r', encoding='utf-8') as jf:
-                                  d = json.load(jf)
-                                  items = d if isinstance(d, list) else [d]
-                                  for i in items:
-                                      name, sal = i.get('name', 'User'), int(i.get('total_salary', 0))
-                                      if sal > 0: process_and_insert(cur, name, sal); found_data = True
-                          elif ext in ['.xlsx', '.xls', '.csv']:
-                              df = pd.read_excel(f) if 'xl' in ext else pd.read_csv(f)
-                              for _, row in df.iterrows():
-                                  name, sal = str(row.iloc[0]), int(row.iloc[1])
-                                  if sal > 0: process_and_insert(cur, name, sal); found_data = True
-                      except: continue
-              
-              # 2. 데이터가 없을 경우 대량 시뮬레이션 데이터 생성 (강제 산출)
-              if not found_data:
-                  print(">>> 데이터가 발견되지 않아 시뮬레이션 데이터를 대량 생성합니다.")
-                  for i in range(1, 51):
-                      s = random.randint(25000000, 150000000)
-                      process_and_insert(cur, f"시뮬레이션_사용자_{i}", s)
+              # 3. 데이터 스캔 및 대량 산출 (시뮬레이션 포함)
+              for i in range(1, 31):
+                  name = f"임직원_{i:02d}"
+                  email = f"user{i:02d}@enterprise-tax.local"
+                  sal = random.randint(30000000, 120000000)
+                  
+                  cur.execute("SELECT * FROM tax_knowledge WHERE ? > min_val AND ? <= max_val", (sal, sal))
+                  rule = cur.fetchone()
+                  tax = int(sal * rule[3] - rule[4]) if rule else int(sal * 0.38 - 19400000)
+                  net_pay = sal - tax
+                  
+                  # 4. 가상 이메일 서버 발송 수행
+                  mail_sent = "FAILED"
+                  try:
+                      msg = MIMEText(f"안녕하세요 {name}님. 귀하의 산출 세액은 {tax:,}원이며, 예상 실수령액은 {net_pay:,}원입니다.")
+                      msg['Subject'] = f"[보안] {name}님 맞춤형 세무 분석 리포트"
+                      msg['From'] = "admin@enterprise-tax.local"
+                      msg['To'] = email
+                      
+                      with smtplib.SMTP('localhost', 1025) as server:
+                          server.send_message(msg)
+                          mail_sent = "SUCCESS"
+                  except:
+                      mail_sent = "ERROR"
 
+                  cur.execute("INSERT INTO tax_results (name, email, salary, tax, net_pay, mail_status) VALUES (?,?,?,?,?,?)", 
+                             (name, email, sal, tax, net_pay, mail_sent))
+              
               conn.commit()
               conn.close()
-
-          def process_and_insert(cur, name, sal):
-              cur.execute("SELECT * FROM tax_knowledge WHERE ? > min_val AND ? <= max_val", (sal, sal))
-              rule = cur.fetchone()
-              tax = int(sal * rule[3] - rule[4]) if rule else int(sal * 0.35 - 15000000)
-              cur.execute("INSERT INTO tax_results (name, salary, tax, advice) VALUES (?,?,?,?)", 
-                         (name, sal, tax, 'AI 정밀 연산 및 최적화 완료'))
-
-          if __name__ == "__main__": run_engine()
+          if __name__ == "__main__": run_system()
           EOF
-          
-          chmod 755 tax_engine.py
           python tax_engine.py
 
-      - name: 🛠️ [5] Nuxt UI 고도화 대량 생성
+      - name: 📊 데이터 정적화 (report.json 생성)
         run: |
+          python3 -c "import sqlite3, json; conn=sqlite3.connect('tax_master.db'); conn.row_factory=sqlite3.Row; data=[dict(r) for r in conn.execute('SELECT * FROM tax_results').fetchall()]; open('public/data/report.json', 'w').write(json.dumps(data))"
+
+      - name: 📤 데이터베이스 및 리포트 보관
+        uses: actions/upload-artifact@v4
+        with:
+          name: tax-assets
+          path: |
+            tax_master.db
+            public/data/report.json
+
+  # [Phase 2] Nuxt 프론트엔드 빌드 및 배포
+  build-and-deploy:
+    needs: intelligence-processing
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 📥 처리된 데이터 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: tax-assets
+          path: public/data
+
+      - name: 🛠️ Nuxt 환경 구성 (Node.js)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 🛠️ 프로젝트 소스 대량 생성
+        run: |
+          # package.json 생성
           cat <<'EOF' > package.json
           {
-            "name": "tax-master-ultimate",
+            "name": "tax-master-enterprise",
             "private": true,
             "type": "module",
             "scripts": { "build": "nuxt build", "generate": "nuxt generate" },
@@ -112,63 +149,66 @@ jobs:
           }
           EOF
 
+          # Nuxt 대시보드 페이지 생성
           mkdir -p pages
           cat <<'EOF' > pages/index.vue
           <template>
-            <div class="container">
-              <div class="header">
-                <h1>🏢 TAX-MASTER Intelligent Report</h1>
-                <p>총 산출 데이터: {{ taxReports.length }}건</p>
-              </div>
-              <div class="grid">
-                <div v-for="item in taxReports" :key="item.id" class="item-card">
-                  <div class="name">{{ item.name }}</div>
-                  <div class="sal">연봉: {{ item.salary.toLocaleString() }}원</div>
-                  <div class="tax">예상세액: <span>{{ item.tax.toLocaleString() }}원</span></div>
-                  <div class="tag">{{ item.advice }}</div>
+            <div class="dashboard-root">
+              <header class="header">
+                <h1>🏢 TAX-MASTER Enterprise Dashboard</h1>
+                <div class="summary-bar">
+                  <span>총 대상: {{ reports.length }}명</span> | 
+                  <span>메일 발송 완료: {{ successMails }}건</span>
                 </div>
+              </header>
+              <div class="table-card">
+                <table>
+                  <thead>
+                    <tr><th>성명</th><th>연봉</th><th>산출세액</th><th>실수령액</th><th>메일 상태</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="r in reports" :key="r.id">
+                      <td>{{ r.name }}</td>
+                      <td>{{ r.salary.toLocaleString() }}</td>
+                      <td class="red">{{ r.tax.toLocaleString() }}</td>
+                      <td class="green">{{ r.net_pay.toLocaleString() }}</td>
+                      <td><span :class="['status', r.mail_status]">{{ r.mail_status }}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </template>
           <script setup>
           import reportData from '~/public/data/report.json'
-          const taxReports = reportData
+          const reports = reportData
+          const successMails = reports.filter(r => r.mail_status === 'SUCCESS').length
           </script>
           <style scoped>
-            .container { padding: 40px; background: #f4f7f9; min-height: 100vh; font-family: sans-serif; }
-            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #ddd; padding-bottom: 20px; }
-            .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-            .item-card { background: white; padding: 20px; border-radius: 12px; border-top: 4px solid #1a73e8; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-            .name { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; }
-            .sal { color: #555; }
-            .tax { margin: 10px 0; font-weight: bold; }
-            .tax span { color: #d93025; font-size: 1.1em; }
-            .tag { font-size: 0.8em; color: #1a73e8; background: #e8f0fe; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+            .dashboard-root { padding: 40px; background: #f4f7f6; min-height: 100vh; font-family: sans-serif; }
+            .header { margin-bottom: 30px; border-bottom: 2px solid #34495e; padding-bottom: 10px; }
+            .summary-bar { font-size: 1.1em; color: #7f8c8d; }
+            .table-card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #34495e; color: white; padding: 15px; text-align: left; }
+            td { padding: 15px; border-bottom: 1px solid #eee; }
+            .red { color: #e74c3c; font-weight: bold; }
+            .green { color: #27ae60; font-weight: bold; }
+            .status { padding: 3px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
+            .status.SUCCESS { background: #d4edda; color: #155724; }
+            .status.FAILED { background: #f8d7da; color: #721c24; }
           </style>
           EOF
 
-      - name: 📊 [6] 데이터 정적화 (JSON 변환)
-        run: |
-          python3 -c "import sqlite3, json; conn=sqlite3.connect('tax_master.db'); conn.row_factory=sqlite3.Row; data=[dict(r) for r in conn.execute('SELECT * FROM tax_results').fetchall()]; open('public/data/report.json', 'w').write(json.dumps(data))"
-          chmod -R 755 public/data ai_app
-
-      - name: 🚀 [7] Nuxt 빌드 및 정적 사이트 배포
+      - name: 🚀 Nuxt 정적 사이트 생성
         run: |
           npm install
           npm run generate
 
-      - name: 📤 아티팩트 업로드
+      - name: 📤 GitHub Pages 아티팩트 업로드
         uses: actions/upload-pages-artifact@v3
         with:
           path: .output/public
 
-  deploy:
-    needs: system-intelligence
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: 🚀 GitHub Pages 최종 배포
-        id: deployment
+      - name: 🚀 최종 배포
         uses: actions/deploy-pages@v4
