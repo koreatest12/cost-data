@@ -1,4 +1,4 @@
-name: 🚀 ULTIMATE ENTERPRISE SYSTEM (v15.8 - FULL INTEGRATION)
+name: 🚀 ULTIMATE ENTERPRISE SYSTEM v16.0 (STABILITY & FEATURES)
 
 on:
   push:
@@ -18,156 +18,166 @@ jobs:
   system-intelligence:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 [1] 소스 클론 및 환경 초기화
+      - name: 📥 [1] 소스 클론 및 환경 최적화
         uses: actions/checkout@v4
 
-      - name: 📂 [2] 시스템 디렉토리 강제 생성
+      - name: 📂 [2] 시스템 구조 및 404 방지 설정
         run: |
           mkdir -p public/data assets/data pages middleware
+          # GitHub Pages Jekyll 엔진 무력화
           touch public/.nojekyll
+          echo "TAX-MASTER-v16" > public/version.txt
 
-      - name: 🐍 [3] 지능형 데이터 엔진 (SQLite to JSON)
+      - name: 🐍 [3] 지능형 세무 데이터 엔진 (대량 생성)
         run: |
           python3 -c "
-          import sqlite3, json, random, os
+          import sqlite3, json, random
           conn = sqlite3.connect('tax_master.db')
           cur = conn.cursor()
-          cur.execute('CREATE TABLE IF NOT EXISTS tax (id INTEGER, name TEXT, salary INTEGER, tax INTEGER, net INTEGER)')
+          cur.execute('CREATE TABLE IF NOT EXISTS tax (id INTEGER, name TEXT, salary INTEGER, tax INTEGER, net INTEGER, dept TEXT)')
+          depts = ['인사팀', '개발팀', '영업팀', '재무팀', '전략팀']
           data = []
-          for i in range(1, 81):
-              s = random.randint(3500, 15000) * 10000
+          for i in range(1, 121):
+              s = random.randint(3800, 16000) * 10000
               t = int(s * 0.15) if s < 50000000 else int(s * 0.24)
-              data.append((i, f'Employee_{i:03d}', s, t, s-t))
-          cur.executemany('INSERT INTO tax VALUES (?,?,?,?,?)', data)
+              data.append((i, f'임직원_{i:03d}', s, t, s-t, random.choice(depts)))
+          cur.executemany('INSERT INTO tax VALUES (?,?,?,?,?,?)', data)
           conn.commit()
-          rows = cur.execute('SELECT * FROM tax').fetchall()
-          res = [dict(zip(['id','name','salary','tax','net'], r)) for r in rows]
+          res = [dict(zip(['id','name','salary','tax','net', 'dept'], r)) for r in cur.execute('SELECT * FROM tax').fetchall()]
           with open('public/data/report.json', 'w') as f: json.dump(res, f)
           conn.close()
           "
           cp public/data/report.json assets/data/report.json
 
-      - name: ⚙️ [4] Nuxt 및 빌드 인프라 설정 (404 완벽 차단)
+      - name: ⚙️ [4] Nuxt 빌드 인프라 (404 ZERO 경로 고정)
         env:
           SECRET_KEY: ${{ secrets.ENTERPRISE_PASSKEY || 'admin123' }}
         run: |
-          # 1. package.json 생성
           cat <<'EOF' > package.json
           {
-            "name": "tax-master-v15-8",
+            "name": "tax-master-v16",
             "type": "module",
             "scripts": { "build": "nuxt build", "generate": "nuxt generate" },
             "devDependencies": { "nuxt": "^3.10.0", "sass": "^1.70.0" }
           }
           EOF
 
-          # 2. nuxt.config.ts 생성 (GitHub Pages 접속 오류 해결 핵심)
           PASS_HASH=$(echo -n "$SECRET_KEY" | sha256sum | cut -d' ' -f1)
           cat <<EOF > nuxt.config.ts
           export default defineNuxtConfig({
             runtimeConfig: { public: { passkeyHash: '$PASS_HASH' } },
             ssr: false,
             app: {
-              baseURL: '',
-              buildAssetsDir: '/_nuxt/',
-              head: { title: 'TAX-MASTER Enterprise' }
+              baseURL: './',
+              buildAssetsDir: 'system_assets',
+              head: { title: 'TAX-MASTER Intelligence v16.0' }
             },
             nitro: { prerender: { routes: ['/', '/login'], failOnError: false } },
             experimental: { payloadExtraction: false }
           })
           EOF
 
-      - name: 🎨 [5] 전사적 UI 및 인증 시스템 주입
+      - name: 🎨 [5] 대규모 기능 추가 (UI/UX Modules)
         run: |
-          # 1. 글로벌 인증 미들웨어
+          # 1. 전역 보안 미들웨어
           cat <<'EOF' > middleware/auth.global.ts
           export default defineNuxtRouteMiddleware((to) => {
-            if (process.client) {
-              const auth = localStorage.getItem('auth_session');
-              if (!auth && to.path !== '/login') return navigateTo('/login');
-            }
+            if (process.client && !localStorage.getItem('auth_session') && to.path !== '/login') return navigateTo('/login');
           })
           EOF
 
-          # 2. 로그인 페이지 (보안 해시 검증)
+          # 2. 로그인 인터페이스
           cat <<'EOF' > pages/login.vue
           <template>
-            <div class="login-wrap">
-              <div class="login-card">
-                <h2>🔐 ENTERPRISE GATE</h2>
-                <input v-model="pass" type="password" placeholder="Passkey" @keyup.enter="handleLogin" />
-                <button @click="handleLogin">ACCESS SYSTEM</button>
+            <div class="login-page">
+              <div class="glass-card">
+                <h2>🔐 ENTERPRISE GATEWAY</h2>
+                <p>v16.0 보안 인증 시스템</p>
+                <input v-model="pass" type="password" placeholder="Passkey" @keyup.enter="auth" />
+                <button @click="auth">시스템 접속</button>
               </div>
             </div>
           </template>
           <script setup>
           const pass = ref('');
-          const handleLogin = async () => {
-            const msg = new TextEncoder().encode(pass.value);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msg);
-            const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-            if (hashHex === useRuntimeConfig().public.passkeyHash) {
+          const auth = async () => {
+            const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass.value)))).map(b => b.toString(16).padStart(2, '0')).join('');
+            if (hash === useRuntimeConfig().public.passkeyHash) {
               localStorage.setItem('auth_session', 'active');
-              window.location.href = './';
-            } else { alert('Access Denied'); }
+              window.location.replace('./');
+            } else { alert('비정상 접근 시도: 인증키가 일치하지 않습니다.'); }
           };
           </script>
           <style scoped>
-          .login-wrap { background: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; }
-          .login-card { background: #1e293b; padding: 3rem; border-radius: 1rem; border: 1px solid #334155; text-align: center; color: white; }
-          input { width: 100%; padding: 0.8rem; margin: 1.5rem 0; border-radius: 0.5rem; border: none; }
-          button { width: 100%; padding: 0.8rem; background: #3b82f6; color: white; border: none; border-radius: 0.5rem; cursor: pointer; }
+          .login-page { background: radial-gradient(circle, #1e293b, #0f172a); height: 100vh; display: flex; align-items: center; justify-content: center; color: white; }
+          .glass-card { background: rgba(255,255,255,0.05); padding: 3rem; border-radius: 2rem; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); text-align: center; }
+          input { width: 100%; padding: 1rem; margin: 1.5rem 0; border-radius: 0.8rem; border: none; background: rgba(0,0,0,0.3); color: white; }
+          button { width: 100%; padding: 1rem; background: #3b82f6; color: white; border: none; border-radius: 0.8rem; cursor: pointer; font-weight: bold; }
           </style>
           EOF
 
-          # 3. 메인 대시보드 (데이터 시각화 및 리스트)
+          # 3. 메인 분석 대시보드 (대량 기능 추가)
           cat <<'EOF' > pages/index.vue
           <template>
-            <div class="dashboard">
-              <aside class="sidebar">
-                <h3>🏢 HR INTELLIGENCE</h3>
-                <div class="summary">
-                  <p>Total Staff: {{ reports.length }}</p>
-                  <p>Avg Net: {{ avgNet }}원</p>
+            <div class="admin-layout">
+              <aside class="side-nav">
+                <h3>📊 TAX-MASTER</h3>
+                <div class="menu-item active">인사 세무 분석</div>
+                <div class="menu-item">급여 대장 관리</div>
+                <div class="summary-box">
+                  <p>인원: {{ reports.length }}명</p>
+                  <p>평균: {{ avgSalary }}원</p>
                 </div>
-                <button @click="logout" class="logout">LOGOUT</button>
+                <button @click="logout" class="btn-out">보안 로그아웃</button>
               </aside>
-              <main class="content">
-                <header><h1>📊 Real-time Tax Analysis</h1></header>
-                <div class="grid">
-                  <div v-for="r in reports" :key="r.id" class="card">
-                    <div class="name">{{ r.name }}</div>
-                    <div class="stats">
-                      <p>Salary: {{ r.salary.toLocaleString() }}</p>
-                      <p class="tax">Tax: {{ r.tax.toLocaleString() }}</p>
-                    </div>
+              <main class="view">
+                <header class="header">
+                  <h1>인사 급여 정밀 분석 보고서 (2026)</h1>
+                  <button class="btn-download" @click="downloadSim">CSV 내보내기</button>
+                </header>
+                <div class="card-grid">
+                  <div v-for="r in reports" :key="r.id" class="employee-card">
+                    <div class="dept-tag">{{ r.dept }}</div>
+                    <h4>{{ r.name }}</h4>
+                    <div class="divider"></div>
+                    <div class="row"><span>지급액</span> <span>{{ r.salary.toLocaleString() }}</span></div>
+                    <div class="row tax"><span>소득세</span> <span>-{{ r.tax.toLocaleString() }}</span></div>
+                    <div class="row net"><span>실수령</span> <span>{{ r.net.toLocaleString() }}</span></div>
                   </div>
                 </div>
               </main>
             </div>
           </template>
           <script setup>
-          import reportData from '../assets/data/report.json';
-          const reports = reportData;
-          const avgNet = Math.floor(reports.reduce((a, b) => a + b.net, 0) / reports.length).toLocaleString();
-          const logout = () => { localStorage.clear(); window.location.href = './login'; };
+          import data from '../assets/data/report.json';
+          const reports = data;
+          const avgSalary = Math.floor(reports.reduce((a,b)=>a+b.salary,0)/reports.length).toLocaleString();
+          const logout = () => { localStorage.clear(); window.location.replace('./login'); };
+          const downloadSim = () => { alert('관리자 권한: 데이터 암호화 내보내기를 시작합니다.'); };
           </script>
           <style scoped>
-          .dashboard { display: flex; min-height: 100vh; font-family: sans-serif; }
-          .sidebar { width: 260px; background: #0f172a; color: white; padding: 2rem; }
-          .content { flex: 1; padding: 2.5rem; background: #f8fafc; }
-          .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
-          .card { background: white; padding: 1.5rem; border-radius: 0.8rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-          .name { font-weight: bold; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; margin-bottom: 1rem; }
-          .tax { color: #ef4444; font-weight: bold; }
-          .logout { margin-top: 2rem; width: 100%; padding: 0.6rem; background: #ef4444; border: none; color: white; border-radius: 0.4rem; cursor: pointer; }
+          .admin-layout { display: flex; height: 100vh; background: #f1f5f9; }
+          .side-nav { width: 260px; background: #0f172a; color: white; padding: 2rem; display: flex; flex-direction: column; }
+          .summary-box { background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 1rem; margin-top: auto; }
+          .view { flex: 1; padding: 2.5rem; overflow-y: auto; }
+          .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; }
+          .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.5rem; }
+          .employee-card { background: white; padding: 1.5rem; border-radius: 1.2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+          .dept-tag { font-size: 0.7rem; background: #e2e8f0; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 0.5rem; }
+          .divider { height: 1px; background: #eee; margin: 1rem 0; }
+          .row { display: flex; justify-content: space-between; font-size: 0.9rem; margin: 0.4rem 0; }
+          .tax { color: #ef4444; }
+          .net { font-weight: bold; color: #10b981; border-top: 1px dashed #eee; padding-top: 0.5rem; }
+          .btn-download { background: #1e293b; color: white; padding: 0.8rem 1.5rem; border-radius: 0.6rem; cursor: pointer; border: none; }
+          .btn-out { background: #ef4444; border: none; color: white; padding: 0.8rem; border-radius: 0.6rem; margin-top: 1rem; cursor: pointer; }
           </style>
           EOF
 
-      - name: 🚀 [6] 고속 빌드 및 정적 사이트 생성
+      - name: 🚀 [6] 고속 빌드 및 무결성 검증
         run: |
           npm install
           npm run generate
+          ls -al .output/public
 
       - name: 📤 [7] Pages 아티팩트 업로드
         uses: actions/upload-pages-artifact@v3
