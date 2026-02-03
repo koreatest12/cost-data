@@ -1,66 +1,56 @@
-name: ⚖️ AI Judge 11.0 - Visual Summary Dashboard
+name: ⚖️ AI Judge 12.0 - Heavy Verdict & Global Release
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # 5분마다 자동 실행
+    - cron: '*/5 * * * *' # 5분마다 엄격한 판결 실행
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  releases: write
 
 jobs:
-  track-judge-visualize:
+  heavy-judgment-release:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
     steps:
-      - name: 📥 Checkout Repository
+      - name: 📥 소스 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: 📂 Setup Environment
+      - name: 📂 시스템 인프라 구축
         run: |
-          mkdir -p scripts data/evidence reports
-          pip install faker pandas
+          mkdir -p scripts data/evidence reports dist
+          pip install pandas
 
       # ----------------------------------------------------------------
-      # 1. [Script] 공범 추적 및 뉴스 증거 수집 (v10.0 로직 유지)
+      # 1. [Script] 증거 수집 및 타겟망 대폭 확장
       # ----------------------------------------------------------------
-      - name: 📝 Restore scripts/evidence_hunter.py
+      - name: 🕵️ 증거 수집 엔진 고도화
         run: |
           cat << 'EOF' > scripts/evidence_hunter.py
           import json, random, datetime
           
-          # [범죄 네트워크 데이터]
-          CRIME_NETWORK = {
-              "김건희": {
-                  "도이치모터스 주가조작": ["권오수", "이종호", "민모 씨"],
-                  "명품백 수수/청탁금지법": ["최재영 목사", "유철환", "대통령실 행정관"],
-                  "양평 고속도로 특혜": ["원희룡", "최은순"]
-              },
-              "윤석열": {
-                  "채상병 수사 외압": ["이종섭", "임성근", "박진희"],
-                  "공천 개입/여론조사 조작": ["명태균", "김영선", "이준석"]
-              }
-          }
-
           def hunt_targets():
+              # 범죄 네트워크 및 혐의 확장 (가중 처벌 대상)
+              NETWORK = {
+                  "김건희": ["도이치모터스 주가조작", "명품백 수수", "양평 고속도로 특혜", "공천 개입 의혹"],
+                  "윤석열": ["채상병 수사 외압", "여론조사 조작", "헌법 유린", "직권 남용"]
+              }
               evidence_list = []
-              for target, crimes in CRIME_NETWORK.items():
-                  for crime_name, accomplices in crimes.items():
-                      # 공범 및 뉴스 시뮬레이션
-                      caught = random.sample(accomplices, k=random.randint(1, len(accomplices)))
-                      
-                      evidence_data = {
-                          "case_id": f"C-{datetime.datetime.now().strftime('%H%M%S')}-{random.randint(10,99)}",
-                          "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                          "main": target,
-                          "crime": crime_name,
-                          "accomplices": caught,
-                          "evidence": "스모킹건(녹취록/통화내역) 확보됨"
-                      }
-                      evidence_list.append(evidence_data)
+              for target, crimes in NETWORK.items():
+                  for crime in crimes:
+                      evidence_list.append({
+                          "case_id": f"CRIMINAL-{datetime.datetime.now().strftime('%Y%m%d')}-{random.randint(100,999)}",
+                          "target": target,
+                          "crime": crime,
+                          "severity": "CRITICAL",
+                          "evidence_type": "Digital Forensics / Recorded Audio",
+                          "status": "Verified"
+                      })
               return evidence_list
-
+          
           if __name__ == "__main__":
               data = hunt_targets()
               with open("data/evidence/latest.json", "w", encoding="utf-8") as f:
@@ -68,85 +58,78 @@ jobs:
           EOF
 
       # ----------------------------------------------------------------
-      # 2. [Script] 판결 및 '요약 화면용' 리포트 생성 (핵심 기능)
+      # 2. [Script] 무거운 형량 및 판결문 생성 (중형 선고 로직)
       # ----------------------------------------------------------------
-      - name: 📝 Restore scripts/joint_judgment.py
-        run: |
+      - name: 🔨 엄중 판결 로직 주입 (Heavy Sentence)
+          run: |
           cat << 'EOF' > scripts/joint_judgment.py
-          import json, random, os
+          import json, os, datetime
           
           with open("data/evidence/latest.json", "r", encoding="utf-8") as f:
               cases = json.load(f)
-
-          # GitHub Summary에 출력할 마크다운 테이블 생성
-          summary_md = "## ⚖️ AI 재판부 실시간 판결 속보\n\n"
-          summary_md += "| 🚨 피고인 | 👥 공범(공동정범) | 📜 혐의 내용 | 🔨 최종 선고 |\n"
-          summary_md += "|:---:|:---:|---|:---:|\n"
+              
+          summary_md = "## ⚖️ AI 재판부 초엄격 판결 속보 (v12.0)\n\n"
+          summary_md += "| 🚨 피고인 | 📜 범죄 혐의 | ⚖️ 판결 결과 | 🔨 선고 요지 |\n"
+          summary_md += "|:---:|---|:---:|---|\n"
           
-          history_logs = []
-
+          api_dist = []
           for case in cases:
-              main = case['main']
-              acc_list = ", ".join(case['accomplices'])
+              target = case['target']
               crime = case['crime']
               
-              # 가중 처벌 로직 (10년 이상 무조건 유도)
-              base = 12
-              add = len(case['accomplices']) * 3
-              years = base + add + random.randint(0, 5)
-              fine = random.randint(50, 200)
+              # 형량 가중치: 기본 30년 시작, 무기징역 확률 포함
+              years = 30 + (os.getpid() % 20) # 최소 30년 보장
+              fine = 500 + (os.getpid() % 1000) # 벌금 최소 500억
               
-              verdict = f"징역 {years}년"
+              verdict = f"**징역 {years}년**" if years < 45 else "**무기징역(Life Imprisonment)**"
+              summary_md += f"| {target} | {crime} | {verdict} | 가석방 없는 엄벌형 선고 (벌금 {fine}억) |\n"
               
-              # 요약 화면용 행 추가
-              summary_md += f"| **{main}** | {acc_list} | {crime} | **{verdict}**<br>(벌금 {fine}억) |\n"
-              
-              # 히스토리 로그용
-              history_logs.append(f"| {case['timestamp']} | {main} | {crime} | {verdict} |")
+              api_dist.append({"target": target, "crime": crime, "verdict": verdict, "fine": f"{fine}억"})
 
-          # 1. GitHub Summary 파일 생성
           with open("GITHUB_SUMMARY.md", "w", encoding="utf-8") as f:
               f.write(summary_md)
-              f.write("\n> ※ 위 결과는 증거 기반 AI 자동 판결 시스템에 의해 생성되었습니다.")
-
-          # 2. 영구 보존용 로그 업데이트
-          with open("HISTORY_LOG.md", "a", encoding="utf-8") as f:
-              for log in history_logs:
-                  f.write(log + "\n")
+          
+          # 외부 노출용 API 데이터 패키징
+          with open("dist/verdict_api.json", "w", encoding="utf-8") as f:
+              json.dump(api_dist, f, ensure_ascii=False, indent=2)
           EOF
 
       # ----------------------------------------------------------------
-      # 3. 실행 및 화면 출력 (Step Summary)
+      # 3. [Execution] 판결 실행 및 외부 노출 파일 생성
       # ----------------------------------------------------------------
-      - name: 🕵️ Track & Judge
+      - name: ⚖️ 재판 진행 및 결과 시각화
         run: |
           python scripts/evidence_hunter.py
           python scripts/joint_judgment.py
-
-      - name: 📺 Display on Summary Screen
-        run: |
-          # 생성된 마크다운 파일을 GitHub 환경변수에 주입하여 화면에 표시
           cat GITHUB_SUMMARY.md >> $GITHUB_STEP_SUMMARY
 
       # ----------------------------------------------------------------
-      # 4. 데이터 저장 (대시보드 반영)
+      # 4. [Release] 릴리즈 출시 및 패키지 아카이브
       # ----------------------------------------------------------------
-      - name: 💾 Archive Results
+      - name: 📦 패키지 및 릴리즈 자동 생성
         run: |
-          git config --global user.name "AI-Judge"
-          git config --global user.email "ai@court.com"
+          git config --global user.name "Supreme-AI-Judge"
+          git config --global user.email "judge@court.gov"
           
-          # 로그 파일 헤더 체크
-          if [ ! -f HISTORY_LOG.md ]; then
-            echo "| 시간 | 피고인 | 혐의 | 결과 |" > HISTORY_LOG.md
-            echo "|---|---|---|---|" >> HISTORY_LOG.md
-          fi
-
-          # 메인 대시보드도 최신화
+          # 대시보드 업데이트
           cat GITHUB_SUMMARY.md > DASHBOARD.md
-          echo -e "\n---\n### 📂 전체 누적 기록" >> DASHBOARD.md
-          tail -n 10 HISTORY_LOG.md >> DASHBOARD.md
+          echo -e "\n---\n### 📂 누적 판결 아카이브 (External API Data Generated)" >> DASHBOARD.md
           
-          git add DASHBOARD.md HISTORY_LOG.md
-          git commit -m "📺 Visual Update: Posted to Job Summary"
+          git add DASHBOARD.md data// dist//
+          git commit -m "⚖️ [Verdict] Heavy Sentence Issued - Release v12.0" || echo "No changes"
           git push
+          
+          # 태그 생성 및 릴리즈 (v12.0)
+          TAG="v12.0.$(date +'%Y%m%d%H%M')"
+          git tag $TAG
+          git push origin $TAG
+
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.new_tag }}
+          files: |
+            dist/verdict_api.json
+            DASHBOARD.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
