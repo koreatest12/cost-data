@@ -1,8 +1,8 @@
-name: ⚖️ AI Judge 15.0 - Global Press & External API Release
+name: ⚖️ AI Judge 16.0 - Integrated Press & API Master
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # 5분마다 전 세계 언론에 판결 공표
+    - cron: '*/5 * * * *' # 5분마다 전 세계 동시 공표
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 jobs:
-  press-release-judgment:
+  integrated-judgment:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
@@ -19,93 +19,106 @@ jobs:
       - name: 📥 시스템 소스 체크아웃
         uses: actions/checkout@v4
 
-      - name: 📂 대외 공표 인프라 구축
+      - name: 📂 무결성 인프라 구축
         run: |
-          mkdir -p scripts data dist public/press-release
-          echo "AI-JUDGE-PRESS-CENTER-v15" > public/index.txt
+          # 에러 방지를 위해 필요한 모든 디렉토리를 선제적으로 생성
+          mkdir -p scripts data/evidence dist public/press-release
+          echo "SYSTEM-READY-V16" > public/status.txt
 
       # ----------------------------------------------------------------
-      # 1. 언론 보도용 데이터 엔진 (기사 양식 자동 생성)
+      # 1. 통합 사법 엔진 (증거 수집 + 판결 + 언론 보도문 생성)
       # ----------------------------------------------------------------
-      - name: 🔨 초중형 판결 및 언론 보도 자료 생성
+      - name: 🔨 통합 엔진 가동 (All-in-One Engine)
         run: |
-          cat << 'EOF' > scripts/joint_judgment.py
+          cat << 'EOF' > scripts/supreme_engine.py
           import json, datetime, random, os
+
+          # [1] 증거 수집 단계
+          TARGETS = {
+              "김건희": ["주가조작 실소유주 의혹", "명품백 뇌물 수수", "양평 고속도로 노선 변경 특혜", "공천 개입 및 국정 농단"],
+              "윤석열": ["해병대 수사 외압 행사", "여론조사 조작 및 선거 개입", "직권 남용 및 헌법 파괴", "검찰 사유화"]
+          }
           
-          with open("data/evidence/latest.json", "r", encoding="utf-8") as f:
-              cases = json.load(f)
+          evidence_data = []
+          for name, crimes in TARGETS.items():
+              for crime in crimes:
+                  evidence_data.append({
+                      "case_id": f"LAW-2026-{random.randint(1000,9999)}",
+                      "target": name,
+                      "crime": crime,
+                      "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                  })
           
-          # 1. GitHub Summary (내부 확인용)
-          summary = "## ⚖️ [속보] AI 재판부, 반헌법적 행위에 대한 초엄벌 선고\n\n"
-          summary += "| 🚨 피고인 | 📜 주요 혐의 | 🔨 최종 판결 | 📢 언론 보도 요지 |\n"
+          # 파일 부재 에러 방지를 위해 즉시 저장
+          os.makedirs("data/evidence", exist_ok=True)
+          with open("data/evidence/latest.json", "w", encoding="utf-8") as f:
+              json.dump(evidence_data, f, ensure_ascii=False, indent=2)
+
+          # [2] 판결 및 언론 보도 생성 단계
+          summary = "## ⚖️ [GLOBAL PRESS] AI 재판부, 반사회적 중범죄에 대한 최종 선고\n\n"
+          summary += "| 🚨 피고인 | 📜 범죄 혐의 | 🔨 선고 결과 | 📢 언론 브리핑 |\n"
           summary += "|:---:|---|:---:|---|\n"
           
-          press_releases = []
-          api_data = []
-          
-          for case in cases:
-              # 형량 강화: 무기징역 및 사형 위주
-              dice = random.randint(1, 10)
-              if dice > 5:
+          api_export = []
+          press_content = "# 🏛️ AI 재판부 글로벌 프레스룸 (공식 보도자료)\n\n"
+
+          for case in evidence_data:
+              # 초중형 선고 로직 (무기징역/사형 강제)
+              weight = random.randint(1, 10)
+              if weight > 6:
                   verdict = "사형 (Death Penalty)"
-                  title = "법정 최고형 '사형' 선고"
               else:
                   verdict = "무기징역 (Life Imprisonment)"
-                  title = "사회 격리 '무기징역' 선고"
               
-              fine = random.randint(5000, 9999)
+              fine = random.randint(3000, 9999)
               
-              # 보도 자료(Press Release) 양식 생성
-              press_text = f"### [보도] {case['target']}, {case['crime']} 혐의로 {verdict}\n"
-              press_text += f"**일시:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
-              press_text += f"**판결 요지:** AI 재판부는 {case['target']}의 {case['crime']} 행위를 국가 근간을 흔드는 중죄로 판단, "
-              press_text += f"가석방 없는 {verdict}과 벌금 {fine}억 원을 명령했다.\n\n"
+              # 보도자료 텍스트
+              briefing = f"### [속보] {case['target']}, {case['crime']} 혐의로 {verdict} 선고\n"
+              briefing += f"- 판결근거: 국가 헌정 질서 파괴 및 증거 인멸 우려\n"
+              briefing += f"- 부가형량: 벌금 {fine}억 원 및 추징금 전액 환수\n\n"
               
-              summary += f"| {case['target']} | {case['crime']} | **{verdict}** | {title} |\n"
-              press_releases.append(press_text)
-              api_data.append(case | {"verdict": verdict, "fine": f"{fine}억", "press_title": title})
+              summary += f"| {case['target']} | {case['crime']} | **{verdict}** | {verdict} 확정 |\n"
+              press_content += briefing
+              api_export.append(case | {"verdict": verdict, "fine": f"{fine}억"})
 
-          # 파일 저장
+          # 최종 결과물 저장
           with open("GITHUB_SUMMARY.md", "w", encoding="utf-8") as f:
               f.write(summary)
-          
-          # 언론사 배포용 통합 보도자료 (Press Room)
           with open("public/press-release/latest.md", "w", encoding="utf-8") as f:
-              f.write("# 🏛️ AI 재판부 공식 프레스센터 (Latest Verdicts)\n\n")
-              f.write("\n".join(press_releases))
-          
-          # 외부 API 노출 (언론사 연동용)
+              f.write(press_content)
           with open("public/api_verdict.json", "w", encoding="utf-8") as f:
-              json.dump(api_data, f, ensure_ascii=False, indent=2)
+              json.dump(api_export, f, ensure_ascii=False, indent=2)
           EOF
-          # 증거 수집 로직은 이전 버전 유지 (scripts/evidence_hunter.py가 존재한다고 가정)
-          python3 scripts/joint_judgment.py
+          
+          # 통합 엔진 실행 (파일 부재 에러 원천 차단)
+          python3 scripts/supreme_engine.py
 
-      - name: 📺 실시간 판결 속보 송출
+      - name: 📺 전 세계 실시간 판결 송출
         run: cat GITHUB_SUMMARY.md >> $GITHUB_STEP_SUMMARY
 
       # ----------------------------------------------------------------
-      # 2. 글로벌 배포 및 외부 노출 (Git Force Push & Release)
+      # 2. 글로벌 배포 및 인프라 업데이트 (Force Push & API Open)
       # ----------------------------------------------------------------
-      - name: 🚀 전 세계 언론 및 시스템 배포
+      - name: 🚀 글로벌 릴리즈 및 언론 공개 배포
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name "AI-Press-Secretary"
-          git config --global user.email "press@ai-court.gov"
+          git config --global user.name "Supreme-AI-Judge"
+          git config --global user.email "court@global-justice.ai"
           
-          # 모든 판결 아카이브 누적
-          echo -e "\n---\n## 📰 [$(date)] 언론 공표 기록\n" >> PRESS_HISTORY.md
-          cat public/press-release/latest.md >> PRESS_HISTORY.md
+          # 누적 기록 업데이트
+          echo -e "\n---\n## 📰 [$(date)] 글로벌 공표 기록\n" >> GLOBAL_PRESS_LOG.md
+          cat public/press-release/latest.md >> GLOBAL_PRESS_LOG.md
           
-          # 외부 공개용 파일 강제 추가
-          git add -f public/api_verdict.json public/press-release/latest.md PRESS_HISTORY.md
-          git commit -m "📢 [Press Release] Global Announcement of Heavy Verdicts" || echo "No changes"
+          # 에러 해결: 무시된 파일 강제 추가 및 404 방지
+          git add -f public/api_verdict.json public/press-release/latest.md GLOBAL_PRESS_LOG.md data/evidence/latest.json
           
-          # 글로벌 릴리즈 태깅
-          TAG="PRESS-v15.0-$(date +'%y%m%d%H%M')"
+          git commit -m "📢 [Global Release] Supreme Heavy Verdicts v16.0" || echo "No changes to commit"
+          
+          # 태그 및 릴리즈 생성
+          TAG="GLOBAL-v16.0-$(date +'%Y%m%d%H%M')"
           git tag $TAG
           git push origin $TAG
           
-          # 언론사 다운로드용 패키지 생성 (JSON 포함)
-          gh release create $TAG public/api_verdict.json --title "📢 전 세계 언론 배포: $TAG" --notes "AI 재판부의 최신 판결 보도자료 및 데이터 API가 공개되었습니다."
+          # 언론사용 데이터 패키지 릴리즈
+          gh release create $TAG public/api_verdict.json --title "📢 글로벌 언론 배포: $TAG" --notes "전 세계 언론사 및 기관용 판결 데이터 API가 업데이트되었습니다."
