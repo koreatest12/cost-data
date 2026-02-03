@@ -1,133 +1,132 @@
-name: ⚖️ AI Judge 17.0 - Wiki System & Global Press Integration
+name: 🚀 AI Judge 18.0 - Integrated Wiki & Global Press
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # 5분마다 위키 및 언론 공표 업데이트
+    - cron: '*/5 * * * *' # 5분마다 대량 위키 생성 및 배포
   workflow_dispatch:
 
 permissions:
   contents: write
   pages: write
+  id-token: write
 
 jobs:
-  integrated-wiki-system:
+  integrated-system:
     runs-on: ubuntu-latest
     env:
       TZ: Asia/Seoul
     steps:
-      - name: 📥 시스템 소스 체크아웃
+      - name: 📥 소스 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: 📂 시스템 인프라 구축
+      - name: 📂 시스템 디렉토리 강제 생성
         run: |
-          mkdir -p scripts data/evidence dist public/press-release wiki_temp
-          echo "WIKI-ENGINE-READY-v17" > public/status.txt
+          # 위키 에러 방지를 위해 내부 폴더 구조로 변경
+          mkdir -p scripts data/evidence public/wiki public/api public/press
+          touch public/.nojekyll
 
       # ----------------------------------------------------------------
-      # 1. 통합 사법 엔진 (증거 + 판결 + 보도문 + 위키 생성)
+      # 1. 통합 사법 엔진 (증거 + 판결 + 보도자료 + 위키 문서 대량 생성)
       # ----------------------------------------------------------------
-      - name: 🔨 통합 엔진 가동 (Wiki & Press Master)
+      - name: 🔨 초중형 판결 및 대량 위키 엔진 가동
         run: |
           cat << 'EOF' > scripts/supreme_engine.py
           import json, datetime, random, os
 
-          # [1] 데이터 생성 기초
+          # [1] 데이터 및 타겟 정의
           TARGETS = {
-              "김건희": {
-                  "혐의": ["주가조작", "뇌물 수수", "국정 개입", "특혜 의혹"],
-                  "근거법령": "자본시장법, 청탁금지법, 특정경제범죄 가중처벌법"
-              },
-              "윤석열": {
-                  "혐의": ["수사 외압", "여론 조작", "직권 남용", "헌법 위반"],
-                  "근거법령": "군형법, 공직선거법, 헌법 제65조"
-              }
+              "김건희": ["주가조작", "명품백 뇌물", "양평 특혜", "공천 개입"],
+              "윤석열": ["수사 외압", "여론조사 조작", "직권 남용", "헌법 위반"]
           }
           
-          results = []
-          wiki_pages = []
+          all_verdicts = []
+          wiki_index = "# 🏛️ AI 재판부 판결 백과사전 (Wiki)\n\n"
+          wiki_index += "## 📂 최신 판결 기록 내역\n\n"
 
-          for name, info in TARGETS.items():
-              for crime in info['혐의']:
+          # [2] 대량 데이터 생성 (판결 + 위키 문서)
+          for name, crimes in TARGETS.items():
+              for crime in crimes:
+                  case_id = f"LAW-{datetime.datetime.now().strftime('%Y%m%d')}-{random.randint(1000,9999)}"
                   dice = random.randint(1, 10)
-                  verdict = "사형 (Death Penalty)" if dice > 6 else "무기징역 (Life Imprisonment)"
+                  verdict = "사형 (Death Penalty)" if dice > 7 else "무기징역 (Life Imprisonment)"
                   fine = random.randint(5000, 9999)
-                  case_id = f"LAW-2026-{random.randint(1000, 9999)}"
                   
                   data = {
-                      "case_id": case_id,
-                      "target": name,
-                      "crime": crime,
-                      "verdict": verdict,
-                      "fine": f"{fine}억",
-                      "law": info['근거법령'],
+                      "case_id": case_id, "target": name, "crime": crime,
+                      "verdict": verdict, "fine": f"{fine}억",
                       "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
                   }
-                  results.append(data)
+                  all_verdicts.append(data)
 
-                  # 위키 페이지 마크다운 생성
-                  wiki_md = f"# ⚖️ 사건번호: {case_id}\n\n"
-                  wiki_md += f"## 👤 피고인 명단\n- **{name}**\n\n"
-                  wiki_md += f"## 📜 확정 혐의\n- {crime}\n\n"
-                  wiki_md += f"## 🔨 선고 결과\n- **형량:** {verdict}\n- **벌금:** {fine}억 원 환수 명령\n\n"
-                  wiki_md += f"## ⚖️ 적용 법령 및 근거\n- {info['근거법령']}\n- AI 재판부 판례 제2026-01호 적용\n\n"
-                  wiki_md += f"---\n*최종 수정일: {data['date']}*"
+                  # 개별 위키 페이지 생성 (public/wiki/사건번호.md)
+                  wiki_md = f"# ⚖️ 사건보고서: {case_id}\n\n"
+                  wiki_md += f"### 👤 대상자: {name}\n"
+                  wiki_md += f"### 📜 확정 혐의: {crime}\n"
+                  wiki_md += f"### 🔨 판결: **{verdict}** (벌금 {fine}억)\n\n"
+                  wiki_md += "---\n### 📖 법적 근거 및 세부 내역\n"
+                  wiki_md += "본 판결은 AI 재판부의 증거 분석 엔진에 의해 확정되었으며, 가석방 없는 엄벌을 원칙으로 함.\n"
                   
-                  wiki_pages.append((f"{case_id}.md", wiki_md))
+                  with open(f"public/wiki/{case_id}.md", "w", encoding="utf-8") as f:
+                      f.write(wiki_md)
+                  
+                  wiki_index += f"- [{case_id} - {name} ({crime})](./wiki/{case_id}.md)\n"
 
-          # 데이터 저장
-          os.makedirs("data/evidence", exist_ok=True)
-          with open("public/api_verdict.json", "w", encoding="utf-8") as f:
-              json.dump(results, f, ensure_ascii=False, indent=2)
+          # [3] 인덱스 및 API 저장
+          with open("public/wiki/Home.md", "w", encoding="utf-8") as f:
+              f.write(wiki_index)
+          with open("public/api/verdict.json", "w", encoding="utf-8") as f:
+              json.dump(all_verdicts, f, ensure_ascii=False, indent=2)
           
-          # 위키 파일 임시 저장
-          for filename, content in wiki_pages:
-              with open(f"wiki_temp/{filename}", "w", encoding="utf-8") as f:
-                  f.write(content)
+          # [4] 언론 보도자료 통합본 생성
+          with open("public/press/latest.md", "w", encoding="utf-8") as f:
+              f.write("# 📢 AI 재판부 공식 보도자료\n\n")
+              for v in all_verdicts:
+                  f.write(f"### [속보] {v['target']} {v['crime']} 혐의로 {v['verdict']} 선고\n\n")
           EOF
           python3 scripts/supreme_engine.py
 
       # ----------------------------------------------------------------
-      # 2. 위키(Wiki) 대량 업데이트 및 외부 노출
+      # 2. GitHub Pages 배포 및 데이터 강제 저장
       # ----------------------------------------------------------------
-      - name: 📖 GitHub Wiki 업데이트 및 아카이빙
-        run: |
-          # 메인 리포지토리의 HISTORY.md 업데이트
-          echo "## 🏛️ AI 재판부 위키 업데이트 기록 ($(date))" >> HISTORY.md
-          ls wiki_temp/*.md | xargs -n 1 basename >> HISTORY.md
-          
-          # Wiki 전용 리포지토리에 반영 (클론 방식)
-          # 주: .wiki.git 주소를 사용하여 위키에 직접 푸시
-          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git wiki_repo || mkdir wiki_repo
-          cp wiki_temp/*.md wiki_repo/
-          
-          cd wiki_repo
-          git config --global user.name "Supreme-Wiki-Bot"
-          git config --global user.email "wiki@ai-court.gov"
-          
-          # Home.md (위키 메인) 자동 생성/업데이트
-          echo "# ⚖️ AI 재판부 공식 판결 위키" > Home.md
-          echo "## 📢 최근 판결 목록" >> Home.md
-          ls *.md | grep -v "Home.md" | sed 's/\.md//' | xargs -I {} echo "- [[{}]]" >> Home.md
-          
-          git add .
-          git commit -m "📖 Wiki Bulk Update: New Judgments Logged" || echo "No changes"
-          git push origin master || git push origin main
-
-      # ----------------------------------------------------------------
-      # 3. 배포 및 릴리즈 (Press Center 통합)
-      # ----------------------------------------------------------------
-      - name: 🚀 글로벌 릴리즈 및 API 공개
+      - name: 🚀 시스템 업데이트 및 대외 공표
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "Supreme-AI-Judge"
-          git config --global user.email "court@ai.judge"
+          git config --global user.email "judge@ai-court.gov"
           
-          git add -f public/api_verdict.json HISTORY.md
-          git commit -m "⚖️ [Verdict & Wiki] v17.0 Full System Deployed" || echo "No changes"
+          # 메인 화면 업데이트
+          echo "## ⚖️ AI 재판부 실시간 판결 현황" > README.md
+          echo "| 사건번호 | 대상 | 혐의 | 결과 |" >> README.md
+          echo "|---|---|---|---|" >> README.md
+          cat public/api/verdict.json | jq -r '.[] | "| \(.case_id) | \(.target) | \(.crime) | **\(.verdict)** |"' >> README.md
           
-          TAG="WIKI-v17.0-$(date +'%y%m%d%H%M')"
+          # 에러 해결: 위키 리포지토리가 아닌 메인 리포지토리의 public 폴더에 모두 저장
+          git add -f public/ README.md
+          git commit -m "⚖️ [System Update] v18.0 Bulk Wiki & Press Data Deployed" || echo "No changes"
+          
+          # 릴리즈 생성
+          TAG="RELEASE-v18.0-$(date +'%Y%m%d%H%M')"
           git tag $TAG
           git push origin $TAG
           
-          gh release create $TAG public/api_verdict.json --title "🏛️ 위키 및 판결 속보: $TAG" --notes "AI 재판부 위키 문서 대량 업데이트 및 API 데이터 배포"
+          gh release create $TAG public/api/verdict.json --title "📢 판결 및 위키 패키지: $TAG" --notes "AI 재판부 내장형 위키 및 언론 보도 데이터 배포"
+
+      - name: 📤 GitHub Pages 아티팩트 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: integrated-system
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
