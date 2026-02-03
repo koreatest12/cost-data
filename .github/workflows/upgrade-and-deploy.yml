@@ -1,4 +1,4 @@
-name: 🚀 ULTIMATE STABILITY & ENTERPRISE DEPLOY (v15.6)
+name: 🚀 ULTIMATE ENTERPRISE SYSTEM (v15.8 - FULL INTEGRATION)
 
 on:
   push:
@@ -10,84 +10,76 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   system-intelligence:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 [1] 소스 클론 및 초기화
+      - name: 📥 [1] 소스 클론 및 환경 초기화
         uses: actions/checkout@v4
 
-      - name: 📂 [2] 파일 시스템 구조 강제 생성 (ENOENT 원천 봉쇄)
+      - name: 📂 [2] 시스템 디렉토리 강제 생성
         run: |
           mkdir -p public/data assets/data pages middleware
-          # 빌드 에러 방지를 위한 빈 파일 더미 생성
-          touch assets/data/report.json
+          touch public/.nojekyll
 
-      - name: 🐍 [3] 데이터 엔진 및 분석 로직 고도화
+      - name: 🐍 [3] 지능형 데이터 엔진 (SQLite to JSON)
         run: |
           python3 -c "
-          import sqlite3, random, json, os
+          import sqlite3, json, random, os
           conn = sqlite3.connect('tax_master.db')
           cur = conn.cursor()
-          cur.execute('DROP TABLE IF EXISTS tax')
-          cur.execute('CREATE TABLE tax (id INTEGER, name TEXT, salary INTEGER, tax INTEGER, net INTEGER)')
-          
+          cur.execute('CREATE TABLE IF NOT EXISTS tax (id INTEGER, name TEXT, salary INTEGER, tax INTEGER, net INTEGER)')
           data = []
-          for i in range(1, 101): # 100건으로 데이터 증설
+          for i in range(1, 81):
               s = random.randint(3500, 15000) * 10000
               t = int(s * 0.15) if s < 50000000 else int(s * 0.24)
               data.append((i, f'Employee_{i:03d}', s, t, s-t))
-          
           cur.executemany('INSERT INTO tax VALUES (?,?,?,?,?)', data)
           conn.commit()
-          
-          # JSON 데이터 추출 및 저장
           rows = cur.execute('SELECT * FROM tax').fetchall()
           res = [dict(zip(['id','name','salary','tax','net'], r)) for r in rows]
-          
           with open('public/data/report.json', 'w') as f: json.dump(res, f)
           conn.close()
           "
-          # Assets 경로로 복사 (Nuxt import용)
           cp public/data/report.json assets/data/report.json
 
-      - name: ⚙️ [4] Nuxt 인프라 구성 (배포 호환성 100% 대응)
+      - name: ⚙️ [4] Nuxt 및 빌드 인프라 설정 (404 완벽 차단)
         env:
           SECRET_KEY: ${{ secrets.ENTERPRISE_PASSKEY || 'admin123' }}
         run: |
-          # 1. package.json (빌드 도구 최적화)
+          # 1. package.json 생성
           cat <<'EOF' > package.json
           {
-            "name": "tax-master-v15-6",
+            "name": "tax-master-v15-8",
             "type": "module",
             "scripts": { "build": "nuxt build", "generate": "nuxt generate" },
             "devDependencies": { "nuxt": "^3.10.0", "sass": "^1.70.0" }
           }
           EOF
 
-          # 2. nuxt.config.ts (접속 불능 해결용 핵심 설정)
-          # GitHub Pages는 도메인 뒤에 프로젝트명이 붙으므로 baseURL 설정이 중요합니다.
+          # 2. nuxt.config.ts 생성 (GitHub Pages 접속 오류 해결 핵심)
           PASS_HASH=$(echo -n "$SECRET_KEY" | sha256sum | cut -d' ' -f1)
           cat <<EOF > nuxt.config.ts
           export default defineNuxtConfig({
             runtimeConfig: { public: { passkeyHash: '$PASS_HASH' } },
-            ssr: false, 
-            nitro: { prerender: { failOnError: false } },
+            ssr: false,
             app: {
-              baseURL: '', 
-              buildAssetsDir: 'assets_static',
-              head: { 
-                title: 'TAX-MASTER Intelligence Enterprise',
-                meta: [{ charset: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }]
-              }
+              baseURL: '',
+              buildAssetsDir: '/_nuxt/',
+              head: { title: 'TAX-MASTER Enterprise' }
             },
+            nitro: { prerender: { routes: ['/', '/login'], failOnError: false } },
             experimental: { payloadExtraction: false }
           })
           EOF
 
-      - name: 🎨 [5] UI/UX 엔터프라이즈 모듈 대량 반영
+      - name: 🎨 [5] 전사적 UI 및 인증 시스템 주입
         run: |
-          # 미들웨어 생성
+          # 1. 글로벌 인증 미들웨어
           cat <<'EOF' > middleware/auth.global.ts
           export default defineNuxtRouteMiddleware((to) => {
             if (process.client) {
@@ -97,70 +89,82 @@ jobs:
           })
           EOF
 
-          # 로그인 페이지 생성 (접속 불능 방지를 위한 인라인 스타일 적용)
+          # 2. 로그인 페이지 (보안 해시 검증)
           cat <<'EOF' > pages/login.vue
           <template>
-            <div class="login-screen">
-              <div class="card">
-                <h2>🔐 SECURITY LOGIN</h2>
-                <input v-model="key" type="password" placeholder="Enterprise Key" @keyup.enter="login" />
-                <button @click="login">SYSTEM ACCESS</button>
+            <div class="login-wrap">
+              <div class="login-card">
+                <h2>🔐 ENTERPRISE GATE</h2>
+                <input v-model="pass" type="password" placeholder="Passkey" @keyup.enter="handleLogin" />
+                <button @click="handleLogin">ACCESS SYSTEM</button>
               </div>
             </div>
           </template>
           <script setup>
-          const key = ref('');
-          const login = async () => {
-            const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key.value)))).map(b => b.toString(16).padStart(2, '0')).join('');
-            if (hash === useRuntimeConfig().public.passkeyHash) {
-              localStorage.setItem('auth_session', 'true');
+          const pass = ref('');
+          const handleLogin = async () => {
+            const msg = new TextEncoder().encode(pass.value);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msg);
+            const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+            if (hashHex === useRuntimeConfig().public.passkeyHash) {
+              localStorage.setItem('auth_session', 'active');
               window.location.href = './';
-            } else { alert('인증 실패'); }
+            } else { alert('Access Denied'); }
           };
           </script>
-          <style>
-          .login-screen { background: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; }
-          .card { background: #1e293b; padding: 2.5rem; border-radius: 1rem; text-align: center; border: 1px solid #334155; }
-          input { width: 100%; padding: 0.8rem; margin: 1rem 0; border-radius: 0.4rem; border: none; }
-          button { width: 100%; padding: 0.8rem; background: #3b82f6; color: white; border: none; cursor: pointer; border-radius: 0.4rem; }
+          <style scoped>
+          .login-wrap { background: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; }
+          .login-card { background: #1e293b; padding: 3rem; border-radius: 1rem; border: 1px solid #334155; text-align: center; color: white; }
+          input { width: 100%; padding: 0.8rem; margin: 1.5rem 0; border-radius: 0.5rem; border: none; }
+          button { width: 100%; padding: 0.8rem; background: #3b82f6; color: white; border: none; border-radius: 0.5rem; cursor: pointer; }
           </style>
           EOF
 
-          # 메인 페이지 생성
+          # 3. 메인 대시보드 (데이터 시각화 및 리스트)
           cat <<'EOF' > pages/index.vue
           <template>
-            <div class="dash-root">
-              <nav class="sidebar">
-                <h3>🏢 HR MASTER</h3>
-                <div class="stat-box">Total: {{ reports.length }}</div>
-                <button @click="logout" class="out-btn">LOGOUT</button>
-              </nav>
-              <main class="grid-view">
-                <div v-for="r in reports" :key="r.id" class="r-card">
-                  <div class="name">{{ r.name }}</div>
-                  <div class="val">Net: {{ r.net.toLocaleString() }}원</div>
+            <div class="dashboard">
+              <aside class="sidebar">
+                <h3>🏢 HR INTELLIGENCE</h3>
+                <div class="summary">
+                  <p>Total Staff: {{ reports.length }}</p>
+                  <p>Avg Net: {{ avgNet }}원</p>
+                </div>
+                <button @click="logout" class="logout">LOGOUT</button>
+              </aside>
+              <main class="content">
+                <header><h1>📊 Real-time Tax Analysis</h1></header>
+                <div class="grid">
+                  <div v-for="r in reports" :key="r.id" class="card">
+                    <div class="name">{{ r.name }}</div>
+                    <div class="stats">
+                      <p>Salary: {{ r.salary.toLocaleString() }}</p>
+                      <p class="tax">Tax: {{ r.tax.toLocaleString() }}</p>
+                    </div>
+                  </div>
                 </div>
               </main>
             </div>
           </template>
           <script setup>
-          import data from '../assets/data/report.json';
-          const reports = data;
+          import reportData from '../assets/data/report.json';
+          const reports = reportData;
+          const avgNet = Math.floor(reports.reduce((a, b) => a + b.net, 0) / reports.length).toLocaleString();
           const logout = () => { localStorage.clear(); window.location.href = './login'; };
           </script>
-          <style>
-          body { margin: 0; font-family: 'Inter', sans-serif; }
-          .dash-root { display: flex; min-height: 100vh; background: #f8fafc; }
-          .sidebar { width: 240px; background: #0f172a; color: white; padding: 2rem; }
-          .grid-view { flex: 1; padding: 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
-          .r-card { background: white; padding: 1.5rem; border-radius: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-          .name { font-weight: bold; color: #1e293b; margin-bottom: 0.5rem; }
-          .val { color: #10b981; font-size: 0.9rem; }
-          .out-btn { margin-top: 2rem; width: 100%; cursor: pointer; background: #ef4444; color: white; border: none; padding: 0.5rem; }
+          <style scoped>
+          .dashboard { display: flex; min-height: 100vh; font-family: sans-serif; }
+          .sidebar { width: 260px; background: #0f172a; color: white; padding: 2rem; }
+          .content { flex: 1; padding: 2.5rem; background: #f8fafc; }
+          .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1.5rem; }
+          .card { background: white; padding: 1.5rem; border-radius: 0.8rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+          .name { font-weight: bold; font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+          .tax { color: #ef4444; font-weight: bold; }
+          .logout { margin-top: 2rem; width: 100%; padding: 0.6rem; background: #ef4444; border: none; color: white; border-radius: 0.4rem; cursor: pointer; }
           </style>
           EOF
 
-      - name: 🚀 [6] 빌드 및 배포 최적화 실행
+      - name: 🚀 [6] 고속 빌드 및 정적 사이트 생성
         run: |
           npm install
           npm run generate
