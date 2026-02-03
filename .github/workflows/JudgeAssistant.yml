@@ -1,14 +1,18 @@
-name: ⚖️ AI Judge 12.0 - Heavy Verdict & Global Release
+name: ⚖️ AI Judge 13.0 - Ultimate Heavy Verdict
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # 5분마다 엄격한 판결 실행
+    - cron: '*/5 * * * *' # 5분마다 준엄한 판결 집행
   workflow_dispatch:
 
 permissions:
   contents: write
   pages: write
   releases: write
+
+concurrency:
+  group: "judgment"
+  cancel-in-progress: false
 
 jobs:
   heavy-judgment-release:
@@ -19,117 +23,104 @@ jobs:
       - name: 📥 소스 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: 📂 시스템 인프라 구축
+      - name: 📂 시스템 인프라 및 API 경로 구축
         run: |
-          mkdir -p scripts data/evidence reports dist
-          pip install pandas
+          mkdir -p scripts data/evidence reports dist public
+          echo "AI-JUDGE-SYSTEM-v13" > public/version.txt
 
       # ----------------------------------------------------------------
-      # 1. [Script] 증거 수집 및 타겟망 대폭 확장
+      # 1. 증거 수집 엔진: 무관용 원칙 적용
       # ----------------------------------------------------------------
-      - name: 🕵️ 증거 수집 엔진 고도화
+      - name: 🕵️ 스모킹건 증거 수집 (고도화)
         run: |
           cat << 'EOF' > scripts/evidence_hunter.py
           import json, random, datetime
-          
-          def hunt_targets():
-              # 범죄 네트워크 및 혐의 확장 (가중 처벌 대상)
+          def hunt():
               NETWORK = {
-                  "김건희": ["도이치모터스 주가조작", "명품백 수수", "양평 고속도로 특혜", "공천 개입 의혹"],
-                  "윤석열": ["채상병 수사 외압", "여론조사 조작", "헌법 유린", "직권 남용"]
+                  "김건희": ["도이치모터스 주가조작", "명품백 수수", "양평 특혜", "공천 개입"],
+                  "윤석열": ["채상병 수사 외압", "여론조사 조작", "직권 남용", "헌법 유린"]
               }
-              evidence_list = []
+              results = []
               for target, crimes in NETWORK.items():
                   for crime in crimes:
-                      evidence_list.append({
-                          "case_id": f"CRIMINAL-{datetime.datetime.now().strftime('%Y%m%d')}-{random.randint(100,999)}",
+                      results.append({
+                          "case_id": f"LAW-{datetime.datetime.now().strftime('%Y%m%d')}-{random.randint(1000,9999)}",
                           "target": target,
                           "crime": crime,
-                          "severity": "CRITICAL",
-                          "evidence_type": "Digital Forensics / Recorded Audio",
-                          "status": "Verified"
+                          "evidence": "특검급 스모킹건 확보",
+                          "severity": "MAXIMUM"
                       })
-              return evidence_list
-          
+              return results
           if __name__ == "__main__":
-              data = hunt_targets()
               with open("data/evidence/latest.json", "w", encoding="utf-8") as f:
-                  json.dump(data, f, ensure_ascii=False, indent=2)
+                  json.dump(hunt(), f, ensure_ascii=False, indent=2)
           EOF
+          python3 scripts/evidence_hunter.py
 
       # ----------------------------------------------------------------
-      # 2. [Script] 무거운 형량 및 판결문 생성 (중형 선고 로직)
+      # 2. 판결 집행 엔진: 사형 및 무기징역 위주의 초중형 알고리즘
       # ----------------------------------------------------------------
-      - name: 🔨 엄중 판결 로직 주입 (Heavy Sentence)
-          run: |
+      - name: 🔨 초중형 판결 알고리즘 주입 (Sentence Engine)
+        run: |
           cat << 'EOF' > scripts/joint_judgment.py
-          import json, os, datetime
-          
+          import json, datetime, random
           with open("data/evidence/latest.json", "r", encoding="utf-8") as f:
               cases = json.load(f)
-              
-          summary_md = "## ⚖️ AI 재판부 초엄격 판결 속보 (v12.0)\n\n"
-          summary_md += "| 🚨 피고인 | 📜 범죄 혐의 | ⚖️ 판결 결과 | 🔨 선고 요지 |\n"
-          summary_md += "|:---:|---|:---:|---|\n"
           
-          api_dist = []
+          summary = "## ⚖️ AI 재판부 초엄격 판결문 (v13.0)\n\n"
+          summary += "| 🚨 피고인 | 📜 범죄 혐의 | 🔨 선고 결과 | 📜 판결 요지 |\n"
+          summary += "|:---:|---|:---:|---|\n"
+          
+          api_data = []
           for case in cases:
-              target = case['target']
-              crime = case['crime']
+              # 형량 로직: 최소 징역 50년, 70% 확률로 무기징역 또는 사형 시뮬레이션
+              score = random.randint(1, 10)
+              if score > 7:
+                  verdict = "**사형 (Death Penalty)**"
+              elif score > 3:
+                  verdict = "**무기징역 (Life Imprisonment)**"
+              else:
+                  verdict = f"**징역 {random.randint(50, 100)}년**"
               
-              # 형량 가중치: 기본 30년 시작, 무기징역 확률 포함
-              years = 30 + (os.getpid() % 20) # 최소 30년 보장
-              fine = 500 + (os.getpid() % 1000) # 벌금 최소 500억
-              
-              verdict = f"**징역 {years}년**" if years < 45 else "**무기징역(Life Imprisonment)**"
-              summary_md += f"| {target} | {crime} | {verdict} | 가석방 없는 엄벌형 선고 (벌금 {fine}억) |\n"
-              
-              api_dist.append({"target": target, "crime": crime, "verdict": verdict, "fine": f"{fine}억"})
-
+              fine = random.randint(1000, 5000) # 벌금 1조~5조 단위
+              line = f"| {case['target']} | {case['crime']} | {verdict} | 가석방 없는 엄벌 (벌금 {fine}억 환수) |\n"
+              summary += line
+              api_data.append({"target": case['target'], "crime": case['crime'], "verdict": verdict, "fine": f"{fine}억"})
+          
           with open("GITHUB_SUMMARY.md", "w", encoding="utf-8") as f:
-              f.write(summary_md)
-          
-          # 외부 노출용 API 데이터 패키징
+              f.write(summary)
           with open("dist/verdict_api.json", "w", encoding="utf-8") as f:
-              json.dump(api_dist, f, ensure_ascii=False, indent=2)
+              json.dump(api_data, f, ensure_ascii=False, indent=2)
           EOF
+          python3 scripts/joint_judgment.py
 
       # ----------------------------------------------------------------
-      # 3. [Execution] 판결 실행 및 외부 노출 파일 생성
+      # 3. 데이터 시각화 및 외부 노출
       # ----------------------------------------------------------------
-      - name: ⚖️ 재판 진행 및 결과 시각화
-        run: |
-          python scripts/evidence_hunter.py
-          python scripts/joint_judgment.py
-          cat GITHUB_SUMMARY.md >> $GITHUB_STEP_SUMMARY
+      - name: 📺 판결 결과 즉시 공표
+        run: cat GITHUB_SUMMARY.md >> $GITHUB_STEP_SUMMARY
 
       # ----------------------------------------------------------------
-      # 4. [Release] 릴리즈 출시 및 패키지 아카이브
+      # 4. 릴리즈 및 글로벌 패키지 배포
       # ----------------------------------------------------------------
-      - name: 📦 패키지 및 릴리즈 자동 생성
-        run: |
-          git config --global user.name "Supreme-AI-Judge"
-          git config --global user.email "judge@court.gov"
-          
-          # 대시보드 업데이트
-          cat GITHUB_SUMMARY.md > DASHBOARD.md
-          echo -e "\n---\n### 📂 누적 판결 아카이브 (External API Data Generated)" >> DASHBOARD.md
-          
-          git add DASHBOARD.md data// dist//
-          git commit -m "⚖️ [Verdict] Heavy Sentence Issued - Release v12.0" || echo "No changes"
-          git push
-          
-          # 태그 생성 및 릴리즈 (v12.0)
-          TAG="v12.0.$(date +'%Y%m%d%H%M')"
-          git tag $TAG
-          git push origin $TAG
-
-      - name: 🚀 Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.tag.outputs.new_tag }}
-          files: |
-            dist/verdict_api.json
-            DASHBOARD.md
+      - name: 📦 글로벌 패키지 및 릴리즈 출시
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "Supreme-AI-Judge"
+          git config --global user.email "court@ai.judge"
+          
+          # 아카이브 업데이트
+          echo "### 📂 판결 아카이브 [$(date)]" >> HISTORY.md
+          cat GITHUB_SUMMARY.md >> HISTORY.md
+          
+          git add HISTORY.md data/ dist/
+          git commit -m "⚖️ [Verdict] Maximum Sentence Applied - v13.0" || echo "No changes"
+          
+          # 태그 및 릴리즈 생성
+          TAG_NAME="v13.0-$(date +'%Y%m%d-%H%M')"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+          
+          # GitHub Release 생성 (외부 노출용)
+          gh release create $TAG_NAME dist/verdict_api.json --title "판결 속보: $TAG_NAME" --notes "AI 재판부에 의한 초중형 선고 패키지 배포"
