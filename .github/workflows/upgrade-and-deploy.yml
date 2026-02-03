@@ -20,21 +20,25 @@ jobs:
     steps:
       - name: 📥 [1] 소스 및 외부 데이터 클론
         uses: actions/checkout@v4
-      - run: |
-          git clone https://github.com/koreatest12/cost-data.git data_source
-          # 에러 방지: 필요한 모든 경로 미리 생성
+
+      - name: 📂 [1-1] 데이터 경로 사전 생성
+        run: |
+          # 외부 데이터 클론 (실패 시에도 워크플로우를 중단하지 않으려면 || true 추가 가능)
+          git clone https://github.com/koreatest12/cost-data.git data_source || echo "Warning: Clone failed"
           mkdir -p public/data assets/data receipts
 
       - name: 🐍 [2] 파이썬 분석 환경 구성
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
-      - run: pip install pandas openpyxl sqlalchemy numpy aiosmtpd
+
+      - name: 📦 [2-1] 의존성 라이브러리 설치
+        run: pip install pandas openpyxl sqlalchemy numpy aiosmtpd
 
       - name: 🛠️ [3] 지능형 엔진 가동 (대량 데이터 및 DB 구축)
         run: |
           cat <<'EOF' > tax_engine.py
-          import os, sqlite3, json, glob, random
+          import os, sqlite3, json, random
           
           def run_engine():
               conn = sqlite3.connect('tax_master.db')
@@ -49,7 +53,7 @@ jobs:
               knowledge = [(0, 14000000, 0.06, 0), (14000000, 50000000, 0.15, 1260000), (50000000, 88000000, 0.24, 5760000)]
               cur.executemany("INSERT INTO tax_knowledge VALUES (?,?,?,?)", knowledge)
               
-              # 대량 시뮬레이션 데이터 생성 (최소 50건 보장)
+              # 대량 시뮬레이션 데이터 생성 (50건)
               for i in range(1, 51):
                   sal = random.randint(30000000, 120000000)
                   cur.execute("SELECT * FROM tax_knowledge WHERE ? > min_val AND ? <= max_val", (sal, sal))
@@ -63,7 +67,7 @@ jobs:
           EOF
           python tax_engine.py
 
-      - name: 📊 [4] ENOENT 에러 원천 차단: 데이터 정적화 및 경로 복사
+      - name: 📊 [4] 데이터 정적화 및 ENOENT 에러 방지
         run: |
           # 1. DB 데이터를 JSON으로 변환
           python3 -c "import sqlite3, json; conn=sqlite3.connect('tax_master.db'); conn.row_factory=sqlite3.Row; data=[dict(r) for r in conn.execute('SELECT * FROM tax_results').fetchall()]; open('public/data/report.json', 'w').write(json.dumps(data))"
@@ -71,8 +75,7 @@ jobs:
           # 2. Nuxt 빌드 시 참조 오류 방지를 위해 assets 경로에도 복사
           mkdir -p assets/data
           cp public/data/report.json assets/data/report.json
-          
-          echo "✅ 데이터 파일 생성 완료: public/data/report.json 및 assets/data/report.json"
+          echo "✅ 데이터 파일 생성 완료"
 
       - name: 🛠️ [5] Nuxt UI 고도화 및 소스 전수 정비
         run: |
@@ -85,7 +88,6 @@ jobs:
             "devDependencies": { "nuxt": "^3.10.0" }
           }
           EOF
-
           mkdir -p pages
           cat <<'EOF' > pages/index.vue
           <template>
@@ -97,10 +99,8 @@ jobs:
                   <span class="badge secondary">2026 세무 지식 베이스 통합</span>
                 </div>
               </header>
-
               <section class="dashboard">
-                <div v-if="pending">데이터를 불러오는 중...</div>
-                <div v-else-if="taxReports.length === 0">산출된 데이터가 없습니다.</div>
+                <div v-if="!taxReports.length">데이터를 불러오는 중...</div>
                 <div v-else class="grid">
                   <div v-for="item in taxReports" :key="item.id" class="tax-card">
                     <h3>{{ item.name }}</h3>
@@ -115,29 +115,23 @@ jobs:
               </section>
             </div>
           </template>
-
           <script setup>
-          // ENOENT 에러 방지: 빌드 타임 import 대신 useFetch 또는 정적 데이터 바인딩 전략 사용
           import reportData from '../assets/data/report.json'
           const taxReports = reportData
-          const pending = false
           </script>
-
           <style scoped>
-          .enterprise-root { padding: 40px; background: #f8fafc; font-family: 'Pretendard', sans-serif; min-height: 100vh; }
+          .enterprise-root { padding: 40px; background: #f8fafc; font-family: sans-serif; min-height: 100vh; }
           .hero { text-align: center; margin-bottom: 50px; }
-          .hero h1 { font-size: 2.5rem; color: #1e293b; letter-spacing: -1px; }
+          .hero h1 { font-size: 2.5rem; color: #1e293b; }
           .badge-row { margin-top: 15px; display: flex; justify-content: center; gap: 10px; }
           .badge { background: #3b82f6; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; }
           .secondary { background: #64748b; }
           .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-          .tax-card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: transform 0.2s; }
-          .tax-card:hover { transform: translateY(-5px); }
-          .tax-card h3 { margin-bottom: 20px; font-size: 1.25rem; color: #0f172a; }
-          .content p { margin: 8px 0; font-size: 0.95rem; color: #475569; display: flex; justify-content: space-between; }
+          .tax-card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+          .content p { margin: 8px 0; display: flex; justify-content: space-between; }
           .tax span { color: #ef4444; font-weight: bold; }
           .net span { color: #10b981; font-weight: bold; }
-          .footer { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #e2e8f0; font-size: 0.8rem; color: #64748b; font-style: italic; }
+          .footer { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #e2e8f0; font-size: 0.8rem; color: #64748b; }
           </style>
           EOF
 
