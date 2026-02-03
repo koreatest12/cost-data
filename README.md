@@ -1,7 +1,2 @@
-# 🌌 Omni-Intelligence Hub
-
-![Data](https://img.shields.io/badge/PokemonGO-Data_Synced-blue) ![Status](https://img.shields.io/badge/System-Operational-green)
-
-## 🚀 System Status (2026-02-03 23:16)
-- **Data Path:** `pokemon-go-data/` (JSON Aggregated)
-- **Services:** 4 Microservices Built & Pushed
+# 🏛️ AI 재판부 공식 시스템
+실시간 판결 대시보드: https://koreatest12.github.io/cost-data/
