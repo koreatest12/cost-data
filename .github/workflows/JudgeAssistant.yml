@@ -1,14 +1,14 @@
-name: ⚖️ AI Judge 13.0 - Ultimate Heavy Verdict
+name: ⚖️ AI Judge 13.1 - Ultimate Heavy Verdict
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # 5분마다 준엄한 판결 집행
+    - cron: '*/5 * * * *' # 5분마다 자동 판결 집행
   workflow_dispatch:
 
 permissions:
   contents: write
   pages: write
-  releases: write
+  id-token: write
 
 concurrency:
   group: "judgment"
@@ -26,12 +26,12 @@ jobs:
       - name: 📂 시스템 인프라 및 API 경로 구축
         run: |
           mkdir -p scripts data/evidence reports dist public
-          echo "AI-JUDGE-SYSTEM-v13" > public/version.txt
+          echo "AI-JUDGE-SYSTEM-v13.1" > public/version.txt
 
       # ----------------------------------------------------------------
       # 1. 증거 수집 엔진: 무관용 원칙 적용
       # ----------------------------------------------------------------
-      - name: 🕵️ 스모킹건 증거 수집 (고도화)
+      - name: 🕵️ 스모킹건 증거 수집 (v13.1)
         run: |
           cat << 'EOF' > scripts/evidence_hunter.py
           import json, random, datetime
@@ -58,22 +58,21 @@ jobs:
           python3 scripts/evidence_hunter.py
 
       # ----------------------------------------------------------------
-      # 2. 판결 집행 엔진: 사형 및 무기징역 위주의 초중형 알고리즘
+      # 2. 판결 집행 엔진: 사형 및 무기징역 초중형 선고
       # ----------------------------------------------------------------
-      - name: 🔨 초중형 판결 알고리즘 주입 (Sentence Engine)
+      - name: 🔨 초중형 판결 알고리즘 주입
         run: |
           cat << 'EOF' > scripts/joint_judgment.py
           import json, datetime, random
           with open("data/evidence/latest.json", "r", encoding="utf-8") as f:
               cases = json.load(f)
           
-          summary = "## ⚖️ AI 재판부 초엄격 판결문 (v13.0)\n\n"
+          summary = "## ⚖️ AI 재판부 초엄격 판결문 (v13.1)\n\n"
           summary += "| 🚨 피고인 | 📜 범죄 혐의 | 🔨 선고 결과 | 📜 판결 요지 |\n"
           summary += "|:---:|---|:---:|---|\n"
           
           api_data = []
           for case in cases:
-              # 형량 로직: 최소 징역 50년, 70% 확률로 무기징역 또는 사형 시뮬레이션
               score = random.randint(1, 10)
               if score > 7:
                   verdict = "**사형 (Death Penalty)**"
@@ -82,9 +81,8 @@ jobs:
               else:
                   verdict = f"**징역 {random.randint(50, 100)}년**"
               
-              fine = random.randint(1000, 5000) # 벌금 1조~5조 단위
-              line = f"| {case['target']} | {case['crime']} | {verdict} | 가석방 없는 엄벌 (벌금 {fine}억 환수) |\n"
-              summary += line
+              fine = random.randint(1000, 5000) 
+              summary += f"| {case['target']} | {case['crime']} | {verdict} | 가석방 없는 엄벌 (벌금 {fine}억 환수) |\n"
               api_data.append({"target": case['target'], "crime": case['crime'], "verdict": verdict, "fine": f"{fine}억"})
           
           with open("GITHUB_SUMMARY.md", "w", encoding="utf-8") as f:
@@ -94,14 +92,11 @@ jobs:
           EOF
           python3 scripts/joint_judgment.py
 
-      # ----------------------------------------------------------------
-      # 3. 데이터 시각화 및 외부 노출
-      # ----------------------------------------------------------------
       - name: 📺 판결 결과 즉시 공표
         run: cat GITHUB_SUMMARY.md >> $GITHUB_STEP_SUMMARY
 
       # ----------------------------------------------------------------
-      # 4. 릴리즈 및 글로벌 패키지 배포
+      # 3. 릴리즈 및 글로벌 패키지 배포 (권한 문제 해결)
       # ----------------------------------------------------------------
       - name: 📦 글로벌 패키지 및 릴리즈 출시
         env:
@@ -110,17 +105,15 @@ jobs:
           git config --global user.name "Supreme-AI-Judge"
           git config --global user.email "court@ai.judge"
           
-          # 아카이브 업데이트
           echo "### 📂 판결 아카이브 [$(date)]" >> HISTORY.md
           cat GITHUB_SUMMARY.md >> HISTORY.md
           
           git add HISTORY.md data/ dist/
-          git commit -m "⚖️ [Verdict] Maximum Sentence Applied - v13.0" || echo "No changes"
+          git commit -m "⚖️ [Verdict] Maximum Sentence Applied - v13.1" || echo "No changes"
           
-          # 태그 및 릴리즈 생성
-          TAG_NAME="v13.0-$(date +'%Y%m%d-%H%M')"
+          TAG_NAME="v13.1-$(date +'%Y%m%d-%H%M')"
           git tag $TAG_NAME
           git push origin $TAG_NAME
           
-          # GitHub Release 생성 (외부 노출용)
-          gh release create $TAG_NAME dist/verdict_api.json --title "판결 속보: $TAG_NAME" --notes "AI 재판부에 의한 초중형 선고 패키지 배포"
+          # gh CLI를 이용한 릴리즈 생성 (contents: write 권한 사용)
+          gh release create $TAG_NAME dist/verdict_api.json --title "판결 속보: $TAG_NAME" --notes "AI 재판부 초중형 선고 패키지"
