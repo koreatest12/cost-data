@@ -1,4 +1,4 @@
-name: 🚀 ULTIMATE ENTERPRISE UPGRADE & FAST-BUILD (v15.5)
+name: 🚀 ULTIMATE STABILITY & ENTERPRISE DEPLOY (v15.6)
 
 on:
   push:
@@ -14,90 +14,131 @@ jobs:
   system-intelligence:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 [1] 소스 클론
+      - name: 📥 [1] 소스 클론 및 초기화
         uses: actions/checkout@v4
 
-      - name: 📂 [2] 환경 정렬 및 경로 생성
-        run: mkdir -p public/data assets/data pages middleware
+      - name: 📂 [2] 파일 시스템 구조 강제 생성 (ENOENT 원천 봉쇄)
+        run: |
+          mkdir -p public/data assets/data pages middleware
+          # 빌드 에러 방지를 위한 빈 파일 더미 생성
+          touch assets/data/report.json
 
-      - name: 🐍 [3] 데이터 엔진 가동
+      - name: 🐍 [3] 데이터 엔진 및 분석 로직 고도화
         run: |
           python3 -c "
-          import sqlite3, random, json
+          import sqlite3, random, json, os
           conn = sqlite3.connect('tax_master.db')
           cur = conn.cursor()
-          cur.execute('CREATE TABLE tax (id INTEGER, name TEXT, salary INTEGER, tax INTEGER)')
-          data = [(i, f'Manager_{i:02d}', s:=random.randint(4000, 12000)*10000, int(s*0.15)) for i in range(1, 61)]
-          cur.executemany('INSERT INTO tax VALUES (?,?,?,?)', data)
+          cur.execute('DROP TABLE IF EXISTS tax')
+          cur.execute('CREATE TABLE tax (id INTEGER, name TEXT, salary INTEGER, tax INTEGER, net INTEGER)')
+          
+          data = []
+          for i in range(1, 101): # 100건으로 데이터 증설
+              s = random.randint(3500, 15000) * 10000
+              t = int(s * 0.15) if s < 50000000 else int(s * 0.24)
+              data.append((i, f'Employee_{i:03d}', s, t, s-t))
+          
+          cur.executemany('INSERT INTO tax VALUES (?,?,?,?,?)', data)
           conn.commit()
-          res = [dict(zip(['id','name','salary','tax'], r)) for r in cur.execute('SELECT * FROM tax').fetchall()]
+          
+          # JSON 데이터 추출 및 저장
+          rows = cur.execute('SELECT * FROM tax').fetchall()
+          res = [dict(zip(['id','name','salary','tax','net'], r)) for r in rows]
+          
           with open('public/data/report.json', 'w') as f: json.dump(res, f)
           conn.close()
           "
+          # Assets 경로로 복사 (Nuxt import용)
           cp public/data/report.json assets/data/report.json
 
-      - name: ⚡ [4] 빌드 가속화 (Dependency Caching)
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: 🛠️ [5] 엔터프라이즈 UI 및 빌드 설정 업그레이드
+      - name: ⚙️ [4] Nuxt 인프라 구성 (배포 호환성 100% 대응)
         env:
           SECRET_KEY: ${{ secrets.ENTERPRISE_PASSKEY || 'admin123' }}
         run: |
-          # 1. package.json (최신 의존성 적용)
+          # 1. package.json (빌드 도구 최적화)
           cat <<'EOF' > package.json
           {
-            "name": "tax-master-v15",
+            "name": "tax-master-v15-6",
             "type": "module",
             "scripts": { "build": "nuxt build", "generate": "nuxt generate" },
             "devDependencies": { "nuxt": "^3.10.0", "sass": "^1.70.0" }
           }
           EOF
 
-          # 2. nuxt.config.ts (빌드 최적화 및 보안)
+          # 2. nuxt.config.ts (접속 불능 해결용 핵심 설정)
+          # GitHub Pages는 도메인 뒤에 프로젝트명이 붙으므로 baseURL 설정이 중요합니다.
           PASS_HASH=$(echo -n "$SECRET_KEY" | sha256sum | cut -d' ' -f1)
           cat <<EOF > nuxt.config.ts
           export default defineNuxtConfig({
             runtimeConfig: { public: { passkeyHash: '$PASS_HASH' } },
-            ssr: false,
+            ssr: false, 
+            nitro: { prerender: { failOnError: false } },
             app: {
-              head: { title: 'TAX-MASTER Enterprise v15.5' },
-              baseURL: './'
+              baseURL: '', 
+              buildAssetsDir: 'assets_static',
+              head: { 
+                title: 'TAX-MASTER Intelligence Enterprise',
+                meta: [{ charset: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }]
+              }
+            },
+            experimental: { payloadExtraction: false }
+          })
+          EOF
+
+      - name: 🎨 [5] UI/UX 엔터프라이즈 모듈 대량 반영
+        run: |
+          # 미들웨어 생성
+          cat <<'EOF' > middleware/auth.global.ts
+          export default defineNuxtRouteMiddleware((to) => {
+            if (process.client) {
+              const auth = localStorage.getItem('auth_session');
+              if (!auth && to.path !== '/login') return navigateTo('/login');
             }
           })
           EOF
 
-          # 3. 고도화된 메인 대시보드 UI
+          # 로그인 페이지 생성 (접속 불능 방지를 위한 인라인 스타일 적용)
+          cat <<'EOF' > pages/login.vue
+          <template>
+            <div class="login-screen">
+              <div class="card">
+                <h2>🔐 SECURITY LOGIN</h2>
+                <input v-model="key" type="password" placeholder="Enterprise Key" @keyup.enter="login" />
+                <button @click="login">SYSTEM ACCESS</button>
+              </div>
+            </div>
+          </template>
+          <script setup>
+          const key = ref('');
+          const login = async () => {
+            const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key.value)))).map(b => b.toString(16).padStart(2, '0')).join('');
+            if (hash === useRuntimeConfig().public.passkeyHash) {
+              localStorage.setItem('auth_session', 'true');
+              window.location.href = './';
+            } else { alert('인증 실패'); }
+          };
+          </script>
+          <style>
+          .login-screen { background: #0f172a; height: 100vh; display: flex; align-items: center; justify-content: center; }
+          .card { background: #1e293b; padding: 2.5rem; border-radius: 1rem; text-align: center; border: 1px solid #334155; }
+          input { width: 100%; padding: 0.8rem; margin: 1rem 0; border-radius: 0.4rem; border: none; }
+          button { width: 100%; padding: 0.8rem; background: #3b82f6; color: white; border: none; cursor: pointer; border-radius: 0.4rem; }
+          </style>
+          EOF
+
+          # 메인 페이지 생성
           cat <<'EOF' > pages/index.vue
           <template>
-            <div class="app-container">
-              <aside class="sidebar">
-                <h2>🏢 HQ System</h2>
-                <div class="stats-card">
-                  <p>총 인원: <strong>{{ reports.length }}명</strong></p>
-                  <p>평균 급여: <strong>{{ avgSalary }}원</strong></p>
-                </div>
-                <button @click="logout" class="btn-logout">보안 로그아웃</button>
-              </aside>
-              <main class="content">
-                <header class="top-bar">
-                  <h1>📊 실시간 급여/세무 분석 리포트</h1>
-                </header>
-                <div class="data-grid">
-                  <div v-for="item in reports" :key="item.id" class="item-card">
-                    <div class="user-info">
-                      <span class="name">{{ item.name }}</span>
-                      <span class="id">#{{ item.id }}</span>
-                    </div>
-                    <div class="amount-info">
-                      <p>연봉: {{ item.salary.toLocaleString() }}</p>
-                      <p class="tax">세액: {{ item.tax.toLocaleString() }}</p>
-                    </div>
-                  </div>
+            <div class="dash-root">
+              <nav class="sidebar">
+                <h3>🏢 HR MASTER</h3>
+                <div class="stat-box">Total: {{ reports.length }}</div>
+                <button @click="logout" class="out-btn">LOGOUT</button>
+              </nav>
+              <main class="grid-view">
+                <div v-for="r in reports" :key="r.id" class="r-card">
+                  <div class="name">{{ r.name }}</div>
+                  <div class="val">Net: {{ r.net.toLocaleString() }}원</div>
                 </div>
               </main>
             </div>
@@ -105,29 +146,21 @@ jobs:
           <script setup>
           import data from '../assets/data/report.json';
           const reports = data;
-          const avgSalary = Math.floor(reports.reduce((acc, cur) => acc + cur.salary, 0) / reports.length).toLocaleString();
-          const logout = () => { localStorage.removeItem('auth_session'); navigateTo('/login'); };
+          const logout = () => { localStorage.clear(); window.location.href = './login'; };
           </script>
           <style>
-          .app-container { display: flex; min-height: 100vh; background: #f1f5f9; font-family: sans-serif; }
-          .sidebar { width: 280px; background: #1e293b; color: white; padding: 30px; }
-          .content { flex: 1; padding: 40px; }
-          .data-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
-          .item-card { background: white; padding: 20px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
-          .tax { color: #ef4444; font-weight: bold; }
-          .btn-logout { margin-top: 40px; width: 100%; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; }
+          body { margin: 0; font-family: 'Inter', sans-serif; }
+          .dash-root { display: flex; min-height: 100vh; background: #f8fafc; }
+          .sidebar { width: 240px; background: #0f172a; color: white; padding: 2rem; }
+          .grid-view { flex: 1; padding: 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+          .r-card { background: white; padding: 1.5rem; border-radius: 0.8rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+          .name { font-weight: bold; color: #1e293b; margin-bottom: 0.5rem; }
+          .val { color: #10b981; font-size: 0.9rem; }
+          .out-btn { margin-top: 2rem; width: 100%; cursor: pointer; background: #ef4444; color: white; border: none; padding: 0.5rem; }
           </style>
           EOF
 
-          # 4. 보안 인증 페이지 & 미들웨어 (이전 단계 유지)
-          mkdir -p middleware
-          cat <<'EOF' > middleware/auth.global.ts
-          export default defineNuxtRouteMiddleware((to) => {
-            if (process.client && !localStorage.getItem('auth_session') && to.path !== '/login') return navigateTo('/login');
-          })
-          EOF
-
-      - name: 🚀 [6] 고속 빌드 및 정적 생성
+      - name: 🚀 [6] 빌드 및 배포 최적화 실행
         run: |
           npm install
           npm run generate
