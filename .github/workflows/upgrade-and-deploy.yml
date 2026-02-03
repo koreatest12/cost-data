@@ -1,4 +1,4 @@
-name: 🚀 ULTIMATE REPAIR & ENTERPRISE UPGRADE (v15.0)
+name: 🚀 ULTIMATE REPAIR & ENTERPRISE UPGRADE (v15.2 - Auth Security)
 
 on:
   push:
@@ -22,10 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 📂 [1-1] 데이터 경로 사전 생성
-        run: |
-          # 외부 데이터 클론 (실패 시에도 워크플로우를 중단하지 않으려면 || true 추가 가능)
-          git clone https://github.com/koreatest12/cost-data.git data_source || echo "Warning: Clone failed"
-          mkdir -p public/data assets/data receipts
+        run: mkdir -p public/data assets/data receipts
 
       - name: 🐍 [2] 파이썬 분석 환경 구성
         uses: actions/setup-python@v5
@@ -33,106 +30,109 @@ jobs:
           python-version: "3.9"
 
       - name: 📦 [2-1] 의존성 라이브러리 설치
-        run: pip install pandas openpyxl sqlalchemy numpy aiosmtpd
+        run: pip install pandas openpyxl sqlalchemy numpy
 
-      - name: 🛠️ [3] 지능형 엔진 가동 (대량 데이터 및 DB 구축)
+      - name: 🛠️ [3] 지능형 엔진 가동 (데이터 및 암호화 지식 구축)
         run: |
           cat <<'EOF' > tax_engine.py
-          import os, sqlite3, json, random
-          
+          import sqlite3, json, random, hashlib
+
           def run_engine():
               conn = sqlite3.connect('tax_master.db')
               cur = conn.cursor()
               cur.executescript("""
-                  CREATE TABLE IF NOT EXISTS tax_knowledge (min_val INTEGER, max_val INTEGER, rate REAL, ded INTEGER);
                   CREATE TABLE IF NOT EXISTS tax_results (
                       id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, salary INTEGER, tax INTEGER, net_pay INTEGER, advice TEXT
                   );
               """)
-              # 2026 최신 세율 지식 주입
-              knowledge = [(0, 14000000, 0.06, 0), (14000000, 50000000, 0.15, 1260000), (50000000, 88000000, 0.24, 5760000)]
-              cur.executemany("INSERT INTO tax_knowledge VALUES (?,?,?,?)", knowledge)
               
               # 대량 시뮬레이션 데이터 생성 (50건)
               for i in range(1, 51):
                   sal = random.randint(30000000, 120000000)
-                  cur.execute("SELECT * FROM tax_knowledge WHERE ? > min_val AND ? <= max_val", (sal, sal))
-                  rule = cur.fetchone()
-                  tax = int(sal * rule[2] - rule[3]) if rule else int(sal * 0.35)
+                  tax = int(sal * 0.24 - 5760000) if sal > 50000000 else int(sal * 0.15 - 1260000)
                   cur.execute("INSERT INTO tax_results (name, salary, tax, net_pay, advice) VALUES (?,?,?,?,?)",
-                             (f"임직원_{i:02d}", sal, tax, sal-tax, "AI 정밀 분석 완료"))
+                             (f"임직원_{i:02d}", sal, tax, sal-tax, "AI 보안 분석 완료"))
               conn.commit()
               conn.close()
           if __name__ == "__main__": run_engine()
           EOF
           python tax_engine.py
 
-      - name: 📊 [4] 데이터 정적화 및 ENOENT 에러 방지
+      - name: 📊 [4] 데이터 정적화 및 보안 해시 생성
         run: |
-          # 1. DB 데이터를 JSON으로 변환
           python3 -c "import sqlite3, json; conn=sqlite3.connect('tax_master.db'); conn.row_factory=sqlite3.Row; data=[dict(r) for r in conn.execute('SELECT * FROM tax_results').fetchall()]; open('public/data/report.json', 'w').write(json.dumps(data))"
-          
-          # 2. Nuxt 빌드 시 참조 오류 방지를 위해 assets 경로에도 복사
-          mkdir -p assets/data
           cp public/data/report.json assets/data/report.json
-          echo "✅ 데이터 파일 생성 완료"
 
-      - name: 🛠️ [5] Nuxt UI 고도화 및 소스 전수 정비
+      - name: 🛠️ [5] Nuxt 인증 및 Secrets 시스템 주입
+        env:
+          # GitHub Settings -> Secrets -> Actions에 저장된 값을 가져옵니다.
+          # 설정되지 않았을 경우 기본값으로 'admin123'을 사용합니다.
+          SECRET_KEY: ${{ secrets.ENTERPRISE_PASSKEY || 'admin123' }}
         run: |
-          cat <<'EOF' > package.json
-          {
-            "name": "tax-master-enterprise",
-            "private": true,
-            "type": "module",
-            "scripts": { "build": "nuxt build", "generate": "nuxt generate" },
-            "devDependencies": { "nuxt": "^3.10.0" }
-          }
+          # 1. 환경 변수를 프론트엔드에서 참조 가능하도록 .env 생성
+          echo "NUXT_PUBLIC_PASSKEY_HASH=$(echo -n $SECRET_KEY | sha256sum | cut -d' ' -f1)" > .env
+
+          # 2. 전역 인증 미들웨어
+          mkdir -p middleware
+          cat <<'EOF' > middleware/auth.global.ts
+          export default defineNuxtRouteMiddleware((to, from) => {
+            if (process.client) {
+              const isAuthenticated = localStorage.getItem('auth_session');
+              if (!isAuthenticated && to.path !== '/login') {
+                return navigateTo('/login');
+              }
+            }
+          })
           EOF
+
+          # 3. 로그인 페이지 (SHA-256 해시 검증 방식)
           mkdir -p pages
-          cat <<'EOF' > pages/index.vue
+          cat <<'EOF' > pages/login.vue
           <template>
-            <div class="enterprise-root">
-              <header class="hero">
-                <h1>🏢 TAX-MASTER INTELLIGENCE v15.0</h1>
-                <div class="badge-row">
-                  <span class="badge">실시간 데이터 적재 완료</span>
-                  <span class="badge secondary">2026 세무 지식 베이스 통합</span>
-                </div>
-              </header>
-              <section class="dashboard">
-                <div v-if="!taxReports.length">데이터를 불러오는 중...</div>
-                <div v-else class="grid">
-                  <div v-for="item in taxReports" :key="item.id" class="tax-card">
-                    <h3>{{ item.name }}</h3>
-                    <div class="content">
-                      <p>급여: <span>{{ item.salary.toLocaleString() }}원</span></p>
-                      <p class="tax">세액: <span>{{ item.tax.toLocaleString() }}원</span></p>
-                      <p class="net">실수령: <span>{{ item.net_pay.toLocaleString() }}원</span></p>
-                    </div>
-                    <div class="footer">{{ item.advice }}</div>
-                  </div>
-                </div>
-              </section>
+            <div class="auth-page">
+              <div class="login-card">
+                <h2>🔐 ENTERPRISE AUTH</h2>
+                <input v-model="inputKey" type="password" placeholder="Passkey" @keyup.enter="verify" />
+                <button @click="verify">Verify & Access</button>
+              </div>
             </div>
           </template>
           <script setup>
-          import reportData from '../assets/data/report.json'
-          const taxReports = reportData
+          const config = useRuntimeConfig();
+          const inputKey = ref('');
+          const verify = async () => {
+            // 입력값을 SHA-256으로 해싱하여 환경변수의 해시값과 비교 (간이 보안)
+            const msgUint8 = new TextEncoder().encode(inputKey.value);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+            if (hashHex === config.public.passkeyHash) {
+              localStorage.setItem('auth_session', Date.now());
+              navigateTo('/');
+            } else {
+              alert('Invalid Passkey');
+            }
+          };
           </script>
           <style scoped>
-          .enterprise-root { padding: 40px; background: #f8fafc; font-family: sans-serif; min-height: 100vh; }
-          .hero { text-align: center; margin-bottom: 50px; }
-          .hero h1 { font-size: 2.5rem; color: #1e293b; }
-          .badge-row { margin-top: 15px; display: flex; justify-content: center; gap: 10px; }
-          .badge { background: #3b82f6; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; }
-          .secondary { background: #64748b; }
-          .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-          .tax-card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-          .content p { margin: 8px 0; display: flex; justify-content: space-between; }
-          .tax span { color: #ef4444; font-weight: bold; }
-          .net span { color: #10b981; font-weight: bold; }
-          .footer { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #e2e8f0; font-size: 0.8rem; color: #64748b; }
+          .auth-page { height: 100vh; display: flex; align-items: center; justify-content: center; background: #0f172a; color: white; }
+          .login-card { background: #1e293b; padding: 3rem; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+          input { display: block; width: 100%; padding: 0.75rem; margin: 1.5rem 0; border-radius: 0.5rem; border: none; }
+          button { width: 100%; padding: 0.75rem; background: #3b82f6; border: none; border-radius: 0.5rem; color: white; cursor: pointer; }
           </style>
+          EOF
+
+          # 4. Nuxt 설정 파일 수정 (Runtime Config 주입)
+          cat <<'EOF' > nuxt.config.ts
+          export default defineNuxtConfig({
+            runtimeConfig: {
+              public: {
+                passkeyHash: process.env.NUXT_PUBLIC_PASSKEY_HASH
+              }
+            },
+            ssr: false // 정적 배포를 위한 설정
+          })
           EOF
 
       - name: 🚀 [6] Nuxt 빌드 및 정적 사이트 생성
