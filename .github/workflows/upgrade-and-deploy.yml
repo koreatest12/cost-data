@@ -180,7 +180,7 @@ jobs:
           ls -al .output/public
 
       - name: 📤 [7] Pages 아티팩트 업로드
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: .output/public
 
