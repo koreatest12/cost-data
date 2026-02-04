@@ -1,5 +1,5 @@
-name: ⚡ Bootstrap Claude Integration (Secure Fix)
-description: "보안 토큰 노출 없이 Claude Code 워크플로우, 한국어 매뉴얼, 권한 도구를 생성합니다."
+name: ⚡ Bootstrap Claude Integration (Ultimate Server)
+description: "Claude Code 자율 에이전트, 대량 서비스 스캐폴딩, 보안 워크플로우를 일괄 구축합니다."
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   initialize:
-    name: 🚀 Initialize System
+    name: 🚀 Initialize Omni-Server
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -19,11 +19,11 @@ jobs:
 
       - name: Generate & Execute Setup Script
         run: |
-          echo "🔄 Initializing Secure Setup..."
+          echo "🔄 Initializing Ultimate System..."
 
-          # [중요] GitHub Actions의 변수 치환 방지를 위한 변수 조립
-          # 이렇게 하면 러너가 토큰 값으로 바꾸지 않고, 문자열 그대로 파일에 기록합니다.
+          # [보안] GitHub Actions 변수 치환 방지용 매직 변수 ($D)
           D="$"
+          # Secrets 및 Context를 안전한 쉘 변수로 매핑
           SAFE_ANTHROPIC="${D}{{ secrets.ANTHROPIC_API_KEY }}"
           SAFE_GITHUB="${D}{{ secrets.GITHUB_TOKEN }}"
           SAFE_RUN_ID="${D}{{ github.run_id }}"
@@ -38,7 +38,7 @@ jobs:
           SAFE_STEP_PUSHED="${D}{{ steps.coding.outputs.pushed }}"
           SAFE_STEP_BRANCH="${D}{{ steps.coding.outputs.branch }}"
 
-          # 생성 스크립트 작성 (EOF를 사용하여 변수 확장 허용)
+          # 생성 스크립트 작성 시작
           cat << EOF > generate_workflows.sh
           #!/bin/bash
           
@@ -49,7 +49,7 @@ jobs:
           mkdir -p docs
 
           # ==============================================================================
-          # 1. Setup Action 생성
+          # 1. Setup Action (Claude CLI 설치)
           # ==============================================================================
           echo "⚙️  Generating Setup Action..."
           cat << 'YAML' > .github/actions/setup-claude/action.yml
@@ -78,238 +78,274 @@ jobs:
           YAML
 
           # ==============================================================================
-          # 2. Workflow: Feature Builder
+          # 2. Script: Massive Microservice Scaffolding (대량 파일 생성기)
           # ==============================================================================
-          echo "🏗️  Generating Feature Builder Workflow..."
+          echo "🏗️  Generating Massive Scaffolding Script..."
+          cat << 'SCRIPT' > scripts/scaffold_services.sh
+          #!/bin/bash
+          
+          echo "🚀 Starting Massive Microservices Scaffolding..."
+          
+          SERVICES=("omni-security-service" "omni-job-service" "omni-algo-service" "omni-cost-service")
+          PACKAGES=("security" "job" "algo" "cost")
+          
+          mkdir -p services
+          
+          for i in "\${!SERVICES[@]}"; do
+              SVC_NAME=\${SERVICES[\$i]}
+              PKG_NAME=\${PACKAGES[\$i]}
+              BASE_DIR="services/\$SVC_NAME/src/main/java/com/costdata/\$PKG_NAME"
+              RSRC_DIR="services/\$SVC_NAME/src/main/resources"
+              
+              echo "📦 Generating \$SVC_NAME structure..."
+              
+              # 디렉토리 대량 생성
+              mkdir -p \$BASE_DIR/controller
+              mkdir -p \$BASE_DIR/service
+              mkdir -p \$BASE_DIR/repository
+              mkdir -p \$BASE_DIR/domain
+              mkdir -p \$BASE_DIR/dto
+              mkdir -p \$BASE_DIR/config
+              mkdir -p \$RSRC_DIR
+              
+              # 1. Application.java
+              cat <<JAVA > \$BASE_DIR/ServiceApplication.java
+          package com.costdata.\$PKG_NAME;
+          import org.springframework.boot.SpringApplication;
+          import org.springframework.boot.autoconfigure.SpringBootApplication;
+          @SpringBootApplication
+          public class ServiceApplication {
+              public static void main(String[] args) { SpringApplication.run(ServiceApplication.class, args); }
+          }
+          JAVA
+              
+              # 2. Controller
+              cat <<JAVA > \$BASE_DIR/controller/\${PKG_NAME^}Controller.java
+          package com.costdata.\$PKG_NAME.controller;
+          import org.springframework.web.bind.annotation.*;
+          import java.util.Map;
+          @RestController
+          @RequestMapping("/api/v1/\$PKG_NAME")
+          public class \${PKG_NAME^}Controller {
+              @GetMapping("/health")
+              public Map<String, String> health() { return Map.of("status", "UP", "service", "\$SVC_NAME"); }
+          }
+          JAVA
+          
+              # 3. Config (Security)
+              cat <<JAVA > \$BASE_DIR/config/SecurityConfig.java
+          package com.costdata.\$PKG_NAME.config;
+          import org.springframework.context.annotation.Configuration;
+          @Configuration
+          public class SecurityConfig {
+              // TODO: Claude will implement JWT filter here
+          }
+          JAVA
+          
+              # 4. resources/application.yml
+              cat <<YML > \$RSRC_DIR/application.yml
+          server:
+            port: 808\${i}
+          spring:
+            application:
+              name: \$SVC_NAME
+          management:
+            endpoints:
+              web:
+                exposure:
+                  include: health,info,metrics
+          YML
+          
+          done
+          
+          echo "✅ Generated 4 Microservices with standard architecture."
+          SCRIPT
+          chmod +x scripts/scaffold_services.sh
+
+          # ==============================================================================
+          # 3. Workflow: Claude Autonomous Server (자율 에이전트)
+          # ==============================================================================
+          echo "🤖 Generating Autonomous Server Workflow..."
+          cat << YAML > .github/workflows/04-claude-autonomous.yml
+          name: 🤖 Claude Autonomous Server
+          on:
+            schedule:
+              - cron: '0 */6 * * *' # 6시간마다 실행
+            workflow_dispatch:
+          jobs:
+            agent-run:
+              runs-on: ubuntu-latest
+              permissions:
+                contents: write
+                pull-requests: write
+                issues: write
+              steps:
+                - uses: actions/checkout@v3
+                - uses: ./.github/actions/setup-claude
+                  with:
+                    anthropic-key: $SAFE_ANTHROPIC
+                
+                - name: 🔍 Scan & Execute Tasks
+                  env:
+                    GITHUB_TOKEN: $SAFE_GITHUB
+                  run: |
+                    echo "🤖 Claude Agent Started..."
+                    
+                    # 1. TODO 주석 스캔 및 처리
+                    grep -r "TODO: Claude" . > todos.txt || true
+                    
+                    if [ -s todos.txt ]; then
+                        echo "📝 TODOs found. Processing..."
+                        BRANCH="agent/todo-fix-\$(date +%s)"
+                        git checkout -b \$BRANCH
+                        
+                        claude -p "다음 파일들의 'TODO: Claude' 주석을 찾아서 실제 코드로 구현해줘. 한국어로 커밋해. 컨텍스트: \$(cat todos.txt)"
+                        
+                        if [[ -n \$(git status --porcelain) ]]; then
+                            git add .
+                            git commit -m "🤖 Claude Agent: TODO 구현 완료"
+                            git push origin \$BRANCH
+                            gh pr create --title "🤖 Agent: TODO Implementation" --body "코드베이스 내 TODO 주석을 자동으로 구현했습니다." --base main
+                        fi
+                    else
+                        echo "✅ 처리할 TODO가 없습니다."
+                    fi
+          YAML
+
+          # ==============================================================================
+          # 4. Workflow: Feature Builder
+          # ==============================================================================
+          echo "🏗️  Generating Feature Builder..."
           cat << YAML > .github/workflows/03-feature-builder.yml
           name: 🏗️ Feature Builder (Dispatch)
           on:
             workflow_dispatch:
               inputs:
                 requirement:
-                  description: '구현할 기능 설명 (한국어)'
+                  description: '구현할 기능 (한국어)'
                   required: true
                 branch_name:
-                  description: '브랜치 이름 (옵션)'
+                  description: '브랜치명 (옵션)'
                   required: false
           jobs:
-            build-feature:
+            build:
               runs-on: ubuntu-latest
-              permissions:
-                contents: write
-                pull-requests: write
+              permissions: contents: write; pull-requests: write
               steps:
                 - uses: actions/checkout@v3
                 - uses: ./.github/actions/setup-claude
-                  with:
-                    anthropic-key: $SAFE_ANTHROPIC
-                - name: Create Branch & Code
+                  with: { anthropic-key: $SAFE_ANTHROPIC }
+                - name: Coding
                   id: coding
-                  env:
-                    BRANCH_NAME: $SAFE_INPUT_BRANCH_FMT
+                  env: { BRANCH_NAME: $SAFE_INPUT_BRANCH_FMT }
                   run: |
                     git checkout -b \$BRANCH_NAME
-                    claude -p "TASK: $SAFE_INPUT_REQ \n CONTEXT: CI 환경. \n ACTION: 기능 구현. 사용자 입력 없이 코드 작성."
-                    
+                    claude -p "TASK: $SAFE_INPUT_REQ \n ACTION: 기능 구현. 사용자 입력 없이 코드 작성. services/ 폴더 구조 준수."
                     if [[ -n \$(git status --porcelain) ]]; then
                       git add .
-                      COMMIT_MSG=\$(git diff --staged | claude -p "Generate commit message in Korean (max 50 chars)")
-                      git commit -m "\$COMMIT_MSG"
+                      git commit -m "✨ Feature: $SAFE_INPUT_REQ"
                       git push origin \$BRANCH_NAME
                       echo "pushed=true" >> \$GITHUB_OUTPUT
                       echo "branch=\$BRANCH_NAME" >> \$GITHUB_OUTPUT
-                    else
-                      echo "pushed=false" >> \$GITHUB_OUTPUT
                     fi
-                - name: Create PR
+                - name: PR
                   if: steps.coding.outputs.pushed == 'true'
-                  env:
-                    GITHUB_TOKEN: $SAFE_GITHUB
-                    BRANCH_NAME: $SAFE_STEP_BRANCH
-                  run: |
-                    gh pr create --title "✨ Feature: \$BRANCH_NAME" --body "Claude 구현:\n\n$SAFE_INPUT_REQ" --head \$BRANCH_NAME --base main
+                  env: { GITHUB_TOKEN: $SAFE_GITHUB, BRANCH_NAME: $SAFE_STEP_BRANCH }
+                  run: gh pr create --title "✨ Feature: \$BRANCH_NAME" --body "$SAFE_INPUT_REQ" --head \$BRANCH_NAME --base main
           YAML
 
           # ==============================================================================
-          # 3. Workflow: Auto Review
+          # 5. Workflow: Auto Reviewer
           # ==============================================================================
-          echo "🤖 Generating Review Workflow..."
+          echo "👀 Generating Reviewer..."
           cat << YAML > .github/workflows/01-pr-auto-review.yml
           name: 🤖 Claude Code Reviewer
           on:
-            pull_request:
-              types: [opened, synchronize]
-              paths-ignore: ['*.md', '.github/**']
+            pull_request: { types: [opened, synchronize] }
           jobs:
             review:
               runs-on: ubuntu-latest
-              permissions:
-                contents: read
-                pull-requests: write
+              permissions: contents: read; pull-requests: write
               steps:
                 - uses: actions/checkout@v3
                   with: { fetch-depth: 0 }
                 - uses: ./.github/actions/setup-claude
-                  with:
-                    anthropic-key: $SAFE_ANTHROPIC
-                - name: Analyze Diff
-                  env:
-                    PR_NUMBER: $SAFE_PR_NUM
-                    GITHUB_TOKEN: $SAFE_GITHUB
+                  with: { anthropic-key: $SAFE_ANTHROPIC }
+                - name: Review
+                  env: { PR_NUM: $SAFE_PR_NUM, GITHUB_TOKEN: $SAFE_GITHUB }
                   run: |
                     git diff origin/$SAFE_BASE_REF > diff.txt
                     if [ ! -s diff.txt ]; then exit 0; fi
-                    cat diff.txt | claude -p "코드 리뷰해줘. 보안/버그 위주. 한국어로 마크다운 출력. 문제 없으면 'LGTM'만 출력." > review.md
-                    if ! grep -q "LGTM" review.md; then gh pr comment \$PR_NUMBER --body-file review.md; fi
+                    cat diff.txt | claude -p "코드 리뷰 (한국어). 보안/성능 위주. 문제 없으면 'LGTM'." > review.md
+                    if ! grep -q "LGTM" review.md; then gh pr comment \$PR_NUM --body-file review.md; fi
           YAML
 
           # ==============================================================================
-          # 4. Workflow: Issue Triage
+          # 6. Workflow: Permission Audit & Restore Tool
           # ==============================================================================
-          echo "🚑 Generating Issue Triage Workflow..."
-          cat << YAML > .github/workflows/02-issue-triage.yml
-          name: 🚑 Issue Auto-Triage
-          on:
-            issues: { types: [opened] }
-          jobs:
-            triage:
-              runs-on: ubuntu-latest
-              permissions:
-                issues: write
-                contents: read
-              steps:
-                - uses: actions/checkout@v3
-                - uses: ./.github/actions/setup-claude
-                  with:
-                    anthropic-key: $SAFE_ANTHROPIC
-                - name: Suggest Solution
-                  env:
-                    ISSUE_NUMBER: $SAFE_ISSUE_NUM
-                    GITHUB_TOKEN: $SAFE_GITHUB
-                  run: |
-                    echo "제목: $SAFE_ISSUE_TITLE \n 내용: $SAFE_ISSUE_BODY" > issue.txt
-                    claude -p "이슈 분석 및 코드 해결책 제안 (한국어). 컨텍스트: \$(cat issue.txt)" > solution.md
-                    gh issue comment \$ISSUE_NUMBER --body-file solution.md
-          YAML
-
-          # ==============================================================================
-          # 5. Workflow: Nightly Refactor
-          # ==============================================================================
-          echo "🧹 Generating Refactor Workflow..."
-          cat << YAML > .github/workflows/99-nightly-refactor.yml
-          name: 🧹 Nightly Refactor
-          on:
-            schedule:
-              - cron: '0 18 * * *'
-          jobs:
-            refactor:
-              runs-on: ubuntu-latest
-              permissions:
-                contents: write
-                pull-requests: write
-              steps:
-                - uses: actions/checkout@v3
-                - uses: ./.github/actions/setup-claude
-                  with:
-                    anthropic-key: $SAFE_ANTHROPIC
-                - name: Cleanup
-                  run: |
-                    BRANCH="refactor/nightly-\$(date +%Y%m%d)"
-                    git checkout -b \$BRANCH
-                    claude -p "코드베이스 정리: 미사용 변수/임포트 제거, 주석 한글화."
-                    if [[ -n \$(git status --porcelain) ]]; then
-                      git add .
-                      git commit -m "🧹 정기 리팩토링"
-                      git push origin \$BRANCH
-                      gh pr create --title "🧹 정기 리팩토링" --body "Automated Cleanup" --base main
-                    fi
-                  env:
-                    GITHUB_TOKEN: $SAFE_GITHUB
-          YAML
-
-          # ==============================================================================
-          # 6. Workflow: Permission Audit (권한 감사 - 신규)
-          # ==============================================================================
-          echo "🛡️ Generating Audit Workflow..."
+          echo "🛡️  Generating Permission Tools..."
           cat << YAML > .github/workflows/00-permission-audit.yml
           name: 🛡️ Security Permission Audit
-          on:
-            push:
-              branches: [ main ]
-            workflow_dispatch:
+          on: { push: { branches: [main] } }
           jobs:
             audit:
               runs-on: ubuntu-latest
               steps:
-                - name: Check Token
-                  run: |
-                    if [[ "$SAFE_GITHUB" == "" ]]; then echo "❌ Token Missing"; exit 1; fi
-                    echo "✅ Token Present"
-                - name: Check Scripts
-                  uses: actions/checkout@v3
-                  run: |
+                - uses: actions/checkout@v3
+                - run: |
                     find . -name "*.sh" -exec ls -l {} \;
-                    echo "ℹ️ Use scripts/restore_permissions.sh if needed."
+                    if [[ "$SAFE_GITHUB" == "" ]]; then echo "❌ Token Missing"; exit 1; fi
           YAML
 
-          # ==============================================================================
-          # 7. Script: Restore Permissions (권한 복구 - 신규)
-          # ==============================================================================
-          echo "🔧 Generating Restore Script..."
           cat << 'SCRIPT' > scripts/restore_permissions.sh
           #!/bin/bash
-          echo "🔧 Restoring execution permissions..."
-          find . -type f -name "*.sh" -print0 | while IFS= read -r -d '' file; do
-              chmod +x "\$file"
-              echo "  - Fixed: \$file"
-          done
+          echo "🔧 Restoring permissions..."
+          find . -type f -name "*.sh" -exec chmod +x {} \;
           echo "✅ Done."
           SCRIPT
           chmod +x scripts/restore_permissions.sh
 
           # ==============================================================================
-          # 8. Documentation: Korean Manual (한국어 매뉴얼 - 신규)
+          # 7. Documentation: Korean Manual
           # ==============================================================================
           echo "📚 Generating Manual..."
           cat << 'DOC' > CLAUDE_MANUAL_KR.md
-          # 📘 Claude Code 통합 운영 매뉴얼
+          # 📘 Claude Code & Omni-Server 운영 매뉴얼
+
+          ## 🌟 핵심 기능
+          1. **🏗️ 대량 스캐폴딩**: \`./scripts/scaffold_services.sh\` 실행 시 4개 마이크로서비스(Controller, Service, DTO 등) 자동 생성.
+          2. **🤖 자율 에이전트**: \`04-claude-autonomous.yml\`이 6시간마다 실행되어 \`TODO: Claude\` 주석을 찾아 자동으로 코드를 구현.
+          3. **🏗️ 기능 빌더**: 수동으로 기능을 요청하면 브랜치 생성부터 PR까지 자동화.
 
           ## 🚀 필수 설정
-          1. **Secrets**: \`ANTHROPIC_API_KEY\` 등록 필수.
-          2. **Permissions**: Settings > Actions > General > "Read and write permissions" 체크.
+          - Secrets에 \`ANTHROPIC_API_KEY\` 등록 필수.
+          - Settings > Actions > General > "Read and write permissions" 허용.
 
-          ## 🤖 기능 가이드
-          1. **🏗️ Feature Builder**: \`Actions\` 탭에서 수동 실행. 원하는 기능을 한국어로 입력하면 코드 작성 및 PR 생성.
-          2. **🤖 Auto Reviewer**: PR 생성 시 자동 실행. 코드 변경사항을 분석해 한국어로 리뷰.
-          3. **🚑 Issue Triage**: 이슈 등록 시 자동 실행. 해결책 제안.
-          4. **🧹 Nightly Refactor**: 매일 새벽 자동 실행. 코드 정리.
+          ## 📁 디렉토리 구조
+          - \`.github/workflows\`: 자동화 파이프라인
+          - \`services/\`: 마이크로서비스 소스 코드 (Java/Spring Boot)
+          - \`scripts/\`: 유틸리티 스크립트
 
-          ## 🔧 문제 해결
-          권한 에러 발생 시:
-          \`\`\`bash
-          ./scripts/restore_permissions.sh
-          \`\`\`
+          ## 🆘 문제 해결
+          권한 에러 시: \`./scripts/restore_permissions.sh\`
           DOC
-          
+
           EOF
-          
-          # 생성된 스크립트 실행
+
+          # 스크립트 실행 및 삭제
           chmod +x generate_workflows.sh
           ./generate_workflows.sh
           
-          # [핵심] 생성 스크립트 삭제 (보안 및 커밋 방지)
-          # 이 파일이 커밋되면 히스토리에 토큰 패턴이 남을 수 있으므로 즉시 삭제합니다.
+          # [중요] 스크립트 실행 후 즉시 파일 삭제 (토큰 유출 방지)
           rm generate_workflows.sh
 
       - name: Commit & Push
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
-          
           git add .
-          
           if [[ -n $(git status --porcelain) ]]; then
-            git commit -m "🚀 Bootstrap: Secure Workflows & Manual Added"
+            git commit -m "🚀 Bootstrap: Ultimate Server & Scaffolding Tools"
             git push
           else
             echo "✅ Already up to date."
