@@ -1,8 +1,8 @@
-name: ⚡ Bootstrap Claude Integration (Full Pack)
-description: "Claude Code 관련 워크플로우, 한국어 매뉴얼, 권한 관리 도구를 일괄 생성합니다."
+name: ⚡ Bootstrap Claude Integration (Secure Fix)
+description: "보안 토큰 노출 없이 Claude Code 워크플로우, 한국어 매뉴얼, 권한 도구를 생성합니다."
 
 on:
-  workflow_dispatch: # 수동 실행
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -11,18 +11,36 @@ permissions:
 
 jobs:
   initialize:
-    name: 🚀 Initialize Omni-System
+    name: 🚀 Initialize System
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Generate Setup Script
+      - name: Generate & Execute Setup Script
         run: |
-          cat << 'END_OF_SCRIPT' > generate_workflows.sh
+          echo "🔄 Initializing Secure Setup..."
+
+          # [중요] GitHub Actions의 변수 치환 방지를 위한 변수 조립
+          # 이렇게 하면 러너가 토큰 값으로 바꾸지 않고, 문자열 그대로 파일에 기록합니다.
+          D="$"
+          SAFE_ANTHROPIC="${D}{{ secrets.ANTHROPIC_API_KEY }}"
+          SAFE_GITHUB="${D}{{ secrets.GITHUB_TOKEN }}"
+          SAFE_RUN_ID="${D}{{ github.run_id }}"
+          SAFE_PR_NUM="${D}{{ github.event.pull_request.number }}"
+          SAFE_BASE_REF="${D}{{ github.base_ref }}"
+          SAFE_ISSUE_NUM="${D}{{ github.event.issue.number }}"
+          SAFE_ISSUE_TITLE="${D}{{ github.event.issue.title }}"
+          SAFE_ISSUE_BODY="${D}{{ github.event.issue.body }}"
+          SAFE_INPUT_REQ="${D}{{ inputs.requirement }}"
+          SAFE_INPUT_BRANCH="${D}{{ inputs.branch_name }}"
+          SAFE_INPUT_BRANCH_FMT="${D}{{ inputs.branch_name || format('feature/claude-{0}', github.run_id) }}"
+          SAFE_STEP_PUSHED="${D}{{ steps.coding.outputs.pushed }}"
+          SAFE_STEP_BRANCH="${D}{{ steps.coding.outputs.branch }}"
+
+          # 생성 스크립트 작성 (EOF를 사용하여 변수 확장 허용)
+          cat << EOF > generate_workflows.sh
           #!/bin/bash
-          
-          echo "🔄 Initializing Claude Code Integration System..."
           
           # 0. 디렉토리 구조 생성
           mkdir -p .github/workflows
@@ -31,10 +49,10 @@ jobs:
           mkdir -p docs
 
           # ==============================================================================
-          # 1. Setup Action 생성 (Claude CLI 설치)
+          # 1. Setup Action 생성
           # ==============================================================================
           echo "⚙️  Generating Setup Action..."
-          cat << 'EOF' > .github/actions/setup-claude/action.yml
+          cat << 'YAML' > .github/actions/setup-claude/action.yml
           name: 'Setup Claude Code'
           description: 'Installs Claude Code CLI and persists authentication globally'
           inputs:
@@ -47,37 +65,32 @@ jobs:
               - name: Install Claude Code
                 shell: bash
                 run: |
-                  echo "⬇️ Installing Claude Code..."
                   curl -fsSL https://claude.ai/install.sh | bash
-                  echo "$HOME/.local/bin" >> $GITHUB_PATH
+                  echo "\$HOME/.local/bin" >> \$GITHUB_PATH
               - name: Configure Global Authentication
                 shell: bash
                 run: |
-                  echo "ANTHROPIC_API_KEY=${{ inputs.anthropic-key }}" >> $GITHUB_ENV
-                  echo "CI=true" >> $GITHUB_ENV
-                  echo "CLAUDE_HEADLESS=true" >> $GITHUB_ENV
+                  echo "ANTHROPIC_API_KEY=\${{ inputs.anthropic-key }}" >> \$GITHUB_ENV
+                  echo "CI=true" >> \$GITHUB_ENV
+                  echo "CLAUDE_HEADLESS=true" >> \$GITHUB_ENV
                   git config --global user.name "Claude Bot"
                   git config --global user.email "bot@claude.ai"
-                  echo "✅ Auth configured."
-              - name: Verify Installation
-                shell: bash
-                run: claude --version
-          EOF
+          YAML
 
           # ==============================================================================
-          # 2. Workflow: Feature Builder (기능 구현)
+          # 2. Workflow: Feature Builder
           # ==============================================================================
           echo "🏗️  Generating Feature Builder Workflow..."
-          cat << 'EOF' > .github/workflows/03-feature-builder.yml
+          cat << YAML > .github/workflows/03-feature-builder.yml
           name: 🏗️ Feature Builder (Dispatch)
           on:
             workflow_dispatch:
               inputs:
                 requirement:
-                  description: '구현할 기능 설명 (한국어로 구체적으로 작성)'
+                  description: '구현할 기능 설명 (한국어)'
                   required: true
                 branch_name:
-                  description: '브랜치 이름 (미입력 시 자동생성)'
+                  description: '브랜치 이름 (옵션)'
                   required: false
           jobs:
             build-feature:
@@ -89,40 +102,39 @@ jobs:
                 - uses: actions/checkout@v3
                 - uses: ./.github/actions/setup-claude
                   with:
-                    anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
+                    anthropic-key: $SAFE_ANTHROPIC
                 - name: Create Branch & Code
                   id: coding
                   env:
-                    BRANCH_NAME: ${{ inputs.branch_name || format('feature/claude-{0}', github.run_id) }}
+                    BRANCH_NAME: $SAFE_INPUT_BRANCH_FMT
                   run: |
-                    git checkout -b $BRANCH_NAME
-                    # 한국어 프롬프트 적용
-                    claude -p "TASK: ${{ inputs.requirement }} \n CONTEXT: CI 환경입니다. \n ACTION: 기능을 구현하세요. 사용자 입력 없이 코드를 작성하고 수정하세요."
+                    git checkout -b \$BRANCH_NAME
+                    claude -p "TASK: $SAFE_INPUT_REQ \n CONTEXT: CI 환경. \n ACTION: 기능 구현. 사용자 입력 없이 코드 작성."
                     
-                    if [[ -n $(git status --porcelain) ]]; then
+                    if [[ -n \$(git status --porcelain) ]]; then
                       git add .
-                      COMMIT_MSG=$(git diff --staged | claude -p "Generate a commit message in Korean (max 50 chars)")
-                      git commit -m "$COMMIT_MSG"
-                      git push origin $BRANCH_NAME
-                      echo "pushed=true" >> $GITHUB_OUTPUT
-                      echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+                      COMMIT_MSG=\$(git diff --staged | claude -p "Generate commit message in Korean (max 50 chars)")
+                      git commit -m "\$COMMIT_MSG"
+                      git push origin \$BRANCH_NAME
+                      echo "pushed=true" >> \$GITHUB_OUTPUT
+                      echo "branch=\$BRANCH_NAME" >> \$GITHUB_OUTPUT
                     else
-                      echo "pushed=false" >> $GITHUB_OUTPUT
+                      echo "pushed=false" >> \$GITHUB_OUTPUT
                     fi
                 - name: Create PR
                   if: steps.coding.outputs.pushed == 'true'
                   env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    BRANCH_NAME: ${{ steps.coding.outputs.branch }}
+                    GITHUB_TOKEN: $SAFE_GITHUB
+                    BRANCH_NAME: $SAFE_STEP_BRANCH
                   run: |
-                    gh pr create --title "✨ Feature: $BRANCH_NAME" --body "Claude Code가 구현한 기능입니다.\n\n요구사항: ${{ inputs.requirement }}" --head $BRANCH_NAME --base main
-          EOF
+                    gh pr create --title "✨ Feature: \$BRANCH_NAME" --body "Claude 구현:\n\n$SAFE_INPUT_REQ" --head \$BRANCH_NAME --base main
+          YAML
 
           # ==============================================================================
-          # 3. Workflow: Auto Review (자동 코드 리뷰)
+          # 3. Workflow: Auto Review
           # ==============================================================================
-          echo "🤖 Generating PR Review Workflow..."
-          cat << 'EOF' > .github/workflows/01-pr-auto-review.yml
+          echo "🤖 Generating Review Workflow..."
+          cat << YAML > .github/workflows/01-pr-auto-review.yml
           name: 🤖 Claude Code Reviewer
           on:
             pull_request:
@@ -139,24 +151,23 @@ jobs:
                   with: { fetch-depth: 0 }
                 - uses: ./.github/actions/setup-claude
                   with:
-                    anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
+                    anthropic-key: $SAFE_ANTHROPIC
                 - name: Analyze Diff
                   env:
-                    PR_NUMBER: ${{ github.event.pull_request.number }}
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    PR_NUMBER: $SAFE_PR_NUM
+                    GITHUB_TOKEN: $SAFE_GITHUB
                   run: |
-                    git diff origin/${{ github.base_ref }} > diff.txt
+                    git diff origin/$SAFE_BASE_REF > diff.txt
                     if [ ! -s diff.txt ]; then exit 0; fi
-                    # 한국어 리뷰 요청
-                    cat diff.txt | claude -p "이 변경사항을 버그와 보안 관점에서 리뷰해줘. 결과는 마크다운 형식의 한국어로 출력해. 문제가 없다면 'LGTM'이라고만 말해." > review.md
-                    if ! grep -q "LGTM" review.md; then gh pr comment $PR_NUMBER --body-file review.md; fi
-          EOF
+                    cat diff.txt | claude -p "코드 리뷰해줘. 보안/버그 위주. 한국어로 마크다운 출력. 문제 없으면 'LGTM'만 출력." > review.md
+                    if ! grep -q "LGTM" review.md; then gh pr comment \$PR_NUMBER --body-file review.md; fi
+          YAML
 
           # ==============================================================================
-          # 4. Workflow: Issue Triage (이슈 분석)
+          # 4. Workflow: Issue Triage
           # ==============================================================================
           echo "🚑 Generating Issue Triage Workflow..."
-          cat << 'EOF' > .github/workflows/02-issue-triage.yml
+          cat << YAML > .github/workflows/02-issue-triage.yml
           name: 🚑 Issue Auto-Triage
           on:
             issues: { types: [opened] }
@@ -170,26 +181,26 @@ jobs:
                 - uses: actions/checkout@v3
                 - uses: ./.github/actions/setup-claude
                   with:
-                    anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
+                    anthropic-key: $SAFE_ANTHROPIC
                 - name: Suggest Solution
                   env:
-                    ISSUE_NUMBER: ${{ github.event.issue.number }}
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    ISSUE_NUMBER: $SAFE_ISSUE_NUM
+                    GITHUB_TOKEN: $SAFE_GITHUB
                   run: |
-                    echo "제목: ${{ github.event.issue.title }} \n 내용: ${{ github.event.issue.body }}" > issue.txt
-                    claude -p "이 이슈를 분석하고 코드 수정 방안을 한국어로 제안해줘. 컨텍스트: $(cat issue.txt)" > solution.md
-                    gh issue comment $ISSUE_NUMBER --body-file solution.md
-          EOF
+                    echo "제목: $SAFE_ISSUE_TITLE \n 내용: $SAFE_ISSUE_BODY" > issue.txt
+                    claude -p "이슈 분석 및 코드 해결책 제안 (한국어). 컨텍스트: \$(cat issue.txt)" > solution.md
+                    gh issue comment \$ISSUE_NUMBER --body-file solution.md
+          YAML
 
           # ==============================================================================
-          # 5. Workflow: Nightly Refactor (정기 리팩토링)
+          # 5. Workflow: Nightly Refactor
           # ==============================================================================
-          echo "🧹 Generating Nightly Refactor Workflow..."
-          cat << 'EOF' > .github/workflows/99-nightly-refactor.yml
+          echo "🧹 Generating Refactor Workflow..."
+          cat << YAML > .github/workflows/99-nightly-refactor.yml
           name: 🧹 Nightly Refactor
           on:
             schedule:
-              - cron: '0 18 * * *' # 매일 한국시간 오전 3시
+              - cron: '0 18 * * *'
           jobs:
             refactor:
               runs-on: ubuntu-latest
@@ -200,27 +211,27 @@ jobs:
                 - uses: actions/checkout@v3
                 - uses: ./.github/actions/setup-claude
                   with:
-                    anthropic-key: ${{ secrets.ANTHROPIC_API_KEY }}
-                - name: Cleanup Code
+                    anthropic-key: $SAFE_ANTHROPIC
+                - name: Cleanup
                   run: |
-                    BRANCH="refactor/nightly-$(date +%Y%m%d)"
-                    git checkout -b $BRANCH
-                    claude -p "코드베이스 전체를 스캔해서 사용하지 않는 변수나 임포트를 제거하고 한국어로 주석을 다듬어줘."
-                    if [[ -n $(git status --porcelain) ]]; then
+                    BRANCH="refactor/nightly-\$(date +%Y%m%d)"
+                    git checkout -b \$BRANCH
+                    claude -p "코드베이스 정리: 미사용 변수/임포트 제거, 주석 한글화."
+                    if [[ -n \$(git status --porcelain) ]]; then
                       git add .
-                      git commit -m "🧹 정기 리팩토링 및 정리"
-                      git push origin $BRANCH
-                      gh pr create --title "🧹 정기 리팩토링 보고서" --body "Claude Code가 수행한 자동 정리 작업입니다." --base main
+                      git commit -m "🧹 정기 리팩토링"
+                      git push origin \$BRANCH
+                      gh pr create --title "🧹 정기 리팩토링" --body "Automated Cleanup" --base main
                     fi
                   env:
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EOF
+                    GITHUB_TOKEN: $SAFE_GITHUB
+          YAML
 
           # ==============================================================================
-          # 6. Workflow: Permission Check (권한 감사 - 신규 추가)
+          # 6. Workflow: Permission Audit (권한 감사 - 신규)
           # ==============================================================================
-          echo "🛡️ Generating Permission Audit Workflow..."
-          cat << 'EOF' > .github/workflows/00-permission-audit.yml
+          echo "🛡️ Generating Audit Workflow..."
+          cat << YAML > .github/workflows/00-permission-audit.yml
           name: 🛡️ Security Permission Audit
           on:
             push:
@@ -230,124 +241,76 @@ jobs:
             audit:
               runs-on: ubuntu-latest
               steps:
-                - name: Check Token Permissions
+                - name: Check Token
                   run: |
-                    echo "🔍 GITHUB_TOKEN 권한 점검 중..."
-                    # 실제로는 API를 찔러보거나 현재 컨텍스트를 확인
-                    if [[ "${{ secrets.GITHUB_TOKEN }}" == "" ]]; then
-                      echo "❌ GITHUB_TOKEN이 감지되지 않습니다."
-                      exit 1
-                    fi
-                    echo "✅ 기본 토큰이 활성화되어 있습니다."
-                - name: Check Executable Permissions
+                    if [[ "$SAFE_GITHUB" == "" ]]; then echo "❌ Token Missing"; exit 1; fi
+                    echo "✅ Token Present"
+                - name: Check Scripts
                   uses: actions/checkout@v3
-                  with:
-                    fetch-depth: 0
                   run: |
-                    echo "🔍 실행 권한(.sh) 점검 중..."
                     find . -name "*.sh" -exec ls -l {} \;
-                    echo "ℹ️ 권한 문제가 있다면 scripts/restore_permissions.sh 를 실행하세요."
-          EOF
+                    echo "ℹ️ Use scripts/restore_permissions.sh if needed."
+          YAML
 
           # ==============================================================================
-          # 7. Script: Permission Restore Utility (권한 복구 유틸리티 - 신규 추가)
+          # 7. Script: Restore Permissions (권한 복구 - 신규)
           # ==============================================================================
-          echo "🔧 Generating Permission Restore Script..."
-          cat << 'EOF' > scripts/restore_permissions.sh
+          echo "🔧 Generating Restore Script..."
+          cat << 'SCRIPT' > scripts/restore_permissions.sh
           #!/bin/bash
-          # 이 스크립트는 프로젝트 내의 모든 쉘 스크립트에 실행 권한을 부여합니다.
-          
-          echo "🔧 실행 권한 복구 유틸리티 시작..."
-          
-          # 현재 디렉토리 및 하위 디렉토리의 모든 .sh 파일 찾기
+          echo "🔧 Restoring execution permissions..."
           find . -type f -name "*.sh" -print0 | while IFS= read -r -d '' file; do
-              echo "  - 권한 부여: $file"
-              chmod +x "$file"
+              chmod +x "\$file"
+              echo "  - Fixed: \$file"
           done
-          
-          echo "✅ 모든 스크립트에 실행 권한(chmod +x)이 부여되었습니다."
-          EOF
+          echo "✅ Done."
+          SCRIPT
           chmod +x scripts/restore_permissions.sh
 
           # ==============================================================================
-          # 8. Documentation: Korean Manual (한국어 매뉴얼 - 신규 추가)
+          # 8. Documentation: Korean Manual (한국어 매뉴얼 - 신규)
           # ==============================================================================
-          echo "📚 Generating Korean Manual..."
-          cat << 'EOF' > CLAUDE_MANUAL_KR.md
+          echo "📚 Generating Manual..."
+          cat << 'DOC' > CLAUDE_MANUAL_KR.md
           # 📘 Claude Code 통합 운영 매뉴얼
 
-          이 프로젝트는 Anthropic의 Claude Code CLI를 GitHub Actions에 통합하여 **완전 자동화된 개발 파이프라인**을 제공합니다.
+          ## 🚀 필수 설정
+          1. **Secrets**: \`ANTHROPIC_API_KEY\` 등록 필수.
+          2. **Permissions**: Settings > Actions > General > "Read and write permissions" 체크.
 
-          ## 🚀 시작하기 전 필수 사항
-          1. **API 키 설정**: 리포지토리 Settings > Secrets and variables > Actions에 `ANTHROPIC_API_KEY`를 등록해야 합니다.
-          2. **권한 설정**: Settings > Actions > General > Workflow permissions에서 **Read and write permissions**가 선택되어 있어야 합니다.
+          ## 🤖 기능 가이드
+          1. **🏗️ Feature Builder**: \`Actions\` 탭에서 수동 실행. 원하는 기능을 한국어로 입력하면 코드 작성 및 PR 생성.
+          2. **🤖 Auto Reviewer**: PR 생성 시 자동 실행. 코드 변경사항을 분석해 한국어로 리뷰.
+          3. **🚑 Issue Triage**: 이슈 등록 시 자동 실행. 해결책 제안.
+          4. **🧹 Nightly Refactor**: 매일 새벽 자동 실행. 코드 정리.
 
-          ---
-
-          ## 🤖 포함된 워크플로우 가이드
-
-          ### 1. 🏗️ 기능 빌더 (Feature Builder)
-          **사용법**: `Actions` 탭 -> `🏗️ Feature Builder` -> `Run workflow`
-          - **입력값**:
-            - `requirement`: 구현하고 싶은 기능을 한국어로 자세히 적으세요. (예: "로그인 페이지에 구글 OAuth 버튼 추가해줘")
-          - **동작**:
-            - 자동으로 브랜치를 생성하고, Claude가 코드를 작성한 뒤 PR을 올립니다.
-
-          ### 2. 🤖 자동 코드 리뷰 (Auto Reviewer)
-          **사용법**: 자동 실행 (PR이 생성되거나 업데이트될 때)
-          - **동작**:
-            - 변경된 코드(Diff)를 분석하여 버그나 보안 취약점이 있으면 PR 코멘트로 한국어 리뷰를 남깁니다.
-            - 문제가 없으면 "LGTM"을 기록합니다.
-
-          ### 3. 🚑 이슈 자동 분석 (Issue Triage)
-          **사용법**: 자동 실행 (새로운 Issue가 등록될 때)
-          - **동작**:
-            - 이슈 내용을 분석하여 해결 방법이나 수정해야 할 코드를 제안하는 댓글을 답니다.
-
-          ### 4. 🧹 정기 리팩토링 (Nightly Refactor)
-          **사용법**: 매일 한국 시간 오전 3시 자동 실행
-          - **동작**:
-            - 사용하지 않는 변수 제거, 코드 포맷팅, 주석 정리를 수행하고 PR을 생성합니다.
-
-          ---
-
-          ## 🛠️ 유지보수 및 권한 관리
-
-          ### 실행 권한 문제 해결
-          스크립트 실행 권한(`Permission denied`) 에러가 발생할 경우, 로컬에서 다음 스크립트를 실행하거나 커밋하세요.
-          
+          ## 🔧 문제 해결
+          권한 에러 발생 시:
           \`\`\`bash
           ./scripts/restore_permissions.sh
           \`\`\`
-
-          ### 로그 확인
-          모든 Claude의 작업 내역은 GitHub Actions 로그에서 확인할 수 있습니다.
-
-          ---
-          *Generated by Bootstrap Claude Integration Workflow*
+          DOC
+          
           EOF
-
-          echo "✅ All workflows and documentation generated successfully."
           
-          END_OF_SCRIPT
-          
-          # 생성된 스크립트에 실행 권한 부여
+          # 생성된 스크립트 실행
           chmod +x generate_workflows.sh
+          ./generate_workflows.sh
+          
+          # [핵심] 생성 스크립트 삭제 (보안 및 커밋 방지)
+          # 이 파일이 커밋되면 히스토리에 토큰 패턴이 남을 수 있으므로 즉시 삭제합니다.
+          rm generate_workflows.sh
 
-      - name: Execute Setup Script
-        run: ./generate_workflows.sh
-
-      - name: Commit & Push Generated Workflows
+      - name: Commit & Push
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
           
           git add .
           
-          # 변경사항이 있을 때만 커밋
           if [[ -n $(git status --porcelain) ]]; then
-            git commit -m "🚀 Bootstrap: Korean Manual & Permission Tools Added"
+            git commit -m "🚀 Bootstrap: Secure Workflows & Manual Added"
             git push
           else
-            echo "Everything is already up to date."
+            echo "✅ Already up to date."
           fi
