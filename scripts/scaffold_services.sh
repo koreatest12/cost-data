@@ -47,18 +47,8 @@ public class ${PKG_NAME^}Controller {
     public Map<String, String> health() { return Map.of("status", "UP", "service", "$SVC_NAME"); }
 }
 JAVA
-
-    # 3. Config (Security)
-    cat <<JAVA > $BASE_DIR/config/SecurityConfig.java
-package com.costdata.$PKG_NAME.config;
-import org.springframework.context.annotation.Configuration;
-@Configuration
-public class SecurityConfig {
-    // TODO: Claude will implement JWT filter here
-}
-JAVA
-
-    # 4. resources/application.yml
+    
+    # 3. application.yml
     cat <<YML > $RSRC_DIR/application.yml
 server:
   port: 808${i}
@@ -71,7 +61,6 @@ management:
       exposure:
         include: health,info,metrics
 YML
-
 done
 
-echo "✅ Generated 4 Microservices with standard architecture."
+echo "✅ Generated 4 Microservices."
