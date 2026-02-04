@@ -1,31 +1,22 @@
 name: 'Setup Claude Code'
-description: 'Installs Claude Code CLI for CI/CD environments'
+description: 'Installs Claude Code CLI and persists authentication globally'
 inputs:
   anthropic-key:
     description: 'API Key for Authentication'
     required: true
-
 runs:
   using: "composite"
   steps:
-    - name: Install Claude Code (Linux/macOS)
+    - name: Install Claude Code
       shell: bash
       run: |
-        echo "⬇️ Installing Claude Code..."
         curl -fsSL https://claude.ai/install.sh | bash
-        
-        # 경로 설정 (환경에 따라 다를 수 있음)
         echo "$HOME/.local/bin" >> $GITHUB_PATH
-        
-    - name: Verify Installation
+    - name: Configure Global Authentication
       shell: bash
-      run: claude --version
-
-    - name: Authenticate
-      shell: bash
-      env:
-        ANTHROPIC_API_KEY: ${{ inputs.anthropic-key }}
       run: |
-        # CI 환경에서는 비대화형 인증 설정이 필요 (가상의 설정 예시)
-        # 실제로는 claude login --token ... 또는 환경변수 인식이 지원되어야 함
-        echo "✅ Claude Code Authenticated via Environment Variable"
+        echo "ANTHROPIC_API_KEY=\" >> $GITHUB_ENV
+        echo "CI=true" >> $GITHUB_ENV
+        echo "CLAUDE_HEADLESS=true" >> $GITHUB_ENV
+        git config --global user.name "Claude Bot"
+        git config --global user.email "bot@claude.ai"
