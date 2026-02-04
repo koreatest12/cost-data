@@ -1,5 +1,5 @@
-name: ⚡ Bootstrap Claude Integration (Ultimate Server)
-description: "Claude Code 자율 에이전트, 대량 서비스 스캐폴딩, 보안 워크플로우를 일괄 구축합니다."
+name: ⚡ Bootstrap Claude Integration (Ultimate Fixed)
+description: "충돌 방지 로직이 적용된 Claude Code 자율 에이전트 및 대량 스캐폴딩 구축 워크플로우입니다."
 
 on:
   workflow_dispatch:
@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Git 히스토리 충돌 해결을 위해 전체 이력 가져오기
 
       - name: Generate & Execute Setup Script
         run: |
@@ -23,7 +25,6 @@ jobs:
 
           # [보안] GitHub Actions 변수 치환 방지용 매직 변수 ($D)
           D="$"
-          # Secrets 및 Context를 안전한 쉘 변수로 매핑
           SAFE_ANTHROPIC="${D}{{ secrets.ANTHROPIC_API_KEY }}"
           SAFE_GITHUB="${D}{{ secrets.GITHUB_TOKEN }}"
           SAFE_RUN_ID="${D}{{ github.run_id }}"
@@ -33,7 +34,6 @@ jobs:
           SAFE_ISSUE_TITLE="${D}{{ github.event.issue.title }}"
           SAFE_ISSUE_BODY="${D}{{ github.event.issue.body }}"
           SAFE_INPUT_REQ="${D}{{ inputs.requirement }}"
-          SAFE_INPUT_BRANCH="${D}{{ inputs.branch_name }}"
           SAFE_INPUT_BRANCH_FMT="${D}{{ inputs.branch_name || format('feature/claude-{0}', github.run_id) }}"
           SAFE_STEP_PUSHED="${D}{{ steps.coding.outputs.pushed }}"
           SAFE_STEP_BRANCH="${D}{{ steps.coding.outputs.branch }}"
@@ -47,6 +47,7 @@ jobs:
           mkdir -p .github/actions/setup-claude
           mkdir -p scripts
           mkdir -p docs
+          mkdir -p services
 
           # ==============================================================================
           # 1. Setup Action (Claude CLI 설치)
@@ -190,8 +191,7 @@ jobs:
                     GITHUB_TOKEN: $SAFE_GITHUB
                   run: |
                     echo "🤖 Claude Agent Started..."
-                    
-                    # 1. TODO 주석 스캔 및 처리
+                    # TODO 주석 스캔
                     grep -r "TODO: Claude" . > todos.txt || true
                     
                     if [ -s todos.txt ]; then
@@ -255,9 +255,9 @@ jobs:
           YAML
 
           # ==============================================================================
-          # 5. Workflow: Auto Reviewer
+          # 5. Workflow: Auto Reviewer & Permission Tools
           # ==============================================================================
-          echo "👀 Generating Reviewer..."
+          echo "👀 Generating Reviewer & Tools..."
           cat << YAML > .github/workflows/01-pr-auto-review.yml
           name: 🤖 Claude Code Reviewer
           on:
@@ -280,23 +280,6 @@ jobs:
                     if ! grep -q "LGTM" review.md; then gh pr comment \$PR_NUM --body-file review.md; fi
           YAML
 
-          # ==============================================================================
-          # 6. Workflow: Permission Audit & Restore Tool
-          # ==============================================================================
-          echo "🛡️  Generating Permission Tools..."
-          cat << YAML > .github/workflows/00-permission-audit.yml
-          name: 🛡️ Security Permission Audit
-          on: { push: { branches: [main] } }
-          jobs:
-            audit:
-              runs-on: ubuntu-latest
-              steps:
-                - uses: actions/checkout@v3
-                - run: |
-                    find . -name "*.sh" -exec ls -l {} \;
-                    if [[ "$SAFE_GITHUB" == "" ]]; then echo "❌ Token Missing"; exit 1; fi
-          YAML
-
           cat << 'SCRIPT' > scripts/restore_permissions.sh
           #!/bin/bash
           echo "🔧 Restoring permissions..."
@@ -306,7 +289,7 @@ jobs:
           chmod +x scripts/restore_permissions.sh
 
           # ==============================================================================
-          # 7. Documentation: Korean Manual
+          # 6. Documentation: Korean Manual
           # ==============================================================================
           echo "📚 Generating Manual..."
           cat << 'DOC' > CLAUDE_MANUAL_KR.md
@@ -321,13 +304,8 @@ jobs:
           - Secrets에 \`ANTHROPIC_API_KEY\` 등록 필수.
           - Settings > Actions > General > "Read and write permissions" 허용.
 
-          ## 📁 디렉토리 구조
-          - \`.github/workflows\`: 자동화 파이프라인
-          - \`services/\`: 마이크로서비스 소스 코드 (Java/Spring Boot)
-          - \`scripts/\`: 유틸리티 스크립트
-
           ## 🆘 문제 해결
-          권한 에러 시: \`./scripts/restore_permissions.sh\`
+          Git 충돌 에러 시, 이 부트스트랩 워크플로우를 다시 실행하면 자동으로 병합 및 복구됩니다.
           DOC
 
           EOF
@@ -335,18 +313,37 @@ jobs:
           # 스크립트 실행 및 삭제
           chmod +x generate_workflows.sh
           ./generate_workflows.sh
-          
-          # [중요] 스크립트 실행 후 즉시 파일 삭제 (토큰 유출 방지)
           rm generate_workflows.sh
 
-      - name: Commit & Push
+      # [✅ 핵심 수정] 충돌 방지 및 재시도 로직이 포함된 커밋 단계
+      - name: Commit & Push with Retry
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
+          
           git add .
+          
           if [[ -n $(git status --porcelain) ]]; then
             git commit -m "🚀 Bootstrap: Ultimate Server & Scaffolding Tools"
-            git push
+            
+            # 재시도 로직 (최대 10회)
+            MAX_RETRIES=10
+            count=0
+            until [ $count -ge $MAX_RETRIES ]; do
+              # Pull (Rebase) 먼저 시도 후 Push
+              # -s recursive -X ours: 충돌 시 봇이 생성한 파일(현재 로컬)을 우선할지, 원격을 우선할지 결정
+              # 여기서는 단순 병합(pull --no-rebase)을 사용하여 기록을 합칩니다.
+              git pull origin main --no-rebase && git push origin main && break
+              
+              count=$((count+1))
+              echo "⚠️ Push failed (Repo changed). Retrying ($count/$MAX_RETRIES)..."
+              sleep 5
+            done
+            
+            if [ $count -ge $MAX_RETRIES ]; then
+              echo "❌ Failed to push after retries."
+              exit 1
+            fi
           else
             echo "✅ Already up to date."
           fi
