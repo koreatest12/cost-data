@@ -1,52 +1,50 @@
-name: KCA 정보보안기사 대량 모니터링
+name: KCA 정보보안기사 대량 아카이빙 시스템
 
 on:
   schedule:
-    - cron: '0 * * * *'  # 매시간 정각 실행
-  workflow_dispatch:      # 수동 실행 버튼 활성화
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
   push:
     branches: [ main ]
-    paths:
-      - 'scripts/kca-monitor/**'
 
 permissions:
   contents: write
   issues: write
 
 jobs:
-  kca-monitor:
+  archive-process:
     runs-on: ubuntu-latest
     steps:
-      - name: 저장소 체크아웃
+      - name: 소스 체크아웃
         uses: actions/checkout@v4
 
-      - name: 파이썬 환경 설정
+      - name: 파이썬 설정
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: 의존성 설치
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4
+      - name: 라이브러리 설치
+        run: pip install requests beautifulsoup4
 
-      - name: 대량 모니터링 스크립트 실행
-        id: monitor_run
+      - name: 대량 수집 및 아카이빙 실행
+        id: run_script
         run: python scripts/kca-monitor/kca_exam_monitor.py
 
-      - name: 변경사항 커밋 및 푸시
-        if: steps.monitor_run.outputs.has_changes == 'true'
+      - name: 전체 보드 및 데이터 업데이트 반영
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/kca-notifications/
-          git commit -m "🔔 KCA 공지사항 업데이트: ${{ steps.monitor_run.outputs.new_count }}건"
-          git pull --rebase origin main
-          git push origin main
+          git add data/ KCA_NOTICE_BOARD.md
+          # 변경사항이 있을 때만 커밋 (데이터베이스나 MD 파일 변경 시)
+          if ! git diff --staged --quiet; then
+            git commit -m "🗂️ KCA 공지사항 데이터베이스 업데이트 (신규: ${{ steps.run_script.outputs.new_count }}건)"
+            git pull --rebase origin main
+            git push origin main
+          fi
 
-      - name: 신규 공지 Issue 발행
-        if: steps.monitor_run.outputs.has_changes == 'true'
+      - name: 신규 공지 발생 시 Issue 알림
+        if: steps.run_script.outputs.has_changes == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -55,14 +53,15 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `📢 KCA 신규 공지 알림 (${new Date().toLocaleDateString('ko-KR')})`,
-              body: report,
+              title: `📢 [신규] KCA 정보보안기사 공지사항 업데이트`,
+              body: report + "\n\n---\n[전체 공지사항 보드 보기](./KCA_NOTICE_BOARD.md)",
               labels: ['notification', 'kca-exam']
             });
 
-      - name: 실행 결과 요약
+      - name: 요약 리포트 표시
         if: always()
         run: |
-          echo "### 🚀 모니터링 실행 완료" >> $GITHUB_STEP_SUMMARY
-          echo "- 실행 시간: $(date)" >> $GITHUB_STEP_SUMMARY
-          echo "- 신규 공지 발견: ${{ steps.monitor_run.outputs.has_changes }}" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 KCA 모니터링 현황" >> $GITHUB_STEP_SUMMARY
+          echo "- 업데이트 시간: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- 신규 발견: ${{ steps.run_script.outputs.new_count }}건" >> $GITHUB_STEP_SUMMARY
+          echo "- 전체 목록은 [KCA_NOTICE_BOARD.md](./KCA_NOTICE_BOARD.md)에서 확인 가능합니다." >> $GITHUB_STEP_SUMMARY
