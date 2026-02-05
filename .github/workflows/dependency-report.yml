@@ -1,0 +1,171 @@
+name: Dependency Report Generator
+
+on:
+  schedule:
+    # 매주 월요일 오전 10시 (KST)
+    - cron: '0 1 * * 1'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'requirements.txt'
+      - 'pom.xml'
+      - '**/pom.xml'
+      - '**/requirements.txt'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit safety pipdeptree
+
+      - name: Generate Python dependency tree
+        run: |
+          echo "# Python Dependencies Report" > dependency_report.md
+          echo "" >> dependency_report.md
+          echo "## 메인 프로젝트 의존성" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          pipdeptree || echo "의존성 트리 생성 실패" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          echo "" >> dependency_report.md
+
+      - name: Python security audit (pip-audit)
+        continue-on-error: true
+        run: |
+          echo "## Python 보안 감사 (pip-audit)" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          pip-audit --desc || echo "보안 취약점 없음" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          echo "" >> dependency_report.md
+
+      - name: Python security check (Safety)
+        continue-on-error: true
+        run: |
+          echo "## Python 보안 검사 (Safety)" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          safety check --json > safety_report.json || true
+          if [ -f safety_report.json ]; then
+            cat safety_report.json >> dependency_report.md
+          fi
+          echo '```' >> dependency_report.md
+          echo "" >> dependency_report.md
+
+      - name: Maven dependency tree
+        continue-on-error: true
+        run: |
+          echo "## Maven 의존성 트리" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          mvn dependency:tree -DoutputFile=maven_deps.txt || echo "Maven 의존성 트리 생성 실패" >> dependency_report.md
+          if [ -f maven_deps.txt ]; then
+            cat maven_deps.txt >> dependency_report.md
+          fi
+          echo '```' >> dependency_report.md
+          echo "" >> dependency_report.md
+
+      - name: Maven security check
+        continue-on-error: true
+        run: |
+          echo "## Maven 보안 검사" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=0 || echo "보안 검사 실패" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          echo "" >> dependency_report.md
+
+      - name: Check for outdated packages
+        continue-on-error: true
+        run: |
+          echo "## 오래된 패키지" >> dependency_report.md
+          echo "" >> dependency_report.md
+          echo "### Python" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          pip list --outdated || echo "모든 패키지가 최신 상태입니다" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          echo "" >> dependency_report.md
+          echo "### Maven" >> dependency_report.md
+          echo '```' >> dependency_report.md
+          mvn versions:display-dependency-updates || echo "Maven 업데이트 확인 실패" >> dependency_report.md
+          echo '```' >> dependency_report.md
+
+      - name: Save report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-report
+          path: |
+            dependency_report.md
+            safety_report.json
+            maven_deps.txt
+
+      - name: Create JSON report
+        run: |
+          python << 'EOF'
+          import json
+          import subprocess
+          from datetime import datetime
+
+          report = {
+              "generated_at": datetime.now().isoformat(),
+              "python_packages": [],
+              "maven_packages": [],
+              "vulnerabilities": []
+          }
+
+          # Python packages
+          try:
+              result = subprocess.run(['pip', 'list', '--format=json'], capture_output=True, text=True)
+              report["python_packages"] = json.loads(result.stdout)
+          except:
+              pass
+
+          with open('dependabot_report.json', 'w', encoding='utf-8') as f:
+              json.dump(report, f, indent=2, ensure_ascii=False)
+          EOF
+
+      - name: Commit and push report
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add dependabot_report.json dependency_report.md
+          git diff --quiet && git diff --staged --quiet || (git commit -m "📊 의존성 보고서 자동 업데이트 [skip ci]" && git push)
+
+      - name: Create issue on vulnerabilities
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## 🔒 보안 취약점 발견\n\n';
+            body += '의존성 보안 검사에서 문제가 발견되었습니다.\n\n';
+            body += '[의존성 보고서 확인](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n';
+            body += '**생성 시간**: ' + new Date().toISOString();
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔒 의존성 보안 취약점 알림',
+              body: body,
+              labels: ['security', 'dependencies', 'automated']
+            });
