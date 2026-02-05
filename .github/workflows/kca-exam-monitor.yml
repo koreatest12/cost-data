@@ -1,20 +1,13 @@
-name: KCA 정보보안기사 시험 모니터링
+name: KCA 정보보안기사 대량 모니터링 시스템
 
 on:
   schedule:
-    # 매시간 정각에 실행 (KST 기준으로 조정됨)
-    - cron: '0 * * * *'
-
+    - cron: '0 * * * *' # 매시간 정각 실행
   workflow_dispatch:
-    # 수동 실행 가능
-
   push:
-    branches:
-      - main
-      - claude/kca-exam-notifications-*
+    branches: [ main ]
     paths:
       - 'scripts/kca-monitor/**'
-      - '.github/workflows/kca-exam-monitor.yml'
 
 permissions:
   contents: write
@@ -22,15 +15,25 @@ permissions:
 
 jobs:
   monitor:
-    name: KCA 정보보안기사 공지사항 모니터링
+    name: 모니터링 - ${{ matrix.category }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # 모니터링할 카테고리를 확장 가능합니다.
+        include:
+          - category: "security-exam"
+            name: "정보보안기사 공지"
+            target_url: "https://www.cq.or.kr/main.do" # 예시 URL
+          - category: "general-notice"
+            name: "KCA 일반 공지"
+            target_url: "https://www.kca.or.kr/main.do"
 
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 환경 설정
@@ -43,119 +46,61 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r scripts/kca-monitor/requirements.txt
+          # 크롤링 안정성을 위한 추가 라이브러리 (필요시)
+          pip install requests beautifulsoup4 fake-useragent
 
       - name: 데이터 디렉토리 생성
-        run: |
-          mkdir -p data/kca-notifications
+        run: mkdir -p data/kca-notifications/${{ matrix.category }}
 
-      - name: 이전 데이터 복원 (있는 경우)
-        continue-on-error: true
-        run: |
-          if [ -f "data/kca-notifications/latest.json" ]; then
-            echo "이전 데이터를 발견했습니다."
-            ls -lh data/kca-notifications/
-          else
-            echo "첫 실행입니다. 이전 데이터가 없습니다."
-          fi
-
-      - name: KCA 공지사항 크롤링 및 모니터링
+      - name: KCA 공지사항 대량 크롤링
         id: monitor
-        continue-on-error: true
         run: |
-          echo "모니터링 시작: $(date '+%Y-%m-%d %H:%M:%S KST')"
-          python scripts/kca-monitor/kca_exam_monitor.py
-          RESULT=$?
-          echo "모니터링 완료. Exit code: $RESULT"
+          echo "실행 카테고리: ${{ matrix.name }}"
+          # 스크립트에 카테고리 인자를 전달하여 처리하도록 수정 필요
+          python scripts/kca-monitor/kca_exam_monitor.py --category ${{ matrix.category }}
+        env:
+          USER_AGENT: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-          # 파일 생성 확인
-          if [ -f "data/kca-notifications/latest.json" ]; then
-            echo "데이터 파일이 성공적으로 생성되었습니다."
-            cat data/kca-notifications/latest_report.md
-          fi
-
-      - name: 변경사항 커밋
+      - name: 변경사항 커밋 및 동기화
         id: commit
-        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # 변경사항 확인
           git add data/kca-notifications/
-
+          
           if git diff --staged --quiet; then
-            echo "변경사항이 없습니다."
             echo "committed=false" >> $GITHUB_OUTPUT
           else
             TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S KST')
-            git commit -m "🔔 KCA 정보보안기사 모니터링 업데이트 - $TIMESTAMP
-
-            https://claude.ai/code/session_018RFzQ2WFNLem1PZN6pmBon"
-
+            git commit -m "🔔 [${{ matrix.name }}] 업데이트 - $TIMESTAMP"
             echo "committed=true" >> $GITHUB_OUTPUT
-            echo "변경사항이 커밋되었습니다."
           fi
 
-      - name: 변경사항 푸시
+      - name: 안전한 푸시 (충돌 방지)
         if: steps.commit.outputs.committed == 'true'
         run: |
-          git push origin ${{ github.ref_name }} || {
-            echo "푸시 실패. 재시도 중..."
-            sleep 2
-            git pull --rebase origin ${{ github.ref_name }}
-            git push origin ${{ github.ref_name }}
-          }
+          git pull --rebase origin main
+          git push origin main
 
-      - name: 새 공지사항 Issue 생성
-        if: steps.monitor.outputs.has_changes == 'true' && steps.monitor.outputs.new_notices_count > 0
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const reportPath = 'data/kca-notifications/latest_report.md';
-
-            if (fs.existsSync(reportPath)) {
-              const report = fs.readFileSync(reportPath, 'utf8');
-
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: `🔔 KCA 정보보안기사 새 공지사항 - ${new Date().toLocaleString('ko-KR', {timeZone: 'Asia/Seoul'})}`,
-                body: report,
-                labels: ['notification', 'kca-exam', 'auto-generated']
-              });
-
-              console.log('새 Issue가 생성되었습니다.');
-            }
-
-      - name: 모니터링 결과 요약
+      - name: 결과 요약 보고 (Job Summary)
         if: always()
         run: |
-          echo "## 모니터링 실행 결과" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- 실행 시간: $(date '+%Y-%m-%d %H:%M:%S KST')" >> $GITHUB_STEP_SUMMARY
-          echo "- 워크플로우: ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
-          echo "- 브랜치: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ -f "data/kca-notifications/latest_report.md" ]; then
-            echo "### 최신 리포트" >> $GITHUB_STEP_SUMMARY
-            cat data/kca-notifications/latest_report.md >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 ${{ matrix.name }} 결과" >> $GITHUB_STEP_SUMMARY
+          if [ -f "data/kca-notifications/${{ matrix.category }}/latest_report.md" ]; then
+            cat data/kca-notifications/${{ matrix.category }}/latest_report.md >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ 리포트 파일을 찾을 수 없습니다." >> $GITHUB_STEP_SUMMARY
+            echo "새로운 변경사항이 없습니다." >> $GITHUB_STEP_SUMMARY
           fi
 
-      - name: 실패 알림
+      - name: 실패 알림 생성
         if: failure()
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `⚠️ KCA 모니터링 워크플로우 실패 - ${new Date().toLocaleString('ko-KR', {timeZone: 'Asia/Seoul'})}`,
-              body: `KCA 정보보안기사 모니터링 워크플로우가 실패했습니다.\n\n실행 로그: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
-              labels: ['bug', 'workflow-failure', 'auto-generated']
+              title: `⚠️ 모니터링 실패: ${{ matrix.name }}`,
+              body: `워크플로우 실행 중 오류가 발생했습니다. 로그를 확인하세요: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`,
+              labels: ['bug', 'alert']
             });
