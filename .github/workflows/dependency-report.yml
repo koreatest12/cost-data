@@ -1,138 +1,129 @@
-name: "🚀 Enterprise Dependency & Security Management"
+name: "🚀 Keyless Enterprise Dependency Management"
 
 on:
   schedule:
-    - cron: '0 1 * * 1'
+    - cron: '*/30 * * * *' # 30분 간격 실행
   workflow_dispatch:
   push:
     paths:
       - '**/requirements.txt'
       - '**/pom.xml'
-      - '**/package.json' # 확장성을 위해 추가
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
-  security-events: write # GitHub Security Tab 연동용
+  security-events: write
 
 jobs:
-  # 1. Python 의존성 분석 및 대량 업그레이드
-  python-audit:
+  # 1. 의존성 대량 업그레이드 및 정비 (Python & Maven)
+  upgrade-and-maintenance:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Python
+      
+      # Python 대량 업그레이드
+      - name: Setup Python & Bulk Upgrade
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-
-      - name: "대량 설치 및 최신화 (Bulk Upgrade)"
+      - name: Python Maintenance
         run: |
-          pip install --upgrade pip pip-review pipdeptree pip-audit safety
-          # 자동으로 모든 패키지를 최신 버전으로 업그레이드 시도
-          pip-review --auto || echo "일부 패키지 업그레이드 실패"
+          pip install --upgrade pip pip-review
+          pip-review --auto # 모든 패키지 자동 최신화
+          pip freeze > requirements.txt
 
-      - name: "의존성 리포트 생성 및 분할 (Split Reporting)"
-        run: |
-          mkdir -p reports/python
-          pipdeptree --json > reports/python/tree_full.json
-          # 용량이 클 경우를 대비해 요약본 분리
-          pipdeptree --warn silence | head -n 100 > reports/python/summary.txt
-          pip-audit --desc --format json > reports/python/audit_results.json || true
-
-      - name: Upload Python Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-reports
-          path: reports/python/
-
-  # 2. Maven 의존성 분석 및 보안 검사
-  maven-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Java
+      # Maven 대량 업그레이드
+      - name: Setup Java & Maven Upgrade
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-
-      - name: "Maven 대량 업그레이드 및 정비"
+      - name: Maven Maintenance
         run: |
-          # 최신 버전으로 의존성 자동 업데이트 (Property 기준)
-          mvn versions:update-properties -DgenerateBackupPoms=false
+          # 모든 의존성을 최신 릴리스 버전으로 자동 갱신
+          mvn versions:use-latest-releases -DgenerateBackupPoms=false
           mvn versions:display-dependency-updates > reports_maven_updates.txt || true
 
-      - name: "보안 검사 및 분할 저장"
+      - name: Commit Upgraded Dependencies
         run: |
-          mkdir -p reports/maven
-          mvn dependency:tree -DoutputFile=reports/maven/tree.txt
-          # OWASP Dependency Check (대량 데이터 처리를 위한 분할 전략)
-          mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=0 -Dformat=JSON -Dformat=HTML
-          mv target/dependency-check-report.* reports/maven/ || true
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git diff --quiet && git diff --staged --quiet || (git commit -m "⚙️ [Auto] 대량 의존성 업그레이드 및 정비" && git push)
 
-      - name: Upload Maven Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: maven-reports
-          path: reports/maven/
-
-  # 3. 리포트 통합, 용량 최적화 및 결과 보고 (API 연동)
-  finalize-report:
-    needs: [python-audit, maven-audit]
+  # 2. 키 없는 초고속 보안 감사 (Trivy 활용)
+  security-audit:
+    needs: upgrade-and-maintenance
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - name: Download All Artifacts
+      # Trivy는 API 키 없이도 NVD 데이터를 포함한 보안 검사를 수행합니다.
+      - name: "Trivy 보안 스캔 (키 발급 불필요)"
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '0' # 취약점이 있어도 빌드는 완료 (리포트 생성을 위해)
+          severity: 'CRITICAL,HIGH'
+          output: 'trivy-report.txt'
+
+      - name: "취약점 리포트 분할 및 정비"
+        run: |
+          mkdir -p reports/security
+          # 전체 리포트는 JSON으로 저장
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy fs . --format json --output reports/security/full_audit.json
+          
+          # 용량 관리를 위해 텍스트 요약본 생성
+          cat trivy-report.txt | head -n 50 > reports/security/summary.txt
+
+      - name: "용량 최적화 및 아티팩트 업로드"
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: reports/security/
+
+  # 3. 결과 요약 및 이슈 생성 (API 연동)
+  finalize:
+    needs: security-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Reports
         uses: actions/download-artifact@v4
         with:
-          path: all_reports
+          name: security-reports
+          path: reports
 
-      - name: "데이터 정비 및 용량 최적화 (Post-processing)"
-        shell: python
+      - name: "GitHub Step Summary 시각화"
         run: |
-          import os, json, zipfile
-          # 대량의 JSON 파일을 통합하고 요약본 생성
-          report_summary = {"status": "success", "timestamp": os.popen('date -u +"%Y-%m-%dT%H:%M:%SZ"').read().strip()}
-          
-          # 파일 용량이 클 경우 압축 처리
-          with zipfile.ZipFile('full_dependency_archive.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
-              for root, dirs, files in os.walk('all_reports'):
-                  for file in files:
-                      zipf.write(os.path.join(root, file))
-          
-          with open('summary_index.json', 'w') as f:
-              json.dump(report_summary, f, indent=2)
+          echo "## 🛡️ 보안 감시 결과 (Keyless Mode)" >> $GITHUB_STEP_SUMMARY
+          echo "- **검사 도구**: Trivy (NVD API Key-free)" >> $GITHUB_STEP_SUMMARY
+          echo "- **상태**: 분석 완료" >> $GITHUB_STEP_SUMMARY
+          echo "### 📄 요약 리포트" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat reports/summary.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: "GitHub Step Summary (API UI 시각화)"
-        run: |
-          echo "## 📊 종합 의존성 관리 리포트" >> $GITHUB_STEP_SUMMARY
-          echo "- **분석 일시**: $(date)" >> $GITHUB_STEP_SUMMARY
-          echo "- **상태**: 🛡️ 보안 검사 완료 및 대량 업그레이드 적용됨" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 아티팩트 보관" >> $GITHUB_STEP_SUMMARY
-          echo "상세 데이터는 Artifacts 섹션에서 다운로드 가능합니다." >> $GITHUB_STEP_SUMMARY
-
-      - name: "변경사항 자동 커밋 (API 연동)"
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          # 업그레이드된 pom.xml 및 requirements.txt 반영
-          git add .
-          git diff --quiet && git diff --staged --quiet || (git commit -m "⚙️ [Auto] 의존성 대량 업그레이드 및 보고서 갱신" && git push)
-
-      - name: "보안 취약점 이슈 자동 생성 (API)"
-        if: failure()
+      - name: "심각한 취약점 발견 시 자동 알림"
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '🚨 [Critical] 의존성 보안 취약점 대량 감지',
-              body: '보안 검사 중 심각한 취약점이 발견되었습니다. 즉시 Action 로그를 확인하고 패치를 진행하십시오.',
-              labels: ['security', 'critical', 'automated-report']
-            });
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('reports/full_audit.json', 'utf8'));
+            const vulnerabilities = data.Results.flatMap(r => r.Vulnerabilities || []);
+            
+            if (vulnerabilities.length > 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🚨 [Urgent] ${vulnerabilities.length}개의 보안 취약점 감지`,
+                body: `Trivy 스캔 결과 고위험 취약점이 발견되었습니다. \n 상세 내용은 Actions Artifact를 확인하세요.`,
+                labels: ['security', 'automated']
+              });
+            }
