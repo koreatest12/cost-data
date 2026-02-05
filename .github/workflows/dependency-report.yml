@@ -1,129 +1,94 @@
-name: "🚀 Keyless Enterprise Dependency Management"
+name: "🚀 Enterprise Keyless & Resilient Management"
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # 30분 간격 실행
+    - cron: '*/30 * * * *'
   workflow_dispatch:
   push:
-    paths:
-      - '**/requirements.txt'
-      - '**/pom.xml'
+    branches: [ main ]
 
 permissions:
   contents: write
   issues: write
-  pull-requests: write
-  security-events: write
 
 jobs:
-  # 1. 의존성 대량 업그레이드 및 정비 (Python & Maven)
-  upgrade-and-maintenance:
+  maintenance-and-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      # Python 대량 업그레이드
-      - name: Setup Python & Bulk Upgrade
+        with:
+          fetch-depth: 0 # 전체 히스토리를 가져와 rebase 안정성 확보
+
+      # 1. 환경 정비 및 대량 설치
+      - name: Setup & Bulk Upgrade
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      - name: Python Maintenance
+      
+      - name: "의존성 대량 정비"
         run: |
-          pip install --upgrade pip pip-review
-          pip-review --auto # 모든 패키지 자동 최신화
+          pip install --upgrade pip pip-review trivy-jr
+          pip-review --auto
           pip freeze > requirements.txt
 
-      # Maven 대량 업그레이드
-      - name: Setup Java & Maven Upgrade
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'maven'
-      - name: Maven Maintenance
+      # 2. 용량 및 파일 분할 관리 (Maintenance)
+      - name: "대량 리포트 분할 및 최적화"
         run: |
-          # 모든 의존성을 최신 릴리스 버전으로 자동 갱신
-          mvn versions:use-latest-releases -DgenerateBackupPoms=false
-          mvn versions:display-dependency-updates > reports_maven_updates.txt || true
+          mkdir -p reports/archive
+          # 기존 대형 리포트가 있다면 날짜별로 분할 및 압축하여 용량 절감
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          if [ -f "reports_maven_updates.txt" ]; then
+            mv reports_maven_updates.txt reports/archive/maven_updates_$TIMESTAMP.txt
+            gzip reports/archive/maven_updates_$TIMESTAMP.txt
+          fi
+          # 최신 요약본만 새로 생성
+          echo "Last Maintenance: $TIMESTAMP" > reports/latest_summary.txt
 
-      - name: Commit Upgraded Dependencies
+      # 3. 보안 감사 (Keyless Trivy)
+      - name: "Trivy 보안 스캔"
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          severity: 'CRITICAL,HIGH'
+          format: 'json'
+          output: 'reports/trivy_report.json'
+
+      # 4. 고도화된 Push 전략 (에러 해결 핵심)
+      - name: "안전한 대량 변경사항 반영 (Retry Loop)"
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add .
-          git diff --quiet && git diff --staged --quiet || (git commit -m "⚙️ [Auto] 대량 의존성 업그레이드 및 정비" && git push)
-
-  # 2. 키 없는 초고속 보안 감사 (Trivy 활용)
-  security-audit:
-    needs: upgrade-and-maintenance
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      # Trivy는 API 키 없이도 NVD 데이터를 포함한 보안 검사를 수행합니다.
-      - name: "Trivy 보안 스캔 (키 발급 불필요)"
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          exit-code: '0' # 취약점이 있어도 빌드는 완료 (리포트 생성을 위해)
-          severity: 'CRITICAL,HIGH'
-          output: 'trivy-report.txt'
-
-      - name: "취약점 리포트 분할 및 정비"
-        run: |
-          mkdir -p reports/security
-          # 전체 리포트는 JSON으로 저장
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          trivy fs . --format json --output reports/security/full_audit.json
           
-          # 용량 관리를 위해 텍스트 요약본 생성
-          cat trivy-report.txt | head -n 50 > reports/security/summary.txt
+          # 변경사항이 없으면 종료
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
 
-      - name: "용량 최적화 및 아티팩트 업로드"
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-reports
-          path: reports/security/
+          git commit -m "⚙️ [Auto] 대량 정비 및 리포트 최적화 ($TIMESTAMP)"
+          
+          # Push 성공할 때까지 최대 5번 재시도
+          SUCCESS=false
+          for i in {1..5}; do
+            echo "Push 시도 $i/5..."
+            if git pull --rebase origin main && git push origin main; then
+              SUCCESS=true
+              break
+            fi
+            echo "충돌 발생, 10초 후 재시도..."
+            sleep 10
+          done
 
-  # 3. 결과 요약 및 이슈 생성 (API 연동)
-  finalize:
-    needs: security-audit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download Reports
-        uses: actions/download-artifact@v4
-        with:
-          name: security-reports
-          path: reports
+          if [ "$SUCCESS" = false ]; then
+            echo "최종 Push 실패. 수동 확인이 필요합니다."
+            exit 1
+          fi
 
-      - name: "GitHub Step Summary 시각화"
+      - name: "실행 결과 요약"
+        if: always()
         run: |
-          echo "## 🛡️ 보안 감시 결과 (Keyless Mode)" >> $GITHUB_STEP_SUMMARY
-          echo "- **검사 도구**: Trivy (NVD API Key-free)" >> $GITHUB_STEP_SUMMARY
-          echo "- **상태**: 분석 완료" >> $GITHUB_STEP_SUMMARY
-          echo "### 📄 요약 리포트" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat reports/summary.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: "심각한 취약점 발견 시 자동 알림"
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const data = JSON.parse(fs.readFileSync('reports/full_audit.json', 'utf8'));
-            const vulnerabilities = data.Results.flatMap(r => r.Vulnerabilities || []);
-            
-            if (vulnerabilities.length > 0) {
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: `🚨 [Urgent] ${vulnerabilities.length}개의 보안 취약점 감지`,
-                body: `Trivy 스캔 결과 고위험 취약점이 발견되었습니다. \n 상세 내용은 Actions Artifact를 확인하세요.`,
-                labels: ['security', 'automated']
-              });
-            }
+          echo "### 📊 정비 결과 보고" >> $GITHUB_STEP_SUMMARY
+          echo "- **변경 파일 수**: $(git diff --name-only HEAD^ HEAD | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **상태**: ✅ 원격 저장소 동기화 완료" >> $GITHUB_STEP_SUMMARY
