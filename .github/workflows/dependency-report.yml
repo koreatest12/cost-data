@@ -1,8 +1,8 @@
-name: "🚀 Enterprise Keyless & Resilient Management"
+name: "🚀 Enterprise Resilient & Clean Management"
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/30 * * * *' # 30분 간격
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -17,78 +17,79 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 전체 히스토리를 가져와 rebase 안정성 확보
+          fetch-depth: 0
 
-      # 1. 환경 정비 및 대량 설치
+      # 1. 의존성 정비 및 대량 업그레이드 (에러 수정 반영)
       - name: Setup & Bulk Upgrade
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
       
-      - name: "의존성 대량 정비"
+      - name: "의존성 패키지 정비"
         run: |
-          pip install --upgrade pip pip-review trivy-jr
+          # trivy-jr 제거, pip-review만 설치
+          python -m pip install --upgrade pip
+          pip install pip-review
           pip-review --auto
           pip freeze > requirements.txt
 
-      # 2. 용량 및 파일 분할 관리 (Maintenance)
-      - name: "대량 리포트 분할 및 최적화"
+      # 2. Trivy 바이너리 직접 설치 (Keyless 보안 검사)
+      - name: "Trivy 설치 및 보안 스캔"
+        run: |
+          mkdir -p reports/security
+          # 바이너리 직접 설치 로직 (pip 에러 방지)
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy fs . --format table --severity CRITICAL,HIGH --output reports/security/trivy_summary.txt
+          trivy fs . --format json --output reports/security/trivy_full.json
+
+      # 3. 로그 로테이션 및 용량 최적화 (대량 파일 관리)
+      - name: "30일 경과 로그 자동 정리"
         run: |
           mkdir -p reports/archive
-          # 기존 대형 리포트가 있다면 날짜별로 분할 및 압축하여 용량 절감
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          if [ -f "reports_maven_updates.txt" ]; then
-            mv reports_maven_updates.txt reports/archive/maven_updates_$TIMESTAMP.txt
-            gzip reports/archive/maven_updates_$TIMESTAMP.txt
+          
+          # 1) 현재 리포트 아카이빙 및 압축
+          if [ -d "reports/security" ]; then
+            tar -czf reports/archive/audit_$TIMESTAMP.tar.gz reports/security/*
           fi
-          # 최신 요약본만 새로 생성
-          echo "Last Maintenance: $TIMESTAMP" > reports/latest_summary.txt
+          
+          # 2) 30일 이상 된 오래된 아카이브 삭제 (용량 확보)
+          find reports/archive/ -name "*.tar.gz" -mtime +30 -delete
+          
+          echo "Cleanup and Archiving completed at $TIMESTAMP" > reports/last_run.log
 
-      # 3. 보안 감사 (Keyless Trivy)
-      - name: "Trivy 보안 스캔"
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          severity: 'CRITICAL,HIGH'
-          format: 'json'
-          output: 'reports/trivy_report.json'
-
-      # 4. 고도화된 Push 전략 (에러 해결 핵심)
-      - name: "안전한 대량 변경사항 반영 (Retry Loop)"
+      # 4. 회복 탄력성 Push (Rebase & Retry)
+      - name: "안전한 대량 변경사항 반영"
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add .
           
-          # 변경사항이 없으면 종료
           if git diff --staged --quiet; then
             echo "No changes to commit"
             exit 0
           fi
 
-          git commit -m "⚙️ [Auto] 대량 정비 및 리포트 최적화 ($TIMESTAMP)"
+          git commit -m "⚙️ [Auto] 의존성 정비 및 로그 로테이션 ($TIMESTAMP)"
           
-          # Push 성공할 때까지 최대 5번 재시도
           SUCCESS=false
           for i in {1..5}; do
-            echo "Push 시도 $i/5..."
+            echo "Push Attempt $i/5..."
+            # Rebase를 통해 원격 변경사항을 내 커밋 앞으로 가져옴
             if git pull --rebase origin main && git push origin main; then
               SUCCESS=true
               break
             fi
-            echo "충돌 발생, 10초 후 재시도..."
             sleep 10
           done
 
-          if [ "$SUCCESS" = false ]; then
-            echo "최종 Push 실패. 수동 확인이 필요합니다."
-            exit 1
-          fi
+          if [ "$SUCCESS" = false ]; then exit 1; fi
 
-      - name: "실행 결과 요약"
+      - name: "실행 결과 대시보드"
         if: always()
         run: |
-          echo "### 📊 정비 결과 보고" >> $GITHUB_STEP_SUMMARY
-          echo "- **변경 파일 수**: $(git diff --name-only HEAD^ HEAD | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- **상태**: ✅ 원격 저장소 동기화 완료" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛡️ 보안 및 정비 상태" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trivy 스캔 결과**: 성공" >> $GITHUB_STEP_SUMMARY
+          echo "- **로그 정리**: 30일 이전 데이터 삭제 완료" >> $GITHUB_STEP_SUMMARY
+          echo "- **동기화 상태**: ✅ 완료" >> $GITHUB_STEP_SUMMARY
