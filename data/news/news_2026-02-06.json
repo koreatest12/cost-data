@@ -1,10 +1,10 @@
 {
   "date": "2026-02-06",
-  "timestamp": "2026-02-06 12:58:26",
+  "timestamp": "2026-02-06 13:00:58",
   "stats": {
-    "total": 30,
-    "global": 25,
-    "korea": 5
+    "total": 40,
+    "global": 30,
+    "korea": 10
   },
   "articles": [
     {
@@ -12,209 +12,279 @@
       "category": "global",
       "title": "Man pleads guilty to hacking nearly 600 women’s Snapchat accounts",
       "link": "https://www.bleepingcomputer.com/news/security/man-pleads-guilty-to-hacking-nearly-600-womens-snapchat-accounts/",
-      "date": "Fri, 06 Feb 2026 07:34:30 -0500"
+      "date": "2026-02-06"
     },
     {
       "source": "BleepingComputer",
       "category": "global",
       "title": "Flickr discloses potential data breach exposing users' names, emails",
       "link": "https://www.bleepingcomputer.com/news/security/flickr-discloses-potential-data-breach-exposing-users-names-emails/",
-      "date": "Fri, 06 Feb 2026 04:43:10 -0500"
+      "date": "2026-02-06"
     },
     {
       "source": "BleepingComputer",
       "category": "global",
       "title": "CISA orders federal agencies to replace end-of-life edge devices",
       "link": "https://www.bleepingcomputer.com/news/security/cisa-orders-federal-agencies-to-replace-end-of-life-edge-devices/",
-      "date": "Fri, 06 Feb 2026 03:41:11 -0500"
+      "date": "2026-02-06"
     },
     {
       "source": "BleepingComputer",
       "category": "global",
       "title": "Spain's Ministry of Science shuts down systems after breach claims",
       "link": "https://www.bleepingcomputer.com/news/security/spains-ministry-of-science-shuts-down-systems-after-breach-claims/",
-      "date": "Thu, 05 Feb 2026 16:23:00 -0500"
+      "date": "2026-02-06"
     },
     {
       "source": "BleepingComputer",
       "category": "global",
       "title": "Ransomware gang uses ISPsystem VMs for stealthy payload delivery",
       "link": "https://www.bleepingcomputer.com/news/security/ransomware-gang-uses-ispsystem-vms-for-stealthy-payload-delivery/",
-      "date": "Thu, 05 Feb 2026 15:57:11 -0500"
+      "date": "2026-02-06"
     },
     {
       "source": "The Hacker News",
       "category": "global",
       "title": "Asian State-Backed Group TGR-STA-1030 Breaches 70 Government, Infrastructure Entities",
       "link": "https://thehackernews.com/2026/02/asian-state-backed-group-tgr-sta-1030.html",
-      "date": "Fri, 06 Feb 2026 17:37:00 +0530"
+      "date": "2026-02-06"
     },
     {
       "source": "The Hacker News",
       "category": "global",
       "title": "How Samsung Knox Helps Stop Your Network Security Breach",
       "link": "https://thehackernews.com/2026/02/how-samsung-knox-helps-stop-your-network-security-breach.html",
-      "date": "Fri, 06 Feb 2026 16:00:00 +0530"
+      "date": "2026-02-06"
     },
     {
       "source": "The Hacker News",
       "category": "global",
       "title": "Compromised dYdX npm and PyPI Packages Deliver Wallet Stealers and RAT Malware",
       "link": "https://thehackernews.com/2026/02/compromised-dydx-npm-and-pypi-packages.html",
-      "date": "Fri, 06 Feb 2026 14:10:00 +0530"
+      "date": "2026-02-06"
     },
     {
       "source": "The Hacker News",
       "category": "global",
       "title": "Claude Opus 4.6 Finds 500+ High-Severity Flaws Across Major Open-Source Libraries",
       "link": "https://thehackernews.com/2026/02/claude-opus-46-finds-500-high-severity.html",
-      "date": "Fri, 06 Feb 2026 11:19:00 +0530"
+      "date": "2026-02-06"
     },
     {
       "source": "The Hacker News",
       "category": "global",
       "title": "AISURU/Kimwolf Botnet Launches Record-Setting 31.4 Tbps DDoS Attack",
       "link": "https://thehackernews.com/2026/02/aisurukimwolf-botnet-launches-record.html",
-      "date": "Thu, 05 Feb 2026 22:55:00 +0530"
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "global",
+      "title": "Flickr Security Incident Tied to Third-Party Email System",
+      "link": "https://www.securityweek.com/flickr-security-incident-tied-to-third-party-email-system/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "global",
+      "title": "Living off the AI: The Next Evolution of Attacker Tradecraft",
+      "link": "https://www.securityweek.com/living-off-the-ai-the-next-evolution-of-attacker-tradecraft/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "global",
+      "title": "In Other News: Record DDoS, Epstein’s Hacker, ESET Product Vulnerabilities",
+      "link": "https://www.securityweek.com/in-other-news-record-ddos-epsteins-hacker-eset-product-vulnerabilities/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "global",
+      "title": "Airrived Emerges From Stealth With $6.1 Million in Funding",
+      "link": "https://www.securityweek.com/airrived-emerges-from-stealth-with-6-1-million-in-funding/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "global",
+      "title": "‘DKnife’ Implant Used by Chinese Threat Actor for Adversary-in-the-Middle Attacks",
+      "link": "https://www.securityweek.com/dknife-implant-used-by-chinese-threat-actor-for-adversary-in-the-middle-attacks/",
+      "date": "2026-02-06"
     },
     {
       "source": "CISA Alerts",
       "category": "global",
       "title": "Publicly Available Tools Seen in Cyber Incidents Worldwide",
       "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa18-284a",
-      "date": "Thu, 17 Nov 2022 15:57:05 EST"
+      "date": "2026-02-06"
     },
     {
       "source": "CISA Alerts",
       "category": "global",
       "title": "SamSam Ransomware",
       "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa18-337a",
-      "date": "Thu, 17 Nov 2022 15:57:05 EST"
+      "date": "2026-02-06"
     },
     {
       "source": "CISA Alerts",
       "category": "global",
       "title": "DNS Infrastructure Hijacking Campaign",
       "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-024a",
-      "date": "Thu, 17 Nov 2022 15:57:05 EST"
+      "date": "2026-02-06"
     },
     {
       "source": "CISA Alerts",
       "category": "global",
       "title": "New Exploits for Unsecure SAP Systems",
       "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-122a",
-      "date": "Thu, 17 Nov 2022 15:57:05 EST"
+      "date": "2026-02-06"
     },
     {
       "source": "CISA Alerts",
       "category": "global",
       "title": "Microsoft Operating Systems BlueKeep Vulnerability",
       "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-168a",
-      "date": "Thu, 17 Nov 2022 15:57:05 EST"
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Krebs on Security",
+      "category": "global",
+      "title": "Please Don’t Feed the Scattered Lapsus ShinyHunters",
+      "link": "https://krebsonsecurity.com/2026/02/please-dont-feed-the-scattered-lapsus-shiny-hunters/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Krebs on Security",
+      "category": "global",
+      "title": "Who Operates the Badbox 2.0 Botnet?",
+      "link": "https://krebsonsecurity.com/2026/01/who-operates-the-badbox-2-0-botnet/",
+      "date": "2026-02-06"
     },
     {
       "source": "Krebs on Security",
       "category": "global",
       "title": "Kimwolf Botnet Lurking in Corporate, Govt. Networks",
       "link": "https://krebsonsecurity.com/2026/01/kimwolf-botnet-lurking-in-corporate-govt-networks/",
-      "date": "Tue, 20 Jan 2026 18:19:13 +0000"
+      "date": "2026-02-06"
     },
     {
       "source": "Krebs on Security",
       "category": "global",
       "title": "Patch Tuesday, January 2026 Edition",
       "link": "https://krebsonsecurity.com/2026/01/patch-tuesday-january-2026-edition/",
-      "date": "Wed, 14 Jan 2026 00:47:38 +0000"
+      "date": "2026-02-06"
     },
     {
       "source": "Krebs on Security",
       "category": "global",
       "title": "Who Benefited from the Aisuru and Kimwolf Botnets?",
       "link": "https://krebsonsecurity.com/2026/01/who-benefited-from-the-aisuru-and-kimwolf-botnets/",
-      "date": "Thu, 08 Jan 2026 23:23:43 +0000"
-    },
-    {
-      "source": "Krebs on Security",
-      "category": "global",
-      "title": "The Kimwolf Botnet is Stalking Your Local Network",
-      "link": "https://krebsonsecurity.com/2026/01/the-kimwolf-botnet-is-stalking-your-local-network/",
-      "date": "Fri, 02 Jan 2026 14:20:10 +0000"
-    },
-    {
-      "source": "Krebs on Security",
-      "category": "global",
-      "title": "Happy 16th Birthday, KrebsOnSecurity.com!",
-      "link": "https://krebsonsecurity.com/2025/12/happy-16th-birthday-krebsonsecurity-com/",
-      "date": "Mon, 29 Dec 2025 20:23:26 +0000"
+      "date": "2026-02-06"
     },
     {
       "source": "Dark Reading",
       "category": "global",
       "title": "EnCase Driver Weaponized as EDR Killers Persist",
       "link": "https://www.darkreading.com/threat-intelligence/encase-driver-weaponized-edr-killers-persist",
-      "date": "Thu, 05 Feb 2026 22:35:20 GMT"
+      "date": "2026-02-06"
     },
     {
       "source": "Dark Reading",
       "category": "global",
       "title": "Agentic AI Site 'Moltbook' Is Riddled With Security Risks",
       "link": "https://www.darkreading.com/cyber-risk/agentic-ai-moltbook-security-risks",
-      "date": "Thu, 05 Feb 2026 22:03:29 GMT"
+      "date": "2026-02-06"
     },
     {
       "source": "Dark Reading",
       "category": "global",
-      "title": "Cyber Success Trifecta: Education, Certifications &amp; Experience",
+      "title": "Cyber Success Trifecta: Education, Certifications & Experience",
       "link": "https://www.darkreading.com/cybersecurity-operations/the-trifecta-of-cyber-success-education-certifications-and-experience",
-      "date": "Thu, 05 Feb 2026 14:00:00 GMT"
+      "date": "2026-02-06"
     },
     {
       "source": "Dark Reading",
       "category": "global",
       "title": "Protests Don't Impede Iranian Spying on Expats, Syrians, Israelis",
       "link": "https://www.darkreading.com/cyberattacks-data-breaches/iran-spies-expats-syrians-israelis",
-      "date": "Thu, 05 Feb 2026 07:00:00 GMT"
+      "date": "2026-02-06"
     },
     {
       "source": "Dark Reading",
       "category": "global",
       "title": "Ransomware Gang Goes Full 'Godfather' With Cartel",
       "link": "https://www.darkreading.com/cyber-risk/ransomware-gang-full-godfather-cartel",
-      "date": "Wed, 04 Feb 2026 22:14:19 GMT"
+      "date": "2026-02-06"
     },
     {
       "source": "BoanNews",
       "category": "korea",
       "title": "AI 시대 뒷받침할 ‘공공데이터 적극 제공을 위한 면책 안내서’ 배포",
       "link": "http://www.boannews.com/media/view.asp?idx=141944&kind=&sub_kind=",
-      "date": "2026-02-06"
+      "date": "Fri, 6 Feb 2026 19:14:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "korea",
       "title": "과기정통부, 정보보호 공시 전상장사 확대 의견 수렴... 공청회 개최",
       "link": "http://www.boannews.com/media/view.asp?idx=141958&kind=&sub_kind=",
-      "date": "2026-02-06"
+      "date": "Fri, 6 Feb 2026 17:46:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "korea",
       "title": "[쿠팡 해킹] 최형두 의원, 美 향해 “아마존 中에 유출됐다면?”... 정부엔 신속 조사 촉구",
       "link": "http://www.boannews.com/media/view.asp?idx=141947&kind=&sub_kind=",
-      "date": "2026-02-06"
+      "date": "Fri, 6 Feb 2026 16:17:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "korea",
       "title": "다크웹 마약 장터 ‘인코그니토’ 운영자 징역 30년 철퇴",
       "link": "http://www.boannews.com/media/view.asp?idx=141946&kind=&sub_kind=",
-      "date": "2026-02-06"
+      "date": "Fri, 6 Feb 2026 15:45:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "korea",
       "title": "아우토크립트-에티포스-퀄컴, 미국 5GAA 총회서 ‘V2X 톨링 서비스’ 시연",
       "link": "http://www.boannews.com/media/view.asp?idx=141945&kind=&sub_kind=",
+      "date": "Fri, 6 Feb 2026 14:58:00 +0900"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "korea",
+      "title": "Ransom & Dark Web Issues 2026년 2월 1주차",
+      "link": "https://asec.ahnlab.com/ko/92482/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "korea",
+      "title": "Ransom & Dark Web Issues 2026년 1월 4주차",
+      "link": "https://asec.ahnlab.com/ko/92384/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "korea",
+      "title": "AhnLab EDR을 활용한 최신 RMM 유포 사례 탐지",
+      "link": "https://asec.ahnlab.com/ko/92286/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "korea",
+      "title": "Ransom & Dark Web Issues 2026년 1월 3주차",
+      "link": "https://asec.ahnlab.com/ko/92256/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "korea",
+      "title": "2025년 12월 국내외 금융권 관련 보안 이슈",
+      "link": "https://asec.ahnlab.com/ko/92190/",
       "date": "2026-02-06"
     }
   ]
