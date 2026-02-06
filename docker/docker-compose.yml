@@ -1,8 +1,8 @@
 version: '3.8'
 services:
-  soc-dashboard:
+  gemini-soc:
     image: nginx:alpine
-    container_name: soc-dashboard-v1
+    container_name: gemini-soc-server
     ports:
       - "8080:80"
     volumes:
