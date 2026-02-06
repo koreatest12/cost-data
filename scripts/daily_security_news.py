@@ -1,364 +1,184 @@
-#!/usr/bin/env python3
-"""
-Daily Security News Generator
-- Collects security news from multiple RSS feeds (global + Korean sources)
-- Generates daily JSON data files for accumulation
-- Updates the news index for the dashboard
-- Runs daily at 08:00 KST via GitHub Actions
-"""
-
+import urllib.request
+import urllib.error
+import xml.etree.ElementTree as ET
+import datetime
 import json
 import os
 import re
 import sys
-import hashlib
-import xml.etree.ElementTree as ET
-from datetime import datetime, timezone, timedelta
-from urllib.request import urlopen, Request
-from urllib.error import URLError, HTTPError
-from html import unescape
+import time
 
-KST = timezone(timedelta(hours=9))
-TODAY = datetime.now(KST).strftime("%Y-%m-%d")
-TIMESTAMP = datetime.now(KST).strftime("%Y-%m-%d %H:%M KST")
-
-# News source RSS feeds
-RSS_FEEDS = {
-    "global": {
-        "BleepingComputer": "https://www.bleepingcomputer.com/feed/",
-        "The Hacker News": "https://feeds.feedburner.com/TheHackersNews",
-        "SecurityWeek": "https://feeds.feedburner.com/securityweek",
-        "CISA Alerts": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
-        "Krebs on Security": "https://krebsonsecurity.com/feed/",
-        "Dark Reading": "https://www.darkreading.com/rss.xml",
-    },
-    "korea": {
-        "DailySecu": "https://www.dailysecu.com/rss/allArticle.xml",
-        "BoanNews": "http://www.boannews.com/media/news_rss.xml",
-        "ETNews Security": "https://rss.etnews.com/Section901.xml",
-    },
+# 1. RSS 피드 목록 정의
+FEEDS = {
+    "global": [
+        ("BleepingComputer", "https://www.bleepingcomputer.com/feed/"),
+        ("The Hacker News", "https://feeds.feedburner.com/TheHackersNews"),
+        ("SecurityWeek", "https://feeds.feedburner.com/SecurityWeek"),
+        ("CISA Alerts", "https://www.cisa.gov/uscert/ncas/alerts.xml"),
+        ("Krebs on Security", "https://krebsonsecurity.com/feed/"),
+        ("Dark Reading", "https://www.darkreading.com/rss.xml"),
+    ],
+    "korea": [
+        ("DailySecu", "https://www.dailysecu.com/rss/all.xml"),
+        ("BoanNews", "https://www.boannews.com/media/news_rss.xml"), 
+        ("KISA KrCERT", "https://www.krcert.or.kr/rss/rss.do"),
+    ]
 }
 
-# Security-related keywords for filtering/tagging
-TAGS = {
-    "ransomware": ["ransomware", "ransom", "encrypt", "decrypt", "lockbit",
-                    "blackcat", "clop", "conti", "revil", "phobos"],
-    "vulnerability": ["CVE-", "vulnerability", "zero-day", "0-day", "exploit",
-                       "patch", "buffer overflow", "RCE", "injection"],
-    "zeroday": ["zero-day", "0-day", "0day", "zero day"],
-    "phishing": ["phishing", "spear-phishing", "credential", "social engineering"],
-    "malware": ["malware", "trojan", "backdoor", "RAT", "botnet", "worm",
-                "rootkit", "spyware", "keylogger"],
-    "apt": ["APT", "nation-state", "threat actor", "campaign", "espionage"],
-    "data_breach": ["data breach", "data leak", "exposed", "leaked",
-                     "compromised", "stolen data"],
-}
-
-TAG_ICONS = {
-    "ransomware": "ransomware",
-    "vulnerability": "vulnerability",
-    "zeroday": "zero-day",
-    "phishing": "phishing",
-    "malware": "malware",
-    "apt": "APT",
-    "data_breach": "data-breach",
-}
-
-MAX_ARTICLES_PER_SOURCE = 10
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "data", "news")
-INDEX_PATH = os.path.join(DATA_DIR, "news_index.json")
-HISTORY_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                            "DB", "total_news_history.md")
-
-
-def fetch_rss(url, timeout=15):
-    """Fetch and parse RSS feed XML."""
+# 2. 인코딩 처리 및 데이터 정제 함수
+def fetch_feed_content(url):
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
     try:
-        req = Request(url, headers={"User-Agent": "SecurityNewsBot/1.0"})
-        with urlopen(req, timeout=timeout) as resp:
-            return ET.fromstring(resp.read())
-    except (URLError, HTTPError, ET.ParseError) as e:
-        print(f"  [WARN] Failed to fetch {url}: {e}")
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as response:
+            raw_data = response.read()
+            
+            # [핵심] 인코딩 자동 감지 및 디코딩
+            decoded_data = None
+            encodings = ['utf-8', 'euc-kr', 'cp949', 'latin-1']
+            
+            for enc in encodings:
+                try:
+                    decoded_data = raw_data.decode(enc)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            
+            if not decoded_data:
+                print(f"    ⚠️ Failed to decode content from {url}")
+                return None
+
+            # [핵심] XML 선언부의 인코딩 정보 제거 (파서 충돌 방지)
+            # <?xml version="1.0" encoding="EUC-KR"?> 같은 부분을 제거하고 순수 문자열로 파싱
+            decoded_data = re.sub(r'<\?xml.*encoding=[\'"].*[\'"].*\?>', '', decoded_data, count=1)
+            return decoded_data.strip()
+            
+    except Exception as e:
+        print(f"    ❌ Connection Error ({url}): {e}")
         return None
 
+def parse_feeds():
+    collected_news = []
+    total = 0
+    global_cnt = 0
+    korea_cnt = 0
 
-def clean_html(text):
-    """Strip HTML tags and unescape entities."""
-    if not text:
-        return ""
-    text = unescape(text)
-    text = re.sub(r"<[^>]+>", "", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text[:500]
+    for category, feeds in FEEDS.items():
+        for name, url in feeds:
+            print(f"  Fetching [{category}] {name}...")
+            xml_str = fetch_feed_content(url)
+            
+            if not xml_str:
+                continue
 
+            try:
+                # XML 파싱 (문자열로 직접 파싱)
+                root = ET.fromstring(xml_str)
+                items = root.findall('.//item')
+                count = 0
+                
+                for item in items[:5]: # 피드당 최신 5개만 수집
+                    title = item.find('title')
+                    link = item.find('link')
+                    pubDate = item.find('pubDate')
+                    
+                    if title is not None and link is not None:
+                        news_item = {
+                            "source": name,
+                            "category": category,
+                            "title": title.text.strip() if title.text else "No Title",
+                            "link": link.text.strip() if link.text else "#",
+                            "date": pubDate.text.strip() if pubDate is not None and pubDate.text else str(datetime.date.today())
+                        }
+                        collected_news.append(news_item)
+                        count += 1
+                
+                print(f"    -> {count} articles collected")
+                if category == 'global': global_cnt += count
+                else: korea_cnt += count
+                total += count
 
-def detect_tags(title, description):
-    """Detect security-related tags from title and description."""
-    combined = f"{title} {description}".lower()
-    found = []
-    for tag_key, keywords in TAGS.items():
-        for kw in keywords:
-            if kw.lower() in combined:
-                found.append(TAG_ICONS[tag_key])
-                break
-    return found
+            except ET.ParseError as e:
+                print(f"    ⚠️ XML Parse Error for {name}: {e}")
+                continue
+            except Exception as e:
+                print(f"    ⚠️ Unknown Error for {name}: {e}")
+                continue
 
+    return collected_news, total, global_cnt, korea_cnt
 
-def parse_articles(root, source_name):
-    """Parse RSS XML into article dicts."""
-    articles = []
-    if root is None:
-        return articles
+def save_data(news_data, total, g_cnt, k_cnt):
+    today = datetime.datetime.now().strftime('%Y-%m-%d')
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # 1. JSON 저장
+    json_path = f"data/news/news_{today}.json"
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump({
+            "date": today,
+            "timestamp": timestamp,
+            "stats": {"total": total, "global": g_cnt, "korea": k_cnt},
+            "articles": news_data
+        }, f, ensure_ascii=False, indent=2)
 
-    # Try standard RSS and Atom formats
-    items = root.findall(".//item")
-    if not items:
-        ns = {"atom": "http://www.w3.org/2005/Atom"}
-        items = root.findall(".//atom:entry", ns)
+    # 2. Markdown DB 업데이트 (History)
+    md_path = "DB/total_news_history.md"
+    mode = 'a' if os.path.exists(md_path) else 'w'
+    with open(md_path, mode, encoding='utf-8') as f:
+        if mode == 'w':
+            f.write("# 🛡️ Daily Security News History\n\n")
+        
+        f.write(f"## 📅 {today} ({total} Articles)\n")
+        f.write(f"**Updated:** {timestamp} | **Global:** {g_cnt} | **Korea:** {k_cnt}\n\n")
+        
+        for news in news_data:
+            flag = "🌍" if news['category'] == 'global' else "🇰🇷"
+            f.write(f"- {flag} **[{news['source']}]** [{news['title']}]({news['link']})\n")
+        f.write("\n---\n\n")
 
-    for item in items[:MAX_ARTICLES_PER_SOURCE]:
-        # RSS format
-        title_el = item.find("title")
-        link_el = item.find("link")
-        desc_el = item.find("description")
-        pub_el = item.find("pubDate")
-
-        # Atom format fallback
-        if link_el is not None and link_el.text is None:
-            href = link_el.get("href", "")
-        else:
-            href = link_el.text if link_el is not None else ""
-
-        if title_el is None or not href:
-            # Try atom namespace
-            ns = {"atom": "http://www.w3.org/2005/Atom"}
-            title_el = item.find("atom:title", ns) if title_el is None else title_el
-            link_el_atom = item.find("atom:link", ns)
-            if link_el_atom is not None and not href:
-                href = link_el_atom.get("href", "")
-            desc_el = item.find("atom:summary", ns) if desc_el is None else desc_el
-            pub_el = item.find("atom:updated", ns) if pub_el is None else pub_el
-
-        title = title_el.text.strip() if title_el is not None and title_el.text else ""
-        link = href.strip() if href else ""
-        description = clean_html(desc_el.text if desc_el is not None and desc_el.text else "")
-        pub_date = pub_el.text.strip() if pub_el is not None and pub_el.text else ""
-
-        if not title or not link:
-            continue
-
-        tags = detect_tags(title, description)
-        article_id = hashlib.md5(link.encode()).hexdigest()[:12]
-
-        articles.append({
-            "id": article_id,
-            "title": title,
-            "link": link,
-            "description": description,
-            "pub_date": pub_date,
-            "source": source_name,
-            "tags": tags,
-        })
-
-    return articles
-
-
-def collect_all_news():
-    """Collect news from all RSS feeds."""
-    all_news = {"global": [], "korea": []}
-
-    for region, sources in RSS_FEEDS.items():
-        for source_name, url in sources.items():
-            print(f"  Fetching [{region}] {source_name}...")
-            root = fetch_rss(url)
-            articles = parse_articles(root, source_name)
-            all_news[region].extend(articles)
-            print(f"    -> {len(articles)} articles collected")
-
-    return all_news
-
-
-def save_daily_json(news_data):
-    """Save daily news as JSON file."""
-    os.makedirs(DATA_DIR, exist_ok=True)
-
-    daily_file = os.path.join(DATA_DIR, f"news_{TODAY}.json")
-    daily_record = {
-        "date": TODAY,
-        "generated_at": TIMESTAMP,
-        "total_articles": len(news_data["global"]) + len(news_data["korea"]),
-        "global_count": len(news_data["global"]),
-        "korea_count": len(news_data["korea"]),
-        "global": news_data["global"],
-        "korea": news_data["korea"],
-    }
-
-    with open(daily_file, "w", encoding="utf-8") as f:
-        json.dump(daily_record, f, ensure_ascii=False, indent=2)
-
-    print(f"  Saved daily news: {daily_file}")
-    return daily_record
-
-
-def update_news_index(daily_record):
-    """Update the cumulative news index."""
-    index = {"last_updated": TIMESTAMP, "dates": []}
-
-    if os.path.exists(INDEX_PATH):
+    # 3. Index JSON 업데이트 (Dashboard용)
+    index_path = "data/news/news_index.json"
+    index_data = {"last_updated": timestamp, "dates": []}
+    
+    if os.path.exists(index_path):
         try:
-            with open(INDEX_PATH, "r", encoding="utf-8") as f:
-                index = json.load(f)
-        except (json.JSONDecodeError, KeyError):
-            pass
+            with open(index_path, 'r', encoding='utf-8') as f:
+                index_data = json.load(f)
+        except: pass
 
-    # Remove existing entry for today if re-running
-    index["dates"] = [d for d in index["dates"] if d["date"] != TODAY]
-
-    # Add today's summary
-    index["dates"].insert(0, {
-        "date": TODAY,
-        "generated_at": TIMESTAMP,
-        "total_articles": daily_record["total_articles"],
-        "global_count": daily_record["global_count"],
-        "korea_count": daily_record["korea_count"],
-        "file": f"news_{TODAY}.json",
+    # 오늘 날짜 중복 제거 후 추가
+    index_data["dates"] = [d for d in index_data.get("dates", []) if d["date"] != today]
+    index_data["dates"].insert(0, {
+        "date": today,
+        "total_articles": total,
+        "global_count": g_cnt,
+        "korea_count": k_cnt,
+        "file": json_path
     })
+    index_data["last_updated"] = timestamp
+    
+    with open(index_path, 'w', encoding='utf-8') as f:
+        json.dump(index_data, f, ensure_ascii=False, indent=2)
 
-    # Keep up to 365 days
-    index["dates"] = index["dates"][:365]
-    index["last_updated"] = TIMESTAMP
-
-    with open(INDEX_PATH, "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False, indent=2)
-
-    print(f"  Updated news index: {INDEX_PATH}")
-
-
-def update_history_md(news_data):
-    """Append today's news to the cumulative markdown history."""
-    os.makedirs(os.path.dirname(HISTORY_PATH), exist_ok=True)
-
-    header = ""
-    existing = ""
-    if os.path.exists(HISTORY_PATH):
-        with open(HISTORY_PATH, "r", encoding="utf-8") as f:
-            content = f.read()
-            # Keep the header line
-            lines = content.split("\n")
-            if lines and lines[0].startswith("#"):
-                header = lines[0] + "\n\n"
-                existing = "\n".join(lines[1:])
-            else:
-                existing = content
-    else:
-        header = "# Total Security News History\n\n"
-
-    new_section = f"\n## {TIMESTAMP} Updates\n"
-
-    # Global news
-    if news_data["global"]:
-        new_section += "### Global Intelligence\n"
-        by_source = {}
-        for article in news_data["global"]:
-            src = article["source"]
-            if src not in by_source:
-                by_source[src] = []
-            by_source[src].append(article)
-
-        for src, articles in by_source.items():
-            new_section += f"#### {src}\n"
-            for a in articles[:5]:
-                tags_str = " ".join(f"`{t}`" for t in a["tags"]) if a["tags"] else ""
-                new_section += f"- **[{a['title']}]({a['link']})**\n"
-                if tags_str:
-                    new_section += f"  - {tags_str}\n"
-                if a["description"]:
-                    new_section += f"  - {a['description'][:200]}...\n"
-                new_section += "\n"
-
-    # Korea news
-    if news_data["korea"]:
-        new_section += "### Korea Security\n"
-        by_source = {}
-        for article in news_data["korea"]:
-            src = article["source"]
-            if src not in by_source:
-                by_source[src] = []
-            by_source[src].append(article)
-
-        for src, articles in by_source.items():
-            new_section += f"#### {src}\n"
-            for a in articles[:5]:
-                tags_str = " ".join(f"`{t}`" for t in a["tags"]) if a["tags"] else ""
-                new_section += f"- **[{a['title']}]({a['link']})**\n"
-                if tags_str:
-                    new_section += f"  - {tags_str}\n"
-                if a["description"]:
-                    new_section += f"  - {a['description'][:200]}...\n"
-                new_section += "\n"
-
-    new_section += "---\n"
-
-    with open(HISTORY_PATH, "w", encoding="utf-8") as f:
-        f.write(header + new_section + "\n" + existing)
-
-    print(f"  Updated history: {HISTORY_PATH}")
-
-
-def generate_summary_stats(daily_record):
-    """Print summary statistics."""
-    print("\n" + "=" * 60)
-    print(f"  Daily Security News Report - {TODAY}")
-    print("=" * 60)
-    print(f"  Generated at: {TIMESTAMP}")
-    print(f"  Total articles: {daily_record['total_articles']}")
-    print(f"    Global: {daily_record['global_count']}")
-    print(f"    Korea:  {daily_record['korea_count']}")
-
-    # Count tags
-    all_articles = daily_record["global"] + daily_record["korea"]
-    tag_counts = {}
-    for a in all_articles:
-        for t in a.get("tags", []):
-            tag_counts[t] = tag_counts.get(t, 0) + 1
-
-    if tag_counts:
-        print("\n  Tag Distribution:")
-        for tag, count in sorted(tag_counts.items(), key=lambda x: -x[1]):
-            print(f"    [{tag}]: {count}")
-    print("=" * 60)
-
+    # 4. GitHub Actions Output 설정
+    if os.getenv('GITHUB_OUTPUT'):
+        with open(os.getenv('GITHUB_OUTPUT'), 'a') as fh:
+            fh.write(f"date={today}\n")
+            fh.write(f"total_articles={total}\n")
+            fh.write(f"global_count={g_cnt}\n")
+            fh.write(f"korea_count={k_cnt}\n")
 
 def main():
-    print(f"\n[Daily Security News Generator]")
-    print(f"Date: {TODAY} | Timestamp: {TIMESTAMP}\n")
-
-    print("[1/4] Collecting news from RSS feeds...")
-    news_data = collect_all_news()
-
-    print("\n[2/4] Saving daily JSON data...")
-    daily_record = save_daily_json(news_data)
-
-    print("\n[3/4] Updating news index...")
-    update_news_index(daily_record)
-
-    print("\n[4/4] Updating history markdown...")
-    update_history_md(news_data)
-
-    generate_summary_stats(daily_record)
-
-    # Output for GitHub Actions
-    github_output = os.environ.get("GITHUB_OUTPUT")
-    if github_output:
-        with open(github_output, "a") as f:
-            f.write(f"date={TODAY}\n")
-            f.write(f"total_articles={daily_record['total_articles']}\n")
-            f.write(f"global_count={daily_record['global_count']}\n")
-            f.write(f"korea_count={daily_record['korea_count']}\n")
-
-    return 0
-
-
+    print("[Daily Security News Generator]")
+    print(f"Timestamp: {datetime.datetime.now()}")
+    
+    news, total, g_cnt, k_cnt = parse_feeds()
+    
+    if total > 0:
+        save_data(news, total, g_cnt, k_cnt)
+        print(f"\n✅ Successfully saved {total} articles.")
+    else:
+        print("\n⚠️ No news collected. Check connections.")
+    
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

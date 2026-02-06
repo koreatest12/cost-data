@@ -294,3 +294,39 @@ EU가 Google의 $에 대한 판결 마감일을 2월로 설정한 게시물...
   - 지능형 데이터 보안 전문기업 이노티움(공동대표 김종필·이형택)이 기업 내외부에 산재한 개인정보를 통합 관리하는 '이노 스마트 플랫폼 프라이버시(Inno Smart Platform Privacy)'를 출시하고 본격적인 시장 공략에 나선다고 11일 밝혔다. 이번에 출시된
 
 ---
+## 📅 2026-02-06 (30 Articles)
+**Updated:** 2026-02-06 12:58:26 | **Global:** 25 | **Korea:** 5
+
+- 🌍 **[BleepingComputer]** [Man pleads guilty to hacking nearly 600 women’s Snapchat accounts](https://www.bleepingcomputer.com/news/security/man-pleads-guilty-to-hacking-nearly-600-womens-snapchat-accounts/)
+- 🌍 **[BleepingComputer]** [Flickr discloses potential data breach exposing users' names, emails](https://www.bleepingcomputer.com/news/security/flickr-discloses-potential-data-breach-exposing-users-names-emails/)
+- 🌍 **[BleepingComputer]** [CISA orders federal agencies to replace end-of-life edge devices](https://www.bleepingcomputer.com/news/security/cisa-orders-federal-agencies-to-replace-end-of-life-edge-devices/)
+- 🌍 **[BleepingComputer]** [Spain's Ministry of Science shuts down systems after breach claims](https://www.bleepingcomputer.com/news/security/spains-ministry-of-science-shuts-down-systems-after-breach-claims/)
+- 🌍 **[BleepingComputer]** [Ransomware gang uses ISPsystem VMs for stealthy payload delivery](https://www.bleepingcomputer.com/news/security/ransomware-gang-uses-ispsystem-vms-for-stealthy-payload-delivery/)
+- 🌍 **[The Hacker News]** [Asian State-Backed Group TGR-STA-1030 Breaches 70 Government, Infrastructure Entities](https://thehackernews.com/2026/02/asian-state-backed-group-tgr-sta-1030.html)
+- 🌍 **[The Hacker News]** [How Samsung Knox Helps Stop Your Network Security Breach](https://thehackernews.com/2026/02/how-samsung-knox-helps-stop-your-network-security-breach.html)
+- 🌍 **[The Hacker News]** [Compromised dYdX npm and PyPI Packages Deliver Wallet Stealers and RAT Malware](https://thehackernews.com/2026/02/compromised-dydx-npm-and-pypi-packages.html)
+- 🌍 **[The Hacker News]** [Claude Opus 4.6 Finds 500+ High-Severity Flaws Across Major Open-Source Libraries](https://thehackernews.com/2026/02/claude-opus-46-finds-500-high-severity.html)
+- 🌍 **[The Hacker News]** [AISURU/Kimwolf Botnet Launches Record-Setting 31.4 Tbps DDoS Attack](https://thehackernews.com/2026/02/aisurukimwolf-botnet-launches-record.html)
+- 🌍 **[CISA Alerts]** [Publicly Available Tools Seen in Cyber Incidents Worldwide](https://www.cisa.gov/news-events/cybersecurity-advisories/aa18-284a)
+- 🌍 **[CISA Alerts]** [SamSam Ransomware](https://www.cisa.gov/news-events/cybersecurity-advisories/aa18-337a)
+- 🌍 **[CISA Alerts]** [DNS Infrastructure Hijacking Campaign](https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-024a)
+- 🌍 **[CISA Alerts]** [New Exploits for Unsecure SAP Systems](https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-122a)
+- 🌍 **[CISA Alerts]** [Microsoft Operating Systems BlueKeep Vulnerability](https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-168a)
+- 🌍 **[Krebs on Security]** [Kimwolf Botnet Lurking in Corporate, Govt. Networks](https://krebsonsecurity.com/2026/01/kimwolf-botnet-lurking-in-corporate-govt-networks/)
+- 🌍 **[Krebs on Security]** [Patch Tuesday, January 2026 Edition](https://krebsonsecurity.com/2026/01/patch-tuesday-january-2026-edition/)
+- 🌍 **[Krebs on Security]** [Who Benefited from the Aisuru and Kimwolf Botnets?](https://krebsonsecurity.com/2026/01/who-benefited-from-the-aisuru-and-kimwolf-botnets/)
+- 🌍 **[Krebs on Security]** [The Kimwolf Botnet is Stalking Your Local Network](https://krebsonsecurity.com/2026/01/the-kimwolf-botnet-is-stalking-your-local-network/)
+- 🌍 **[Krebs on Security]** [Happy 16th Birthday, KrebsOnSecurity.com!](https://krebsonsecurity.com/2025/12/happy-16th-birthday-krebsonsecurity-com/)
+- 🌍 **[Dark Reading]** [EnCase Driver Weaponized as EDR Killers Persist](https://www.darkreading.com/threat-intelligence/encase-driver-weaponized-edr-killers-persist)
+- 🌍 **[Dark Reading]** [Agentic AI Site 'Moltbook' Is Riddled With Security Risks](https://www.darkreading.com/cyber-risk/agentic-ai-moltbook-security-risks)
+- 🌍 **[Dark Reading]** [Cyber Success Trifecta: Education, Certifications &amp; Experience](https://www.darkreading.com/cybersecurity-operations/the-trifecta-of-cyber-success-education-certifications-and-experience)
+- 🌍 **[Dark Reading]** [Protests Don't Impede Iranian Spying on Expats, Syrians, Israelis](https://www.darkreading.com/cyberattacks-data-breaches/iran-spies-expats-syrians-israelis)
+- 🌍 **[Dark Reading]** [Ransomware Gang Goes Full 'Godfather' With Cartel](https://www.darkreading.com/cyber-risk/ransomware-gang-full-godfather-cartel)
+- 🇰🇷 **[BoanNews]** [AI 시대 뒷받침할 ‘공공데이터 적극 제공을 위한 면책 안내서’ 배포](http://www.boannews.com/media/view.asp?idx=141944&kind=&sub_kind=)
+- 🇰🇷 **[BoanNews]** [과기정통부, 정보보호 공시 전상장사 확대 의견 수렴... 공청회 개최](http://www.boannews.com/media/view.asp?idx=141958&kind=&sub_kind=)
+- 🇰🇷 **[BoanNews]** [[쿠팡 해킹] 최형두 의원, 美 향해 “아마존 中에 유출됐다면?”... 정부엔 신속 조사 촉구](http://www.boannews.com/media/view.asp?idx=141947&kind=&sub_kind=)
+- 🇰🇷 **[BoanNews]** [다크웹 마약 장터 ‘인코그니토’ 운영자 징역 30년 철퇴](http://www.boannews.com/media/view.asp?idx=141946&kind=&sub_kind=)
+- 🇰🇷 **[BoanNews]** [아우토크립트-에티포스-퀄컴, 미국 5GAA 총회서 ‘V2X 톨링 서비스’ 시연](http://www.boannews.com/media/view.asp?idx=141945&kind=&sub_kind=)
+
+---
+
