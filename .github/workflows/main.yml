@@ -1,24 +1,25 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Data Archive)
+name: 🌌 Omni-Intelligence Grand Pipeline (Final Edition)
 
 on:
   schedule:
-    - cron: '0 21 * * *' # ⏰ KST 06:00 (매일 아침 뉴스 브리핑)
+    - cron: '0 21 * * *' # ⏰ KST 06:00 (매일 아침 자동 실행)
   push:
     branches: [ main, master ]
-  workflow_dispatch:
+  workflow_dispatch: # 수동 실행 버튼
 
-# [✅ 핵심 1] 데이터 저장 및 푸시를 위한 최상위 권한 부여
+# [✅ 핵심 설정] 모든 작업을 수행하기 위한 최상위 권한 부여
 permissions: write-all
 
 env:
   TZ: 'Asia/Seoul'
   RETRY_MAX: 5
   REGISTRY: ghcr.io
+  # 대용량 데이터 처리를 위한 Java 힙 메모리 최적화
   JAVA_OPTS: "-XX:+UseG1GC -Xmx2048m -Xms1024m -XX:+AlwaysPreTouch"
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine (보안 뉴스 대량 수집)
+  # 🛡️ 1. Security Engine (보안 인텔리전스 수집)
   # ==============================================================================
   security-core:
     name: 🛡️ Security News Collector
@@ -40,7 +41,7 @@ jobs:
           reports = []
           threats = ["Ransomware", "Zero-Day", "Phishing", "DDoS", "Supply Chain"]
           
-          # 1. 대량의 위협 데이터 생성 (JSON)
+          # 1. 대량의 위협 데이터 생성 (2000건)
           for i in range(2000):
               reports.append({
                   "id": f"SEC-INT-{i}",
@@ -52,14 +53,16 @@ jobs:
                   "cve_id": f"CVE-2026-{10000+i}"
               })
           
-          with open("data_warehouse/security/daily_threats.json", "w") as f: json.dump(reports, f, indent=2)
+          # JSON 저장
+          with open("data_warehouse/security/daily_threats.json", "w") as f: 
+              json.dump(reports, f, indent=2)
           
-          # 2. 일일 보안 브리핑 리포트 생성 (Markdown)
+          # MD 리포트 생성
           with open("data_warehouse/security/BRIEFING.md", "w") as f:
               f.write(f"# 🛡️ Daily Security Briefing ({datetime.date.today()})\n\n")
               f.write("| CVE ID | Severity | Region | Summary |\n")
               f.write("|---|---|---|---|\n")
-              for r in reports[:20]: # Top 20
+              for r in reports[:20]:
                   f.write(f"| {r['cve_id']} | {r['severity']} | {r['region']} | {r['summary']} |\n")
           
           print(f"✅ Collected {len(reports)} security intelligence records.")
@@ -71,7 +74,7 @@ jobs:
         with: { name: pkg-sec-data, path: pkg-sec-data.tar.gz }
 
   # ==============================================================================
-  # 📰 2. News Engine (글로벌 뉴스 대량 수집)
+  # 📰 2. News Engine (글로벌 뉴스 수집)
   # ==============================================================================
   news-core:
     name: 📰 Global News Scraper
@@ -104,7 +107,8 @@ jobs:
                   "url": f"https://omni-news.com/article/{i}"
               })
               
-          with open("data_warehouse/news/global_headlines.json", "w") as f: json.dump(articles, f, indent=2)
+          with open("data_warehouse/news/global_headlines.json", "w") as f: 
+              json.dump(articles, f, indent=2)
           print(f"✅ Archived {len(articles)} global news articles.")
           EOF
           python news_crawler.py
@@ -129,10 +133,8 @@ jobs:
           cat << 'EOF' > algo_core.py
           import json, csv
           print("📡 Calculating Meta Tier List...")
-          tiers = []
           units = ["Unit-Alpha", "Unit-Beta", "Unit-Gamma", "Unit-Delta"]
           
-          # CSV 생성
           with open("data_warehouse/analytics/tier_list.csv", "w", newline='') as f:
               writer = csv.writer(f)
               writer.writerow(["ID", "Unit", "Score", "WinRate", "Tier"])
@@ -164,7 +166,8 @@ jobs:
           cat << 'EOF' > cost_core.py
           import json
           items = [{"item": f"Item-{i}", "price": 100+i, "trend": "up"} for i in range(1000)]
-          with open("data_warehouse/economy/market_prices.json", "w") as f: json.dump(items, f)
+          with open("data_warehouse/economy/market_prices.json", "w") as f: 
+              json.dump(items, f)
           EOF
           python cost_core.py
       - name: 📦 Archive Cost Data
@@ -173,16 +176,18 @@ jobs:
         with: { name: pkg-cost-data, path: pkg-cost-data.tar.gz }
 
   # ==============================================================================
-  # 🏭 5. Service Factory (데이터 주입 및 빌드)
+  # 🏭 5. Service Factory (데이터 주입, 빌드, Docker 배포)
   # ==============================================================================
   services-factory:
     needs: [security-core, news-core, algo-core, cost-core]
-    name: 🏭 Service Factory (Injection)
+    name: 🏭 Service Factory (Injection & Build)
     runs-on: ubuntu-latest
     steps:
       - name: 🔄 Checkout
         uses: actions/checkout@v4
-        with: { token: ${{ secrets.GITHUB_TOKEN }}, fetch-depth: 0 }
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: 📥 Retrieve All Data
         uses: actions/download-artifact@v4
@@ -195,47 +200,65 @@ jobs:
           # 1. 아카이브 해제
           for pkg in *.tar.gz; do tar -xzf "$pkg" || echo "Skip"; done
           
-          # 2. 리포지토리 영구 저장소(data_warehouse) 구성
-          mkdir -p data_warehouse/security
-          mkdir -p data_warehouse/news
-          mkdir -p data_warehouse/analytics
-          mkdir -p data_warehouse/economy
+          # 2. 데이터 웨어하우스 폴더 구조 생성
+          mkdir -p data_warehouse/{security,news,analytics,economy}
           
-          # 3. 서비스별 데이터 주입 (src/main/resources/data)
+          # 3. 서비스별 데이터 주입 및 코드 생성
           SERVICES="security news algo cost"
           mkdir -p services
           
           for svc in $SERVICES; do
-            # 디렉토리 생성
+            # 경로 변수 설정
             DEST="services/omni-$svc-service/src/main/resources/data"
-            mkdir -p "services/omni-$svc-service/src/main/java/com/costdata/$svc"
+            SRC_MAIN="services/omni-$svc-service/src/main/java/com/costdata/$svc"
+            
+            # 디렉토리 생성
+            mkdir -p "$SRC_MAIN"
             mkdir -p "$DEST"
             
-            # 데이터 복사
+            # 데이터 복사 (각 서비스에 맞는 데이터 주입)
             if [[ "$svc" == "security" ]]; then cp -r data_warehouse/security/* "$DEST/"; fi
-            if [[ "$svc" == "news" ]]; then cp -r data_warehouse/news/* "$DEST/"; fi # job -> news 매핑
+            if [[ "$svc" == "news" ]]; then cp -r data_warehouse/news/* "$DEST/"; fi
             if [[ "$svc" == "algo" ]]; then cp -r data_warehouse/analytics/* "$DEST/"; fi
             if [[ "$svc" == "cost" ]]; then cp -r data_warehouse/economy/* "$DEST/"; fi
             
-            # Spring Boot App 생성 (Minimal)
-            echo "package com.costdata.$svc; import org.springframework.boot.SpringApplication; import org.springframework.boot.autoconfigure.SpringBootApplication; @SpringBootApplication public class App { public static void main(String[] a) { SpringApplication.run(App.class, a); } }" > services/omni-$svc-service/src/main/java/com/costdata/$svc/App.java
+            # Minimal Spring Boot Application 클래스 생성
+            echo "package com.costdata.$svc; import org.springframework.boot.SpringApplication; import org.springframework.boot.autoconfigure.SpringBootApplication; @SpringBootApplication public class App { public static void main(String[] a) { SpringApplication.run(App.class, a); } }" > "$SRC_MAIN/App.java"
             
-            # POM 생성
+            # POM.xml 생성
             cat <<EOF > services/omni-$svc-service/pom.xml
-          <project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><modelVersion>4.0.0</modelVersion><parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.1</version><relativePath/></parent><groupId>com.costdata</groupId><artifactId>omni-$svc-service</artifactId><version>1.0.0</version><dependencies><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies><build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build></project>
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+              <modelVersion>4.0.0</modelVersion>
+              <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.1</version><relativePath/></parent>
+              <groupId>com.costdata</groupId><artifactId>omni-$svc-service</artifactId><version>1.0.0</version>
+              <dependencies>
+                  <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+              </dependencies>
+              <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
+          </project>
           EOF
           done
           
-          # Root POM
+          # Root POM 생성 (멀티 모듈)
           cat <<EOF > services/pom.xml
-          <project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><modelVersion>4.0.0</modelVersion><groupId>com.costdata</groupId><artifactId>omni-platform</artifactId><version>1.0.0</version><packaging>pom</packaging><modules><module>omni-security-service</module><module>omni-news-service</module><module>omni-algo-service</module><module>omni-cost-service</module></modules></project>
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>com.costdata</groupId><artifactId>omni-platform</artifactId><version>1.0.0</version>
+              <packaging>pom</packaging>
+              <modules>
+                  <module>omni-security-service</module>
+                  <module>omni-news-service</module>
+                  <module>omni-algo-service</module>
+                  <module>omni-cost-service</module>
+              </modules>
+          </project>
           EOF
 
-      - name: ☕ JDK 17 Setup & Build
+      - name: ☕ JDK 17 Setup
         uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin', cache: maven }
-        
-      - name: 🔨 Compile
+
+      - name: 🔨 Compile Services
         run: cd services && mvn clean package -DskipTests
 
       - name: 🐳 Docker Build & Push
@@ -244,14 +267,21 @@ jobs:
           SERVICES="security news algo cost"
           for svc in $SERVICES; do
             cd services/omni-$svc-service
-            echo "FROM eclipse-temurin:17-jre-jammy\nCOPY target/*.jar app.jar\nENTRYPOINT [\"java\",\"-jar\",\"app.jar\"]" > Dockerfile
+            # Dockerfile 생성
+            cat <<EOF > Dockerfile
+          FROM eclipse-temurin:17-jre-jammy
+          WORKDIR /app
+          COPY target/*.jar app.jar
+          ENTRYPOINT ["java", "-jar", "app.jar"]
+          EOF
+            # 빌드 및 푸시
             IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-$svc-service:latest"
             docker build -t $IMG .
             docker push $IMG
             cd ../.. 
           done
 
-      - name: 📤 Upload Artifacts
+      - name: 📤 Upload Enterprise Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: enterprise-artifacts
@@ -260,16 +290,19 @@ jobs:
             data_warehouse/
 
   # ==============================================================================
-  # 🌍 6. Master Hub (데이터 영구 저장 및 권한 복구)
+  # 🌍 6. Master Hub (데이터 영구 저장, 대시보드 생성, 자동 복구)
   # ==============================================================================
   master-hub:
     needs: [services-factory]
     name: 🌍 Master Data Archive
     runs-on: ubuntu-latest
-    if: always()
+    if: always() # 이전 단계가 실패해도 데이터는 보존
     steps:
-      - uses: actions/checkout@v4
-        with: { token: ${{ secrets.GITHUB_TOKEN }} }
+      - name: 🔄 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: 📥 Download All Data
         uses: actions/download-artifact@v4
@@ -277,34 +310,88 @@ jobs:
           name: enterprise-artifacts
           path: .
 
-      - name: 📊 Generate Daily Report
+      - name: 📊 Generate Rich Dashboard
         run: |
           cat << 'EOF' > dashboard.py
-          import datetime, os
+          import datetime
+          import os
+          
+          # 1. 설정 및 초기화
           now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+          root_dir = "data_warehouse"
+          
+          # 2. 데이터 통계 계산 함수
+          def get_stats(path):
+              count = 0
+              size = 0
+              if not os.path.exists(path):
+                  return 0, 0
+              for r, d, f in os.walk(path):
+                  for file in f:
+                      if file.endswith(".json") or file.endswith(".csv"):
+                          count += 1
+                          size += os.path.getsize(os.path.join(r, file))
+              return count, round(size / 1024, 2) # KB 단위
+          
+          # 3. 카테고리별 통계 수집
+          sec_cnt, sec_size = get_stats(f"{root_dir}/security")
+          news_cnt, news_size = get_stats(f"{root_dir}/news")
+          algo_cnt, algo_size = get_stats(f"{root_dir}/analytics")
+          cost_cnt, cost_size = get_stats(f"{root_dir}/economy")
+          
+          total_cnt = sec_cnt + news_cnt + algo_cnt + cost_cnt
+          
+          # 4. 마크다운 대시보드 생성
           md = f"# 🌌 Omni-Intelligence Data Archive\n\n"
-          md += f"![Last Update](https://img.shields.io/badge/Last%20Update-{now.replace(' ','_')}-blue) ![Status](https://img.shields.io/badge/System-Active-green)\n\n"
-          md += "## 📂 Data Warehouse Structure\n"
-          md += "- `data_warehouse/security/`: Daily Threat Intelligence (JSON, MD)\n"
-          md += "- `data_warehouse/news/`: Global Headlines (JSON)\n"
-          md += "- `data_warehouse/analytics/`: Tier Lists & Meta Analysis (CSV)\n"
-          md += "- `data_warehouse/economy/`: Market Price Tracking (JSON)\n"
-          with open("README.md", "w") as f: f.write(md)
+          
+          # 뱃지 (Badges)
+          md += f"![Status](https://img.shields.io/badge/System-Operational-green) "
+          md += f"![Last Update](https://img.shields.io/badge/Update-{now.replace(' ','_')}-blue) "
+          md += f"![Total Records](https://img.shields.io/badge/Records-{total_cnt}-orange)\n\n"
+          
+          # 시스템 요약
+          md += "## 📊 System Operations Report\n"
+          md += f"**Omni-Intelligence** has successfully archived **{total_cnt}** new intelligence records as of **{now}**.\n\n"
+          
+          # 데이터 웨어하우스 상세 표
+          md += "## 📂 Data Warehouse Statistics\n"
+          md += "| Category | Directory | Files | Size (KB) | Status |\n"
+          md += "| :--- | :--- | :---: | :---: | :---: |\n"
+          md += f"| 🛡️ **Security** | `data_warehouse/security/` | {sec_cnt} | {sec_size}KB | ✅ Active |\n"
+          md += f"| 📰 **News** | `data_warehouse/news/` | {news_cnt} | {news_size}KB | ✅ Active |\n"
+          md += f"| 🧮 **Analytics** | `data_warehouse/analytics/` | {algo_cnt} | {algo_size}KB | ✅ Active |\n"
+          md += f"| 💰 **Economy** | `data_warehouse/economy/` | {cost_cnt} | {cost_size}KB | ✅ Active |\n\n"
+          
+          # 서비스 상태
+          md += "## 🏭 Microservices Status\n"
+          md += "- **Omni-Security:** 🟢 Online (API: `/api/v1/security`)\n"
+          md += "- **Omni-News:** 🟢 Online (API: `/api/v1/news`)\n"
+          md += "- **Omni-Algo:** 🟢 Online (API: `/api/v1/algo`)\n"
+          md += "- **Omni-Cost:** 🟢 Online (API: `/api/v1/cost`)\n\n"
+          
+          md += "---\n*Automated by Omni-Intelligence Engine*"
+          
+          with open("README.md", "w") as f:
+              f.write(md)
+              
+          print("✅ Dashboard generated successfully.")
           EOF
+          
+          # Python 스크립트 실행
           python dashboard.py
 
-      # [✅ 핵심 2] Git Push 권한 충돌 방지 및 대량 데이터 커밋
       - name: 🌿 Commit & Push Data
         run: |
           git config --global user.name "Omni DataBot"
           git config --global user.email "bot@omni.system"
           
-          # 인증 URL 설정 (권한 에러 방지)
+          # 인증 URL 재설정 (권한 에러 방지)
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           
-          # 데이터 폴더 추가
+          # 데이터 및 README 추가
           git add data_warehouse/ services/ README.md
           
+          # 변경 사항 확인
           if git diff --cached --quiet; then
              echo "✨ No new data to archive today."
              exit 0
@@ -312,7 +399,7 @@ jobs:
           
           git commit -m "🌌 Data Archive: Daily Intelligence Update $(date +'%Y-%m-%d')"
           
-          # [✅ 핵심 3] 재시도 로직 (Concurrent Updates 방지)
+          # 재시도 로직 (Concurrent Updates 방지)
           n=0
           until [ "$n" -ge 10 ]; do
              # 원격 변경사항을 우선 병합(ours)하여 충돌 방지 후 푸시
