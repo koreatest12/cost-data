@@ -1,25 +1,23 @@
-name: 🌌 Omni-Intelligence Grand Pipeline (Final Edition)
+name: 🌌 Omni-Intelligence Grand Pipeline (Conflict Fixed)
 
 on:
   schedule:
-    - cron: '0 21 * * *' # ⏰ KST 06:00 (매일 아침 자동 실행)
+    - cron: '0 21 * * *' # ⏰ KST 06:00
   push:
     branches: [ main, master ]
-  workflow_dispatch: # 수동 실행 버튼
+  workflow_dispatch:
 
-# [✅ 핵심 설정] 모든 작업을 수행하기 위한 최상위 권한 부여
 permissions: write-all
 
 env:
   TZ: 'Asia/Seoul'
   RETRY_MAX: 5
   REGISTRY: ghcr.io
-  # 대용량 데이터 처리를 위한 Java 힙 메모리 최적화
   JAVA_OPTS: "-XX:+UseG1GC -Xmx2048m -Xms1024m -XX:+AlwaysPreTouch"
 
 jobs:
   # ==============================================================================
-  # 🛡️ 1. Security Engine (보안 인텔리전스 수집)
+  # 🛡️ 1. Security Engine
   # ==============================================================================
   security-core:
     name: 🛡️ Security News Collector
@@ -36,12 +34,9 @@ jobs:
           import json, random, datetime
           from faker import Faker
           fake = Faker()
-          
           print("📡 Scraping Global Security Feeds...")
           reports = []
           threats = ["Ransomware", "Zero-Day", "Phishing", "DDoS", "Supply Chain"]
-          
-          # 1. 대량의 위협 데이터 생성 (2000건)
           for i in range(2000):
               reports.append({
                   "id": f"SEC-INT-{i}",
@@ -52,19 +47,13 @@ jobs:
                   "summary": fake.sentence(nb_words=10),
                   "cve_id": f"CVE-2026-{10000+i}"
               })
-          
-          # JSON 저장
-          with open("data_warehouse/security/daily_threats.json", "w") as f: 
-              json.dump(reports, f, indent=2)
-          
-          # MD 리포트 생성
+          with open("data_warehouse/security/daily_threats.json", "w") as f: json.dump(reports, f, indent=2)
           with open("data_warehouse/security/BRIEFING.md", "w") as f:
               f.write(f"# 🛡️ Daily Security Briefing ({datetime.date.today()})\n\n")
               f.write("| CVE ID | Severity | Region | Summary |\n")
               f.write("|---|---|---|---|\n")
               for r in reports[:20]:
                   f.write(f"| {r['cve_id']} | {r['severity']} | {r['region']} | {r['summary']} |\n")
-          
           print(f"✅ Collected {len(reports)} security intelligence records.")
           EOF
           python sec_crawler.py
@@ -74,7 +63,7 @@ jobs:
         with: { name: pkg-sec-data, path: pkg-sec-data.tar.gz }
 
   # ==============================================================================
-  # 📰 2. News Engine (글로벌 뉴스 수집)
+  # 📰 2. News Engine
   # ==============================================================================
   news-core:
     name: 📰 Global News Scraper
@@ -91,11 +80,9 @@ jobs:
           import json, datetime
           from faker import Faker
           fake = Faker()
-          
           print("📡 Scraping Global Tech & Game News...")
           articles = []
           categories = ["Tech", "Gaming", "AI", "Blockchain", "Space"]
-          
           for i in range(1000):
               articles.append({
                   "id": f"NEWS-{i}",
@@ -106,9 +93,7 @@ jobs:
                   "content_snippet": fake.text(max_nb_chars=200),
                   "url": f"https://omni-news.com/article/{i}"
               })
-              
-          with open("data_warehouse/news/global_headlines.json", "w") as f: 
-              json.dump(articles, f, indent=2)
+          with open("data_warehouse/news/global_headlines.json", "w") as f: json.dump(articles, f, indent=2)
           print(f"✅ Archived {len(articles)} global news articles.")
           EOF
           python news_crawler.py
@@ -118,7 +103,7 @@ jobs:
         with: { name: pkg-news-data, path: pkg-news-data.tar.gz }
 
   # ==============================================================================
-  # 🧮 3. Algo Engine (데이터 분석 및 티어 산정)
+  # 🧮 3. Algo Engine
   # ==============================================================================
   algo-core:
     name: 🧮 Tier List Engine
@@ -134,14 +119,12 @@ jobs:
           import json, csv
           print("📡 Calculating Meta Tier List...")
           units = ["Unit-Alpha", "Unit-Beta", "Unit-Gamma", "Unit-Delta"]
-          
           with open("data_warehouse/analytics/tier_list.csv", "w", newline='') as f:
               writer = csv.writer(f)
               writer.writerow(["ID", "Unit", "Score", "WinRate", "Tier"])
               for i in range(5000):
                   tier = "S" if i % 10 == 0 else ("A" if i % 5 == 0 else "B")
                   writer.writerow([f"META-{i}", units[i%4], 1000+i, f"{50+(i%50)}%", tier])
-          
           print("✅ Meta analysis complete.")
           EOF
           python algo_core.py
@@ -151,7 +134,7 @@ jobs:
         with: { name: pkg-algo-data, path: pkg-algo-data.tar.gz }
 
   # ==============================================================================
-  # 💰 4. Cost Engine (경제 지표 분석)
+  # 💰 4. Cost Engine
   # ==============================================================================
   cost-core:
     name: 💰 Economy Tracker
@@ -166,8 +149,7 @@ jobs:
           cat << 'EOF' > cost_core.py
           import json
           items = [{"item": f"Item-{i}", "price": 100+i, "trend": "up"} for i in range(1000)]
-          with open("data_warehouse/economy/market_prices.json", "w") as f: 
-              json.dump(items, f)
+          with open("data_warehouse/economy/market_prices.json", "w") as f: json.dump(items, f)
           EOF
           python cost_core.py
       - name: 📦 Archive Cost Data
@@ -176,18 +158,18 @@ jobs:
         with: { name: pkg-cost-data, path: pkg-cost-data.tar.gz }
 
   # ==============================================================================
-  # 🏭 5. Service Factory (데이터 주입, 빌드, Docker 배포)
+  # 🏭 5. Service Factory (Build & Inject) - Conflict Resolved
   # ==============================================================================
   services-factory:
     needs: [security-core, news-core, algo-core, cost-core]
-    name: 🏭 Service Factory (Injection & Build)
+    name: 🏭 Service Factory
     runs-on: ubuntu-latest
     steps:
-      - name: 🔄 Checkout
+      - name: 🔄 Checkout Repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 0 # 기존 코드 보존
 
       - name: 📥 Retrieve All Data
         uses: actions/download-artifact@v4
@@ -195,70 +177,68 @@ jobs:
           pattern: 'pkg-*-data'
           merge-multiple: true
 
-      - name: 🛠️ Unpack & Inject Data
+      - name: 🛠️ Smart Data Injection (No Overwrite)
         run: |
-          # 1. 아카이브 해제
+          # 1. 데이터 아카이브 해제
           for pkg in *.tar.gz; do tar -xzf "$pkg" || echo "Skip"; done
           
-          # 2. 데이터 웨어하우스 폴더 구조 생성
+          # 2. 웨어하우스 폴더 구조 생성
           mkdir -p data_warehouse/{security,news,analytics,economy}
           
-          # 3. 서비스별 데이터 주입 및 코드 생성
+          # 3. 서비스별 데이터 주입 (기존 코드 보존)
           SERVICES="security news algo cost"
           mkdir -p services
           
           for svc in $SERVICES; do
-            # 경로 변수 설정
+            # 경로 설정
             DEST="services/omni-$svc-service/src/main/resources/data"
             SRC_MAIN="services/omni-$svc-service/src/main/java/com/costdata/$svc"
             
-            # 디렉토리 생성
-            mkdir -p "$SRC_MAIN"
+            # [✅ 핵심 수정 1] Main Class 충돌 방지: 기존에 생성된 App.java 제거
+            # Bootstrap 단계에서 ServiceApplication.java가 생성되었으므로 App.java는 필요 없습니다.
+            echo "🧹 Cleaning up conflicts in $svc..."
+            find services/omni-$svc-service -name "App.java" -delete
+            
+            # 리소스 디렉토리 생성
             mkdir -p "$DEST"
             
-            # 데이터 복사 (각 서비스에 맞는 데이터 주입)
+            # 데이터 복사 (덮어쓰지 않고 추가)
             if [[ "$svc" == "security" ]]; then cp -r data_warehouse/security/* "$DEST/"; fi
             if [[ "$svc" == "news" ]]; then cp -r data_warehouse/news/* "$DEST/"; fi
             if [[ "$svc" == "algo" ]]; then cp -r data_warehouse/analytics/* "$DEST/"; fi
             if [[ "$svc" == "cost" ]]; then cp -r data_warehouse/economy/* "$DEST/"; fi
             
-            # Minimal Spring Boot Application 클래스 생성
-            echo "package com.costdata.$svc; import org.springframework.boot.SpringApplication; import org.springframework.boot.autoconfigure.SpringBootApplication; @SpringBootApplication public class App { public static void main(String[] a) { SpringApplication.run(App.class, a); } }" > "$SRC_MAIN/App.java"
+            # [✅ 핵심 수정 2] POM 파일 보호
+            # 기존 엔터프라이즈 POM이 있으면 덮어쓰지 않음
+            if [ ! -f "services/omni-$svc-service/pom.xml" ]; then
+              echo "📝 Creating missing POM for $svc..."
+              cat <<EOF > services/omni-$svc-service/pom.xml
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><modelVersion>4.0.0</modelVersion><parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.1</version><relativePath/></parent><groupId>com.costdata</groupId><artifactId>omni-$svc-service</artifactId><version>1.0.0</version><dependencies><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency></dependencies><build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build></project>
+          EOF
+            fi
             
-            # POM.xml 생성
-            cat <<EOF > services/omni-$svc-service/pom.xml
-          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-              <modelVersion>4.0.0</modelVersion>
-              <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.1</version><relativePath/></parent>
-              <groupId>com.costdata</groupId><artifactId>omni-$svc-service</artifactId><version>1.0.0</version>
-              <dependencies>
-                  <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
-              </dependencies>
-              <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
-          </project>
+            # [✅ 핵심 수정 3] 메인 클래스 보호
+            # ServiceApplication.java가 없으면 생성 (있으면 건드리지 않음)
+            if [ ! -f "$SRC_MAIN/ServiceApplication.java" ]; then
+               echo "📝 Creating missing ServiceApplication for $svc..."
+               mkdir -p "$SRC_MAIN"
+               cat <<EOF > "$SRC_MAIN/ServiceApplication.java"
+          package com.costdata.$svc;
+          import org.springframework.boot.SpringApplication;
+          import org.springframework.boot.autoconfigure.SpringBootApplication;
+          @SpringBootApplication
+          public class ServiceApplication {
+              public static void main(String[] args) { SpringApplication.run(ServiceApplication.class, args); }
+          }
           EOF
+            fi
           done
-          
-          # Root POM 생성 (멀티 모듈)
-          cat <<EOF > services/pom.xml
-          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-              <modelVersion>4.0.0</modelVersion>
-              <groupId>com.costdata</groupId><artifactId>omni-platform</artifactId><version>1.0.0</version>
-              <packaging>pom</packaging>
-              <modules>
-                  <module>omni-security-service</module>
-                  <module>omni-news-service</module>
-                  <module>omni-algo-service</module>
-                  <module>omni-cost-service</module>
-              </modules>
-          </project>
-          EOF
 
-      - name: ☕ JDK 17 Setup
+      - name: ☕ JDK 17 Setup & Build
         uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin', cache: maven }
 
-      - name: 🔨 Compile Services
+      - name: 🔨 Compile
         run: cd services && mvn clean package -DskipTests
 
       - name: 🐳 Docker Build & Push
@@ -267,21 +247,23 @@ jobs:
           SERVICES="security news algo cost"
           for svc in $SERVICES; do
             cd services/omni-$svc-service
-            # Dockerfile 생성
-            cat <<EOF > Dockerfile
+            # Dockerfile이 없으면 생성
+            if [ ! -f "Dockerfile" ]; then
+              cat <<EOF > Dockerfile
           FROM eclipse-temurin:17-jre-jammy
           WORKDIR /app
           COPY target/*.jar app.jar
           ENTRYPOINT ["java", "-jar", "app.jar"]
           EOF
-            # 빌드 및 푸시
+            fi
+            
             IMG="ghcr.io/${GITHUB_REPOSITORY,,}/omni-$svc-service:latest"
             docker build -t $IMG .
             docker push $IMG
             cd ../.. 
           done
 
-      - name: 📤 Upload Enterprise Artifacts
+      - name: 📤 Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: enterprise-artifacts
@@ -290,13 +272,13 @@ jobs:
             data_warehouse/
 
   # ==============================================================================
-  # 🌍 6. Master Hub (데이터 영구 저장, 대시보드 생성, 자동 복구)
+  # 🌍 6. Master Hub
   # ==============================================================================
   master-hub:
     needs: [services-factory]
     name: 🌍 Master Data Archive
     runs-on: ubuntu-latest
-    if: always() # 이전 단계가 실패해도 데이터는 보존
+    if: always()
     steps:
       - name: 🔄 Checkout Repository
         uses: actions/checkout@v4
@@ -362,13 +344,6 @@ jobs:
           md += f"| 🧮 **Analytics** | `data_warehouse/analytics/` | {algo_cnt} | {algo_size}KB | ✅ Active |\n"
           md += f"| 💰 **Economy** | `data_warehouse/economy/` | {cost_cnt} | {cost_size}KB | ✅ Active |\n\n"
           
-          # 서비스 상태
-          md += "## 🏭 Microservices Status\n"
-          md += "- **Omni-Security:** 🟢 Online (API: `/api/v1/security`)\n"
-          md += "- **Omni-News:** 🟢 Online (API: `/api/v1/news`)\n"
-          md += "- **Omni-Algo:** 🟢 Online (API: `/api/v1/algo`)\n"
-          md += "- **Omni-Cost:** 🟢 Online (API: `/api/v1/cost`)\n\n"
-          
           md += "---\n*Automated by Omni-Intelligence Engine*"
           
           with open("README.md", "w") as f:
@@ -377,7 +352,6 @@ jobs:
           print("✅ Dashboard generated successfully.")
           EOF
           
-          # Python 스크립트 실행
           python dashboard.py
 
       - name: 🌿 Commit & Push Data
@@ -385,7 +359,7 @@ jobs:
           git config --global user.name "Omni DataBot"
           git config --global user.email "bot@omni.system"
           
-          # 인증 URL 재설정 (권한 에러 방지)
+          # 인증 URL 재설정 (Github App 권한 에러 방지)
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           
           # 데이터 및 README 추가
@@ -402,7 +376,6 @@ jobs:
           # 재시도 로직 (Concurrent Updates 방지)
           n=0
           until [ "$n" -ge 10 ]; do
-             # 원격 변경사항을 우선 병합(ours)하여 충돌 방지 후 푸시
              git pull origin main --no-rebase -s recursive -X ours && git push origin main && break
              n=$((n+1))
              echo "⚠️ Push failed, retrying in 5s... ($n/10)"
