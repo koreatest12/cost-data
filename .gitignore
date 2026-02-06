@@ -51,6 +51,8 @@ repl-temp-*
 server_config.json
 demo_config.json
 *.json
+!data/news/*.json
+!public/api/news_summary.json
 
 # Python cache
 __pycache__/
