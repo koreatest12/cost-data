@@ -11,6 +11,7 @@ on:
         required: false
         default: ''
 
+# [✅ 권한 설정] Git Push 및 파일 생성을 위한 권한 부여
 permissions: write-all
 
 jobs:
@@ -33,47 +34,229 @@ jobs:
         run: |
           mkdir -p data/news
           mkdir -p DB
+          mkdir -p scripts
+          mkdir -p public/api
+
+      # [✅ 핵심 수정] 파이썬 스크립트 강제 덮어쓰기 (인코딩 에러 해결 버전)
+      - name: Generate Robust Python Script
+        run: |
+          cat << 'EOF' > scripts/daily_security_news.py
+          import urllib.request
+          import urllib.error
+          import xml.etree.ElementTree as ET
+          import datetime
+          import json
+          import os
+          import re
+          import sys
+          import time
+
+          # 1. RSS 피드 목록 정의
+          FEEDS = {
+              "global": [
+                  ("BleepingComputer", "https://www.bleepingcomputer.com/feed/"),
+                  ("The Hacker News", "https://feeds.feedburner.com/TheHackersNews"),
+                  ("SecurityWeek", "https://feeds.feedburner.com/SecurityWeek"),
+                  ("CISA Alerts", "https://www.cisa.gov/uscert/ncas/alerts.xml"),
+                  ("Krebs on Security", "https://krebsonsecurity.com/feed/"),
+                  ("Dark Reading", "https://www.darkreading.com/rss.xml"),
+              ],
+              "korea": [
+                  ("DailySecu", "https://www.dailysecu.com/rss/all.xml"),
+                  ("BoanNews", "https://www.boannews.com/media/news_rss.xml"), 
+                  ("KISA KrCERT", "https://www.krcert.or.kr/rss/rss.do"),
+              ]
+          }
+
+          # 2. 인코딩 처리 및 데이터 정제 함수
+          def fetch_feed_content(url):
+              headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+              try:
+                  req = urllib.request.Request(url, headers=headers)
+                  with urllib.request.urlopen(req, timeout=10) as response:
+                      raw_data = response.read()
+                      
+                      # [핵심] 인코딩 자동 감지 및 디코딩
+                      decoded_data = None
+                      encodings = ['utf-8', 'euc-kr', 'cp949', 'latin-1']
+                      
+                      for enc in encodings:
+                          try:
+                              decoded_data = raw_data.decode(enc)
+                              break
+                          except UnicodeDecodeError:
+                              continue
+                      
+                      if not decoded_data:
+                          print(f"    ⚠️ Failed to decode content from {url}")
+                          return None
+
+                      # [핵심] XML 선언부의 인코딩 정보 제거 (파서 충돌 방지)
+                      # <?xml version="1.0" encoding="EUC-KR"?> 같은 부분을 제거하고 순수 문자열로 파싱
+                      decoded_data = re.sub(r'<\?xml.*encoding=[\'"].*[\'"].*\?>', '', decoded_data, count=1)
+                      return decoded_data.strip()
+                      
+              except Exception as e:
+                  print(f"    ❌ Connection Error ({url}): {e}")
+                  return None
+
+          def parse_feeds():
+              collected_news = []
+              total = 0
+              global_cnt = 0
+              korea_cnt = 0
+
+              for category, feeds in FEEDS.items():
+                  for name, url in feeds:
+                      print(f"  Fetching [{category}] {name}...")
+                      xml_str = fetch_feed_content(url)
+                      
+                      if not xml_str:
+                          continue
+
+                      try:
+                          # XML 파싱 (문자열로 직접 파싱)
+                          root = ET.fromstring(xml_str)
+                          items = root.findall('.//item')
+                          count = 0
+                          
+                          for item in items[:5]: # 피드당 최신 5개만 수집
+                              title = item.find('title')
+                              link = item.find('link')
+                              pubDate = item.find('pubDate')
+                              
+                              if title is not None and link is not None:
+                                  news_item = {
+                                      "source": name,
+                                      "category": category,
+                                      "title": title.text.strip() if title.text else "No Title",
+                                      "link": link.text.strip() if link.text else "#",
+                                      "date": pubDate.text.strip() if pubDate is not None and pubDate.text else str(datetime.date.today())
+                                  }
+                                  collected_news.append(news_item)
+                                  count += 1
+                          
+                          print(f"    -> {count} articles collected")
+                          if category == 'global': global_cnt += count
+                          else: korea_cnt += count
+                          total += count
+
+                      except ET.ParseError as e:
+                          print(f"    ⚠️ XML Parse Error for {name}: {e}")
+                          continue
+                      except Exception as e:
+                          print(f"    ⚠️ Unknown Error for {name}: {e}")
+                          continue
+
+              return collected_news, total, global_cnt, korea_cnt
+
+          def save_data(news_data, total, g_cnt, k_cnt):
+              today = datetime.datetime.now().strftime('%Y-%m-%d')
+              timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+              
+              # 1. JSON 저장
+              json_path = f"data/news/news_{today}.json"
+              with open(json_path, 'w', encoding='utf-8') as f:
+                  json.dump({
+                      "date": today,
+                      "timestamp": timestamp,
+                      "stats": {"total": total, "global": g_cnt, "korea": k_cnt},
+                      "articles": news_data
+                  }, f, ensure_ascii=False, indent=2)
+
+              # 2. Markdown DB 업데이트 (History)
+              md_path = "DB/total_news_history.md"
+              mode = 'a' if os.path.exists(md_path) else 'w'
+              with open(md_path, mode, encoding='utf-8') as f:
+                  if mode == 'w':
+                      f.write("# 🛡️ Daily Security News History\n\n")
+                  
+                  f.write(f"## 📅 {today} ({total} Articles)\n")
+                  f.write(f"**Updated:** {timestamp} | **Global:** {g_cnt} | **Korea:** {k_cnt}\n\n")
+                  
+                  for news in news_data:
+                      flag = "🌍" if news['category'] == 'global' else "🇰🇷"
+                      f.write(f"- {flag} **[{news['source']}]** [{news['title']}]({news['link']})\n")
+                  f.write("\n---\n\n")
+
+              # 3. Index JSON 업데이트 (Dashboard용)
+              index_path = "data/news/news_index.json"
+              index_data = {"last_updated": timestamp, "dates": []}
+              
+              if os.path.exists(index_path):
+                  try:
+                      with open(index_path, 'r', encoding='utf-8') as f:
+                          index_data = json.load(f)
+                  except: pass
+
+              # 오늘 날짜 중복 제거 후 추가
+              index_data["dates"] = [d for d in index_data.get("dates", []) if d["date"] != today]
+              index_data["dates"].insert(0, {
+                  "date": today,
+                  "total_articles": total,
+                  "global_count": g_cnt,
+                  "korea_count": k_cnt,
+                  "file": json_path
+              })
+              index_data["last_updated"] = timestamp
+              
+              with open(index_path, 'w', encoding='utf-8') as f:
+                  json.dump(index_data, f, ensure_ascii=False, indent=2)
+
+              # 4. GitHub Actions Output 설정
+              if os.getenv('GITHUB_OUTPUT'):
+                  with open(os.getenv('GITHUB_OUTPUT'), 'a') as fh:
+                      fh.write(f"date={today}\n")
+                      fh.write(f"total_articles={total}\n")
+                      fh.write(f"global_count={g_cnt}\n")
+                      fh.write(f"korea_count={k_cnt}\n")
+
+          def main():
+              print("[Daily Security News Generator]")
+              print(f"Timestamp: {datetime.datetime.now()}")
+              
+              news, total, g_cnt, k_cnt = parse_feeds()
+              
+              if total > 0:
+                  save_data(news, total, g_cnt, k_cnt)
+                  print(f"\n✅ Successfully saved {total} articles.")
+              else:
+                  print("\n⚠️ No news collected. Check connections.")
+              
+          if __name__ == "__main__":
+              main()
+          EOF
 
       - name: Run News Generator
         id: generate
         run: python scripts/daily_security_news.py
 
-      - name: Generate Dashboard Data
+      - name: Generate Dashboard Summary (Public API)
         run: |
           python3 << 'PYEOF'
-          import json, os, glob
-
+          import json, os
+          
           news_dir = "data/news"
           index_path = os.path.join(news_dir, "news_index.json")
-
+          
           if not os.path.exists(index_path):
-              print("No index found, skipping dashboard data generation")
+              print("No index found, skipping dashboard generation")
               exit(0)
-
-          with open(index_path, "r") as f:
+              
+          with open(index_path, "r", encoding='utf-8') as f:
               index = json.load(f)
-
-          # Generate a lightweight summary for the dashboard
+              
           dashboard_data = {
               "last_updated": index.get("last_updated", ""),
               "total_days": len(index.get("dates", [])),
-              "dates": []
+              "dates": index.get("dates", [])[:30] # 최근 30일치만
           }
-
-          for entry in index.get("dates", [])[:30]:
-              dashboard_data["dates"].append({
-                  "date": entry["date"],
-                  "total": entry.get("total_articles", 0),
-                  "global": entry.get("global_count", 0),
-                  "korea": entry.get("korea_count", 0),
-              })
-
-          # Write dashboard summary to public API
+          
           os.makedirs("public/api", exist_ok=True)
-          with open("public/api/news_summary.json", "w") as f:
+          with open("public/api/news_summary.json", "w", encoding='utf-8') as f:
               json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
-
-          print(f"Dashboard data generated: {len(dashboard_data['dates'])} days")
+              
+          print(f"✅ Dashboard summary updated with {len(dashboard_data['dates'])} entries.")
           PYEOF
 
       - name: Upload News Artifacts
@@ -87,34 +270,28 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
+          
           git add data/news/
           git add DB/total_news_history.md
           git add public/api/news_summary.json
-
-          # Check if there are changes to commit
+          git add scripts/daily_security_news.py
+          
           if git diff --cached --quiet; then
             echo "No new changes to commit"
           else
-            DATE=$(date -u +"%Y-%m-%d")
+            DATE="${{ steps.generate.outputs.date }}"
             TOTAL="${{ steps.generate.outputs.total_articles }}"
-            GLOBAL="${{ steps.generate.outputs.global_count }}"
-            KOREA="${{ steps.generate.outputs.korea_count }}"
-
-            git commit -m "Daily Security News: ${DATE} (${TOTAL:-0} articles: ${GLOBAL:-0} global, ${KOREA:-0} korea)"
+            git commit -m "Daily Security News: $DATE (Total $TOTAL articles)"
             git push
           fi
 
       - name: Job Summary
         if: always()
         run: |
-          echo "## Daily Security News Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🛡️ Daily Security News Report" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Date | ${{ steps.generate.outputs.date || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Total Articles | ${{ steps.generate.outputs.total_articles || '0' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Global News | ${{ steps.generate.outputs.global_count || '0' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Korea News | ${{ steps.generate.outputs.korea_count || '0' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "News data saved to \`data/news/\` and dashboard updated." >> $GITHUB_STEP_SUMMARY
+          echo "| Date | ${{ steps.generate.outputs.date }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Articles | ${{ steps.generate.outputs.total_articles }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Global | ${{ steps.generate.outputs.global_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Korea | ${{ steps.generate.outputs.korea_count }} |" >> $GITHUB_STEP_SUMMARY
