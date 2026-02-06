@@ -1,0 +1,120 @@
+name: Daily Security News Generator
+
+on:
+  schedule:
+    # 08:00 KST = 23:00 UTC (previous day)
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    inputs:
+      force_date:
+        description: 'Force specific date (YYYY-MM-DD format, leave empty for today)'
+        required: false
+        default: ''
+
+permissions: write-all
+
+jobs:
+  generate-news:
+    name: Generate Daily Security News
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create Required Directories
+        run: |
+          mkdir -p data/news
+          mkdir -p DB
+
+      - name: Run News Generator
+        id: generate
+        run: python scripts/daily_security_news.py
+
+      - name: Generate Dashboard Data
+        run: |
+          python3 << 'PYEOF'
+          import json, os, glob
+
+          news_dir = "data/news"
+          index_path = os.path.join(news_dir, "news_index.json")
+
+          if not os.path.exists(index_path):
+              print("No index found, skipping dashboard data generation")
+              exit(0)
+
+          with open(index_path, "r") as f:
+              index = json.load(f)
+
+          # Generate a lightweight summary for the dashboard
+          dashboard_data = {
+              "last_updated": index.get("last_updated", ""),
+              "total_days": len(index.get("dates", [])),
+              "dates": []
+          }
+
+          for entry in index.get("dates", [])[:30]:
+              dashboard_data["dates"].append({
+                  "date": entry["date"],
+                  "total": entry.get("total_articles", 0),
+                  "global": entry.get("global_count", 0),
+                  "korea": entry.get("korea_count", 0),
+              })
+
+          # Write dashboard summary to public API
+          os.makedirs("public/api", exist_ok=True)
+          with open("public/api/news_summary.json", "w") as f:
+              json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
+
+          print(f"Dashboard data generated: {len(dashboard_data['dates'])} days")
+          PYEOF
+
+      - name: Upload News Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-news-${{ steps.generate.outputs.date || 'latest' }}
+          path: data/news/
+          retention-days: 90
+
+      - name: Commit and Push News Data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add data/news/
+          git add DB/total_news_history.md
+          git add public/api/news_summary.json
+
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "No new changes to commit"
+          else
+            DATE=$(date -u +"%Y-%m-%d")
+            TOTAL="${{ steps.generate.outputs.total_articles }}"
+            GLOBAL="${{ steps.generate.outputs.global_count }}"
+            KOREA="${{ steps.generate.outputs.korea_count }}"
+
+            git commit -m "Daily Security News: ${DATE} (${TOTAL:-0} articles: ${GLOBAL:-0} global, ${KOREA:-0} korea)"
+            git push
+          fi
+
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "## Daily Security News Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Date | ${{ steps.generate.outputs.date || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Articles | ${{ steps.generate.outputs.total_articles || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Global News | ${{ steps.generate.outputs.global_count || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Korea News | ${{ steps.generate.outputs.korea_count || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "News data saved to \`data/news/\` and dashboard updated." >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,29 @@
+{
+  "last_updated": "2026-02-06 21:52 KST",
+  "description": "Daily Security News Index - Cumulative news data generated every morning at 08:00 KST",
+  "sources": {
+    "global": [
+      "BleepingComputer",
+      "The Hacker News",
+      "SecurityWeek",
+      "CISA Alerts",
+      "Krebs on Security",
+      "Dark Reading"
+    ],
+    "korea": [
+      "DailySecu",
+      "BoanNews",
+      "ETNews Security"
+    ]
+  },
+  "dates": [
+    {
+      "date": "2026-02-06",
+      "generated_at": "2026-02-06 21:52 KST",
+      "total_articles": 0,
+      "global_count": 0,
+      "korea_count": 0,
+      "file": "news_2026-02-06.json"
+    }
+  ]
+}
