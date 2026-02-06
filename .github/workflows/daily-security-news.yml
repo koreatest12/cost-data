@@ -1,45 +1,46 @@
-name: Daily Security News Generator (SOC Edition)
+name: Omni-Intelligence Global SOC (Ultimate Edition)
 
 on:
   schedule:
-    # 08:00 KST = 23:00 UTC (previous day)
-    - cron: '0 23 * * *'
+    - cron: '0 23 * * *' # 매일 아침 자동 실행
   workflow_dispatch:
     inputs:
-      force_date:
-        description: 'Force specific date (YYYY-MM-DD)'
+      force_run:
+        description: 'Force execution'
         required: false
-        default: ''
 
+# [✅ 권한 최상위 설정]
 permissions: write-all
 
 jobs:
-  build-soc:
-    name: Build Security Operations Center
+  construct-soc:
+    name: 🏗️ Build & Deploy SOC
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: 🔄 Checkout Repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 0 # 전체 히스토리 가져오기 (Rebase 필수)
 
-      - name: Setup Python
+      - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Initialize SOC Infrastructure
+      - name: 📂 Initialize Infrastructure
         run: |
           mkdir -p data/news
           mkdir -p DB
           mkdir -p scripts
           mkdir -p public/api
-          mkdir -p docker
+          mkdir -p docker/nginx
           mkdir -p viewer
 
-      # [✅ 핵심 1] 대량의 공식 피드 추가 & 강력한 오류 필터링 스크립트
-      - name: Generate SOC Engine Script
+      # ========================================================================
+      # 1. 🧠 인텔리전스 수집 엔진 (방화벽 우회 & 죽은 링크 교체 완료)
+      # ========================================================================
+      - name: 🚀 Deploy Intelligence Engine
         run: |
           cat << 'EOF' > scripts/daily_security_news.py
           import urllib.request
@@ -53,57 +54,67 @@ jobs:
           import html
           import random
 
-          # 1. 검증된 공식 보안 피드 대량 추가 (12종)
+          # [✅ 공식 주소 최신화 & 대량 추가]
           FEEDS = {
               "global": [
                   ("BleepingComputer", "https://www.bleepingcomputer.com/feed/"),
                   ("The Hacker News", "https://feeds.feedburner.com/TheHackersNews"),
-                  ("SecurityWeek", "https://feeds.feedburner.com/SecurityWeek"),
                   ("CISA Alerts", "https://www.cisa.gov/uscert/ncas/alerts.xml"),
-                  ("Krebs on Security", "https://krebsonsecurity.com/feed/"),
-                  ("Microsoft Security", "https://msrc.microsoft.com/blog/feed"),
+                  # MS: 블로그 대신 보안 응답 센터(MSRC) 공식 피드로 교체 (차단 우회)
+                  ("Microsoft Security Response", "https://api.msrc.microsoft.com/update-guide/rss"),
                   ("Google Project Zero", "https://googleprojectzero.blogspot.com/feeds/posts/default"),
-                  ("Sophos Naked Security", "https://nakedsecurity.sophos.com/feed/"),
                   ("Dark Reading", "https://www.darkreading.com/rss.xml"),
+                  ("NIST NVD", "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml"),
+                  ("Threatpost", "https://threatpost.com/feed/"),
+                  ("Trend Micro", "https://www.trendmicro.com/rss/index.xml"),
+                  ("Symantec", "https://www.broadcom.com/rss/security-response/threats.xml"),
               ],
               "korea": [
-                  ("BoanNews", "https://www.boannews.com/media/news_rss.xml"), 
+                  ("BoanNews", "https://www.boannews.com/media/news_rss.xml"),
                   ("AhnLab ASEC", "https://asec.ahnlab.com/ko/feed/"),
-                  ("ZDNet Korea (Security)", "https://zdnet.co.kr/rss/sec/10000"),
-                  ("ETNews (Security)", "https://rss.etnews.com/Section902.xml"),
+                  # ZDNet: 죽은 링크(404) -> 보안 섹션 메인 RSS로 교체
+                  ("ZDNet Korea", "https://zdnet.co.kr/rss/sec"),
+                  ("ETNews", "https://rss.etnews.com/Section902.xml"),
+                  ("KISA KrCERT", "https://www.krcert.or.kr/rss/rss.do"),
               ]
           }
 
-          # 2. User-Agent 로테이션 (차단 우회)
+          # [✅ 방화벽 우회용 헤더 로테이션]
           USER_AGENTS = [
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
               'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/122.0',
+              'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/18.19582'
           ]
 
           def clean_xml_content(raw_str):
               if not raw_str: return ""
-              # XML 선언 제거
+              # 1. XML 선언 제거
               cleaned = re.sub(r'<\?xml.*?\?>', '', raw_str)
-              # HTML Doctype이 보이면 XML이 아님 -> 빈 문자열 반환
+              # 2. HTML Doctype 감지 (WAF 차단 페이지 필터링)
               if "<!DOCTYPE" in cleaned or "<html" in cleaned:
                   return None
-              # 엔티티 처리
+              # 3. 특수문자 및 엔티티 처리
               cleaned = re.sub(r'&(?!(?:[a-zA-Z][a-zA-Z0-9]*|#\d+|#x[0-9a-fA-F]+);)', '&amp;', cleaned)
               return cleaned.strip()
 
-          def fetch_feed_content(url, retries=2):
+          def fetch_feed_content(url, retries=3):
               for attempt in range(retries + 1):
                   headers = {
                       'User-Agent': random.choice(USER_AGENTS),
-                      'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+                      'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+                      'Referer': 'https://www.google.com/',
+                      'Cache-Control': 'no-cache'
                   }
                   try:
+                      # [✅ 서버 부하 방지용 지연]
+                      time.sleep(random.uniform(1.0, 3.0))
+                      
                       req = urllib.request.Request(url, headers=headers)
-                      with urllib.request.urlopen(req, timeout=20) as response:
+                      with urllib.request.urlopen(req, timeout=25) as response:
                           raw_data = response.read()
                           
-                          # 인코딩 디코딩
+                          # 인코딩 자동 감지 (EUC-KR 대응)
                           decoded_data = None
                           encodings = ['utf-8', 'euc-kr', 'cp949', 'latin-1']
                           for enc in encodings:
@@ -114,17 +125,15 @@ jobs:
                           
                           if not decoded_data: return None
                           
-                          # XML 클리닝 (HTML 감지 시 None 반환)
                           cleaned = clean_xml_content(decoded_data)
                           if cleaned is None:
-                              print(f"    ⚠️ Detected HTML response instead of XML (WAF Block?)")
-                              return None
+                              print(f"    ⚠️ Blocked by WAF (HTML Response)")
+                              continue # 재시도
                           return cleaned
 
                   except Exception as e:
-                      if attempt == retries:
-                          print(f"    ❌ Failed after {retries} retries: {e}")
-                      time.sleep(1)
+                      print(f"    ⚠️ Retry {attempt+1}/{retries}: {e}")
+                      
               return None
 
           def parse_feeds():
@@ -138,21 +147,23 @@ jobs:
                       print(f"  Fetching [{category}] {name}...")
                       xml_str = fetch_feed_content(url)
                       
-                      if not xml_str: continue
+                      if not xml_str: 
+                          print("    ❌ Failed to fetch.")
+                          continue
 
                       try:
-                          # XML 파싱 (네임스페이스 제거 처리)
-                          xml_str = re.sub(r'\sxmlns="[^"]+"', '', xml_str, count=1) 
+                          # XML 네임스페이스 제거 (파싱 오류 방지)
+                          xml_str = re.sub(r'\sxmlns="[^"]+"', '', xml_str, count=1)
                           root = ET.fromstring(xml_str)
                           items = root.findall('.//item') + root.findall('.//entry')
                           count = 0
                           
-                          for item in items[:5]:
+                          for item in items[:5]: # 최신 5건
                               title = item.find('title')
                               link = item.find('link')
                               pubDate = item.find('pubDate') or item.find('updated') or item.find('dc:date', {'dc': 'http://purl.org/dc/elements/1.1/'})
                               
-                              # Link 처리 (Atom vs RSS)
+                              # 링크 추출 로직 강화
                               link_url = ""
                               if link is not None:
                                   link_url = link.attrib.get('href') if 'href' in link.attrib else link.text
@@ -174,8 +185,7 @@ jobs:
                           total += count
 
                       except Exception as e:
-                          print(f"    ⚠️ Parse Error: {e}")
-                          continue
+                          print(f"    ❌ Parse Error: {e}")
 
               return collected_news, total, global_cnt, korea_cnt
 
@@ -201,34 +211,31 @@ jobs:
                       with open(index_path, 'r', encoding='utf-8') as f: index_data = json.load(f)
                   except: pass
               
-              # 오늘 날짜 갱신
               index_data["dates"] = [d for d in index_data.get("dates", []) if d["date"] != today]
               index_data["dates"].insert(0, {"date": today, "total": total, "global": g_cnt, "korea": k_cnt})
               index_data["last_updated"] = timestamp
               
               with open(index_path, 'w', encoding='utf-8') as f:
                   json.dump(index_data, f, ensure_ascii=False, indent=2)
-
-              # GitHub Output
-              if os.getenv('GITHUB_OUTPUT'):
-                  with open(os.getenv('GITHUB_OUTPUT'), 'a') as fh:
-                      fh.write(f"total={total}\n")
+                  
+              print(f"\n✅ Data Saved: {json_path}")
 
           def main():
-              print("[SOC Intelligence Collector]")
+              print("[Omni-Intelligence SOC Engine]")
               news, total, g_cnt, k_cnt = parse_feeds()
               if total > 0:
                   save_data(news, total, g_cnt, k_cnt)
-                  print(f"\n✅ Total {total} Intelligence Collected.")
               else:
-                  print("\n⚠️ No data collected.")
+                  print("⚠️ No data collected (Network or WAF issues).")
 
           if __name__ == "__main__":
               main()
           EOF
 
-      # [✅ 핵심 2] 보안 뉴스 대시보드 (Viewer) 생성
-      - name: Generate Dashboard Viewer
+      # ========================================================================
+      # 2. 🖥️ 대시보드 뷰어 (HTML5 + Tailwind)
+      # ========================================================================
+      - name: 🎨 Deploy Dashboard Viewer
         run: |
           cat << 'EOF' > viewer/index.html
           <!DOCTYPE html>
@@ -236,108 +243,135 @@ jobs:
           <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>SOC Daily Intelligence</title>
+              <title>Omni-Intelligence SOC Dashboard</title>
               <script src="https://cdn.tailwindcss.com"></script>
+              <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
               <script>
-                  async function loadNews() {
+                  async function loadData() {
                       try {
-                          // GitHub Pages나 로컬 서버 경로에 맞게 수정 필요
-                          const response = await fetch('../data/news/news_index.json');
-                          const data = await response.json();
-                          const today = data.dates[0];
+                          const idxRes = await fetch('../data/news/news_index.json');
+                          const idxData = await idxRes.json();
+                          const today = idxData.dates[0];
                           
-                          document.getElementById('last-updated').textContent = data.last_updated;
-                          document.getElementById('total-count').textContent = today.total;
-                          document.getElementById('global-count').textContent = today.global;
-                          document.getElementById('korea-count').textContent = today.korea;
+                          document.getElementById('last-update').innerText = idxData.last_updated;
+                          document.getElementById('total-threats').innerText = today.total;
                           
-                          // 최신 뉴스 불러오기
-                          const detailRes = await fetch(`../data/news/news_${today.date}.json`);
-                          const detailData = await detailRes.json();
+                          const newsRes = await fetch(`../data/news/news_${today.date}.json`);
+                          const newsData = await newsRes.json();
                           
-                          const container = document.getElementById('news-container');
-                          container.innerHTML = detailData.articles.map(article => `
-                              <div class="bg-white p-4 rounded shadow border-l-4 ${article.category === 'global' ? 'border-blue-500' : 'border-red-500'}">
-                                  <div class="flex justify-between items-center mb-2">
-                                      <span class="text-xs font-bold px-2 py-1 rounded ${article.category === 'global' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}">
-                                          ${article.category.toUpperCase()}
-                                      </span>
-                                      <span class="text-gray-500 text-xs">${article.source}</span>
+                          const list = document.getElementById('news-list');
+                          list.innerHTML = newsData.articles.map(n => `
+                              <div class="bg-gray-800 p-4 rounded-lg border-l-4 ${n.category==='global'?'border-blue-500':'border-red-500'} hover:bg-gray-750 transition">
+                                  <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                      <span class="font-bold text-white uppercase">${n.source}</span>
+                                      <span>${n.date}</span>
                                   </div>
-                                  <h3 class="font-bold text-lg mb-2 hover:text-blue-600">
-                                      <a href="${article.link}" target="_blank">${article.title}</a>
-                                  </h3>
-                                  <p class="text-gray-400 text-xs">${article.date}</p>
+                                  <a href="${n.link}" target="_blank" class="text-lg font-semibold text-blue-300 hover:text-blue-100">${n.title}</a>
                               </div>
                           `).join('');
-                      } catch (e) {
-                          console.error("Failed to load news:", e);
-                      }
+                      } catch (e) { console.error(e); }
                   }
-                  window.onload = loadNews;
+                  window.onload = loadData;
               </script>
           </head>
-          <body class="bg-gray-100 min-h-screen p-8">
-              <div class="max-w-4xl mx-auto">
-                  <header class="mb-8 text-center">
-                      <h1 class="text-3xl font-extrabold text-gray-900">🛡️ SOC Daily Intelligence</h1>
-                      <p class="text-gray-500 mt-2">Last Updated: <span id="last-updated">Loading...</span></p>
+          <body class="bg-gray-900 text-white min-h-screen">
+              <div class="container mx-auto px-4 py-8">
+                  <header class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+                      <div>
+                          <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                              <i class="fas fa-shield-alt mr-2"></i>Omni-Intelligence SOC
+                          </h1>
+                          <p class="text-gray-400 mt-1">Real-time Global Threat Intelligence</p>
+                      </div>
+                      <div class="text-right">
+                          <div class="text-sm text-gray-500">Last Updated</div>
+                          <div id="last-update" class="font-mono text-green-400">Syncing...</div>
+                      </div>
                   </header>
-                  
-                  <div class="grid grid-cols-3 gap-4 mb-8 text-center">
-                      <div class="bg-white p-4 rounded shadow">
-                          <p class="text-gray-500 text-sm">Total Threats</p>
-                          <p class="text-2xl font-bold text-indigo-600" id="total-count">-</p>
+                  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                      <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
+                          <div class="text-gray-400 mb-2">Total Threats Collected</div>
+                          <div id="total-threats" class="text-4xl font-bold text-white">0</div>
                       </div>
-                      <div class="bg-white p-4 rounded shadow">
-                          <p class="text-gray-500 text-sm">Global Intel</p>
-                          <p class="text-2xl font-bold text-blue-600" id="global-count">-</p>
                       </div>
-                      <div class="bg-white p-4 rounded shadow">
-                          <p class="text-gray-500 text-sm">Korea Intel</p>
-                          <p class="text-2xl font-bold text-red-600" id="korea-count">-</p>
-                      </div>
-                  </div>
-
-                  <div id="news-container" class="space-y-4">
-                      </div>
+                  <div id="news-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
               </div>
           </body>
           </html>
           EOF
 
-      # [✅ 핵심 3] 대량 서버 배포용 Docker Compose 생성
-      - name: Generate Docker Infrastructure
+      # ========================================================================
+      # 3. 🐳 서버 인프라 (Docker + Nginx)
+      # ========================================================================
+      - name: 🏗️ Setup Server Config
         run: |
+          # Nginx 설정
+          cat << 'EOF' > docker/nginx/default.conf
+          server {
+              listen 80;
+              server_name localhost;
+              root /usr/share/nginx/html;
+              index viewer/index.html;
+              location / {
+                  autoindex on;
+              }
+              location /data {
+                  add_header Access-Control-Allow-Origin *;
+              }
+          }
+          EOF
+          
+          # Docker Compose
           cat << 'EOF' > docker/docker-compose.yml
           version: '3.8'
           services:
-            soc-dashboard:
+            soc-server:
               image: nginx:alpine
-              container_name: soc-dashboard
+              container_name: omni-soc
               ports:
                 - "8080:80"
               volumes:
-                - ../viewer:/usr/share/nginx/html/viewer
-                - ../data:/usr/share/nginx/html/data
+                - ../:/usr/share/nginx/html
+                - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
               restart: always
           EOF
 
-      - name: Run Collector
-        id: generate
+      # ========================================================================
+      # 4. 🔥 실행 및 배포 (Git 충돌 자동 해결 포함)
+      # ========================================================================
+      - name: ⚡ Run Engine
         run: python scripts/daily_security_news.py
 
-      - name: Commit and Push Assets
+      - name: 🌿 Commit & Push (Auto-Rebase)
         run: |
-          git config user.name "SOC Bot"
-          git config user.email "bot@soc.system"
+          git config user.name "Omni-SOC Bot"
+          git config user.email "bot@omni.soc"
           
-          # Force Add all new assets
-          git add data/news/ scripts/ viewer/ docker/ public/
+          # [핵심] 모든 파일 강제 추가
+          git add data/ scripts/ viewer/ docker/ public/ DB/
           
           if git diff --cached --quiet; then
-            echo "No changes."
-          else
-            git commit -m "🚀 SOC Update: Added 12+ Official Feeds & Dashboard Server"
-            git push
+            echo "✅ No changes to commit."
+            exit 0
+          fi
+          
+          git commit -m "🚀 SOC Upgrade: Updated Feeds, Dashboard, & Docker Server"
+          
+          # [핵심] Git 충돌 자동 해결 (Pull-Rebase 루프)
+          MAX_RETRIES=10
+          count=0
+          until [ $count -ge $MAX_RETRIES ]; do
+            echo "🔄 Syncing with remote (Attempt $((count+1)))..."
+            
+            # 1. 원격 변경사항 가져오기 (Rebase로 깔끔하게 병합)
+            git pull origin main --rebase && git push origin main && break
+            
+            count=$((count+1))
+            echo "⚠️ Conflict detected. Retrying in 5s..."
+            sleep 5
+          done
+          
+          if [ $count -ge $MAX_RETRIES ]; then
+            echo "❌ Failed to push after $MAX_RETRIES attempts."
+            exit 1
           fi
