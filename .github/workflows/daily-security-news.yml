@@ -1,4 +1,4 @@
-name: Daily Security News Generator
+name: Daily Security News Generator (SOC Edition)
 
 on:
   schedule:
@@ -14,8 +14,8 @@ on:
 permissions: write-all
 
 jobs:
-  generate-news:
-    name: Generate Daily Security News
+  build-soc:
+    name: Build Security Operations Center
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -29,15 +29,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Create Required Directories
+      - name: Initialize SOC Infrastructure
         run: |
           mkdir -p data/news
           mkdir -p DB
           mkdir -p scripts
           mkdir -p public/api
+          mkdir -p docker
+          mkdir -p viewer
 
-      # [✅ 핵심 수정] 강력해진 파이썬 스크립트 (User-Agent 강화 + XML 자동 보정 + 재시도)
-      - name: Generate Robust Python Script
+      # [✅ 핵심 1] 대량의 공식 피드 추가 & 강력한 오류 필터링 스크립트
+      - name: Generate SOC Engine Script
         run: |
           cat << 'EOF' > scripts/daily_security_news.py
           import urllib.request
@@ -47,95 +49,82 @@ jobs:
           import json
           import os
           import re
-          import sys
           import time
           import html
+          import random
 
-          # 1. RSS 피드 목록 정의 (죽은 링크 교체 및 검증된 소스)
+          # 1. 검증된 공식 보안 피드 대량 추가 (12종)
           FEEDS = {
               "global": [
                   ("BleepingComputer", "https://www.bleepingcomputer.com/feed/"),
                   ("The Hacker News", "https://feeds.feedburner.com/TheHackersNews"),
-                  # SecurityWeek 403 방지를 위해 User-Agent 필수, FeedBurner 대신 직접 링크 시도 가능하나 일단 유지
                   ("SecurityWeek", "https://feeds.feedburner.com/SecurityWeek"),
                   ("CISA Alerts", "https://www.cisa.gov/uscert/ncas/alerts.xml"),
                   ("Krebs on Security", "https://krebsonsecurity.com/feed/"),
+                  ("Microsoft Security", "https://msrc.microsoft.com/blog/feed"),
+                  ("Google Project Zero", "https://googleprojectzero.blogspot.com/feeds/posts/default"),
+                  ("Sophos Naked Security", "https://nakedsecurity.sophos.com/feed/"),
                   ("Dark Reading", "https://www.darkreading.com/rss.xml"),
-                  ("NIST NVD", "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml"),
               ],
               "korea": [
-                  # DailySecu 404 대체 -> ITWorld 보안 뉴스
-                  ("ITWorld Korea", "https://www.itworld.co.kr/rss/topic/t/54"), 
                   ("BoanNews", "https://www.boannews.com/media/news_rss.xml"), 
-                  # KISA 파싱 에러 방지를 위한 강력한 전처리 적용 예정
-                  ("KISA KrCERT", "https://www.krcert.or.kr/rss/rss.do"),
                   ("AhnLab ASEC", "https://asec.ahnlab.com/ko/feed/"),
+                  ("ZDNet Korea (Security)", "https://zdnet.co.kr/rss/sec/10000"),
+                  ("ETNews (Security)", "https://rss.etnews.com/Section902.xml"),
               ]
           }
 
-          # 2. XML 클리닝 함수 (KISA 등 깨진 XML 자동 복구)
+          # 2. User-Agent 로테이션 (차단 우회)
+          USER_AGENTS = [
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/122.0',
+          ]
+
           def clean_xml_content(raw_str):
               if not raw_str: return ""
-              
-              # (1) XML 선언부 제거 (인코딩 충돌 방지)
+              # XML 선언 제거
               cleaned = re.sub(r'<\?xml.*?\?>', '', raw_str)
-              
-              # (2) CDATA 섹션 보호 (내용은 건드리지 않음)
-              # 정규식으로 CDATA 밖의 특수문자만 처리하기는 복잡하므로, 
-              # 여기서는 가장 흔한 오류인 & (Ampersand) 만 처리합니다.
-              # &amp;, &lt; 등 이미 이스케이프 된 것은 놔두고, 독립된 &만 변환
+              # HTML Doctype이 보이면 XML이 아님 -> 빈 문자열 반환
+              if "<!DOCTYPE" in cleaned or "<html" in cleaned:
+                  return None
+              # 엔티티 처리
               cleaned = re.sub(r'&(?!(?:[a-zA-Z][a-zA-Z0-9]*|#\d+|#x[0-9a-fA-F]+);)', '&amp;', cleaned)
-              
-              # (3) 제어 문자 제거
-              cleaned = "".join(ch for ch in cleaned if (0x20 <= ord(ch) <= 0xD7FF) or (0xE000 <= ord(ch) <= 0xFFFD) or ch in "\t\r\n")
-              
               return cleaned.strip()
 
-          # 3. 데이터 가져오기 (재시도 로직 포함)
           def fetch_feed_content(url, retries=2):
-              # 최신 브라우저 User-Agent 시뮬레이션
-              headers = {
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                  'Referer': 'https://www.google.com/'
-              }
-              
               for attempt in range(retries + 1):
+                  headers = {
+                      'User-Agent': random.choice(USER_AGENTS),
+                      'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+                  }
                   try:
                       req = urllib.request.Request(url, headers=headers)
-                      with urllib.request.urlopen(req, timeout=15) as response:
+                      with urllib.request.urlopen(req, timeout=20) as response:
                           raw_data = response.read()
                           
-                          # 인코딩 자동 감지
+                          # 인코딩 디코딩
                           decoded_data = None
                           encodings = ['utf-8', 'euc-kr', 'cp949', 'latin-1']
-                          
                           for enc in encodings:
                               try:
                                   decoded_data = raw_data.decode(enc)
                                   break
-                              except UnicodeDecodeError:
-                                  continue
+                              except: continue
                           
-                          if not decoded_data:
-                              print(f"    ⚠️ Failed to decode content from {url}")
+                          if not decoded_data: return None
+                          
+                          # XML 클리닝 (HTML 감지 시 None 반환)
+                          cleaned = clean_xml_content(decoded_data)
+                          if cleaned is None:
+                              print(f"    ⚠️ Detected HTML response instead of XML (WAF Block?)")
                               return None
-                          
-                          return clean_xml_content(decoded_data)
-                          
-                  except urllib.error.HTTPError as e:
-                      if e.code == 403:
-                          print(f"    ⚠️ HTTP 403 Forbidden (Blocked) - Attempt {attempt+1}")
-                      elif e.code == 404:
-                          print(f"    ❌ HTTP 404 Not Found (Dead Link)")
-                          return None # 404는 재시도해도 소용없음
-                      else:
-                          print(f"    ⚠️ HTTP Error {e.code} - Attempt {attempt+1}")
-                  except Exception as e:
-                      print(f"    ⚠️ Connection Error: {e} - Attempt {attempt+1}")
-                  
-                  time.sleep(2) # 재시도 전 대기
+                          return cleaned
 
+                  except Exception as e:
+                      if attempt == retries:
+                          print(f"    ❌ Failed after {retries} retries: {e}")
+                      time.sleep(1)
               return None
 
           def parse_feeds():
@@ -149,53 +138,43 @@ jobs:
                       print(f"  Fetching [{category}] {name}...")
                       xml_str = fetch_feed_content(url)
                       
-                      if not xml_str:
-                          continue
+                      if not xml_str: continue
 
                       try:
-                          # XML 파싱
-                          root = ET.fromstring(f"<root>{xml_str}</root>") if not xml_str.startswith('<rss') and not xml_str.startswith('<feed') else ET.fromstring(xml_str)
-                          
-                          # RSS(item) 와 Atom(entry) 모두 지원
+                          # XML 파싱 (네임스페이스 제거 처리)
+                          xml_str = re.sub(r'\sxmlns="[^"]+"', '', xml_str, count=1) 
+                          root = ET.fromstring(xml_str)
                           items = root.findall('.//item') + root.findall('.//entry')
                           count = 0
                           
-                          for item in items[:5]: # 최신 5개
-                              title_node = item.find('title')
-                              link_node = item.find('link')
-                              date_node = item.find('pubDate') or item.find('updated') or item.find('dc:date', {'dc': 'http://purl.org/dc/elements/1.1/'})
+                          for item in items[:5]:
+                              title = item.find('title')
+                              link = item.find('link')
+                              pubDate = item.find('pubDate') or item.find('updated') or item.find('dc:date', {'dc': 'http://purl.org/dc/elements/1.1/'})
                               
-                              if title_node is not None:
-                                  # Atom feed link 처리
-                                  link_text = ""
-                                  if link_node is not None:
-                                      if 'href' in link_node.attrib:
-                                          link_text = link_node.attrib['href']
-                                      else:
-                                          link_text = link_node.text
-                                  
+                              # Link 처리 (Atom vs RSS)
+                              link_url = ""
+                              if link is not None:
+                                  link_url = link.attrib.get('href') if 'href' in link.attrib else link.text
+
+                              if title is not None:
                                   news_item = {
                                       "source": name,
                                       "category": category,
-                                      "title": html.unescape(title_node.text.strip()) if title_node.text else "No Title",
-                                      "link": link_text.strip() if link_text else "#",
-                                      "date": date_node.text.strip() if date_node is not None and date_node.text else str(datetime.date.today())
+                                      "title": html.unescape(title.text.strip()),
+                                      "link": link_url.strip() if link_url else "#",
+                                      "date": pubDate.text.strip() if pubDate is not None and pubDate.text else str(datetime.date.today())
                                   }
                                   collected_news.append(news_item)
                                   count += 1
                           
-                          print(f"    -> {count} articles collected")
+                          print(f"    -> {count} collected")
                           if category == 'global': global_cnt += count
                           else: korea_cnt += count
                           total += count
 
-                      except ET.ParseError as e:
-                          print(f"    ❌ XML Parse Error for {name}: {e}")
-                          # 디버깅용: 문제가 된 XML 앞부분 출력
-                          print(f"       (XML Snippet): {xml_str[:100]}...")
-                          continue
                       except Exception as e:
-                          print(f"    ❌ Unknown Error for {name}: {e}")
+                          print(f"    ⚠️ Parse Error: {e}")
                           continue
 
               return collected_news, total, global_cnt, korea_cnt
@@ -204,7 +183,7 @@ jobs:
               today = datetime.datetime.now().strftime('%Y-%m-%d')
               timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
               
-              # 1. JSON 저장
+              # JSON 저장
               json_path = f"data/news/news_{today}.json"
               with open(json_path, 'w', encoding='utf-8') as f:
                   json.dump({
@@ -214,26 +193,15 @@ jobs:
                       "articles": news_data
                   }, f, ensure_ascii=False, indent=2)
 
-              # 2. Markdown DB 업데이트
-              md_path = "DB/total_news_history.md"
-              mode = 'a' if os.path.exists(md_path) else 'w'
-              with open(md_path, mode, encoding='utf-8') as f:
-                  if mode == 'w': f.write("# 🛡️ Daily Security News History\n\n")
-                  f.write(f"## 📅 {today} ({total} Articles)\n")
-                  f.write(f"**Updated:** {timestamp} | **Global:** {g_cnt} | **Korea:** {k_cnt}\n\n")
-                  for news in news_data:
-                      flag = "🌍" if news['category'] == 'global' else "🇰🇷"
-                      f.write(f"- {flag} **[{news['source']}]** [{news['title']}]({news['link']})\n")
-                  f.write("\n---\n\n")
-
-              # 3. Index JSON 업데이트
+              # Index JSON 업데이트
               index_path = "data/news/news_index.json"
               index_data = {"last_updated": timestamp, "dates": []}
               if os.path.exists(index_path):
                   try:
                       with open(index_path, 'r', encoding='utf-8') as f: index_data = json.load(f)
                   except: pass
-
+              
+              # 오늘 날짜 갱신
               index_data["dates"] = [d for d in index_data.get("dates", []) if d["date"] != today]
               index_data["dates"].insert(0, {"date": today, "total": total, "global": g_cnt, "korea": k_cnt})
               index_data["last_updated"] = timestamp
@@ -241,74 +209,135 @@ jobs:
               with open(index_path, 'w', encoding='utf-8') as f:
                   json.dump(index_data, f, ensure_ascii=False, indent=2)
 
-              # 4. GitHub Output
+              # GitHub Output
               if os.getenv('GITHUB_OUTPUT'):
                   with open(os.getenv('GITHUB_OUTPUT'), 'a') as fh:
-                      fh.write(f"date={today}\n")
-                      fh.write(f"total_articles={total}\n")
-                      fh.write(f"global_count={g_cnt}\n")
-                      fh.write(f"korea_count={k_cnt}\n")
+                      fh.write(f"total={total}\n")
 
           def main():
-              print("[Daily Security News Generator]")
-              print(f"Timestamp: {datetime.datetime.now()}")
+              print("[SOC Intelligence Collector]")
               news, total, g_cnt, k_cnt = parse_feeds()
-              
               if total > 0:
                   save_data(news, total, g_cnt, k_cnt)
-                  print(f"\n✅ Successfully saved {total} articles.")
+                  print(f"\n✅ Total {total} Intelligence Collected.")
               else:
-                  print("\n⚠️ No news collected. Check connections.")
-              
+                  print("\n⚠️ No data collected.")
+
           if __name__ == "__main__":
               main()
           EOF
 
-      - name: Run News Generator
+      # [✅ 핵심 2] 보안 뉴스 대시보드 (Viewer) 생성
+      - name: Generate Dashboard Viewer
+        run: |
+          cat << 'EOF' > viewer/index.html
+          <!DOCTYPE html>
+          <html lang="ko">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>SOC Daily Intelligence</title>
+              <script src="https://cdn.tailwindcss.com"></script>
+              <script>
+                  async function loadNews() {
+                      try {
+                          // GitHub Pages나 로컬 서버 경로에 맞게 수정 필요
+                          const response = await fetch('../data/news/news_index.json');
+                          const data = await response.json();
+                          const today = data.dates[0];
+                          
+                          document.getElementById('last-updated').textContent = data.last_updated;
+                          document.getElementById('total-count').textContent = today.total;
+                          document.getElementById('global-count').textContent = today.global;
+                          document.getElementById('korea-count').textContent = today.korea;
+                          
+                          // 최신 뉴스 불러오기
+                          const detailRes = await fetch(`../data/news/news_${today.date}.json`);
+                          const detailData = await detailRes.json();
+                          
+                          const container = document.getElementById('news-container');
+                          container.innerHTML = detailData.articles.map(article => `
+                              <div class="bg-white p-4 rounded shadow border-l-4 ${article.category === 'global' ? 'border-blue-500' : 'border-red-500'}">
+                                  <div class="flex justify-between items-center mb-2">
+                                      <span class="text-xs font-bold px-2 py-1 rounded ${article.category === 'global' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}">
+                                          ${article.category.toUpperCase()}
+                                      </span>
+                                      <span class="text-gray-500 text-xs">${article.source}</span>
+                                  </div>
+                                  <h3 class="font-bold text-lg mb-2 hover:text-blue-600">
+                                      <a href="${article.link}" target="_blank">${article.title}</a>
+                                  </h3>
+                                  <p class="text-gray-400 text-xs">${article.date}</p>
+                              </div>
+                          `).join('');
+                      } catch (e) {
+                          console.error("Failed to load news:", e);
+                      }
+                  }
+                  window.onload = loadNews;
+              </script>
+          </head>
+          <body class="bg-gray-100 min-h-screen p-8">
+              <div class="max-w-4xl mx-auto">
+                  <header class="mb-8 text-center">
+                      <h1 class="text-3xl font-extrabold text-gray-900">🛡️ SOC Daily Intelligence</h1>
+                      <p class="text-gray-500 mt-2">Last Updated: <span id="last-updated">Loading...</span></p>
+                  </header>
+                  
+                  <div class="grid grid-cols-3 gap-4 mb-8 text-center">
+                      <div class="bg-white p-4 rounded shadow">
+                          <p class="text-gray-500 text-sm">Total Threats</p>
+                          <p class="text-2xl font-bold text-indigo-600" id="total-count">-</p>
+                      </div>
+                      <div class="bg-white p-4 rounded shadow">
+                          <p class="text-gray-500 text-sm">Global Intel</p>
+                          <p class="text-2xl font-bold text-blue-600" id="global-count">-</p>
+                      </div>
+                      <div class="bg-white p-4 rounded shadow">
+                          <p class="text-gray-500 text-sm">Korea Intel</p>
+                          <p class="text-2xl font-bold text-red-600" id="korea-count">-</p>
+                      </div>
+                  </div>
+
+                  <div id="news-container" class="space-y-4">
+                      </div>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      # [✅ 핵심 3] 대량 서버 배포용 Docker Compose 생성
+      - name: Generate Docker Infrastructure
+        run: |
+          cat << 'EOF' > docker/docker-compose.yml
+          version: '3.8'
+          services:
+            soc-dashboard:
+              image: nginx:alpine
+              container_name: soc-dashboard
+              ports:
+                - "8080:80"
+              volumes:
+                - ../viewer:/usr/share/nginx/html/viewer
+                - ../data:/usr/share/nginx/html/data
+              restart: always
+          EOF
+
+      - name: Run Collector
         id: generate
         run: python scripts/daily_security_news.py
 
-      - name: Generate Dashboard Summary
+      - name: Commit and Push Assets
         run: |
-          python3 << 'PYEOF'
-          import json, os
-          news_dir = "data/news"
-          index_path = os.path.join(news_dir, "news_index.json")
-          if not os.path.exists(index_path): exit(0)
-          with open(index_path, "r", encoding='utf-8') as f: index = json.load(f)
-          dashboard_data = {
-              "last_updated": index.get("last_updated", ""),
-              "total_days": len(index.get("dates", [])),
-              "dates": index.get("dates", [])[:30]
-          }
-          os.makedirs("public/api", exist_ok=True)
-          with open("public/api/news_summary.json", "w", encoding='utf-8') as f:
-              json.dump(dashboard_data, f, ensure_ascii=False, indent=2)
-          print(f"✅ Dashboard summary updated.")
-          PYEOF
-
-      - name: Upload News Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: daily-news-${{ steps.generate.outputs.date || 'latest' }}
-          path: data/news/
-          retention-days: 90
-
-      - name: Commit and Push News Data
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "SOC Bot"
+          git config user.email "bot@soc.system"
           
-          git add data/news/
-          git add DB/total_news_history.md
-          git add public/api/news_summary.json
-          git add scripts/daily_security_news.py
+          # Force Add all new assets
+          git add data/news/ scripts/ viewer/ docker/ public/
           
           if git diff --cached --quiet; then
-            echo "No new changes to commit"
+            echo "No changes."
           else
-            DATE="${{ steps.generate.outputs.date }}"
-            TOTAL="${{ steps.generate.outputs.total_articles }}"
-            git commit -m "Daily Security News: $DATE (Total $TOTAL articles)"
+            git commit -m "🚀 SOC Update: Added 12+ Official Feeds & Dashboard Server"
             git push
           fi
