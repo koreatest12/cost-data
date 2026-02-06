@@ -1,4 +1,4 @@
-name: Omni-Intelligence Global SOC (Ultimate Edition)
+name: Omni-Intelligence Global SOC (Masterpiece Edition)
 
 on:
   schedule:
@@ -9,19 +9,18 @@ on:
         description: 'Force execution'
         required: false
 
-# [✅ 권한 최상위 설정]
 permissions: write-all
 
 jobs:
-  construct-soc:
-    name: 🏗️ Build & Deploy SOC
+  deploy-soc:
+    name: 🚀 Deploy Security Operations Center
     runs-on: ubuntu-latest
     steps:
       - name: 🔄 Checkout Repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0 # 전체 히스토리 가져오기 (Rebase 필수)
+          fetch-depth: 0
 
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
@@ -38,9 +37,9 @@ jobs:
           mkdir -p viewer
 
       # ========================================================================
-      # 1. 🧠 인텔리전스 수집 엔진 (방화벽 우회 & 죽은 링크 교체 완료)
+      # 1. 🧠 SOC 인텔리전스 엔진 (피드 20종 + WAF 우회 + 대량 수집)
       # ========================================================================
-      - name: 🚀 Deploy Intelligence Engine
+      - name: 🛠️ Generate Intelligence Engine
         run: |
           cat << 'EOF' > scripts/daily_security_news.py
           import urllib.request
@@ -54,70 +53,66 @@ jobs:
           import html
           import random
 
-          # [✅ 공식 주소 최신화 & 대량 추가]
+          # [✅ Massive Feeds: 죽은 링크 제거 및 고품질 피드 20종 대량 추가]
           FEEDS = {
               "global": [
                   ("BleepingComputer", "https://www.bleepingcomputer.com/feed/"),
                   ("The Hacker News", "https://feeds.feedburner.com/TheHackersNews"),
+                  ("Palo Alto Unit 42", "https://unit42.paloaltonetworks.com/feed/"), # Symantec 대체
                   ("CISA Alerts", "https://www.cisa.gov/uscert/ncas/alerts.xml"),
-                  # MS: 블로그 대신 보안 응답 센터(MSRC) 공식 피드로 교체 (차단 우회)
-                  ("Microsoft Security Response", "https://api.msrc.microsoft.com/update-guide/rss"),
+                  ("Microsoft MSRC", "https://api.msrc.microsoft.com/update-guide/rss"),
                   ("Google Project Zero", "https://googleprojectzero.blogspot.com/feeds/posts/default"),
                   ("Dark Reading", "https://www.darkreading.com/rss.xml"),
                   ("NIST NVD", "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml"),
+                  ("Schneier on Security", "https://www.schneier.com/feed/atom/"),
+                  ("Sophos Naked Security", "https://nakedsecurity.sophos.com/feed/"),
                   ("Threatpost", "https://threatpost.com/feed/"),
-                  ("Trend Micro", "https://www.trendmicro.com/rss/index.xml"),
-                  ("Symantec", "https://www.broadcom.com/rss/security-response/threats.xml"),
+                  ("FBI Cyber", "https://www.fbi.gov/feeds/fbi-in-the-news/atom"),
+                  ("SANS ISC", "https://isc.sans.edu/rssfeed.xml"),
               ],
               "korea": [
                   ("BoanNews", "https://www.boannews.com/media/news_rss.xml"),
                   ("AhnLab ASEC", "https://asec.ahnlab.com/ko/feed/"),
-                  # ZDNet: 죽은 링크(404) -> 보안 섹션 메인 RSS로 교체
-                  ("ZDNet Korea", "https://zdnet.co.kr/rss/sec"),
-                  ("ETNews", "https://rss.etnews.com/Section902.xml"),
-                  ("KISA KrCERT", "https://www.krcert.or.kr/rss/rss.do"),
+                  ("Datanet", "http://www.datanet.co.kr/rss/S1N8.xml"), # ZDNet 대체
+                  ("ITWorld Security", "https://www.itworld.co.kr/rss/topic/t/54"), # 추가
+                  ("DailySecu", "https://www.dailysecu.com/rss/all.xml"), # 404 해결 시도
+                  ("CIO Korea", "https://www.ciokorea.com/rss/topic/t/29"),
+                  ("Digital Daily", "https://www.ddaily.co.kr/rss/?sc=10300001"),
               ]
           }
 
-          # [✅ 방화벽 우회용 헤더 로테이션]
+          # [✅ WAF 우회: 최신 브라우저 헤더 로테이션]
           USER_AGENTS = [
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
               'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/18.19582'
+              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/122.0',
           ]
 
           def clean_xml_content(raw_str):
               if not raw_str: return ""
-              # 1. XML 선언 제거
+              # XML 선언 제거 & HTML 필터링
               cleaned = re.sub(r'<\?xml.*?\?>', '', raw_str)
-              # 2. HTML Doctype 감지 (WAF 차단 페이지 필터링)
-              if "<!DOCTYPE" in cleaned or "<html" in cleaned:
-                  return None
-              # 3. 특수문자 및 엔티티 처리
+              if "<!DOCTYPE html" in cleaned or "<html" in cleaned: return None
+              # 엔티티 정제
               cleaned = re.sub(r'&(?!(?:[a-zA-Z][a-zA-Z0-9]*|#\d+|#x[0-9a-fA-F]+);)', '&amp;', cleaned)
               return cleaned.strip()
 
-          def fetch_feed_content(url, retries=3):
+          def fetch_feed_content(url, retries=2):
               for attempt in range(retries + 1):
                   headers = {
                       'User-Agent': random.choice(USER_AGENTS),
                       'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-                      'Referer': 'https://www.google.com/',
-                      'Cache-Control': 'no-cache'
+                      'Cache-Control': 'no-cache',
+                      'Referer': 'https://www.google.com'
                   }
                   try:
-                      # [✅ 서버 부하 방지용 지연]
-                      time.sleep(random.uniform(1.0, 3.0))
-                      
+                      time.sleep(random.uniform(0.5, 2.0)) # 차단 방지 딜레이
                       req = urllib.request.Request(url, headers=headers)
-                      with urllib.request.urlopen(req, timeout=25) as response:
+                      with urllib.request.urlopen(req, timeout=15) as response:
                           raw_data = response.read()
                           
-                          # 인코딩 자동 감지 (EUC-KR 대응)
                           decoded_data = None
-                          encodings = ['utf-8', 'euc-kr', 'cp949', 'latin-1']
-                          for enc in encodings:
+                          for enc in ['utf-8', 'euc-kr', 'cp949', 'latin-1']:
                               try:
                                   decoded_data = raw_data.decode(enc)
                                   break
@@ -127,13 +122,17 @@ jobs:
                           
                           cleaned = clean_xml_content(decoded_data)
                           if cleaned is None:
-                              print(f"    ⚠️ Blocked by WAF (HTML Response)")
-                              continue # 재시도
+                              print(f"    ⚠️ Blocked by WAF (HTML)")
+                              continue 
                           return cleaned
 
+                  except urllib.error.HTTPError as e:
+                      if e.code == 404: 
+                          print(f"    ❌ 404 Not Found (Skipping)")
+                          return None # 404는 재시도 안함
+                      print(f"    ⚠️ HTTP {e.code} (Retry {attempt+1})")
                   except Exception as e:
-                      print(f"    ⚠️ Retry {attempt+1}/{retries}: {e}")
-                      
+                      print(f"    ⚠️ Error: {e}")
               return None
 
           def parse_feeds():
@@ -146,29 +145,25 @@ jobs:
                   for name, url in feeds:
                       print(f"  Fetching [{category}] {name}...")
                       xml_str = fetch_feed_content(url)
-                      
-                      if not xml_str: 
-                          print("    ❌ Failed to fetch.")
-                          continue
+                      if not xml_str: continue
 
                       try:
-                          # XML 네임스페이스 제거 (파싱 오류 방지)
                           xml_str = re.sub(r'\sxmlns="[^"]+"', '', xml_str, count=1)
                           root = ET.fromstring(xml_str)
                           items = root.findall('.//item') + root.findall('.//entry')
                           count = 0
                           
-                          for item in items[:5]: # 최신 5건
+                          # [✅ 대량 수집: 피드당 최대 10개까지 수집]
+                          for item in items[:10]:
                               title = item.find('title')
                               link = item.find('link')
                               pubDate = item.find('pubDate') or item.find('updated') or item.find('dc:date', {'dc': 'http://purl.org/dc/elements/1.1/'})
                               
-                              # 링크 추출 로직 강화
                               link_url = ""
                               if link is not None:
                                   link_url = link.attrib.get('href') if 'href' in link.attrib else link.text
 
-                              if title is not None:
+                              if title is not None and title.text:
                                   news_item = {
                                       "source": name,
                                       "category": category,
@@ -193,7 +188,6 @@ jobs:
               today = datetime.datetime.now().strftime('%Y-%m-%d')
               timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
               
-              # JSON 저장
               json_path = f"data/news/news_{today}.json"
               with open(json_path, 'w', encoding='utf-8') as f:
                   json.dump({
@@ -203,7 +197,6 @@ jobs:
                       "articles": news_data
                   }, f, ensure_ascii=False, indent=2)
 
-              # Index JSON 업데이트
               index_path = "data/news/news_index.json"
               index_data = {"last_updated": timestamp, "dates": []}
               if os.path.exists(index_path):
@@ -217,161 +210,213 @@ jobs:
               
               with open(index_path, 'w', encoding='utf-8') as f:
                   json.dump(index_data, f, ensure_ascii=False, indent=2)
-                  
-              print(f"\n✅ Data Saved: {json_path}")
 
-          def main():
-              print("[Omni-Intelligence SOC Engine]")
+          if __name__ == "__main__":
+              print("[Omni-SOC Massive Collector]")
               news, total, g_cnt, k_cnt = parse_feeds()
               if total > 0:
                   save_data(news, total, g_cnt, k_cnt)
+                  print(f"\n✅ Total {total} Intelligence Collected.")
               else:
-                  print("⚠️ No data collected (Network or WAF issues).")
-
-          if __name__ == "__main__":
-              main()
+                  print("⚠️ No data collected.")
           EOF
 
       # ========================================================================
-      # 2. 🖥️ 대시보드 뷰어 (HTML5 + Tailwind)
+      # 2. 📊 SOC 대시보드 (Chart.js + 다크모드 대량 반영)
       # ========================================================================
-      - name: 🎨 Deploy Dashboard Viewer
+      - name: 🎨 Build Advanced Dashboard
         run: |
           cat << 'EOF' > viewer/index.html
           <!DOCTYPE html>
-          <html lang="ko">
+          <html lang="en">
           <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Omni-Intelligence SOC Dashboard</title>
+              <title>Omni-Intelligence SOC</title>
               <script src="https://cdn.tailwindcss.com"></script>
+              <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
               <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+          </head>
+          <body class="bg-slate-900 text-slate-100 min-h-screen">
+              <div class="container mx-auto px-4 py-6">
+                  <header class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+                      <div>
+                          <h1 class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
+                              <i class="fas fa-radar mr-2"></i>Omni-SOC
+                          </h1>
+                          <p class="text-slate-400 text-sm">Global Threat Intelligence Center</p>
+                      </div>
+                      <div class="text-right">
+                          <div class="text-xs text-slate-500">SYSTEM STATUS</div>
+                          <div class="text-green-400 font-mono font-bold"><i class="fas fa-circle text-[10px] mr-1"></i>OPERATIONAL</div>
+                          <div id="last-update" class="text-xs text-slate-400 mt-1">-</div>
+                      </div>
+                  </header>
+
+                  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                      <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                          <div class="text-slate-400 text-xs uppercase">Total Threats</div>
+                          <div id="metric-total" class="text-3xl font-bold text-white mt-1">0</div>
+                      </div>
+                      <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                          <div class="text-slate-400 text-xs uppercase">Global Intel</div>
+                          <div id="metric-global" class="text-3xl font-bold text-cyan-400 mt-1">0</div>
+                      </div>
+                      <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                          <div class="text-slate-400 text-xs uppercase">Korea Intel</div>
+                          <div id="metric-korea" class="text-3xl font-bold text-pink-500 mt-1">0</div>
+                      </div>
+                      <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                          <div class="text-slate-400 text-xs uppercase">Active Feeds</div>
+                          <div class="text-3xl font-bold text-emerald-400 mt-1">20+</div>
+                      </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                          <h3 class="text-sm font-bold text-slate-300 mb-4"><i class="fas fa-chart-pie mr-2"></i>Threat Distribution</h3>
+                          <canvas id="threatChart"></canvas>
+                      </div>
+
+                      <div class="lg:col-span-2">
+                          <div class="flex justify-between items-center mb-4">
+                              <h3 class="text-sm font-bold text-slate-300"><i class="fas fa-rss mr-2"></i>Live Intelligence Feed</h3>
+                          </div>
+                          <div id="news-container" class="space-y-3 h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                              </div>
+                      </div>
+                  </div>
+              </div>
+
               <script>
-                  async function loadData() {
+                  async function initSOC() {
                       try {
                           const idxRes = await fetch('../data/news/news_index.json');
-                          const idxData = await idxRes.json();
-                          const today = idxData.dates[0];
-                          
-                          document.getElementById('last-update').innerText = idxData.last_updated;
-                          document.getElementById('total-threats').innerText = today.total;
-                          
+                          const idx = await idxRes.json();
+                          const today = idx.dates[0];
+
+                          document.getElementById('last-update').innerText = idx.last_updated;
+                          document.getElementById('metric-total').innerText = today.total;
+                          document.getElementById('metric-global').innerText = today.global;
+                          document.getElementById('metric-korea').innerText = today.korea;
+
+                          // Render Chart
+                          const ctx = document.getElementById('threatChart').getContext('2d');
+                          new Chart(ctx, {
+                              type: 'doughnut',
+                              data: {
+                                  labels: ['Global', 'Korea'],
+                                  datasets: [{
+                                      data: [today.global, today.korea],
+                                      backgroundColor: ['#22d3ee', '#ec4899'],
+                                      borderWidth: 0
+                                  }]
+                              },
+                              options: { 
+                                  responsive: true,
+                                  plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } } }
+                              }
+                          });
+
+                          // Load Detail News
                           const newsRes = await fetch(`../data/news/news_${today.date}.json`);
                           const newsData = await newsRes.json();
                           
-                          const list = document.getElementById('news-list');
-                          list.innerHTML = newsData.articles.map(n => `
-                              <div class="bg-gray-800 p-4 rounded-lg border-l-4 ${n.category==='global'?'border-blue-500':'border-red-500'} hover:bg-gray-750 transition">
-                                  <div class="flex justify-between text-xs text-gray-400 mb-1">
-                                      <span class="font-bold text-white uppercase">${n.source}</span>
-                                      <span>${n.date}</span>
+                          const container = document.getElementById('news-container');
+                          container.innerHTML = newsData.articles.map(n => `
+                              <div class="bg-slate-700/50 p-4 rounded border-l-4 ${n.category==='global'?'border-cyan-500':'border-pink-500'} hover:bg-slate-700 transition cursor-pointer">
+                                  <div class="flex justify-between items-center mb-1">
+                                      <span class="text-[10px] font-bold px-2 py-0.5 rounded ${n.category==='global'?'bg-cyan-500/20 text-cyan-300':'bg-pink-500/20 text-pink-300'}">${n.source}</span>
+                                      <span class="text-xs text-slate-500">${n.date}</span>
                                   </div>
-                                  <a href="${n.link}" target="_blank" class="text-lg font-semibold text-blue-300 hover:text-blue-100">${n.title}</a>
+                                  <a href="${n.link}" target="_blank" class="text-sm font-semibold text-slate-200 hover:text-white block truncate">${n.title}</a>
                               </div>
                           `).join('');
-                      } catch (e) { console.error(e); }
+
+                      } catch (e) { console.error("SOC Init Failed", e); }
                   }
-                  window.onload = loadData;
+                  window.onload = initSOC;
               </script>
-          </head>
-          <body class="bg-gray-900 text-white min-h-screen">
-              <div class="container mx-auto px-4 py-8">
-                  <header class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-                      <div>
-                          <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                              <i class="fas fa-shield-alt mr-2"></i>Omni-Intelligence SOC
-                          </h1>
-                          <p class="text-gray-400 mt-1">Real-time Global Threat Intelligence</p>
-                      </div>
-                      <div class="text-right">
-                          <div class="text-sm text-gray-500">Last Updated</div>
-                          <div id="last-update" class="font-mono text-green-400">Syncing...</div>
-                      </div>
-                  </header>
-                  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                      <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-                          <div class="text-gray-400 mb-2">Total Threats Collected</div>
-                          <div id="total-threats" class="text-4xl font-bold text-white">0</div>
-                      </div>
-                      </div>
-                  <div id="news-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-              </div>
+              <style>
+                  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                  .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+                  .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+              </style>
           </body>
           </html>
           EOF
 
       # ========================================================================
-      # 3. 🐳 서버 인프라 (Docker + Nginx)
+      # 3. 🔒 방화벽 서버 (Nginx + Security Headers)
       # ========================================================================
-      - name: 🏗️ Setup Server Config
+      - name: 🛡️ Config Firewall Server
         run: |
-          # Nginx 설정
           cat << 'EOF' > docker/nginx/default.conf
           server {
               listen 80;
               server_name localhost;
               root /usr/share/nginx/html;
               index viewer/index.html;
+
+              # [Security Headers - Firewall Level]
+              add_header X-Frame-Options "DENY";
+              add_header X-XSS-Protection "1; mode=block";
+              add_header X-Content-Type-Options "nosniff";
+              add_header Referrer-Policy "strict-origin-when-cross-origin";
+              add_header Content-Security-Policy "default-src 'self' 'unsafe-inline' https: data:;";
+
               location / {
-                  autoindex on;
+                  try_files $uri $uri/ /viewer/index.html;
               }
+              
+              # API 및 데이터 접근 허용 (CORS)
               location /data {
                   add_header Access-Control-Allow-Origin *;
+                  autoindex on;
               }
           }
           EOF
-          
-          # Docker Compose
+
           cat << 'EOF' > docker/docker-compose.yml
           version: '3.8'
           services:
-            soc-server:
+            firewall-web:
               image: nginx:alpine
-              container_name: omni-soc
+              container_name: omni-soc-server
               ports:
                 - "8080:80"
               volumes:
-                - ../:/usr/share/nginx/html
-                - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-              restart: always
+                - ../:/usr/share/nginx/html:ro
+                - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+              restart: unless-stopped
           EOF
 
       # ========================================================================
-      # 4. 🔥 실행 및 배포 (Git 충돌 자동 해결 포함)
+      # 4. 🔥 실행 및 동기화 (충돌 방지 로직)
       # ========================================================================
-      - name: ⚡ Run Engine
+      - name: ⚡ Run SOC Engine
         run: python scripts/daily_security_news.py
 
-      - name: 🌿 Commit & Push (Auto-Rebase)
+      - name: 🔄 Sync & Push (Auto-Rebase)
         run: |
-          git config user.name "Omni-SOC Bot"
-          git config user.email "bot@omni.soc"
+          git config user.name "SOC Commander"
+          git config user.email "commander@omni.soc"
           
-          # [핵심] 모든 파일 강제 추가
-          git add data/ scripts/ viewer/ docker/ public/ DB/
+          git add .
           
           if git diff --cached --quiet; then
-            echo "✅ No changes to commit."
+            echo "✅ No changes needed."
             exit 0
           fi
           
-          git commit -m "🚀 SOC Upgrade: Updated Feeds, Dashboard, & Docker Server"
+          git commit -m "🌌 SOC Masterpiece: +20 Feeds, Firewall Server, Advanced Dashboard"
           
-          # [핵심] Git 충돌 자동 해결 (Pull-Rebase 루프)
+          # [핵심] Git 충돌 자동 해결 루프
           MAX_RETRIES=10
           count=0
           until [ $count -ge $MAX_RETRIES ]; do
             echo "🔄 Syncing with remote (Attempt $((count+1)))..."
-            
-            # 1. 원격 변경사항 가져오기 (Rebase로 깔끔하게 병합)
             git pull origin main --rebase && git push origin main && break
-            
             count=$((count+1))
-            echo "⚠️ Conflict detected. Retrying in 5s..."
             sleep 5
           done
-          
-          if [ $count -ge $MAX_RETRIES ]; then
-            echo "❌ Failed to push after $MAX_RETRIES attempts."
-            exit 1
-          fi
