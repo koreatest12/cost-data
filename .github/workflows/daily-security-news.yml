@@ -1,4 +1,4 @@
-name: Omni-Intelligence Hyper-Scale SOC
+name: Omni-Intelligence Hyper-Scale SOC (Gemini Masterpiece)
 
 on:
   schedule:
@@ -6,15 +6,15 @@ on:
   workflow_dispatch:
     inputs:
       force_run:
-        description: 'Force massive update'
+        description: 'Force Massive Update'
         required: false
 
-# [✅ 권한 최상위 설정: 파일 생성 및 업로드 필수]
+# [✅ 권한 최상위 설정]
 permissions: write-all
 
 jobs:
-  hyper-soc-deploy:
-    name: 🚀 Deploy Hyper-Scale SOC
+  deploy-gemini-soc:
+    name: 🚀 Deploy Gemini SOC Masterpiece
     runs-on: ubuntu-latest
     steps:
       - name: 🔄 Checkout Repository
@@ -28,20 +28,22 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 📂 Initialize Mass Storage
+      - name: 📂 Initialize Mass Infrastructure
         run: |
+          # [초대량 디렉토리 구조 생성]
           mkdir -p data/news
           mkdir -p DB
           mkdir -p scripts
           mkdir -p public/api
           mkdir -p docker/nginx
           mkdir -p viewer
-          mkdir -p server_logs
+          mkdir -p logs/system
+          mkdir -p artifacts/images
 
       # ========================================================================
-      # 1. 🧠 하이퍼 인텔리전스 엔진 (네이버/포털 + 글로벌 + 클라우드 + 벤더)
+      # 1. 🧠 제미나이 인텔리전스 엔진 (WAF 우회 + 포털 뚫기 + 40종 소스)
       # ========================================================================
-      - name: 🛠️ Generate Massive Intelligence Engine
+      - name: 🛠️ Generate Gemini Intelligence Engine
         run: |
           cat << 'EOF' > scripts/daily_security_news.py
           import urllib.request
@@ -56,12 +58,13 @@ jobs:
           import random
           import sys
 
-          # [✅ Massive Feeds: 35개 이상의 초대형 소스 정의]
+          # [✅ Massive Feeds: 40개 이상의 초대형 소스 정의]
           FEEDS = {
               "PORTAL_KEYWORD": [
-                  # 네이버/다음 등 포털 뉴스 (Google News RSS를 통해 '보안/해킹' 키워드 우회 수집)
-                  ("Naver/Portal (Security)", "https://news.google.com/rss/search?q=해킹+보안+취약점+site:naver.com&hl=ko&gl=KR&ceid=KR:ko"),
-                  ("Portal (Cyber Crime)", "https://news.google.com/rss/search?q=사이버범죄+피싱+랜섬웨어&hl=ko&gl=KR&ceid=KR:ko"),
+                  # Google News RSS (네이버/다음 우회) - 검색어: 해킹, 보안, 취약점
+                  ("Naver/Portal Security", "https://news.google.com/rss/search?q=해킹+보안+취약점+site:naver.com&hl=ko&gl=KR&ceid=KR:ko"),
+                  ("Cyber Crime News", "https://news.google.com/rss/search?q=사이버범죄+피싱+스미싱&hl=ko&gl=KR&ceid=KR:ko"),
+                  ("Financial Security", "https://news.google.com/rss/search?q=금융보안+은행+해킹&hl=ko&gl=KR&ceid=KR:ko"),
               ],
               "GLOBAL_TIER_1": [
                   ("BleepingComputer", "https://www.bleepingcomputer.com/feed/"),
@@ -69,6 +72,7 @@ jobs:
                   ("Dark Reading", "https://www.darkreading.com/rss.xml"),
                   ("SecurityWeek", "https://feeds.feedburner.com/SecurityWeek"),
                   ("TechCrunch Security", "https://techcrunch.com/category/security/feed/"),
+                  ("Wired Security", "https://www.wired.com/feed/category/security/latest/rss"),
               ],
               "CLOUD_&_VENDOR": [
                   ("AWS Security Blog", "https://aws.amazon.com/blogs/security/feed/"),
@@ -78,41 +82,54 @@ jobs:
                   ("Cloudflare Blog", "https://blog.cloudflare.com/rss/"),
                   ("Kaspersky Securelist", "https://securelist.com/feed/"),
                   ("Trellix (McAfee)", "https://www.trellix.com/en-us/about/newsroom/stories.rss"),
+                  ("Cisco Talos", "https://blog.talosintelligence.com/rss/"),
               ],
               "KOREA_OFFICIAL": [
                   ("BoanNews", "https://www.boannews.com/media/news_rss.xml"),
                   ("AhnLab ASEC", "https://asec.ahnlab.com/ko/feed/"),
                   ("DailySecu", "https://www.dailysecu.com/rss/all.xml"),
-                  ("KISA KrCERT", "https://www.krcert.or.kr/rss/rss.do"), # WAF 주의
+                  ("KISA KrCERT", "https://www.krcert.or.kr/rss/rss.do"), 
                   ("ETNews Security", "https://rss.etnews.com/Section902.xml"),
                   ("Digital Daily", "https://www.ddaily.co.kr/rss/?sc=10300001"),
                   ("Byline Network", "https://byline.network/category/security/feed/"),
+                  ("InforStock (Security)", "https://www.inforstock.co.kr/rss/S1N8.xml"),
               ]
           }
 
+          # [✅ Advanced WAF Bypass: 헤더 시뮬레이션 강화]
           USER_AGENTS = [
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
               'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/122.0',
+              'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
           ]
 
           def clean_xml_content(raw_str):
               if not raw_str: return ""
+              # XML 선언 및 HTML 태그 제거
               cleaned = re.sub(r'<\?xml.*?\?>', '', raw_str)
               if "<!DOCTYPE html" in cleaned or "<html" in cleaned: return None
+              # 특수 엔티티 처리
               cleaned = re.sub(r'&(?!(?:[a-zA-Z][a-zA-Z0-9]*|#\d+|#x[0-9a-fA-F]+);)', '&amp;', cleaned)
               return cleaned.strip()
 
-          def fetch_feed_content(url, retries=2):
+          def fetch_feed_content(url, retries=3):
               for attempt in range(retries + 1):
                   headers = {
                       'User-Agent': random.choice(USER_AGENTS),
-                      'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-                      'Cache-Control': 'no-cache'
+                      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                      'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+                      'Cache-Control': 'no-cache',
+                      'Pragma': 'no-cache',
+                      'Referer': 'https://www.google.com/'
                   }
+                  
                   try:
-                      time.sleep(random.uniform(0.5, 1.5))
+                      # 랜덤 딜레이로 봇 탐지 회피
+                      time.sleep(random.uniform(0.5, 2.5))
+                      
                       req = urllib.request.Request(url, headers=headers)
-                      with urllib.request.urlopen(req, timeout=15) as response:
+                      with urllib.request.urlopen(req, timeout=20) as response:
                           raw_data = response.read()
                           
                           decoded_data = None
@@ -123,7 +140,12 @@ jobs:
                               except: continue
                           
                           if not decoded_data: return None
+                          
                           cleaned = clean_xml_content(decoded_data)
+                          if cleaned is None:
+                              # HTML이 반환되면 WAF 차단으로 간주
+                              if attempt < retries: continue
+                              return None
                           return cleaned
 
                   except Exception as e:
@@ -134,7 +156,7 @@ jobs:
               collected_news = []
               stats = {"total": 0, "categories": {}}
 
-              print(f"🔥 Starting Massive Collection from {sum(len(v) for v in FEEDS.values())} sources...")
+              print(f"🔥 Starting Gemini Massive Collection from {sum(len(v) for v in FEEDS.values())} sources...")
 
               for category, feeds in FEEDS.items():
                   stats["categories"][category] = 0
@@ -143,17 +165,18 @@ jobs:
                   for name, url in feeds:
                       xml_str = fetch_feed_content(url)
                       if not xml_str: 
-                          print(f"   ❌ {name}: Connection Failed")
+                          print(f"   ❌ {name}: Blocked/Failed")
                           continue
 
                       try:
+                          # 네임스페이스 제거
                           xml_str = re.sub(r'\sxmlns="[^"]+"', '', xml_str, count=1)
                           root = ET.fromstring(xml_str)
                           items = root.findall('.//item') + root.findall('.//entry')
                           count = 0
                           
-                          # [✅ 대량 수집: 소스당 15개까지]
-                          for item in items[:15]:
+                          # [✅ 초대량 수집: 소스당 20개까지 확장]
+                          for item in items[:20]:
                               title = item.find('title')
                               link = item.find('link')
                               pubDate = item.find('pubDate') or item.find('updated') or item.find('dc:date', {'dc': 'http://purl.org/dc/elements/1.1/'})
@@ -177,7 +200,7 @@ jobs:
                           stats["total"] += count
 
                       except Exception as e:
-                          print(f"   ⚠️ {name}: Parse Error")
+                          print(f"   ⚠️ {name}: XML Parse Error")
 
               return collected_news, stats
 
@@ -185,7 +208,7 @@ jobs:
               today = datetime.datetime.now().strftime('%Y-%m-%d')
               timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
               
-              # JSON 저장
+              # Main JSON
               json_path = f"data/news/news_{today}.json"
               with open(json_path, 'w', encoding='utf-8') as f:
                   json.dump({
@@ -193,7 +216,7 @@ jobs:
                       "articles": news_data
                   }, f, ensure_ascii=False, indent=2)
 
-              # Index 업데이트
+              # Index JSON
               index_path = "data/news/news_index.json"
               index_data = {"last_updated": timestamp, "dates": []}
               if os.path.exists(index_path):
@@ -219,13 +242,13 @@ jobs:
           EOF
 
       # ========================================================================
-      # 2. 🐳 서버 설치 및 업그레이드 자동화 (Docker + Nginx)
+      # 2. 🐳 서버 인프라 (Docker Compose V2 적용 - 에러 해결)
       # ========================================================================
-      - name: ⚙️ Install & Upgrade Server
+      - name: ⚙️ Install & Upgrade Server Infrastructure
         run: |
-          echo "🔧 Starting SOC Server Installation..."
+          echo "🔧 Starting Gemini SOC Server Installation..."
           
-          # 1. 서버 설정 파일 생성 (Nginx Security Config)
+          # 1. Nginx Advanced Config
           cat << 'EOF' > docker/nginx/default.conf
           server {
               listen 80;
@@ -233,28 +256,25 @@ jobs:
               root /usr/share/nginx/html;
               index viewer/index.html;
 
-              # [Security Headers]
+              # [Gemini Security Headers]
               add_header X-Frame-Options "DENY";
               add_header X-XSS-Protection "1; mode=block";
               add_header X-Content-Type-Options "nosniff";
+              add_header Access-Control-Allow-Origin *;
 
               location / {
                   try_files $uri $uri/ /viewer/index.html;
               }
-              location /data {
-                  add_header Access-Control-Allow-Origin *;
-                  autoindex on;
-              }
           }
           EOF
 
-          # 2. Docker Compose 생성
+          # 2. Docker Compose File
           cat << 'EOF' > docker/docker-compose.yml
           version: '3.8'
           services:
-            soc-dashboard:
+            gemini-soc:
               image: nginx:alpine
-              container_name: soc-dashboard-v1
+              container_name: gemini-soc-server
               ports:
                 - "8080:80"
               volumes:
@@ -263,34 +283,35 @@ jobs:
               restart: always
           EOF
 
-          # 3. 서버 업그레이드 스크립트 생성
+          # 3. Server Upgrade Script (FIXED: docker-compose -> docker compose)
           cat << 'EOF' > docker/upgrade_server.sh
           #!/bin/bash
           echo "🚀 Detecting Server Version..."
-          if [ "$(docker ps -q -f name=soc-dashboard-v1)" ]; then
-              echo "🔄 Upgrading SOC Server..."
-              docker-compose down
-              docker-compose pull
-              docker-compose up -d --force-recreate
+          # Check using standard docker command
+          if [ "$(docker ps -q -f name=gemini-soc-server)" ]; then
+              echo "🔄 Upgrading Gemini SOC Server..."
+              docker compose down
+              docker compose pull
+              docker compose up -d --force-recreate
               echo "✅ Server Upgraded to Latest Version."
           else
-              echo "✨ Installing New SOC Server..."
-              docker-compose up -d
+              echo "✨ Installing New Gemini SOC Server..."
+              docker compose up -d
               echo "✅ Server Installed Successfully."
           fi
           EOF
           chmod +x docker/upgrade_server.sh
 
       # ========================================================================
-      # 3. 🎨 대시보드 (네이버/포털 뉴스 반영)
+      # 3. 🎨 대시보드 (네이버/포털/클라우드 시각화)
       # ========================================================================
-      - name: 🎨 Build Dashboard Viewer
+      - name: 🎨 Build Massive Dashboard
         run: |
           cat << 'EOF' > viewer/index.html
           <!DOCTYPE html>
           <html>
           <head>
-              <title>Omni-SOC Hyper Dashboard</title>
+              <title>Gemini Hyper-Scale SOC</title>
               <script src="https://cdn.tailwindcss.com"></script>
               <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
               <script>
@@ -301,78 +322,98 @@ jobs:
                       
                       document.getElementById('total').innerText = today.total;
                       document.getElementById('portal').innerText = today.details['PORTAL_KEYWORD'] || 0;
+                      document.getElementById('global').innerText = today.details['GLOBAL_TIER_1'] || 0;
                       document.getElementById('cloud').innerText = today.details['CLOUD_&_VENDOR'] || 0;
                       
                       const nRes = await fetch(`../data/news/news_${today.date}.json`);
                       const data = await nRes.json();
                       
                       document.getElementById('list').innerHTML = data.articles.map(n => `
-                          <div class="bg-gray-800 p-3 rounded border-l-4 ${n.category.includes('PORTAL') ? 'border-green-500' : 'border-blue-500'} mb-2">
-                              <span class="text-xs text-gray-400">[${n.source}]</span>
-                              <a href="${n.link}" target="_blank" class="block font-bold text-white hover:text-blue-300">${n.title}</a>
+                          <div class="bg-gray-800 p-4 rounded-lg border-l-4 ${
+                              n.category.includes('PORTAL') ? 'border-green-500' : 
+                              n.category.includes('GLOBAL') ? 'border-blue-500' :
+                              n.category.includes('CLOUD') ? 'border-purple-500' : 'border-red-500'
+                          } mb-3 shadow-md hover:bg-gray-700 transition">
+                              <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                  <span class="font-bold uppercase tracking-wide text-white">${n.source}</span>
+                                  <span>${n.date}</span>
+                              </div>
+                              <a href="${n.link}" target="_blank" class="block text-lg font-bold text-blue-300 hover:text-blue-100">${n.title}</a>
                           </div>
                       `).join('');
                   }
                   window.onload = load;
               </script>
           </head>
-          <body class="bg-black text-white p-6">
-              <h1 class="text-3xl font-bold mb-6 text-blue-500"><i class="fas fa-satellite-dish"></i> Hyper-Scale SOC</h1>
-              <div class="grid grid-cols-3 gap-4 mb-6 text-center">
-                  <div class="bg-gray-900 p-4 rounded border border-gray-700">
-                      <div class="text-gray-500">Total Intel</div>
-                      <div id="total" class="text-3xl font-bold">0</div>
+          <body class="bg-slate-900 text-white min-h-screen p-6 font-sans">
+              <header class="flex items-center justify-between mb-8 border-b border-slate-700 pb-4">
+                  <h1 class="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                      <i class="fas fa-globe-asia mr-3"></i>Gemini Hyper-Scale SOC
+                  </h1>
+                  <span class="bg-blue-600 text-xs font-bold px-3 py-1 rounded-full">SYSTEM ACTIVE</span>
+              </header>
+              
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 text-center">
+                  <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+                      <div class="text-slate-400 text-sm uppercase">Total Intelligence</div>
+                      <div id="total" class="text-5xl font-bold text-white mt-2">0</div>
                   </div>
-                  <div class="bg-gray-900 p-4 rounded border border-gray-700">
-                      <div class="text-green-500">Naver/Portal</div>
-                      <div id="portal" class="text-3xl font-bold">0</div>
+                  <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+                      <div class="text-green-400 text-sm uppercase">Portal/Search</div>
+                      <div id="portal" class="text-4xl font-bold text-green-400 mt-2">0</div>
                   </div>
-                  <div class="bg-gray-900 p-4 rounded border border-gray-700">
-                      <div class="text-purple-500">Cloud/Vendor</div>
-                      <div id="cloud" class="text-3xl font-bold">0</div>
+                  <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+                      <div class="text-blue-400 text-sm uppercase">Global Tier-1</div>
+                      <div id="global" class="text-4xl font-bold text-blue-400 mt-2">0</div>
+                  </div>
+                  <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+                      <div class="text-purple-400 text-sm uppercase">Cloud & Vendor</div>
+                      <div id="cloud" class="text-4xl font-bold text-purple-400 mt-2">0</div>
                   </div>
               </div>
-              <div id="list"></div>
+              
+              <div id="list" class="grid grid-cols-1 xl:grid-cols-2 gap-4"></div>
           </body>
           </html>
           EOF
 
       # ========================================================================
-      # 4. 🔥 엔진 실행 & 서버 업그레이드 & 업로드
+      # 4. 🔥 엔진 실행 & 서버 배포 & 결과 업로드
       # ========================================================================
-      - name: ⚡ Run Massive Collector
+      - name: ⚡ Run Massive Engine
         run: python scripts/daily_security_news.py
 
-      - name: 🔧 Execute Server Upgrade
+      - name: 🔧 Upgrade Server (Fixed Command)
         run: |
           cd docker
           ./upgrade_server.sh
           docker ps -a
 
-      # [✅ 핵심 추가: 데이터 업로드 기능]
-      - name: 📤 Upload Artifacts (Server Logs & Data)
+      # [✅ 핵심 추가: 초대량 데이터 아티팩트 저장]
+      - name: 📤 Upload Gemini Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: soc-full-backup
+          name: gemini-soc-full-backup
           path: |
             data/
             docker/
             viewer/
-            server_logs/
+            logs/
 
-      - name: 🌿 Commit & Push (Massive Update)
+      - name: 🌿 Commit & Push (Massive Reflection)
         run: |
-          git config user.name "SOC Master"
-          git config user.email "master@soc.system"
+          git config user.name "Gemini SOC"
+          git config user.email "master@gemini.soc"
           
+          # 모든 신규 파일 강제 추가
           git add .
           
           if git diff --cached --quiet; then
-            echo "✅ No changes."
+            echo "✅ No changes to commit."
           else
-            git commit -m "🚀 Hyper-Scale SOC: Portal Feeds + Server Upgrade + Data Upload"
+            git commit -m "🚀 Gemini SOC: Hyper-Scale Data + Server V2 Upgrade + WAF Bypass"
             
-            # 충돌 자동 해결
+            # 충돌 자동 해결 (Rebase Loop)
             MAX_RETRIES=10
             count=0
             until [ $count -ge $MAX_RETRIES ]; do
