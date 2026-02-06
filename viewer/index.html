@@ -1,60 +1,117 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Omni-Intelligence SOC Dashboard</title>
+    <title>Omni-Intelligence SOC</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6">
+        <header class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+            <div>
+                <h1 class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
+                    <i class="fas fa-radar mr-2"></i>Omni-SOC
+                </h1>
+                <p class="text-slate-400 text-sm">Global Threat Intelligence Center</p>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-slate-500">SYSTEM STATUS</div>
+                <div class="text-green-400 font-mono font-bold"><i class="fas fa-circle text-[10px] mr-1"></i>OPERATIONAL</div>
+                <div id="last-update" class="text-xs text-slate-400 mt-1">-</div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                <div class="text-slate-400 text-xs uppercase">Total Threats</div>
+                <div id="metric-total" class="text-3xl font-bold text-white mt-1">0</div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                <div class="text-slate-400 text-xs uppercase">Global Intel</div>
+                <div id="metric-global" class="text-3xl font-bold text-cyan-400 mt-1">0</div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                <div class="text-slate-400 text-xs uppercase">Korea Intel</div>
+                <div id="metric-korea" class="text-3xl font-bold text-pink-500 mt-1">0</div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                <div class="text-slate-400 text-xs uppercase">Active Feeds</div>
+                <div class="text-3xl font-bold text-emerald-400 mt-1">20+</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                <h3 class="text-sm font-bold text-slate-300 mb-4"><i class="fas fa-chart-pie mr-2"></i>Threat Distribution</h3>
+                <canvas id="threatChart"></canvas>
+            </div>
+
+            <div class="lg:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-slate-300"><i class="fas fa-rss mr-2"></i>Live Intelligence Feed</h3>
+                </div>
+                <div id="news-container" class="space-y-3 h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        async function loadData() {
+        async function initSOC() {
             try {
                 const idxRes = await fetch('../data/news/news_index.json');
-                const idxData = await idxRes.json();
-                const today = idxData.dates[0];
-                
-                document.getElementById('last-update').innerText = idxData.last_updated;
-                document.getElementById('total-threats').innerText = today.total;
-                
+                const idx = await idxRes.json();
+                const today = idx.dates[0];
+
+                document.getElementById('last-update').innerText = idx.last_updated;
+                document.getElementById('metric-total').innerText = today.total;
+                document.getElementById('metric-global').innerText = today.global;
+                document.getElementById('metric-korea').innerText = today.korea;
+
+                // Render Chart
+                const ctx = document.getElementById('threatChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Global', 'Korea'],
+                        datasets: [{
+                            data: [today.global, today.korea],
+                            backgroundColor: ['#22d3ee', '#ec4899'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { 
+                        responsive: true,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } } }
+                    }
+                });
+
+                // Load Detail News
                 const newsRes = await fetch(`../data/news/news_${today.date}.json`);
                 const newsData = await newsRes.json();
                 
-                const list = document.getElementById('news-list');
-                list.innerHTML = newsData.articles.map(n => `
-                    <div class="bg-gray-800 p-4 rounded-lg border-l-4 ${n.category==='global'?'border-blue-500':'border-red-500'} hover:bg-gray-750 transition">
-                        <div class="flex justify-between text-xs text-gray-400 mb-1">
-                            <span class="font-bold text-white uppercase">${n.source}</span>
-                            <span>${n.date}</span>
+                const container = document.getElementById('news-container');
+                container.innerHTML = newsData.articles.map(n => `
+                    <div class="bg-slate-700/50 p-4 rounded border-l-4 ${n.category==='global'?'border-cyan-500':'border-pink-500'} hover:bg-slate-700 transition cursor-pointer">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${n.category==='global'?'bg-cyan-500/20 text-cyan-300':'bg-pink-500/20 text-pink-300'}">${n.source}</span>
+                            <span class="text-xs text-slate-500">${n.date}</span>
                         </div>
-                        <a href="${n.link}" target="_blank" class="text-lg font-semibold text-blue-300 hover:text-blue-100">${n.title}</a>
+                        <a href="${n.link}" target="_blank" class="text-sm font-semibold text-slate-200 hover:text-white block truncate">${n.title}</a>
                     </div>
                 `).join('');
-            } catch (e) { console.error(e); }
+
+            } catch (e) { console.error("SOC Init Failed", e); }
         }
-        window.onload = loadData;
+        window.onload = initSOC;
     </script>
-</head>
-<body class="bg-gray-900 text-white min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <header class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-            <div>
-                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                    <i class="fas fa-shield-alt mr-2"></i>Omni-Intelligence SOC
-                </h1>
-                <p class="text-gray-400 mt-1">Real-time Global Threat Intelligence</p>
-            </div>
-            <div class="text-right">
-                <div class="text-sm text-gray-500">Last Updated</div>
-                <div id="last-update" class="font-mono text-green-400">Syncing...</div>
-            </div>
-        </header>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-                <div class="text-gray-400 mb-2">Total Threats Collected</div>
-                <div id="total-threats" class="text-4xl font-bold text-white">0</div>
-            </div>
-            </div>
-        <div id="news-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-    </div>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
 </body>
 </html>

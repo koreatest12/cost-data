@@ -1,10 +1,10 @@
 {
   "date": "2026-02-06",
-  "timestamp": "2026-02-06 13:09:17",
+  "timestamp": "2026-02-06 13:14:07",
   "stats": {
-    "total": 55,
-    "global": 40,
-    "korea": 15
+    "total": 130,
+    "global": 110,
+    "korea": 20
   },
   "articles": [
     {
@@ -43,6 +43,41 @@
       "date": "2026-02-06"
     },
     {
+      "source": "BleepingComputer",
+      "category": "global",
+      "title": "Microsoft to shut down Exchange Online EWS in April 2027",
+      "link": "https://www.bleepingcomputer.com/news/microsoft/microsoft-to-shut-down-exchange-web-services-in-cloud-in-2027/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "global",
+      "title": "Italian university La Sapienza goes offline after cyberattack",
+      "link": "https://www.bleepingcomputer.com/news/security/italian-university-la-sapienza-goes-offline-after-cyberattack/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "global",
+      "title": "Romanian oil pipeline operator Conpet discloses cyberattack",
+      "link": "https://www.bleepingcomputer.com/news/security/romanian-oil-pipeline-operator-conpet-discloses-cyberattack-qilin-ransomware/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "global",
+      "title": "When cloud logs fall short, the network tells the truth",
+      "link": "https://www.bleepingcomputer.com/news/security/when-cloud-logs-fall-short-the-network-tells-the-truth/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "global",
+      "title": "Newsletter platform Substack notifies users of data breach",
+      "link": "https://www.bleepingcomputer.com/news/security/newsletter-platform-substack-notifies-users-of-data-breach/",
+      "date": "2026-02-06"
+    },
+    {
       "source": "The Hacker News",
       "category": "global",
       "title": "Asian State-Backed Group TGR-STA-1030 Breaches 70 Government, Infrastructure Entities",
@@ -75,6 +110,111 @@
       "category": "global",
       "title": "AISURU/Kimwolf Botnet Launches Record-Setting 31.4 Tbps DDoS Attack",
       "link": "https://thehackernews.com/2026/02/aisurukimwolf-botnet-launches-record.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "global",
+      "title": "ThreatsDay Bulletin: Codespaces RCE, AsyncRAT C2, BYOVD Abuse, AI Cloud Intrusions & 15+ Stories",
+      "link": "https://thehackernews.com/2026/02/threatsday-bulletin-codespaces-rce.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "global",
+      "title": "The Buyer’s Guide to AI Usage Control",
+      "link": "https://thehackernews.com/2026/02/the-buyers-guide-to-ai-usage-control.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "global",
+      "title": "Infy Hackers Resume Operations with New C2 Servers After Iran Internet Blackout Ends",
+      "link": "https://thehackernews.com/2026/02/infy-hackers-resume-operations-with-new.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "global",
+      "title": "Critical n8n Flaw CVE-2026-25049 Enables System Command Execution via Malicious Workflows",
+      "link": "https://thehackernews.com/2026/02/critical-n8n-flaw-cve-2026-25049.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "global",
+      "title": "Malicious NGINX Configurations Enable Large-Scale Web Traffic Hijacking Campaign",
+      "link": "https://thehackernews.com/2026/02/hackers-exploit-react2shell-to-hijack.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "The Shadow Campaigns: Uncovering Global Espionage",
+      "link": "https://unit42.paloaltonetworks.com/shadow-campaigns-uncovering-global-espionage/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "Why Smart People Fall For Phishing Attacks",
+      "link": "https://unit42.paloaltonetworks.com/psychology-of-phishing/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "Privileged File System Vulnerability Present in a SCADA System",
+      "link": "https://unit42.paloaltonetworks.com/iconics-suite-cve-2025-0921/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "Understanding the Russian Cyberthreat to the 2026 Winter Olympics",
+      "link": "https://unit42.paloaltonetworks.com/russian-cyberthreat-2026-winter-olympics/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "Happy 9th Anniversary, CTA: A Celebration of Collaboration in Cyber Defense",
+      "link": "https://unit42.paloaltonetworks.com/cta-9th-anniversary/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "The Next Frontier of Runtime Assembly Attacks: Leveraging LLMs to Generate Phishing JavaScript in Real Time",
+      "link": "https://unit42.paloaltonetworks.com/real-time-malicious-javascript-through-llms/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "DNS OverDoS: Are Private Endpoints Too Private?",
+      "link": "https://unit42.paloaltonetworks.com/dos-attacks-and-azure-private-endpoint/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "Anatomy of an Attack: The Payroll Pirates and the Power of Social Engineering",
+      "link": "https://unit42.paloaltonetworks.com/social-engineering-payroll-pirates/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "Threat Brief: MongoDB Vulnerability (CVE-2025-14847)",
+      "link": "https://unit42.paloaltonetworks.com/mongobleed-cve-2025-14847/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "global",
+      "title": "Remote Code Execution With Modern AI/ML Formats and Libraries",
+      "link": "https://unit42.paloaltonetworks.com/rce-vulnerabilities-in-ai-python-libraries/",
       "date": "2026-02-06"
     },
     {
@@ -113,38 +253,108 @@
       "date": "2026-02-06"
     },
     {
-      "source": "Microsoft Security Response",
+      "source": "CISA Alerts",
+      "category": "global",
+      "title": "Microsoft Ending Support for Windows 7 and Windows Server 2008 R2",
+      "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-290a",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "CISA Alerts",
+      "category": "global",
+      "title": "Dridex Malware",
+      "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa19-339a",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "CISA Alerts",
+      "category": "global",
+      "title": "Potential for Iranian Cyber Response to U.S. Military Strike in Baghdad",
+      "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-006a",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "CISA Alerts",
+      "category": "global",
+      "title": "Continued Exploitation of Pulse Secure VPN Vulnerability",
+      "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-010a",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "CISA Alerts",
+      "category": "global",
+      "title": "Critical Vulnerabilities in Microsoft Windows Operating Systems",
+      "link": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-014a",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Microsoft MSRC",
       "category": "global",
       "title": "CVE-2026-24302 Azure Arc Elevation of Privilege Vulnerability",
       "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-24302",
       "date": "2026-02-06"
     },
     {
-      "source": "Microsoft Security Response",
+      "source": "Microsoft MSRC",
       "category": "global",
       "title": "CVE-2026-21532 Azure Function Information Disclosure Vulnerability",
       "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-21532",
       "date": "2026-02-06"
     },
     {
-      "source": "Microsoft Security Response",
+      "source": "Microsoft MSRC",
       "category": "global",
       "title": "CVE-2026-24300 Azure Front Door Elevation of Privilege Vulnerability",
       "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-24300",
       "date": "2026-02-06"
     },
     {
-      "source": "Microsoft Security Response",
+      "source": "Microsoft MSRC",
       "category": "global",
       "title": "CVE-2026-0391 Microsoft Edge (Chromium-based) for Android Spoofing Vulnerability",
       "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-0391",
       "date": "2026-02-06"
     },
     {
-      "source": "Microsoft Security Response",
+      "source": "Microsoft MSRC",
       "category": "global",
       "title": "Chromium: CVE-2026-1861 Heap buffer overflow in libvpx",
       "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-1861",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Microsoft MSRC",
+      "category": "global",
+      "title": "Chromium: CVE-2026-1504 Inappropriate implementation in Background Fetch API",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-1504",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Microsoft MSRC",
+      "category": "global",
+      "title": "CVE-2026-20960 PowerApps Desktop Client Remote Code Execution Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-20960",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Microsoft MSRC",
+      "category": "global",
+      "title": "CVE-2026-21509 Microsoft Office Security Feature Bypass Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-21509",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Microsoft MSRC",
+      "category": "global",
+      "title": "CVE-2026-20805 Desktop Window Manager Information Disclosure Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-20805",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Microsoft MSRC",
+      "category": "global",
+      "title": "CVE-2026-21509 Microsoft Office Security Feature Bypass Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-21509",
       "date": "2026-02-06"
     },
     {
@@ -183,6 +393,41 @@
       "date": "2026-02-06"
     },
     {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "Welcome to the new Project Zero Blog",
+      "link": "https://projectzero.google/2025/12/welcome.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "Thinking Outside The Box [dusted off draft from 2017]",
+      "link": "https://projectzero.google/2025/12/thinking-outside-the-box.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "Windows Exploitation Techniques: Winning Race Conditions with Path Lookups",
+      "link": "https://projectzero.google/2025/12/windows-exploitation-techniques.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "A look at an Android ITW DNG exploit",
+      "link": "https://projectzero.google/2025/12/android-itw-dng.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "Defeating KASLR by Doing Nothing at All",
+      "link": "https://projectzero.google/2025/11/defeating-kaslr-by-doing-nothing-at-all.html",
+      "date": "2026-02-06"
+    },
+    {
       "source": "Dark Reading",
       "category": "global",
       "title": "EnCase Driver Weaponized as EDR Killers Persist",
@@ -215,6 +460,41 @@
       "category": "global",
       "title": "Ransomware Gang Goes Full 'Godfather' With Cartel",
       "link": "https://www.darkreading.com/cyber-risk/ransomware-gang-full-godfather-cartel",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "global",
+      "title": "CISA Makes Unpublicized Ransomware Updates to KEV Catalog",
+      "link": "https://www.darkreading.com/threat-intelligence/cisa-hidden-ransomware-updates-kev-catalog",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "global",
+      "title": "Attackers Use Windows Screensavers to Drop Malware, RMM Tools",
+      "link": "https://www.darkreading.com/application-security/attackers-use-screensavers-drop-malware-rmm-tools",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "global",
+      "title": "Extra Extra! Announcing DR Global Latin America",
+      "link": "https://www.darkreading.com/cybersecurity-operations/announcing-dr-global-latin-america",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "global",
+      "title": "Big Breach or Smooth Sailing? Mexican Gov't Faces Leak Allegations",
+      "link": "https://www.darkreading.com/cyberattacks-data-breaches/big-breach-or-nada-de-nada-mexican-govt-faces-leak-allegations",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "global",
+      "title": "Google Looker Bugs Allow Cross-Tenant RCE, Data Exfil",
+      "link": "https://www.darkreading.com/application-security/google-looker-bugs-cross-tenant-rce-data-exfil",
       "date": "2026-02-06"
     },
     {
@@ -253,6 +533,111 @@
       "date": "2023-11-03T04:15:15Z"
     },
     {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2021-4430",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2021-4430",
+      "date": "2023-11-06T08:15:21Z"
+    },
+    {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2022-3172",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2022-3172",
+      "date": "2023-11-03T20:15:08Z"
+    },
+    {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2022-43554",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2022-43554",
+      "date": "2023-11-03T20:15:08Z"
+    },
+    {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2022-43555",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2022-43555",
+      "date": "2023-11-03T20:15:08Z"
+    },
+    {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2022-44569",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2022-44569",
+      "date": "2023-11-03T20:15:08Z"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "iPhone Lockdown Mode Protects Washington Post Reporter",
+      "link": "https://www.schneier.com/blog/archives/2026/02/iphone-lockdown-mode-protects-washington-post-reporter.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "Backdoor in Notepad++",
+      "link": "https://www.schneier.com/blog/archives/2026/02/backdoor-in-notepad.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "US Declassifies Information on JUMPSEAT Spy Satellites",
+      "link": "https://www.schneier.com/blog/archives/2026/02/us-declassifies-information-on-jumpseat-spy-satellites.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "Microsoft is Giving the FBI BitLocker Keys",
+      "link": "https://www.schneier.com/blog/archives/2026/02/microsoft-is-giving-the-fbi-bitlocker-keys.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "AI Coding Assistants Secretly Copying All Code to China",
+      "link": "https://www.schneier.com/blog/archives/2026/02/ai-coding-assistants-secretly-copying-all-code-to-china.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "Friday Squid Blogging: New Squid Species Discovered",
+      "link": "https://www.schneier.com/blog/archives/2026/01/friday-squid-blogging-new-squid-species-discovered.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "AIs Are Getting Better at Finding and Exploiting Security Vulnerabilities",
+      "link": "https://www.schneier.com/blog/archives/2026/01/ais-are-getting-better-at-finding-and-exploiting-security-vulnerabilities.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "The Constitutionality of Geofence Warrants",
+      "link": "https://www.schneier.com/blog/archives/2026/01/the-constitutionality-of-geofence-warrants.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "Ireland Proposes Giving Police New Digital Surveillance Powers",
+      "link": "https://www.schneier.com/blog/archives/2026/01/ireland-proposes-giving-police-new-digital-surveillance-powers.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Schneier on Security",
+      "category": "global",
+      "title": "Friday Squid Blogging: Giant Squid in the Star Trek Universe",
+      "link": "https://www.schneier.com/blog/archives/2026/01/friday-squid-blogging-giant-squid-in-the-star-trek-universe.html",
+      "date": "2026-02-06"
+    },
+    {
       "source": "Threatpost",
       "category": "global",
       "title": "Student Loan Breach Exposes 2.5M Records",
@@ -285,6 +670,111 @@
       "category": "global",
       "title": "Cybercriminals Are Selling Access to Chinese Surveillance Cameras",
       "link": "https://threatpost.com/cybercriminals-are-selling-access-to-chinese-surveillance-cameras/180478/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "Twitter Whistleblower Complaint: The TL;DR Version",
+      "link": "https://threatpost.com/twitter-whistleblower-tldr-version/180472/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "Firewall Bug Under Active Attack Triggers CISA Warning",
+      "link": "https://threatpost.com/firewall-bug-under-active-attack-cisa-warning/180467/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "Fake Reservation Links Prey on Weary Travelers",
+      "link": "https://threatpost.com/reservation-links-prey-on-travelers/180462/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "iPhone Users Urged to Update to Patch 2 Zero-Days",
+      "link": "https://threatpost.com/iphone-users-urged-to-update-to-patch-2-zero-days-under-attack/180448/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "Google Patches Chrome’s Fifth Zero-Day of the Year",
+      "link": "https://threatpost.com/google-patches-chromes-fifth-zero-day-of-the-year/180432/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "ISC Stormcast For Friday, February 6th, 2026 https://isc.sans.edu/podcastdetail/9798, (Fri, Feb 6th)",
+      "link": "https://isc.sans.edu/diary/rss/32688",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "Broken Phishing URLs, (Thu, Feb 5th)",
+      "link": "https://isc.sans.edu/diary/rss/32686",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "Malicious Script Delivering More Maliciousness, (Wed, Feb 4th)",
+      "link": "https://isc.sans.edu/diary/rss/32682",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "ISC Stormcast For Thursday, February 5th, 2026 https://isc.sans.edu/podcastdetail/9796, (Thu, Feb 5th)",
+      "link": "https://isc.sans.edu/diary/rss/32684",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "ISC Stormcast For Wednesday, February 4th, 2026 https://isc.sans.edu/podcastdetail/9794, (Wed, Feb 4th)",
+      "link": "https://isc.sans.edu/diary/rss/32680",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "Detecting and Monitoring OpenClaw (clawdbot, moltbot), (Tue, Feb 3rd)",
+      "link": "https://isc.sans.edu/diary/rss/32678",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "ISC Stormcast For Tuesday, February 3rd, 2026 https://isc.sans.edu/podcastdetail/9792, (Tue, Feb 3rd)",
+      "link": "https://isc.sans.edu/diary/rss/32676",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "Scanning for exposed Anthropic Models, (Mon, Feb 2nd)",
+      "link": "https://isc.sans.edu/diary/rss/32674",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "ISC Stormcast For Monday, February 2nd, 2026 https://isc.sans.edu/podcastdetail/9790, (Mon, Feb 2nd)",
+      "link": "https://isc.sans.edu/diary/rss/32672",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "SANS ISC",
+      "category": "global",
+      "title": "Google Presentations Abused for Phishing, (Fri, Jan 30th)",
+      "link": "https://isc.sans.edu/diary/rss/32668",
       "date": "2026-02-06"
     },
     {
@@ -323,6 +813,41 @@
       "date": "Fri, 6 Feb 2026 14:58:00 +0900"
     },
     {
+      "source": "BoanNews",
+      "category": "korea",
+      "title": "유럽 전력망 보안 ‘철통 방어’... ENCS-DIVD, 취약점 공동 대응 MOU 체결",
+      "link": "http://www.boannews.com/media/view.asp?idx=141942&kind=&sub_kind=",
+      "date": "Fri, 6 Feb 2026 14:36:00 +0900"
+    },
+    {
+      "source": "BoanNews",
+      "category": "korea",
+      "title": "SKT, ‘FIDO 얼라이언스’ 이사회 임원사 선임",
+      "link": "http://www.boannews.com/media/view.asp?idx=141943&kind=&sub_kind=",
+      "date": "Fri, 6 Feb 2026 14:28:00 +0900"
+    },
+    {
+      "source": "BoanNews",
+      "category": "korea",
+      "title": "이스트시큐리티, 공인 파트너들에게 올해 전략 공유... ‘파트너 킥오프 2026’ 성료",
+      "link": "http://www.boannews.com/media/view.asp?idx=141941&kind=&sub_kind=",
+      "date": "Fri, 6 Feb 2026 14:09:00 +0900"
+    },
+    {
+      "source": "BoanNews",
+      "category": "korea",
+      "title": "휴네시온, 2025년 매출 377억 영업익 48억... 역대 최고 매출",
+      "link": "http://www.boannews.com/media/view.asp?idx=141940&kind=&sub_kind=",
+      "date": "Fri, 6 Feb 2026 13:48:00 +0900"
+    },
+    {
+      "source": "BoanNews",
+      "category": "korea",
+      "title": "[배종찬의 보안 빅데이터] 인간 뒷담화 AI ‘몰트북’, 인류 위기 예고편인가",
+      "link": "http://www.boannews.com/media/view.asp?idx=141926&kind=&sub_kind=",
+      "date": "Fri, 6 Feb 2026 13:32:00 +0900"
+    },
+    {
       "source": "AhnLab ASEC",
       "category": "korea",
       "title": "Ransom & Dark Web Issues 2026년 2월 1주차",
@@ -358,38 +883,38 @@
       "date": "2026-02-06"
     },
     {
-      "source": "ETNews",
+      "source": "AhnLab ASEC",
       "category": "korea",
-      "title": "GH, '경기 31 파트너스' 가동…31개 시·군 산업수요 전수조사",
-      "link": "https://www.etnews.com/20260206000351",
+      "title": "Notepad++ 도구를 위장해 유포 중인 Proxyware",
+      "link": "https://asec.ahnlab.com/ko/92163/",
       "date": "2026-02-06"
     },
     {
-      "source": "ETNews",
+      "source": "AhnLab ASEC",
       "category": "korea",
-      "title": "사이버 공격, 신기술보다 더 중요한 건...",
-      "link": "https://www.etnews.com/20260206000013",
+      "title": "2025년 12월 APT 그룹 동향 보고서",
+      "link": "https://asec.ahnlab.com/ko/92158/",
       "date": "2026-02-06"
     },
     {
-      "source": "ETNews",
+      "source": "AhnLab ASEC",
       "category": "korea",
-      "title": "고양시, K-컬처밸리 사업 지연에 깊은 유감 표명",
-      "link": "https://www.etnews.com/20260206000350",
+      "title": "국내 사용자들을 대상으로 유포 중인 Remcos RAT",
+      "link": "https://asec.ahnlab.com/ko/92135/",
       "date": "2026-02-06"
     },
     {
-      "source": "ETNews",
+      "source": "AhnLab ASEC",
       "category": "korea",
-      "title": "[부음] 이근만(전 청주대 전자정보공학부 교수)씨 별세",
-      "link": "https://www.etnews.com/20260206000349",
+      "title": "구글 플레이스토어 가상자산 거래소 규제 강화로 인한 보안 취약점·악성 앱 위험 증가",
+      "link": "https://asec.ahnlab.com/ko/92075/",
       "date": "2026-02-06"
     },
     {
-      "source": "ETNews",
+      "source": "AhnLab ASEC",
       "category": "korea",
-      "title": "고양시. 맞춤형버스 60번 폐선 후 시비 100% 대체노선 추진",
-      "link": "https://www.etnews.com/20260206000348",
+      "title": "Ransom & Dark Web Issues 2026년 1월 2주차",
+      "link": "https://asec.ahnlab.com/ko/92081/",
       "date": "2026-02-06"
     }
   ]

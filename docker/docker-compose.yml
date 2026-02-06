@@ -1,11 +1,11 @@
 version: '3.8'
 services:
-  soc-server:
+  firewall-web:
     image: nginx:alpine
-    container_name: omni-soc
+    container_name: omni-soc-server
     ports:
       - "8080:80"
     volumes:
-      - ../:/usr/share/nginx/html
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-    restart: always
+      - ../:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
