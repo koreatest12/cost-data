@@ -5,95 +5,90 @@ import datetime
 import json
 import os
 import re
-import sys
 import time
 import html
+import random
 
-# 1. RSS 피드 목록 정의 (죽은 링크 교체 및 검증된 소스)
+# [✅ 공식 주소 최신화 & 대량 추가]
 FEEDS = {
     "global": [
         ("BleepingComputer", "https://www.bleepingcomputer.com/feed/"),
         ("The Hacker News", "https://feeds.feedburner.com/TheHackersNews"),
-        # SecurityWeek 403 방지를 위해 User-Agent 필수, FeedBurner 대신 직접 링크 시도 가능하나 일단 유지
-        ("SecurityWeek", "https://feeds.feedburner.com/SecurityWeek"),
         ("CISA Alerts", "https://www.cisa.gov/uscert/ncas/alerts.xml"),
-        ("Krebs on Security", "https://krebsonsecurity.com/feed/"),
+        # MS: 블로그 대신 보안 응답 센터(MSRC) 공식 피드로 교체 (차단 우회)
+        ("Microsoft Security Response", "https://api.msrc.microsoft.com/update-guide/rss"),
+        ("Google Project Zero", "https://googleprojectzero.blogspot.com/feeds/posts/default"),
         ("Dark Reading", "https://www.darkreading.com/rss.xml"),
         ("NIST NVD", "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml"),
+        ("Threatpost", "https://threatpost.com/feed/"),
+        ("Trend Micro", "https://www.trendmicro.com/rss/index.xml"),
+        ("Symantec", "https://www.broadcom.com/rss/security-response/threats.xml"),
     ],
     "korea": [
-        # DailySecu 404 대체 -> ITWorld 보안 뉴스
-        ("ITWorld Korea", "https://www.itworld.co.kr/rss/topic/t/54"), 
-        ("BoanNews", "https://www.boannews.com/media/news_rss.xml"), 
-        # KISA 파싱 에러 방지를 위한 강력한 전처리 적용 예정
-        ("KISA KrCERT", "https://www.krcert.or.kr/rss/rss.do"),
+        ("BoanNews", "https://www.boannews.com/media/news_rss.xml"),
         ("AhnLab ASEC", "https://asec.ahnlab.com/ko/feed/"),
+        # ZDNet: 죽은 링크(404) -> 보안 섹션 메인 RSS로 교체
+        ("ZDNet Korea", "https://zdnet.co.kr/rss/sec"),
+        ("ETNews", "https://rss.etnews.com/Section902.xml"),
+        ("KISA KrCERT", "https://www.krcert.or.kr/rss/rss.do"),
     ]
 }
 
-# 2. XML 클리닝 함수 (KISA 등 깨진 XML 자동 복구)
+# [✅ 방화벽 우회용 헤더 로테이션]
+USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/18.19582'
+]
+
 def clean_xml_content(raw_str):
     if not raw_str: return ""
-    
-    # (1) XML 선언부 제거 (인코딩 충돌 방지)
+    # 1. XML 선언 제거
     cleaned = re.sub(r'<\?xml.*?\?>', '', raw_str)
-    
-    # (2) CDATA 섹션 보호 (내용은 건드리지 않음)
-    # 정규식으로 CDATA 밖의 특수문자만 처리하기는 복잡하므로, 
-    # 여기서는 가장 흔한 오류인 & (Ampersand) 만 처리합니다.
-    # &amp;, &lt; 등 이미 이스케이프 된 것은 놔두고, 독립된 &만 변환
+    # 2. HTML Doctype 감지 (WAF 차단 페이지 필터링)
+    if "<!DOCTYPE" in cleaned or "<html" in cleaned:
+        return None
+    # 3. 특수문자 및 엔티티 처리
     cleaned = re.sub(r'&(?!(?:[a-zA-Z][a-zA-Z0-9]*|#\d+|#x[0-9a-fA-F]+);)', '&amp;', cleaned)
-    
-    # (3) 제어 문자 제거
-    cleaned = "".join(ch for ch in cleaned if (0x20 <= ord(ch) <= 0xD7FF) or (0xE000 <= ord(ch) <= 0xFFFD) or ch in "\t\r\n")
-    
     return cleaned.strip()
 
-# 3. 데이터 가져오기 (재시도 로직 포함)
-def fetch_feed_content(url, retries=2):
-    # 최신 브라우저 User-Agent 시뮬레이션
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Referer': 'https://www.google.com/'
-    }
-    
+def fetch_feed_content(url, retries=3):
     for attempt in range(retries + 1):
+        headers = {
+            'User-Agent': random.choice(USER_AGENTS),
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+            'Referer': 'https://www.google.com/',
+            'Cache-Control': 'no-cache'
+        }
         try:
+            # [✅ 서버 부하 방지용 지연]
+            time.sleep(random.uniform(1.0, 3.0))
+            
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=15) as response:
+            with urllib.request.urlopen(req, timeout=25) as response:
                 raw_data = response.read()
                 
-                # 인코딩 자동 감지
+                # 인코딩 자동 감지 (EUC-KR 대응)
                 decoded_data = None
                 encodings = ['utf-8', 'euc-kr', 'cp949', 'latin-1']
-                
                 for enc in encodings:
                     try:
                         decoded_data = raw_data.decode(enc)
                         break
-                    except UnicodeDecodeError:
-                        continue
+                    except: continue
                 
-                if not decoded_data:
-                    print(f"    ⚠️ Failed to decode content from {url}")
-                    return None
+                if not decoded_data: return None
                 
-                return clean_xml_content(decoded_data)
-                
-        except urllib.error.HTTPError as e:
-            if e.code == 403:
-                print(f"    ⚠️ HTTP 403 Forbidden (Blocked) - Attempt {attempt+1}")
-            elif e.code == 404:
-                print(f"    ❌ HTTP 404 Not Found (Dead Link)")
-                return None # 404는 재시도해도 소용없음
-            else:
-                print(f"    ⚠️ HTTP Error {e.code} - Attempt {attempt+1}")
-        except Exception as e:
-            print(f"    ⚠️ Connection Error: {e} - Attempt {attempt+1}")
-        
-        time.sleep(2) # 재시도 전 대기
+                cleaned = clean_xml_content(decoded_data)
+                if cleaned is None:
+                    print(f"    ⚠️ Blocked by WAF (HTML Response)")
+                    continue # 재시도
+                return cleaned
 
+        except Exception as e:
+            print(f"    ⚠️ Retry {attempt+1}/{retries}: {e}")
+            
     return None
 
 def parse_feeds():
@@ -107,54 +102,45 @@ def parse_feeds():
             print(f"  Fetching [{category}] {name}...")
             xml_str = fetch_feed_content(url)
             
-            if not xml_str:
+            if not xml_str: 
+                print("    ❌ Failed to fetch.")
                 continue
 
             try:
-                # XML 파싱
-                root = ET.fromstring(f"<root>{xml_str}</root>") if not xml_str.startswith('<rss') and not xml_str.startswith('<feed') else ET.fromstring(xml_str)
-                
-                # RSS(item) 와 Atom(entry) 모두 지원
+                # XML 네임스페이스 제거 (파싱 오류 방지)
+                xml_str = re.sub(r'\sxmlns="[^"]+"', '', xml_str, count=1)
+                root = ET.fromstring(xml_str)
                 items = root.findall('.//item') + root.findall('.//entry')
                 count = 0
                 
-                for item in items[:5]: # 최신 5개
-                    title_node = item.find('title')
-                    link_node = item.find('link')
-                    date_node = item.find('pubDate') or item.find('updated') or item.find('dc:date', {'dc': 'http://purl.org/dc/elements/1.1/'})
+                for item in items[:5]: # 최신 5건
+                    title = item.find('title')
+                    link = item.find('link')
+                    pubDate = item.find('pubDate') or item.find('updated') or item.find('dc:date', {'dc': 'http://purl.org/dc/elements/1.1/'})
                     
-                    if title_node is not None:
-                        # Atom feed link 처리
-                        link_text = ""
-                        if link_node is not None:
-                            if 'href' in link_node.attrib:
-                                link_text = link_node.attrib['href']
-                            else:
-                                link_text = link_node.text
-                        
+                    # 링크 추출 로직 강화
+                    link_url = ""
+                    if link is not None:
+                        link_url = link.attrib.get('href') if 'href' in link.attrib else link.text
+
+                    if title is not None:
                         news_item = {
                             "source": name,
                             "category": category,
-                            "title": html.unescape(title_node.text.strip()) if title_node.text else "No Title",
-                            "link": link_text.strip() if link_text else "#",
-                            "date": date_node.text.strip() if date_node is not None and date_node.text else str(datetime.date.today())
+                            "title": html.unescape(title.text.strip()),
+                            "link": link_url.strip() if link_url else "#",
+                            "date": pubDate.text.strip() if pubDate is not None and pubDate.text else str(datetime.date.today())
                         }
                         collected_news.append(news_item)
                         count += 1
                 
-                print(f"    -> {count} articles collected")
+                print(f"    -> {count} collected")
                 if category == 'global': global_cnt += count
                 else: korea_cnt += count
                 total += count
 
-            except ET.ParseError as e:
-                print(f"    ❌ XML Parse Error for {name}: {e}")
-                # 디버깅용: 문제가 된 XML 앞부분 출력
-                print(f"       (XML Snippet): {xml_str[:100]}...")
-                continue
             except Exception as e:
-                print(f"    ❌ Unknown Error for {name}: {e}")
-                continue
+                print(f"    ❌ Parse Error: {e}")
 
     return collected_news, total, global_cnt, korea_cnt
 
@@ -162,7 +148,7 @@ def save_data(news_data, total, g_cnt, k_cnt):
     today = datetime.datetime.now().strftime('%Y-%m-%d')
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
-    # 1. JSON 저장
+    # JSON 저장
     json_path = f"data/news/news_{today}.json"
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump({
@@ -172,51 +158,30 @@ def save_data(news_data, total, g_cnt, k_cnt):
             "articles": news_data
         }, f, ensure_ascii=False, indent=2)
 
-    # 2. Markdown DB 업데이트
-    md_path = "DB/total_news_history.md"
-    mode = 'a' if os.path.exists(md_path) else 'w'
-    with open(md_path, mode, encoding='utf-8') as f:
-        if mode == 'w': f.write("# 🛡️ Daily Security News History\n\n")
-        f.write(f"## 📅 {today} ({total} Articles)\n")
-        f.write(f"**Updated:** {timestamp} | **Global:** {g_cnt} | **Korea:** {k_cnt}\n\n")
-        for news in news_data:
-            flag = "🌍" if news['category'] == 'global' else "🇰🇷"
-            f.write(f"- {flag} **[{news['source']}]** [{news['title']}]({news['link']})\n")
-        f.write("\n---\n\n")
-
-    # 3. Index JSON 업데이트
+    # Index JSON 업데이트
     index_path = "data/news/news_index.json"
     index_data = {"last_updated": timestamp, "dates": []}
     if os.path.exists(index_path):
         try:
             with open(index_path, 'r', encoding='utf-8') as f: index_data = json.load(f)
         except: pass
-
+    
     index_data["dates"] = [d for d in index_data.get("dates", []) if d["date"] != today]
     index_data["dates"].insert(0, {"date": today, "total": total, "global": g_cnt, "korea": k_cnt})
     index_data["last_updated"] = timestamp
     
     with open(index_path, 'w', encoding='utf-8') as f:
         json.dump(index_data, f, ensure_ascii=False, indent=2)
-
-    # 4. GitHub Output
-    if os.getenv('GITHUB_OUTPUT'):
-        with open(os.getenv('GITHUB_OUTPUT'), 'a') as fh:
-            fh.write(f"date={today}\n")
-            fh.write(f"total_articles={total}\n")
-            fh.write(f"global_count={g_cnt}\n")
-            fh.write(f"korea_count={k_cnt}\n")
+        
+    print(f"\n✅ Data Saved: {json_path}")
 
 def main():
-    print("[Daily Security News Generator]")
-    print(f"Timestamp: {datetime.datetime.now()}")
+    print("[Omni-Intelligence SOC Engine]")
     news, total, g_cnt, k_cnt = parse_feeds()
-    
     if total > 0:
         save_data(news, total, g_cnt, k_cnt)
-        print(f"\n✅ Successfully saved {total} articles.")
     else:
-        print("\n⚠️ No news collected. Check connections.")
-    
+        print("⚠️ No data collected (Network or WAF issues).")
+
 if __name__ == "__main__":
     main()

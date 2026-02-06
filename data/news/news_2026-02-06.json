@@ -1,10 +1,10 @@
 {
   "date": "2026-02-06",
-  "timestamp": "2026-02-06 13:00:58",
+  "timestamp": "2026-02-06 13:09:17",
   "stats": {
-    "total": 40,
-    "global": 30,
-    "korea": 10
+    "total": 55,
+    "global": 40,
+    "korea": 15
   },
   "articles": [
     {
@@ -78,41 +78,6 @@
       "date": "2026-02-06"
     },
     {
-      "source": "SecurityWeek",
-      "category": "global",
-      "title": "Flickr Security Incident Tied to Third-Party Email System",
-      "link": "https://www.securityweek.com/flickr-security-incident-tied-to-third-party-email-system/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "global",
-      "title": "Living off the AI: The Next Evolution of Attacker Tradecraft",
-      "link": "https://www.securityweek.com/living-off-the-ai-the-next-evolution-of-attacker-tradecraft/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "global",
-      "title": "In Other News: Record DDoS, Epstein’s Hacker, ESET Product Vulnerabilities",
-      "link": "https://www.securityweek.com/in-other-news-record-ddos-epsteins-hacker-eset-product-vulnerabilities/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "global",
-      "title": "Airrived Emerges From Stealth With $6.1 Million in Funding",
-      "link": "https://www.securityweek.com/airrived-emerges-from-stealth-with-6-1-million-in-funding/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "global",
-      "title": "‘DKnife’ Implant Used by Chinese Threat Actor for Adversary-in-the-Middle Attacks",
-      "link": "https://www.securityweek.com/dknife-implant-used-by-chinese-threat-actor-for-adversary-in-the-middle-attacks/",
-      "date": "2026-02-06"
-    },
-    {
       "source": "CISA Alerts",
       "category": "global",
       "title": "Publicly Available Tools Seen in Cyber Incidents Worldwide",
@@ -148,38 +113,73 @@
       "date": "2026-02-06"
     },
     {
-      "source": "Krebs on Security",
+      "source": "Microsoft Security Response",
       "category": "global",
-      "title": "Please Don’t Feed the Scattered Lapsus ShinyHunters",
-      "link": "https://krebsonsecurity.com/2026/02/please-dont-feed-the-scattered-lapsus-shiny-hunters/",
+      "title": "CVE-2026-24302 Azure Arc Elevation of Privilege Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-24302",
       "date": "2026-02-06"
     },
     {
-      "source": "Krebs on Security",
+      "source": "Microsoft Security Response",
       "category": "global",
-      "title": "Who Operates the Badbox 2.0 Botnet?",
-      "link": "https://krebsonsecurity.com/2026/01/who-operates-the-badbox-2-0-botnet/",
+      "title": "CVE-2026-21532 Azure Function Information Disclosure Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-21532",
       "date": "2026-02-06"
     },
     {
-      "source": "Krebs on Security",
+      "source": "Microsoft Security Response",
       "category": "global",
-      "title": "Kimwolf Botnet Lurking in Corporate, Govt. Networks",
-      "link": "https://krebsonsecurity.com/2026/01/kimwolf-botnet-lurking-in-corporate-govt-networks/",
+      "title": "CVE-2026-24300 Azure Front Door Elevation of Privilege Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-24300",
       "date": "2026-02-06"
     },
     {
-      "source": "Krebs on Security",
+      "source": "Microsoft Security Response",
       "category": "global",
-      "title": "Patch Tuesday, January 2026 Edition",
-      "link": "https://krebsonsecurity.com/2026/01/patch-tuesday-january-2026-edition/",
+      "title": "CVE-2026-0391 Microsoft Edge (Chromium-based) for Android Spoofing Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-0391",
       "date": "2026-02-06"
     },
     {
-      "source": "Krebs on Security",
+      "source": "Microsoft Security Response",
       "category": "global",
-      "title": "Who Benefited from the Aisuru and Kimwolf Botnets?",
-      "link": "https://krebsonsecurity.com/2026/01/who-benefited-from-the-aisuru-and-kimwolf-botnets/",
+      "title": "Chromium: CVE-2026-1861 Heap buffer overflow in libvpx",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-1861",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "Breaking the Sound Barrier, Part II: Exploiting CVE-2024-54529",
+      "link": "https://projectzero.google/2026/01/sound-barrier-2.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "Bypassing Windows Administrator Protection",
+      "link": "https://projectzero.google/2026/26/windows-administrator-protection.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "A 0-click exploit chain for the Pixel 9 Part 3: Where do we go from here?",
+      "link": "https://projectzero.google/2026/01/pixel-0-click-part-3.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "A 0-click exploit chain for the Pixel 9 Part 2: Cracking the Sandbox with a Big Wave",
+      "link": "https://projectzero.google/2026/01/pixel-0-click-part-2.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "global",
+      "title": "A 0-click exploit chain for the Pixel 9 Part 1: Decoding Dolby",
+      "link": "https://projectzero.google/2026/01/pixel-0-click-part-1.html",
       "date": "2026-02-06"
     },
     {
@@ -215,6 +215,76 @@
       "category": "global",
       "title": "Ransomware Gang Goes Full 'Godfather' With Cartel",
       "link": "https://www.darkreading.com/cyber-risk/ransomware-gang-full-godfather-cartel",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2017-20187",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2017-20187",
+      "date": "2023-11-05T21:15:09Z"
+    },
+    {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2017-7252",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2017-7252",
+      "date": "2023-11-03T01:15:07Z"
+    },
+    {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2018-25092",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2018-25092",
+      "date": "2023-11-05T21:15:09Z"
+    },
+    {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2018-25093",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2018-25093",
+      "date": "2023-11-06T01:15:08Z"
+    },
+    {
+      "source": "NIST NVD",
+      "category": "global",
+      "title": "CVE-2020-28407",
+      "link": "https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2020-28407",
+      "date": "2023-11-03T04:15:15Z"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "Student Loan Breach Exposes 2.5M Records",
+      "link": "https://threatpost.com/student-loan-breach-exposes-2-5m-records/180492/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "Watering Hole Attacks Push ScanBox Keylogger",
+      "link": "https://threatpost.com/watering-hole-attacks-push-scanbox-keylogger/180490/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "Tentacles of ‘0ktapus’ Threat Group Victimize 130 Firms",
+      "link": "https://threatpost.com/0ktapus-victimize-130-firms/180487/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "Ransomware Attacks are on the Rise",
+      "link": "https://threatpost.com/ransomware-attacks-are-on-the-rise/180481/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Threatpost",
+      "category": "global",
+      "title": "Cybercriminals Are Selling Access to Chinese Surveillance Cameras",
+      "link": "https://threatpost.com/cybercriminals-are-selling-access-to-chinese-surveillance-cameras/180478/",
       "date": "2026-02-06"
     },
     {
@@ -285,6 +355,41 @@
       "category": "korea",
       "title": "2025년 12월 국내외 금융권 관련 보안 이슈",
       "link": "https://asec.ahnlab.com/ko/92190/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews",
+      "category": "korea",
+      "title": "GH, '경기 31 파트너스' 가동…31개 시·군 산업수요 전수조사",
+      "link": "https://www.etnews.com/20260206000351",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews",
+      "category": "korea",
+      "title": "사이버 공격, 신기술보다 더 중요한 건...",
+      "link": "https://www.etnews.com/20260206000013",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews",
+      "category": "korea",
+      "title": "고양시, K-컬처밸리 사업 지연에 깊은 유감 표명",
+      "link": "https://www.etnews.com/20260206000350",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews",
+      "category": "korea",
+      "title": "[부음] 이근만(전 청주대 전자정보공학부 교수)씨 별세",
+      "link": "https://www.etnews.com/20260206000349",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews",
+      "category": "korea",
+      "title": "고양시. 맞춤형버스 60번 폐선 후 시비 100% 대체노선 추진",
+      "link": "https://www.etnews.com/20260206000348",
       "date": "2026-02-06"
     }
   ]
