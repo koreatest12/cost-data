@@ -1,7 +1,7 @@
 {
   "meta": {
     "date": "2026-02-06",
-    "timestamp": "2026-02-06 13:25:19",
+    "timestamp": "2026-02-06 23:35:22",
     "stats": {
       "total": 265,
       "categories": {
@@ -13,6 +13,41 @@
     }
   },
   "articles": [
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Germany warns of Signal account hijacking targeting senior figures",
+      "link": "https://www.bleepingcomputer.com/news/security/germany-warns-of-signal-account-hijacking-targeting-senior-figures/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "DKnife Linux toolkit hijacks router traffic to spy, deliver malware",
+      "link": "https://www.bleepingcomputer.com/news/security/dknife-linux-toolkit-hijacks-router-traffic-to-spy-deliver-malware/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "CISA warns of SmarterMail RCE flaw used in ransomware attacks",
+      "link": "https://www.bleepingcomputer.com/news/security/cisa-warns-of-smartermail-rce-flaw-used-in-ransomware-attacks/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "EDR, Email, and SASE Miss This Entire Class of Browser Attacks",
+      "link": "https://www.bleepingcomputer.com/news/security/edr-email-and-sase-miss-this-entire-class-of-browser-attacks/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "EU says TikTok faces large fine over \"addictive design\"",
+      "link": "https://www.bleepingcomputer.com/news/security/european-commission-says-tiktok-facing-fine-over-addictive-design/",
+      "date": "2026-02-06"
+    },
     {
       "source": "BleepingComputer",
       "category": "GLOBAL_TIER_1",
@@ -84,38 +119,17 @@
       "date": "2026-02-06"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Data breach at fintech firm Betterment exposes 1.4 million accounts",
-      "link": "https://www.bleepingcomputer.com/news/security/data-breach-at-fintech-firm-betterment-exposes-14-million-accounts/",
+      "title": "China-Linked DKnife AitM Framework Targets Routers for Traffic Hijacking, Malware Delivery",
+      "link": "https://thehackernews.com/2026/02/china-linked-dknife-aitm-framework.html",
       "date": "2026-02-06"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Zendesk spam wave returns, floods users with 'Activate account' emails",
-      "link": "https://www.bleepingcomputer.com/news/security/zendesk-spam-wave-returns-floods-users-with-activate-account-emails/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "BleepingComputer",
-      "category": "GLOBAL_TIER_1",
-      "title": "Hackers compromise NGINX servers to redirect user traffic",
-      "link": "https://www.bleepingcomputer.com/news/security/hackers-compromise-nginx-servers-to-redirect-user-traffic/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "BleepingComputer",
-      "category": "GLOBAL_TIER_1",
-      "title": "Critical n8n flaws disclosed along with public exploits",
-      "link": "https://www.bleepingcomputer.com/news/security/critical-n8n-flaws-disclosed-along-with-public-exploits/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "BleepingComputer",
-      "category": "GLOBAL_TIER_1",
-      "title": "CISA: VMware ESXi flaw now exploited in ransomware attacks",
-      "link": "https://www.bleepingcomputer.com/news/security/cisa-vmware-esxi-flaw-now-exploited-in-ransomware-attacks/",
+      "title": "CISA Orders Removal of Unsupported Edge Devices to Reduce Federal Network Risk",
+      "link": "https://thehackernews.com/2026/02/cisa-orders-removal-of-unsupported-edge.html",
       "date": "2026-02-06"
     },
     {
@@ -245,24 +259,24 @@
       "date": "2026-02-06"
     },
     {
-      "source": "The Hacker News",
+      "source": "Dark Reading",
       "category": "GLOBAL_TIER_1",
-      "title": "Docker Fixes Critical Ask Gordon AI Flaw Allowing Code Execution via Image Metadata",
-      "link": "https://thehackernews.com/2026/02/docker-fixes-critical-ask-gordon-ai.html",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "[Webinar] The Smarter SOC Blueprint: Learn What to Build, Buy, and Automate",
-      "link": "https://thehackernews.com/2026/02/webinar-smarter-soc-blueprint-learn.html",
+      "title": "'Encrypt It Already' Campaign Pushes Big Tech to Prioritize E2E Encryption",
+      "link": "https://www.darkreading.com/cloud-security/encrypt-it-already-pushes-big-tech-e2e-encryption",
       "date": "2026-02-06"
     },
     {
       "source": "Dark Reading",
       "category": "GLOBAL_TIER_1",
-      "title": "Data Tool to Triage Exploited Vulnerabilities Can Make KEV More Useful",
-      "link": "https://www.darkreading.com/threat-intelligence/data-tool-triage-exploited-vulnerabilities-make-kev-catalog-more-useful",
+      "title": "Shai-hulud: The Hidden Cost of Supply Chain Attacks",
+      "link": "https://www.darkreading.com/application-security/shai-hulud-hidden-cost-supply-chain-attacks",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "OpenClaw's Gregarious Insecurities Make Safe Usage Difficult",
+      "link": "https://www.darkreading.com/application-security/openclaw-insecurities-safe-usage-difficult",
       "date": "2026-02-06"
     },
     {
@@ -277,6 +291,13 @@
       "category": "GLOBAL_TIER_1",
       "title": "Agentic AI Site 'Moltbook' Is Riddled With Security Risks",
       "link": "https://www.darkreading.com/cyber-risk/agentic-ai-moltbook-security-risks",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Data Tool to Triage Exploited Vulnerabilities Can Make KEV More Useful",
+      "link": "https://www.darkreading.com/threat-intelligence/data-tool-triage-exploited-vulnerabilities-make-kev-catalog-more-useful",
       "date": "2026-02-06"
     },
     {
@@ -378,27 +399,6 @@
       "date": "2026-02-06"
     },
     {
-      "source": "Dark Reading",
-      "category": "GLOBAL_TIER_1",
-      "title": "County Pays $600K to Wrongfully Jailed Pen Testers",
-      "link": "https://www.darkreading.com/cybersecurity-operations/county-pays-600k-wrongfully-jailed-pen-testers",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "Dark Reading",
-      "category": "GLOBAL_TIER_1",
-      "title": "Chinese Hackers Hijack Notepad++ Updates for 6 Months",
-      "link": "https://www.darkreading.com/application-security/chinese-hackers-hijack-notepad-updates-6-months",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "Dark Reading",
-      "category": "GLOBAL_TIER_1",
-      "title": "ShinyHunters Expands Scope of SaaS Extortion Attacks",
-      "link": "https://www.darkreading.com/cyberattacks-data-breaches/shinyhunters-expands-scope-saas-extortion-attacks",
-      "date": "2026-02-06"
-    },
-    {
       "source": "SecurityWeek",
       "category": "GLOBAL_TIER_1",
       "title": "Flickr Security Incident Tied to Third-Party Email System",
@@ -466,6 +466,20 @@
       "category": "GLOBAL_TIER_1",
       "title": "Substack Discloses Security Incident After Hacker Leaks Data",
       "link": "https://www.securityweek.com/substack-discloses-security-incident-after-hacker-leaks-data/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Senator, who has repeatedly warned about secret US government surveillance, sounds new alarm over ‘CIA activities’",
+      "link": "https://techcrunch.com/2026/02/06/senator-who-has-repeatedly-warned-about-secret-u-s-government-surveillance-sounds-new-alarm-over-cia-activities/",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "China’s Salt Typhoon hackers broke into Norwegian companies",
+      "link": "https://techcrunch.com/2026/02/06/chinas-salt-typhoon-hackers-broke-into-norwegian-companies/",
       "date": "2026-02-06"
     },
     {
@@ -595,17 +609,10 @@
       "date": "2026-02-06"
     },
     {
-      "source": "TechCrunch Security",
+      "source": "Wired Security",
       "category": "GLOBAL_TIER_1",
-      "title": "Researchers say Russian government hackers were behind attempted Poland power outage",
-      "link": "https://techcrunch.com/2026/01/23/researchers-say-russian-government-hackers-were-behind-attempted-poland-power-outage/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "TechCrunch Security",
-      "category": "GLOBAL_TIER_1",
-      "title": "Microsoft gave FBI a set of BitLocker encryption keys to unlock suspects’ laptops: Reports",
-      "link": "https://techcrunch.com/2026/01/23/microsoft-gave-fbi-a-set-of-bitlocker-encryption-keys-to-unlock-suspects-laptops-reports/",
+      "title": "ICE Agent’s ‘Dragging’ Case May Help Expose Evidence in Renee Good Shooting",
+      "link": "https://www.wired.com/story/jonathan-ross-renee-good-roberto-carlos-munoz-guatemala/",
       "date": "2026-02-06"
     },
     {
@@ -739,13 +746,6 @@
       "category": "GLOBAL_TIER_1",
       "title": "DOGE May Have Misused Social Security Data, DOJ Admits",
       "link": "https://www.wired.com/story/security-news-this-week-doge-may-have-misused-social-security-data-doj-admits/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "Wired Security",
-      "category": "GLOBAL_TIER_1",
-      "title": "US Judge Rules ICE Raids Require Judicial Warrants, Contradicting Secret ICE Memo",
-      "link": "https://www.wired.com/story/us-judge-rules-ice-raids-require-judicial-warrants-contradicting-secret-ice-memo/",
       "date": "2026-02-06"
     },
     {
@@ -891,6 +891,13 @@
     {
       "source": "Microsoft Security",
       "category": "CLOUD_&_VENDOR",
+      "title": "Chromium: CVE-2026-1862 Type Confusion in V8",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-1862",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
       "title": "CVE-2026-24302 Azure Arc Elevation of Privilege Vulnerability",
       "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-24302",
       "date": "2026-02-06"
@@ -1022,13 +1029,6 @@
       "date": "2026-02-06"
     },
     {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-24305 Azure Entra ID Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-24305",
-      "date": "2026-02-06"
-    },
-    {
       "source": "Google Project Zero",
       "category": "CLOUD_&_VENDOR",
       "title": "Breaking the Sound Barrier, Part II: Exploiting CVE-2024-54529",
@@ -1096,6 +1096,13 @@
       "category": "CLOUD_&_VENDOR",
       "title": "Defeating KASLR by Doing Nothing at All",
       "link": "https://projectzero.google/2025/11/defeating-kaslr-by-doing-nothing-at-all.html",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Novel Technique to Detect Cloud Threat Actor Operations",
+      "link": "https://unit42.paloaltonetworks.com/tracking-threat-groups-through-cloud-logging/",
       "date": "2026-02-06"
     },
     {
@@ -1194,13 +1201,6 @@
       "category": "CLOUD_&_VENDOR",
       "title": "From Linear to Complex: An Upgrade in RansomHouse Encryption",
       "link": "https://unit42.paloaltonetworks.com/ransomhouse-encryption-upgrade/",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "Palo Alto Unit 42",
-      "category": "CLOUD_&_VENDOR",
-      "title": "Stay Secure: Why Cyber Hygiene Should Be Part of Your Personal Hygiene",
-      "link": "https://unit42.paloaltonetworks.com/cyber-hygiene/",
       "date": "2026-02-06"
     },
     {
@@ -1731,8 +1731,78 @@
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "GH, '경기 31 파트너스' 가동…31개 시·군 산업수요 전수조사",
-      "link": "https://www.etnews.com/20260206000351",
+      "title": "“밸런타인데이에 돈으로 꽃다발 만들면 감옥 간다”…징역 최대 7년형 경고",
+      "link": "https://www.etnews.com/20260207000004",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "중국 '훠궈 스파' 아시나요?…고추·피망 둥둥 떠 있는 매운 국물에 입수",
+      "link": "https://www.etnews.com/20260207000003",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "[속보] 트럼프 “이란과 거래하는 나라에 추가 관세” 행정명령",
+      "link": "https://www.etnews.com/20260207000002",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "머스크, 우주 데이터센터 파트너는 중국?…스페이스X· 테슬라 中기업 접촉",
+      "link": "https://www.etnews.com/20260206000314",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "로봇 약사 시대? 약국 속 일하는 로봇 등장",
+      "link": "https://www.etnews.com/20260206000242",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "K-콘택트렌즈업계, “글로벌 시장도 통했다” 역대급 실적 예고",
+      "link": "https://www.etnews.com/20260206000114",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "빗썸, 비정상 비트코인 지급 공식 사과…“5분 내 정상화, 연쇄 청산 없었다”",
+      "link": "https://www.etnews.com/20260207000001",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "권혁우 더불어민주당 수원시장 출마 선언, AI 시민주권 정부 제시",
+      "link": "https://www.etnews.com/20260206000355",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "“화성 106만 시민 기다린다”…진석범, 속도 행정 출정식",
+      "link": "https://www.etnews.com/20260206000354",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "'2000원'이 '2000BTC'로…빗썸 오입금 사고에 비트코인 8100만원대 급락 쇼크",
+      "link": "https://www.etnews.com/20260206000353",
+      "date": "2026-02-06"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "태어난 지 이틀 된 신생아, 클래식 음악 들려주니 “리듬 타”",
+      "link": "https://www.etnews.com/20260206000225",
       "date": "2026-02-06"
     },
     {
@@ -1796,76 +1866,6 @@
       "category": "KOREA_OFFICIAL",
       "title": "iM금융, 지난해 순이익 4439억원…증권 흑자 전환 주효",
       "link": "https://www.etnews.com/20260206000342",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "[ET포토] 빌리 시윤-츠키-문수아, '계절 착각을 부르는 외출'",
-      "link": "https://www.etnews.com/20260206000339",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "[ET포토] 빌리 시윤-츠키-문수아, '화이트 엔젤'",
-      "link": "https://www.etnews.com/20260206000338",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "[ET포토] 장재인, '분위기 스타일 모두 완벽'",
-      "link": "https://www.etnews.com/20260206000337",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "[ET포토] 장재인, '과감하게 속옷 노출한 복근 패션'",
-      "link": "https://www.etnews.com/20260206000335",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "[ET포토] 장재인, '화이트 뷰티'",
-      "link": "https://www.etnews.com/20260206000334",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "[ET포토] 이은미, '바이크 재킷으로 멋내고'",
-      "link": "https://www.etnews.com/20260206000332",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "산기협, 2026년도 '기술경영인상' 수상자 12명에 시상",
-      "link": "https://www.etnews.com/20260206000333",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "엔피케이, 장 건강기능성 식품  '다이소' 진출 노린다…대량생산 체제 완성",
-      "link": "https://www.etnews.com/20260206000331",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "[ET포토] 이은미, '웃음속 카리스마'",
-      "link": "https://www.etnews.com/20260206000330",
-      "date": "2026-02-06"
-    },
-    {
-      "source": "ETNews Security",
-      "category": "KOREA_OFFICIAL",
-      "title": "[ET포토] 박지안, '화려한 패션'",
-      "link": "https://www.etnews.com/20260206000329",
       "date": "2026-02-06"
     }
   ]
