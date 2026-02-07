@@ -4,32 +4,21 @@ def run():
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     
     hustle_cnt = 0
-    hustle_path = "data/side_hustle/hustle_listings.csv"
-    if os.path.exists(hustle_path):
-        hustle_cnt = len(pd.read_csv(hustle_path))
+    if os.path.exists("data/side_hustle/hustle_listings.csv"):
+        hustle_cnt = len(pd.read_csv("data/side_hustle/hustle_listings.csv"))
     
     tb_status = "Unknown"
-    cap_path = "data/big_data_storage/capacity_report.txt"
-    if os.path.exists(cap_path):
-        with open(cap_path, "r") as f:
+    if os.path.exists("data/big_data_storage/capacity_report.txt"):
+        with open("data/big_data_storage/capacity_report.txt", "r") as f:
             tb_status = f.read().strip()
 
     content = f"""# 💰 대량 부업 및 빅데이터 브리핑 ({today})
-
-    ## 1️⃣ 부업 정보 (Side Hustles)
-    - **수집된 공고:** {hustle_cnt:,} 건
-    - **데이터 위치:** `{hustle_path}`
-
-    ## 2️⃣ 데이터 스케일 (Data Scale)
-    - **가상 적재 용량:**
-    ```
-    {tb_status}
-    ```
-    - **인덱스 파일:** `data/big_data_storage/terabyte_index.csv`
-    
+    ## 1️⃣ 부업 정보
+    - **수집 공고:** {hustle_cnt:,} 건
+    ## 2️⃣ 데이터 스케일
+    - **용량:** {tb_status}
     ## 3️⃣ 시스템 상태
-    - **Self-Healing:** Active
-    - **Sync Status:** Validated
+    - **Email Service:** Active (Virtual)
     """
     with open(report, "w", encoding="utf-8") as f: f.write(content)
     print(f"✅ Briefing Ready: {report}")

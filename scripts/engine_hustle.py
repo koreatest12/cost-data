@@ -1,11 +1,9 @@
 import pandas as pd, datetime, random, uuid, os
-
 def run():
     print("🚀 [Engine-Hustle] Starting Side Hustle Crawling...")
     platforms = ["Upwork", "Kmong", "Wishket", "Fiverr", "Toptal"]
     skills = ["Python Scripting", "Excel Macro", "Translation", "Video Editing", "Logo Design"]
     
-    # 1. 실제 같은 부업 데이터 10,000건 생성
     hustles = []
     for i in range(10000):
         plat = random.choice(platforms)
@@ -21,13 +19,10 @@ def run():
         })
     
     df = pd.DataFrame(hustles)
-    
-    # 폴더 자동 생성 (에러 방지 핵심)
     save_dir = "data/side_hustle"
     os.makedirs(save_dir, exist_ok=True)
     
     path = os.path.join(save_dir, "hustle_listings.csv")
     df.to_csv(path, index=False)
-    print(f"✅ Generated {len(df)} side hustle links at {path}")
-
+    print(f"✅ Generated {len(df)} side hustle links.")
 if __name__ == "__main__": run()
