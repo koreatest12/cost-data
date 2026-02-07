@@ -1,4 +1,4 @@
-name: Enterprise System Upgrade & Massive Scale Ops
+name: Enterprise Integration & Massive Ops
 
 on:
   schedule:
@@ -13,31 +13,40 @@ permissions:
 
 jobs:
   # ------------------------------------------------------------------
-  # JOB 1: 인프라 구축, 서비스 배포, 시스템 업그레이드
+  # JOB 1: 인프라 구축, 외부 데이터 통합, 시스템 배포
   # ------------------------------------------------------------------
   ops-simulation:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout Main Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # [NEW] 외부 리포지토리(비용/프로그램 데이터) 클론
+      - name: Checkout External Cost Data
+        uses: actions/checkout@v4
+        with:
+          repository: koreatest12/cost-data
+          path: cost_data_repo
+          fetch-depth: 1
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # [1] 마스터 운영 엔진 생성 (Python)
+      # [1] 통합 마스터 운영 엔진 (Python)
       - name: Generate Master Ops Engine
         run: |
           cat << 'EOF' > ops_engine.py
           import os, sqlite3, random, uuid, json, datetime, shutil
 
+          # --- 설정 ---
           ROOT_DIR = "infra_datacenter"
+          EXTERNAL_REPO = "cost_data_repo"
           DB_PATH = os.path.join(ROOT_DIR, "central_management.db")
           
-          # 서비스 정의 (Microservices)
           SERVICES = {
               "frontend-web": 20,
               "backend-api": 30,
@@ -62,35 +71,31 @@ jobs:
                       hostname = f"{svc}-node-{i:03d}"
                       base_path = os.path.join(ROOT_DIR, "servers", svc, hostname)
                       
-                      # 1. 서버 디렉토리 생성 (설치)
+                      # 서버 디렉토리 구조 (표준 리눅스 구조)
                       os.makedirs(os.path.join(base_path, "etc"), exist_ok=True)
                       os.makedirs(os.path.join(base_path, "var/log"), exist_ok=True)
                       os.makedirs(os.path.join(base_path, "opt/app/bin"), exist_ok=True)
                       os.makedirs(os.path.join(base_path, "opt/app/data"), exist_ok=True)
+                      os.makedirs(os.path.join(base_path, "opt/app/external_modules"), exist_ok=True) # 외부 모듈 적재 경로
 
-                      # 2. 초기 설정 파일 배포 (v1.0)
+                      # 기본 설정 파일
                       config = {
                           "hostname": hostname,
                           "role": svc,
                           "version": "1.0.0",
                           "ip": f"10.0.{random.randint(1,255)}.{random.randint(1,255)}",
-                          "max_connections": 5000
+                          "resources": {"cpu": "4vCPU", "mem": "16GB"}
                       }
                       with open(os.path.join(base_path, "etc", "config.json"), "w") as f:
                           json.dump(config, f, indent=2)
                       
-                      # 3. 바이너리 파일 시뮬레이션
-                      with open(os.path.join(base_path, "opt/app/bin", "service_exec"), "w") as f:
-                          f.write(f"BINARY_DATA_V1_{uuid.uuid4()}")
-                          
                       total_servers += 1
               
-              log(f"✅ [Install] Successfully provisioned {total_servers} servers.")
+              log(f"✅ [Install] Provisioned {total_servers} servers.")
               return total_servers
 
           def perform_system_upgrade():
-              log("🚀 [Upgrade] Starting System-wide Patch (v1.0 -> v2.1)...")
-              
+              log("🚀 [Upgrade] System-wide Patch & Backup (v1.0 -> v2.1)...")
               upgrade_count = 0
               server_root = os.path.join(ROOT_DIR, "servers")
               
@@ -100,61 +105,69 @@ jobs:
                       host_path = os.path.join(svc_path, host)
                       config_path = os.path.join(host_path, "etc", "config.json")
                       
-                      # 1. 백업 수행 (Backup)
-                      backup_path = os.path.join(ROOT_DIR, "backups", f"{host}_v1.bkp")
-                      shutil.copy(config_path, backup_path)
+                      # 백업
+                      shutil.copy(config_path, os.path.join(ROOT_DIR, "backups", f"{host}_v1.bkp"))
                       
-                      # 2. 설정 업데이트 (Upgrade)
-                      with open(config_path, "r") as f:
-                          data = json.load(f)
-                      
+                      # 업그레이드
+                      with open(config_path, "r") as f: data = json.load(f)
                       data['version'] = "2.1.0-stable"
-                      data['last_patched'] = str(datetime.datetime.now())
-                      data['security_level'] = "ENFORCED"
-                      
-                      with open(config_path, "w") as f:
-                          json.dump(data, f, indent=2)
-                          
-                      # 3. 로그 기록
-                      with open(os.path.join(host_path, "var/log", "system.log"), "a") as f:
-                          f.write(f"INFO: Patch applied successfully at {datetime.datetime.now()}\n")
+                      data['patched_at'] = str(datetime.datetime.now())
+                      with open(config_path, "w") as f: json.dump(data, f, indent=2)
                           
                       upgrade_count += 1
+              log(f"✨ [Complete] Upgraded {upgrade_count} nodes.")
+
+          def integrate_external_data():
+              log(f"📦 [External] Integrating resources from '{EXTERNAL_REPO}'...")
               
-              log(f"✨ [Complete] Upgraded {upgrade_count} servers to v2.1.0.")
+              conn = sqlite3.connect(DB_PATH)
+              cur = conn.cursor()
+              cur.execute("CREATE TABLE IF NOT EXISTS external_deployments (id TEXT, filename TEXT, target_server TEXT, path TEXT, deployed_at TEXT)")
+              
+              deployed_files = 0
+              
+              if not os.path.exists(EXTERNAL_REPO):
+                  log("⚠️ External repository not found. Skipping integration.")
+                  return
+
+              # 외부 리포지토리의 모든 파일 탐색
+              for root, dirs, files in os.walk(EXTERNAL_REPO):
+                  if ".git" in root: continue # git 폴더 제외
+                  
+                  for file in files:
+                      src_file = os.path.join(root, file)
+                      
+                      # 시뮬레이션: 각 파일을 무작위 서버 5대에 '추가 패키지'로 배포
+                      # 데이터 분석 서버와 백엔드 서버에 집중 배포
+                      target_types = ["backend-api", "data-analytics"]
+                      
+                      for svc_type in target_types:
+                          servers = os.listdir(os.path.join(ROOT_DIR, "servers", svc_type))
+                          selected_hosts = random.sample(servers, min(len(servers), 3)) # 각 타입별 3대 선정
+                          
+                          for host in selected_hosts:
+                              dest_dir = os.path.join(ROOT_DIR, "servers", svc_type, host, "opt/app/external_modules")
+                              shutil.copy(src_file, os.path.join(dest_dir, file))
+                              
+                              # DB에 배포 이력 기록
+                              cur.execute("INSERT INTO external_deployments VALUES (?,?,?,?,?)", 
+                                          (str(uuid.uuid4()), file, host, dest_dir, str(datetime.datetime.now())))
+                              deployed_files += 1
+
+              conn.commit()
+              conn.close()
+              log(f"✅ [External] Deployed {deployed_files} external artifacts to infrastructure.")
 
           def inject_massive_data():
-              log("💾 [DB] Injecting Massive Service Data...")
+              log("💾 [DB] Injecting Massive Transaction Data...")
               conn = sqlite3.connect(DB_PATH)
               cur = conn.cursor()
               
-              # 테이블 스키마 생성 (복잡한 엔터프라이즈 구조)
-              cur.execute("CREATE TABLE IF NOT EXISTS server_inventory (id TEXT, hostname TEXT, role TEXT, ip TEXT, status TEXT)")
-              cur.execute("CREATE TABLE IF NOT EXISTS deploy_history (id TEXT, hostname TEXT, version_from TEXT, version_to TEXT, timestamp TEXT)")
               cur.execute("CREATE TABLE IF NOT EXISTS service_transactions (id TEXT, service TEXT, amount INTEGER, user_id TEXT, status TEXT)")
-              cur.execute("CREATE TABLE IF NOT EXISTS system_alerts (id TEXT, severity TEXT, message TEXT, resolved BOOLEAN)")
-
-              # 1. 서버 인벤토리 등록
-              log("   -> Registering server assets...")
-              # (실제 파일 시스템을 읽어서 DB 동기화)
               
-              # 2. 트랜잭션 데이터 대량 생성 (50,000건)
-              log("   -> Generating 50,000 transaction records...")
-              tx_data = []
-              for _ in range(50000):
-                  tx_data.append((
-                      str(uuid.uuid4()),
-                      random.choice(list(SERVICES.keys())),
-                      random.randint(100, 1000000),
-                      f"user_{random.randint(1, 10000)}",
-                      random.choice(["SUCCESS", "PENDING", "FAILED"])
-                  ))
-              cur.executemany("INSERT INTO service_transactions VALUES (?,?,?,?,?)", tx_data)
-              
-              # 3. 시스템 알림 생성
-              log("   -> Generating system alerts...")
-              alerts = [(str(uuid.uuid4()), random.choice(["INFO", "WARN", "CRITICAL"]), "CPU Usage High", False) for _ in range(1000)]
-              cur.executemany("INSERT INTO system_alerts VALUES (?,?,?,?)", alerts)
+              # 50,000건 트랜잭션 생성
+              data = [(str(uuid.uuid4()), random.choice(list(SERVICES.keys())), random.randint(100, 10000), f"user_{i}", "COMPLETED") for i in range(50000)]
+              cur.executemany("INSERT INTO service_transactions VALUES (?,?,?,?,?)", data)
               
               conn.commit()
               conn.close()
@@ -163,54 +176,54 @@ jobs:
           def generate_report():
               conn = sqlite3.connect(DB_PATH)
               tx_cnt = conn.execute("SELECT COUNT(*) FROM service_transactions").fetchone()[0]
-              alert_cnt = conn.execute("SELECT COUNT(*) FROM system_alerts").fetchone()[0]
+              ext_cnt = conn.execute("SELECT COUNT(*) FROM external_deployments").fetchone()[0]
               conn.close()
               
-              report = f"""# 🏢 Enterprise System Upgrade Report ({datetime.date.today()})
+              report = f"""# 🏢 Enterprise Integration & Ops Report ({datetime.date.today()})
 
-              ## 1️⃣ 인프라 구축 및 업그레이드
-              - **총 서버:** 100대 (Web, API, Auth, Payment, Cache 등)
-              - **작업 내용:** v1.0 설치 ➡️ **v2.1 대규모 패치 완료**
-              - **백업:** `{ROOT_DIR}/backups/` (전체 노드 백업 완료)
+              ## 1️⃣ 인프라 및 업그레이드
+              - **총 서버:** 100대 (Fully Provisioned)
+              - **시스템 버전:** v1.0 ➡️ **v2.1 (Patched)**
+              - **백업 상태:** Secure (`{ROOT_DIR}/backups/`)
 
-              ## 2️⃣ 데이터 적재 현황
-              - **중앙 DB:** `{DB_PATH}`
-              - **서비스 트랜잭션:** {tx_cnt:,} 건
-              - **시스템 알림:** {alert_cnt:,} 건
-              - **상태:** ✅ All Services Online
+              ## 2️⃣ 외부 데이터 통합 (`koreatest12/cost-data`)
+              - **소스 리포지토리:** `{EXTERNAL_REPO}`
+              - **배포된 아티팩트:** {ext_cnt:,} Files
+              - **적재 위치:** `/opt/app/external_modules/` (Distributed)
+              - **상태:** ✅ Integrated & Loaded
 
-              ## 3️⃣ 서비스별 상세 상태
-              - **Frontend:** v2.1 (Active)
-              - **Backend:** v2.1 (Active)
-              - **Database:** Sharded & Replicated
+              ## 3️⃣ 서비스 데이터베이스
+              - **트랜잭션 로그:** {tx_cnt:,} Rows
+              - **DB 파일:** `{DB_PATH}`
               """
-              with open("daily_ops_report.md", "w", encoding="utf-8") as f:
+              with open("daily_integration_report.md", "w", encoding="utf-8") as f:
                   f.write(report)
               log("📄 Report generated.")
 
           if __name__ == "__main__":
               setup_infrastructure()
-              inject_massive_data()
               perform_system_upgrade()
+              integrate_external_data() # 외부 데이터 통합 실행
+              inject_massive_data()
               generate_report()
           EOF
 
           # 엔진 실행
           python ops_engine.py
 
-      # [2] 인프라 생성 확인 (디버깅)
+      # [2] 인프라 확인 (디버깅)
       - name: Inspect Infrastructure
         run: |
-          echo "📂 Checking Server Directory Structure..."
-          ls -R infra_datacenter/servers/backend-api/ | head -n 10
+          echo "📂 Checking External Modules on Backend Server..."
+          ls -R infra_datacenter/servers/backend-api/backend-api-node-001/opt/app/external_modules/
 
-      # [3] 아티팩트 업로드 (중요)
+      # [3] 아티팩트 업로드
       - name: Upload Infra Assets
         uses: actions/upload-artifact@v4
         with:
           name: enterprise-assets
           path: |
-            daily_ops_report.md
+            daily_integration_report.md
             infra_datacenter/
 
       # [4] 깃허브 반영 (대량 파일 처리)
@@ -220,9 +233,9 @@ jobs:
           git config --global user.email "admin@sys.com"
           
           # 인프라 폴더 전체 강제 추가
-          git add -f infra_datacenter/ daily_ops_report.md
+          git add -f infra_datacenter/ daily_integration_report.md
           
-          git commit -m "🚧 System Upgrade (v2.1) & Massive Data Load: $(date +'%Y-%m-%d')" || echo "No changes"
+          git commit -m "🚧 Integrated External Data & System Upgrade: $(date +'%Y-%m-%d')" || echo "No changes"
           git pull origin main --rebase
           git push origin main
 
@@ -236,7 +249,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      # [5] 아티팩트 다운로드 (File Not Found 해결)
       - name: Download Report
         uses: actions/download-artifact@v4
         with:
@@ -246,10 +258,10 @@ jobs:
       - name: Create Issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "🚧 [점검] 대규모 시스템 업그레이드 및 데이터 적재 결과"
-          content-filepath: ./daily_ops_report.md
+          title: "🏗️ [통합] 외부 데이터 적재 및 시스템 업그레이드 결과"
+          content-filepath: ./daily_integration_report.md
           labels: |
-            upgrade
+            integration
             infrastructure
-            database
+            external-data
             automated
