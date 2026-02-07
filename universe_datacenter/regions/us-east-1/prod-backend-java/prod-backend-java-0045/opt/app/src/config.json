@@ -1,11 +1,12 @@
 {
-  "hostname": "auth-server-node-008",
-  "role": "auth-server",
-  "version": "2.1.0-stable",
-  "ip": "10.0.83.99",
+  "host": "infra-postgres-node-005",
+  "role": "infra-postgres",
+  "version": "2.5.0-Enterprise",
   "resources": {
-    "cpu": "4vCPU",
-    "mem": "16GB"
+    "cpu": "4Core",
+    "ram": "16GB"
   },
-  "patched_at": "2026-02-07 12:22:28.415615"
+  "created_at": "2026-02-07 12:33:17.497949",
+  "security_patch": "APPLIED",
+  "last_updated": "2026-02-07 12:33:26.673044"
 }

@@ -1,5 +1,4 @@
-FROM openjdk:17
-WORKDIR /app
-COPY . .
-RUN ./gradlew build
-CMD ['start']
+FROM docker:latest
+EXPOSE 8080
+# UPDATED by CI/CD Pipeline
+ENV APP_VERSION=2.0.0

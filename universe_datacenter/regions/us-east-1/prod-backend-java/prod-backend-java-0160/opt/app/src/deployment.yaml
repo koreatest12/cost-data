@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: prod-data-python-0058
+  name: prod-ai-gpu-cluster-0017
 spec:
   replicas: 3

@@ -1,3 +1,5 @@
-FROM alpine:latest
-RUN echo 'Building server-node-014'
-CMD ['start.sh']
+FROM openjdk:17
+WORKDIR /app
+COPY . .
+RUN ./gradlew build
+CMD ['start']

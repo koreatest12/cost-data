@@ -1,0 +1,7 @@
+{
+  "hostname": "message-queue-node-001",
+  "role": "message-queue",
+  "version": "1.0.0",
+  "ip": "10.0.221.178",
+  "max_connections": 5000
+}

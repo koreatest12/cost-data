@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: legacy-mainframe-0003
+  name: prod-backend-java-0093
 spec:
   replicas: 3

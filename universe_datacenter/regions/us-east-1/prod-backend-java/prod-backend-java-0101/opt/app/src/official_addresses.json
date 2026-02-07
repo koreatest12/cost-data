@@ -1,0 +1,182 @@
+{
+  "niantic_offices": [
+    {
+      "office_name": "Niantic Headquarters",
+      "location": "San Francisco, CA, USA",
+      "address": "1 Ferry Building, Suite 200, San Francisco, CA 94111",
+      "country": "United States",
+      "region": "North America",
+      "contact": {
+        "email": "press@nianticlabs.com",
+        "phone": "+1-415-684-7200"
+      },
+      "headquarters": true
+    },
+    {
+      "office_name": "Niantic Tokyo Office",
+      "location": "Tokyo, Japan",
+      "address": "Roppongi Hills Mori Tower, 6-10-1 Roppongi, Minato-ku, Tokyo 106-6108, Japan",
+      "country": "Japan",
+      "region": "Asia Pacific",
+      "korean_description": "나이앤틱 도쿄 오피스"
+    },
+    {
+      "office_name": "Niantic London Office",
+      "location": "London, UK",
+      "address": "London, United Kingdom",
+      "country": "United Kingdom",
+      "region": "Europe",
+      "korean_description": "나이앤틱 런던 오피스"
+    },
+    {
+      "office_name": "Niantic Seattle Office",
+      "location": "Seattle, WA, USA",
+      "address": "Seattle, Washington, USA",
+      "country": "United States",
+      "region": "North America"
+    },
+    {
+      "office_name": "Niantic Los Angeles Office",
+      "location": "Los Angeles, CA, USA",
+      "address": "Los Angeles, California, USA",
+      "country": "United States",
+      "region": "North America"
+    }
+  ],
+  "official_websites": [
+    {
+      "name": "Pokemon GO Official Website",
+      "korean_name": "포켓몬고 공식 웹사이트",
+      "url": "https://pokemongolive.com/",
+      "language": "Multiple",
+      "purpose": "Main game information and updates"
+    },
+    {
+      "name": "Pokemon GO Korean Website",
+      "korean_name": "포켓몬고 한국 웹사이트",
+      "url": "https://pokemongolive.com/ko/",
+      "language": "Korean",
+      "purpose": "Korean language support and news"
+    },
+    {
+      "name": "Niantic Support",
+      "korean_name": "나이앤틱 지원",
+      "url": "https://niantic.helpshift.com/hc/en/6-pokemon-go/",
+      "language": "Multiple",
+      "purpose": "Customer support and FAQs"
+    },
+    {
+      "name": "Pokemon GO Events Page",
+      "korean_name": "포켓몬고 이벤트 페이지",
+      "url": "https://pokemongolive.com/events",
+      "language": "Multiple",
+      "purpose": "Current and upcoming events"
+    },
+    {
+      "name": "Niantic Wayfarer",
+      "korean_name": "나이앤틱 웨이페어러",
+      "url": "https://wayfarer.nianticlabs.com/",
+      "language": "Multiple",
+      "purpose": "PokeStop and Gym submission review"
+    },
+    {
+      "name": "Pokemon GO Blog",
+      "korean_name": "포켓몬고 블로그",
+      "url": "https://pokemongolive.com/post/",
+      "language": "Multiple",
+      "purpose": "Official news and announcements"
+    }
+  ],
+  "social_media": [
+    {
+      "platform": "Twitter/X",
+      "handle": "@PokemonGoApp",
+      "url": "https://twitter.com/PokemonGoApp",
+      "korean_description": "포켓몬고 공식 트위터"
+    },
+    {
+      "platform": "Facebook",
+      "page": "Pokemon GO",
+      "url": "https://www.facebook.com/PokemonGO/",
+      "korean_description": "포켓몬고 공식 페이스북"
+    },
+    {
+      "platform": "Instagram",
+      "handle": "@pokemongoapp",
+      "url": "https://www.instagram.com/pokemongoapp/",
+      "korean_description": "포켓몬고 공식 인스타그램"
+    },
+    {
+      "platform": "YouTube",
+      "channel": "Pokemon GO",
+      "url": "https://www.youtube.com/c/pokemongo",
+      "korean_description": "포켓몬고 공식 유튜브"
+    },
+    {
+      "platform": "Discord",
+      "server": "Pokemon GO Official",
+      "url": "https://discord.gg/PokemonGO",
+      "korean_description": "포켓몬고 공식 디스코드"
+    }
+  ],
+  "regional_support": [
+    {
+      "region": "Korea",
+      "korean_name": "대한민국",
+      "support_email": "pokemongo-support@nianticlabs.com",
+      "language": "Korean",
+      "local_events": true,
+      "notes": "Korean language support available, local events regularly hosted"
+    },
+    {
+      "region": "Japan",
+      "korean_name": "일본",
+      "support_email": "pokemongo-support@nianticlabs.com",
+      "language": "Japanese",
+      "local_events": true,
+      "notes": "Strong community presence, frequent regional events"
+    },
+    {
+      "region": "United States",
+      "korean_name": "미국",
+      "support_email": "pokemongo-support@nianticlabs.com",
+      "language": "English",
+      "local_events": true,
+      "notes": "Headquarters region, GO Fest events"
+    },
+    {
+      "region": "Europe",
+      "korean_name": "유럽",
+      "support_email": "pokemongo-support@nianticlabs.com",
+      "language": "Multiple European languages",
+      "local_events": true,
+      "notes": "Multiple language support, Safari Zone events"
+    }
+  ],
+  "community_resources": [
+    {
+      "name": "The Silph Road",
+      "url": "https://thesilphroad.com/",
+      "type": "Research Community",
+      "korean_description": "실프 로드 - 포켓몬고 연구 커뮤니티"
+    },
+    {
+      "name": "Pokemon GO Hub",
+      "url": "https://pokemongohub.net/",
+      "type": "News and Guides",
+      "korean_description": "포켓몬고 허브 - 뉴스와 가이드"
+    },
+    {
+      "name": "LeekDuck",
+      "url": "https://leekduck.com/",
+      "type": "Event Tracker",
+      "korean_description": "리크덕 - 이벤트 트래커"
+    },
+    {
+      "name": "GamePress",
+      "url": "https://gamepress.gg/pokemongo/",
+      "type": "Strategy and Analysis",
+      "korean_description": "게임프레스 - 전략과 분석"
+    }
+  ]
+}

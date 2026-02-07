@@ -1,0 +1,10 @@
+{
+  "hostname": "auth-server-node-004",
+  "role": "auth-server",
+  "version": "1.0.0",
+  "ip": "10.0.184.11",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
+}

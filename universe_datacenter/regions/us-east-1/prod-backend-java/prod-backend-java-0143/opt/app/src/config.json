@@ -1,12 +1,12 @@
 {
-  "hostname": "python-data-processor-node-013",
-  "role": "python-data-processor",
+  "hostname": "docker-registry-node-002",
+  "role": "docker-registry",
   "version": "2.0.0-Enterprise",
-  "ip": "10.20.251.111",
+  "ip": "10.20.48.164",
   "resources": {
     "cpu": "8vCPU",
     "mem": "32GB"
   },
   "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.280097"
+  "updated_at": "2026-02-07 12:28:05.278753"
 }

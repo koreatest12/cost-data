@@ -1,11 +1,12 @@
 {
-  "hostname": "data-analytics-node-003",
-  "role": "data-analytics",
-  "version": "2.1.0-stable",
-  "ip": "10.0.51.32",
+  "hostname": "java-backend-api-node-004",
+  "role": "java-backend-api",
+  "version": "2.0.0-Enterprise",
+  "ip": "10.20.195.79",
   "resources": {
-    "cpu": "4vCPU",
-    "mem": "16GB"
+    "cpu": "8vCPU",
+    "mem": "32GB"
   },
-  "patched_at": "2026-02-07 12:22:28.413044"
+  "security_patch": "CVE-2026-FIXED",
+  "updated_at": "2026-02-07 12:28:05.276332"
 }

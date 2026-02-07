@@ -1,12 +1,12 @@
 {
-  "host": "svc-data-python-node-005",
-  "role": "svc-data-python",
-  "version": "2.5.0-Enterprise",
+  "hostname": "node-frontend-web-node-006",
+  "role": "node-frontend-web",
+  "version": "2.0.0-Enterprise",
+  "ip": "10.20.71.236",
   "resources": {
-    "cpu": "4Core",
-    "ram": "16GB"
+    "cpu": "8vCPU",
+    "mem": "32GB"
   },
-  "created_at": "2026-02-07 12:33:17.470197",
-  "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.654043"
+  "security_patch": "CVE-2026-FIXED",
+  "updated_at": "2026-02-07 12:28:05.271075"
 }

@@ -1,0 +1,10 @@
+{
+  "hostname": "data-analytics-node-008",
+  "role": "data-analytics",
+  "version": "1.0.0",
+  "ip": "10.0.6.136",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
+}

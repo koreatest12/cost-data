@@ -1,12 +1,11 @@
 {
-  "host": "svc-data-python-node-016",
-  "role": "svc-data-python",
-  "version": "2.5.0-Enterprise",
+  "hostname": "message-queue-node-002",
+  "role": "message-queue",
+  "version": "2.1.0-stable",
+  "ip": "10.0.111.101",
   "resources": {
-    "cpu": "4Core",
-    "ram": "16GB"
+    "cpu": "4vCPU",
+    "mem": "16GB"
   },
-  "created_at": "2026-02-07 12:33:17.475388",
-  "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.653562"
+  "patched_at": "2026-02-07 12:22:28.431907"
 }

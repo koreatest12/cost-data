@@ -1,11 +1,11 @@
 {
-  "hostname": "redis-cache-node-006",
-  "role": "redis-cache",
+  "hostname": "data-analytics-node-008",
+  "role": "data-analytics",
   "version": "2.1.0-stable",
-  "ip": "10.0.141.63",
+  "ip": "10.0.6.136",
   "resources": {
     "cpu": "4vCPU",
     "mem": "16GB"
   },
-  "patched_at": "2026-02-07 12:22:28.421758"
+  "patched_at": "2026-02-07 12:22:28.411941"
 }

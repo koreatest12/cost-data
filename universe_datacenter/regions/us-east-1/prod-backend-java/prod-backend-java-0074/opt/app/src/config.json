@@ -1,12 +1,9 @@
 {
-  "host": "infra-kafka-node-008",
-  "role": "infra-kafka",
-  "version": "2.5.0-Enterprise",
-  "resources": {
-    "cpu": "4Core",
-    "ram": "16GB"
-  },
-  "created_at": "2026-02-07 12:33:17.495072",
-  "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.661179"
+  "hostname": "frontend-web-node-015",
+  "role": "frontend-web",
+  "version": "2.1.0-stable",
+  "ip": "10.0.42.119",
+  "max_connections": 5000,
+  "last_patched": "2026-02-07 12:17:51.013359",
+  "security_level": "ENFORCED"
 }

@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: infra-redis-cache-0005
+  name: prod-blockchain-node-0042
 spec:
   replicas: 3

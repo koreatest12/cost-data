@@ -1,5 +1,5 @@
-FROM python:3.9-slim
+FROM openjdk:17
 WORKDIR /app
 COPY . .
-RUN pip install -r req.txt
+RUN ./gradlew build
 CMD ['start']

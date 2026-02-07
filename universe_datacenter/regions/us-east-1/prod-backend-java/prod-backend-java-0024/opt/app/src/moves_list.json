@@ -1,0 +1,381 @@
+{
+  "fast_moves": [
+    {
+      "name": "Quick Attack",
+      "korean_name": "전광석화",
+      "type": "Normal",
+      "power": 5,
+      "energy_gain": 7,
+      "duration": 0.5,
+      "dpt": 10.0,
+      "ept": 14.0,
+      "pvp_power": 5,
+      "pvp_energy": 7
+    },
+    {
+      "name": "Vine Whip",
+      "korean_name": "덩굴채찍",
+      "type": "Grass",
+      "power": 5,
+      "energy_gain": 8,
+      "duration": 0.5,
+      "dpt": 10.0,
+      "ept": 16.0,
+      "pvp_power": 5,
+      "pvp_energy": 8
+    },
+    {
+      "name": "Water Gun",
+      "korean_name": "물대포",
+      "type": "Water",
+      "power": 3,
+      "energy_gain": 3,
+      "duration": 0.5,
+      "dpt": 6.0,
+      "ept": 6.0,
+      "pvp_power": 3,
+      "pvp_energy": 3
+    },
+    {
+      "name": "Dragon Breath",
+      "korean_name": "용의숨결",
+      "type": "Dragon",
+      "power": 4,
+      "energy_gain": 3,
+      "duration": 0.5,
+      "dpt": 8.0,
+      "ept": 6.0,
+      "pvp_power": 4,
+      "pvp_energy": 3
+    },
+    {
+      "name": "Confusion",
+      "korean_name": "염동력",
+      "type": "Psychic",
+      "power": 12,
+      "energy_gain": 12,
+      "duration": 1.0,
+      "dpt": 12.0,
+      "ept": 12.0,
+      "pvp_power": 20,
+      "pvp_energy": 12
+    },
+    {
+      "name": "Counter",
+      "korean_name": "카운터",
+      "type": "Fighting",
+      "power": 8,
+      "energy_gain": 7,
+      "duration": 0.5,
+      "dpt": 16.0,
+      "ept": 14.0,
+      "pvp_power": 12,
+      "pvp_energy": 8
+    },
+    {
+      "name": "Charm",
+      "korean_name": "스위트키스",
+      "type": "Fairy",
+      "power": 12,
+      "energy_gain": 6,
+      "duration": 1.0,
+      "dpt": 12.0,
+      "ept": 6.0,
+      "pvp_power": 20,
+      "pvp_energy": 11
+    },
+    {
+      "name": "Shadow Claw",
+      "korean_name": "섀도크로",
+      "type": "Ghost",
+      "power": 6,
+      "energy_gain": 8,
+      "duration": 0.5,
+      "dpt": 12.0,
+      "ept": 16.0,
+      "pvp_power": 9,
+      "pvp_energy": 6
+    },
+    {
+      "name": "Psycho Cut",
+      "korean_name": "사이코커터",
+      "type": "Psychic",
+      "power": 3,
+      "energy_gain": 9,
+      "duration": 0.5,
+      "dpt": 6.0,
+      "ept": 18.0,
+      "pvp_power": 5,
+      "pvp_energy": 9
+    },
+    {
+      "name": "Mud Shot",
+      "korean_name": "머드샷",
+      "type": "Ground",
+      "power": 3,
+      "energy_gain": 9,
+      "duration": 0.5,
+      "dpt": 6.0,
+      "ept": 18.0,
+      "pvp_power": 5,
+      "pvp_energy": 9
+    }
+  ],
+  "charged_moves": [
+    {
+      "name": "Hydro Cannon",
+      "korean_name": "하이드로캐논",
+      "type": "Water",
+      "power": 80,
+      "energy_cost": 40,
+      "damage_per_energy": 2.0,
+      "pvp_power": 80,
+      "pvp_energy": 40,
+      "community_day_exclusive": true,
+      "learned_by": ["Blastoise", "Feraligatr", "Swampert", "Empoleon", "Samurott"]
+    },
+    {
+      "name": "Blast Burn",
+      "korean_name": "블래스트번",
+      "type": "Fire",
+      "power": 110,
+      "energy_cost": 50,
+      "damage_per_energy": 2.2,
+      "pvp_power": 110,
+      "pvp_energy": 50,
+      "community_day_exclusive": true,
+      "learned_by": ["Charizard", "Typhlosion", "Blaziken", "Infernape", "Emboar"]
+    },
+    {
+      "name": "Frenzy Plant",
+      "korean_name": "하드플랜트",
+      "type": "Grass",
+      "power": 100,
+      "energy_cost": 45,
+      "damage_per_energy": 2.22,
+      "pvp_power": 100,
+      "pvp_energy": 45,
+      "community_day_exclusive": true,
+      "learned_by": ["Venusaur", "Meganium", "Sceptile", "Torterra", "Serperior"]
+    },
+    {
+      "name": "Meteor Mash",
+      "korean_name": "코멧펀치",
+      "type": "Steel",
+      "power": 50,
+      "energy_cost": 35,
+      "damage_per_energy": 1.43,
+      "pvp_power": 50,
+      "pvp_energy": 35,
+      "community_day_exclusive": true,
+      "learned_by": ["Metagross"]
+    },
+    {
+      "name": "Psychic",
+      "korean_name": "사이코키네시스",
+      "type": "Psychic",
+      "power": 90,
+      "energy_cost": 55,
+      "damage_per_energy": 1.64,
+      "pvp_power": 90,
+      "pvp_energy": 55,
+      "pvp_effect": "10% chance to lower opponent's Defense by 1 stage"
+    },
+    {
+      "name": "Shadow Ball",
+      "korean_name": "섀도볼",
+      "type": "Ghost",
+      "power": 100,
+      "energy_cost": 55,
+      "damage_per_energy": 1.82,
+      "pvp_power": 100,
+      "pvp_energy": 55
+    },
+    {
+      "name": "Outrage",
+      "korean_name": "역린",
+      "type": "Dragon",
+      "power": 110,
+      "energy_cost": 60,
+      "damage_per_energy": 1.83,
+      "pvp_power": 110,
+      "pvp_energy": 60
+    },
+    {
+      "name": "Dynamic Punch",
+      "korean_name": "폭발펀치",
+      "type": "Fighting",
+      "power": 90,
+      "energy_cost": 50,
+      "damage_per_energy": 1.8,
+      "pvp_power": 90,
+      "pvp_energy": 50
+    },
+    {
+      "name": "Ice Beam",
+      "korean_name": "냉동빔",
+      "type": "Ice",
+      "power": 90,
+      "energy_cost": 55,
+      "damage_per_energy": 1.64,
+      "pvp_power": 90,
+      "pvp_energy": 55
+    },
+    {
+      "name": "Thunderbolt",
+      "korean_name": "10만볼트",
+      "type": "Electric",
+      "power": 90,
+      "energy_cost": 55,
+      "damage_per_energy": 1.64,
+      "pvp_power": 90,
+      "pvp_energy": 55
+    },
+    {
+      "name": "Earth Power",
+      "korean_name": "대지의힘",
+      "type": "Ground",
+      "power": 90,
+      "energy_cost": 55,
+      "damage_per_energy": 1.64,
+      "pvp_power": 90,
+      "pvp_energy": 55,
+      "pvp_effect": "10% chance to lower opponent's Defense by 1 stage",
+      "community_day_exclusive": true,
+      "learned_by": ["Garchomp", "Flygon"]
+    },
+    {
+      "name": "Sacred Sword",
+      "korean_name": "성스러운칼",
+      "type": "Fighting",
+      "power": 55,
+      "energy_cost": 35,
+      "damage_per_energy": 1.57,
+      "pvp_power": 55,
+      "pvp_energy": 35,
+      "signature_move": true,
+      "learned_by": ["Cobalion", "Terrakion", "Virizion", "Keldeo"]
+    },
+    {
+      "name": "V-create",
+      "korean_name": "V제너레이트",
+      "type": "Fire",
+      "power": 95,
+      "energy_cost": 40,
+      "damage_per_energy": 2.375,
+      "pvp_power": 95,
+      "pvp_energy": 40,
+      "pvp_effect": "100% chance to lower user's Defense and Attack by 3 stages",
+      "signature_move": true,
+      "learned_by": ["Victini"]
+    },
+    {
+      "name": "Aeroblast",
+      "korean_name": "에어로블래스트",
+      "type": "Flying",
+      "power": 170,
+      "energy_cost": 75,
+      "damage_per_energy": 2.27,
+      "pvp_power": 170,
+      "pvp_energy": 75,
+      "signature_move": true,
+      "learned_by": ["Lugia"]
+    },
+    {
+      "name": "Sacred Fire",
+      "korean_name": "성스러운불꽃",
+      "type": "Fire",
+      "power": 135,
+      "energy_cost": 65,
+      "damage_per_energy": 2.08,
+      "pvp_power": 135,
+      "pvp_energy": 65,
+      "pvp_effect": "50% chance to lower opponent's Defense by 1 stage",
+      "signature_move": true,
+      "learned_by": ["Ho-Oh"]
+    },
+    {
+      "name": "Weather Ball (Fire)",
+      "korean_name": "웨더볼 (불꽃)",
+      "type": "Fire",
+      "power": 55,
+      "energy_cost": 35,
+      "damage_per_energy": 1.57,
+      "pvp_power": 55,
+      "pvp_energy": 35,
+      "learned_by": ["Castform", "Politoed", "Ninetales"]
+    },
+    {
+      "name": "Weather Ball (Water)",
+      "korean_name": "웨더볼 (물)",
+      "type": "Water",
+      "power": 55,
+      "energy_cost": 35,
+      "damage_per_energy": 1.57,
+      "pvp_power": 55,
+      "pvp_energy": 35,
+      "learned_by": ["Castform", "Politoed"]
+    },
+    {
+      "name": "Weather Ball (Ice)",
+      "korean_name": "웨더볼 (얼음)",
+      "type": "Ice",
+      "power": 55,
+      "energy_cost": 35,
+      "damage_per_energy": 1.57,
+      "pvp_power": 55,
+      "pvp_energy": 35,
+      "learned_by": ["Castform", "Abomasnow"]
+    },
+    {
+      "name": "Weather Ball (Rock)",
+      "korean_name": "웨더볼 (바위)",
+      "type": "Rock",
+      "power": 55,
+      "energy_cost": 35,
+      "damage_per_energy": 1.57,
+      "pvp_power": 55,
+      "pvp_energy": 35,
+      "learned_by": ["Castform"]
+    }
+  ],
+  "legacy_moves": [
+    {
+      "name": "Draco Meteor",
+      "korean_name": "유성군",
+      "type": "Dragon",
+      "power": 150,
+      "energy_cost": 65,
+      "legacy": true,
+      "elite_tm_required": true,
+      "learned_by": ["Dragonite", "Salamence", "Dialga", "Palkia"]
+    },
+    {
+      "name": "Dragon Claw",
+      "korean_name": "드래곤크루",
+      "type": "Dragon",
+      "power": 50,
+      "energy_cost": 35,
+      "legacy_for": ["Dragonite"],
+      "elite_tm_required": true
+    },
+    {
+      "name": "Body Slam",
+      "korean_name": "몸통박치기",
+      "type": "Normal",
+      "power": 50,
+      "energy_cost": 35,
+      "legacy_for": ["Snorlax"],
+      "elite_tm_required": true
+    },
+    {
+      "name": "Psystrike",
+      "korean_name": "사이코브레이크",
+      "type": "Psychic",
+      "power": 90,
+      "energy_cost": 45,
+      "legacy_for": ["Mewtwo"],
+      "special_event_exclusive": true
+    }
+  ]
+}

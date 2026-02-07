@@ -1,0 +1,10 @@
+{
+  "host": "svc-payment-node-004",
+  "role": "svc-payment",
+  "version": "1.0.0-legacy",
+  "resources": {
+    "cpu": "4Core",
+    "ram": "16GB"
+  },
+  "created_at": "2026-02-07 12:33:17.455160"
+}

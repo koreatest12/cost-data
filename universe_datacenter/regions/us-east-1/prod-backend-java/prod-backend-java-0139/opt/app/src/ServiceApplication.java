@@ -1,4 +1,4 @@
-package com.costdata.security;
+package com.costdata.algo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;

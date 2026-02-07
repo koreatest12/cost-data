@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: infra-redis-cache-0014
+  name: prod-backend-java-0119
 spec:
   replicas: 3

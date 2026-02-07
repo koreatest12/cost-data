@@ -1,11 +1,12 @@
 {
-  "hostname": "frontend-web-node-014",
-  "role": "frontend-web",
-  "version": "2.1.0-stable",
-  "ip": "10.0.156.130",
+  "hostname": "docker-registry-node-004",
+  "role": "docker-registry",
+  "version": "2.0.0-Enterprise",
+  "ip": "10.20.195.166",
   "resources": {
-    "cpu": "4vCPU",
-    "mem": "16GB"
+    "cpu": "8vCPU",
+    "mem": "32GB"
   },
-  "patched_at": "2026-02-07 12:22:28.437857"
+  "security_patch": "CVE-2026-FIXED",
+  "updated_at": "2026-02-07 12:28:05.278076"
 }

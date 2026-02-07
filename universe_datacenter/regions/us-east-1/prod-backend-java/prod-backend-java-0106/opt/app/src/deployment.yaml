@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: infra-k8s-worker-0042
+  name: legacy-mainframe-0005
 spec:
   replicas: 3

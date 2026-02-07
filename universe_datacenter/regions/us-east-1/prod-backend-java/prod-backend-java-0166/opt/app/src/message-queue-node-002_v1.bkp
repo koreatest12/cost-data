@@ -2,6 +2,9 @@
   "hostname": "message-queue-node-002",
   "role": "message-queue",
   "version": "1.0.0",
-  "ip": "10.0.165.122",
-  "max_connections": 5000
+  "ip": "10.0.111.101",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
 }

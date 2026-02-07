@@ -1,0 +1,10 @@
+{
+  "hostname": "backend-api-node-001",
+  "role": "backend-api",
+  "version": "1.0.0",
+  "ip": "10.0.157.49",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
+}

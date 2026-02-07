@@ -1,4 +1,4 @@
-package com.costdata.cost;
+package com.costdata.algo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -7,5 +7,5 @@ import java.util.Map;
 @SpringBootApplication @RestController
 public class ServiceApplication {
     public static void main(String[] args) { SpringApplication.run(ServiceApplication.class, args); }
-    @GetMapping("/") public Map<String, String> status() { return Map.of("service", "cost", "data_status", "injected"); }
+    @GetMapping("/") public Map<String, String> status() { return Map.of("service", "algo", "data_status", "injected"); }
 }

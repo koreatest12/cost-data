@@ -1,9 +1,12 @@
 {
-  "hostname": "frontend-web-node-010",
-  "role": "frontend-web",
-  "version": "2.1.0-stable",
-  "ip": "10.0.140.155",
-  "max_connections": 5000,
-  "last_patched": "2026-02-07 12:17:51.011201",
-  "security_level": "ENFORCED"
+  "host": "svc-payment-node-012",
+  "role": "svc-payment",
+  "version": "2.5.0-Enterprise",
+  "resources": {
+    "cpu": "4Core",
+    "ram": "16GB"
+  },
+  "created_at": "2026-02-07 12:33:17.458507",
+  "security_patch": "APPLIED",
+  "last_updated": "2026-02-07 12:33:26.663925"
 }

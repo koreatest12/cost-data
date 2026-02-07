@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: infra-redis-cache-0004
+  name: legacy-mainframe-0012
 spec:
   replicas: 3

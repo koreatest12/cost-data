@@ -1,12 +1,12 @@
 {
-  "host": "infra-postgres-node-001",
-  "role": "infra-postgres",
-  "version": "2.5.0-Enterprise",
+  "hostname": "go-auth-server-node-005",
+  "role": "go-auth-server",
+  "version": "2.0.0-Enterprise",
+  "ip": "10.20.151.79",
   "resources": {
-    "cpu": "4Core",
-    "ram": "16GB"
+    "cpu": "8vCPU",
+    "mem": "32GB"
   },
-  "created_at": "2026-02-07 12:33:17.496337",
-  "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.673496"
+  "security_patch": "CVE-2026-FIXED",
+  "updated_at": "2026-02-07 12:28:05.274413"
 }

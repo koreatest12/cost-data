@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: prod-ai-gpu-cluster-0030
+  name: prod-backend-java-0053
 spec:
   replicas: 3

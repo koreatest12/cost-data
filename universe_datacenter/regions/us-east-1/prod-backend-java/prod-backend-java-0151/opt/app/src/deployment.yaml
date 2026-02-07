@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: infra-redis-cache-0027
+  name: prod-ai-gpu-cluster-0008
 spec:
   replicas: 3

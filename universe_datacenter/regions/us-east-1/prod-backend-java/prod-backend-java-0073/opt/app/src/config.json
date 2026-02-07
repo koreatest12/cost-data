@@ -1,12 +1,11 @@
 {
-  "hostname": "python-data-processor-node-010",
-  "role": "python-data-processor",
-  "version": "2.0.0-Enterprise",
-  "ip": "10.20.38.240",
+  "hostname": "auth-server-node-008",
+  "role": "auth-server",
+  "version": "2.1.0-stable",
+  "ip": "10.0.83.99",
   "resources": {
-    "cpu": "8vCPU",
-    "mem": "32GB"
+    "cpu": "4vCPU",
+    "mem": "16GB"
   },
-  "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.280285"
+  "patched_at": "2026-02-07 12:22:28.415615"
 }

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Security News Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1a1f3a 0%, #0d1117 100%);
+    border-bottom: 1px solid #2d3748;
+    padding: 20px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+
+  .header h1 span { color: #60a5fa; }
+
+  .header-meta {
+    font-size: 13px;
+    color: #94a3b8;
+  }
+
+  /* Layout */
+  .container {
+    display: flex;
+    height: calc(100vh - 80px);
+  }
+
+  /* Sidebar - Date List */
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: #111827;
+    border-right: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #1e293b;
+    font-size: 14px;
+    font-weight: 600;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .date-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .date-item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 4px;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .date-item:hover {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .date-item.active {
+    background: #1e3a5f;
+    border-color: #3b82f6;
+  }
+
+  .date-item .date-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  .date-item .date-stats {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  .date-item .date-stats span {
+    margin-right: 10px;
+  }
+
+  /* Main Content */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 30px;
+  }
+
+  /* Stats Bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: center;
+  }
+
+  .stat-card .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #60a5fa;
+  }
+
+  .stat-card .stat-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-card.global .stat-value { color: #34d399; }
+  .stat-card.korea .stat-value { color: #f472b6; }
+  .stat-card.days .stat-value { color: #fbbf24; }
+
+  /* Filter Tabs */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-btn {
+    padding: 8px 16px;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover { border-color: #60a5fa; color: #60a5fa; }
+  .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+  .search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 8px 16px;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    background: #111827;
+    color: #e2e8f0;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-input:focus { border-color: #60a5fa; }
+  .search-input::placeholder { color: #4b5563; }
+
+  /* News Cards */
+  .news-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 12px 0;
+    border-bottom: 1px solid #1e293b;
+    margin-bottom: 12px;
+    color: #94a3b8;
+  }
+
+  .news-card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    transition: all 0.15s;
+    border-left: 4px solid #334155;
+  }
+
+  .news-card:hover {
+    border-left-color: #3b82f6;
+    background: #151d2e;
+  }
+
+  .news-card .news-source {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .news-card .news-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f1f5f9;
+    text-decoration: none;
+    line-height: 1.4;
+  }
+
+  .news-card .news-title:hover { color: #60a5fa; }
+
+  .news-card .news-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 6px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .news-card .news-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .tag-ransomware { background: #7f1d1d; color: #fca5a5; }
+  .tag-vulnerability { background: #78350f; color: #fcd34d; }
+  .tag-zero-day { background: #831843; color: #f9a8d4; }
+  .tag-phishing { background: #1e3a5f; color: #93c5fd; }
+  .tag-malware { background: #3f1f0f; color: #fdba74; }
+  .tag-apt { background: #312e81; color: #a5b4fc; }
+  .tag-data-breach { background: #064e3b; color: #6ee7b7; }
+
+  /* Loading & Empty States */
+  .loading, .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+  }
+
+  .loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #1e293b;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { flex-direction: column; height: auto; }
+    .sidebar { width: 100%; min-width: auto; max-height: 200px; }
+    .main { padding: 16px; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1><span>Security</span> News Dashboard</h1>
+    <div class="header-meta">Daily information security news - Updated every morning at 08:00 KST</div>
+  </div>
+  <div class="header-meta" id="lastUpdated"></div>
+</div>
+
+<div class="container">
+  <!-- Sidebar: Date Navigation -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      Date Navigation
+    </div>
+    <div class="date-list" id="dateList">
+      <div class="loading">
+        <div class="spinner"></div>
+        Loading dates...
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main" id="mainContent">
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-card">
+        <div class="stat-value" id="statTotal">-</div>
+        <div class="stat-label">Total Articles</div>
+      </div>
+      <div class="stat-card global">
+        <div class="stat-value" id="statGlobal">-</div>
+        <div class="stat-label">Global News</div>
+      </div>
+      <div class="stat-card korea">
+        <div class="stat-value" id="statKorea">-</div>
+        <div class="stat-label">Korea News</div>
+      </div>
+      <div class="stat-card days">
+        <div class="stat-value" id="statDays">-</div>
+        <div class="stat-label">Accumulated Days</div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+      <button class="filter-btn" data-filter="global" onclick="setFilter('global')">Global</button>
+      <button class="filter-btn" data-filter="korea" onclick="setFilter('korea')">Korea</button>
+      <button class="filter-btn" data-filter="ransomware" onclick="setFilter('ransomware')">Ransomware</button>
+      <button class="filter-btn" data-filter="vulnerability" onclick="setFilter('vulnerability')">Vulnerability</button>
+      <button class="filter-btn" data-filter="zero-day" onclick="setFilter('zero-day')">Zero-Day</button>
+      <button class="filter-btn" data-filter="malware" onclick="setFilter('malware')">Malware</button>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search news..." oninput="applyFilters()">
+    </div>
+
+    <div id="newsContainer">
+      <div class="empty-state">
+        <div class="empty-icon">&#128240;</div>
+        <p>Select a date from the sidebar to view news</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA_BASE = './';
+const NEWS_DIR = '../data/news/';
+
+let currentIndex = null;
+let currentNews = null;
+let currentFilter = 'all';
+let currentDate = null;
+
+// Try multiple paths to find news data
+const INDEX_PATHS = [
+  '../data/news/news_index.json',
+  './api/news_summary.json',
+];
+
+async function fetchJSON(url) {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return await resp.json();
+  } catch (e) {
+    console.warn(`Failed to fetch ${url}:`, e.message);
+    return null;
+  }
+}
+
+async function init() {
+  // Try to load index from multiple paths
+  let index = null;
+  for (const path of INDEX_PATHS) {
+    index = await fetchJSON(path);
+    if (index) break;
+  }
+
+  if (!index || !index.dates || index.dates.length === 0) {
+    // Show welcome state with sample data notice
+    document.getElementById('dateList').innerHTML = `
+      <div class="empty-state" style="padding:30px 16px;">
+        <div class="empty-icon">&#128197;</div>
+        <p style="font-size:13px;">No news data yet.<br>The workflow runs daily at 08:00 KST.<br>You can also trigger it manually from GitHub Actions.</p>
+      </div>
+    `;
+    document.getElementById('statDays').textContent = '0';
+    document.getElementById('lastUpdated').textContent = 'Awaiting first run';
+    return;
+  }
+
+  currentIndex = index;
+  document.getElementById('lastUpdated').textContent = `Last updated: ${index.last_updated || ''}`;
+  document.getElementById('statDays').textContent = index.dates.length || index.total_days || 0;
+
+  renderDateList(index.dates);
+
+  // Auto-select the most recent date
+  if (index.dates.length > 0) {
+    loadDate(index.dates[0].date, index.dates[0].file);
+  }
+}
+
+function renderDateList(dates) {
+  const container = document.getElementById('dateList');
+  if (!dates || dates.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No dates available</p></div>';
+    return;
+  }
+
+  container.innerHTML = dates.map(d => {
+    const dateObj = new Date(d.date + 'T00:00:00');
+    const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dateObj.getDay()];
+    return `
+      <div class="date-item" data-date="${d.date}" data-file="${d.file || 'news_' + d.date + '.json'}" onclick="selectDate(this)">
+        <div class="date-label">${d.date} (${weekday})</div>
+        <div class="date-stats">
+          <span>Total: ${d.total || d.total_articles || 0}</span>
+          <span>Global: ${d.global || d.global_count || 0}</span>
+          <span>KR: ${d.korea || d.korea_count || 0}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function selectDate(el) {
+  document.querySelectorAll('.date-item').forEach(d => d.classList.remove('active'));
+  el.classList.add('active');
+
+  const date = el.dataset.date;
+  const file = el.dataset.file;
+  await loadDate(date, file);
+}
+
+async function loadDate(date, file) {
+  currentDate = date;
+  const container = document.getElementById('newsContainer');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading news...</div>';
+
+  // Try multiple paths for the news file
+  const filePaths = [
+    `../data/news/${file || 'news_' + date + '.json'}`,
+    `../data/news/news_${date}.json`,
+  ];
+
+  let newsData = null;
+  for (const path of filePaths) {
+    newsData = await fetchJSON(path);
+    if (newsData) break;
+  }
+
+  if (!newsData) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#128196;</div>
+        <p>News data for ${date} is not available yet.</p>
+        <p style="font-size:12px;margin-top:8px;color:#475569;">The data file may not have been generated for this date.</p>
+      </div>
+    `;
+    return;
+  }
+
+  currentNews = newsData;
+
+  // Update stats
+  document.getElementById('statTotal').textContent = newsData.total_articles || 0;
+  document.getElementById('statGlobal').textContent = newsData.global_count || 0;
+  document.getElementById('statKorea').textContent = newsData.korea_count || 0;
+
+  // Highlight selected date in sidebar
+  document.querySelectorAll('.date-item').forEach(d => {
+    d.classList.toggle('active', d.dataset.date === date);
+  });
+
+  applyFilters();
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === filter);
+  });
+  applyFilters();
+}
+
+function applyFilters() {
+  if (!currentNews) return;
+
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  const container = document.getElementById('newsContainer');
+
+  let articles = [];
+
+  if (currentFilter === 'all' || currentFilter === 'global') {
+    (currentNews.global || []).forEach(a => articles.push({...a, region: 'global'}));
+  }
+  if (currentFilter === 'all' || currentFilter === 'korea') {
+    (currentNews.korea || []).forEach(a => articles.push({...a, region: 'korea'}));
+  }
+
+  // Tag-based filters
+  const tagFilters = ['ransomware', 'vulnerability', 'zero-day', 'malware', 'apt', 'data-breach', 'phishing'];
+  if (tagFilters.includes(currentFilter)) {
+    const allArticles = [
+      ...(currentNews.global || []).map(a => ({...a, region: 'global'})),
+      ...(currentNews.korea || []).map(a => ({...a, region: 'korea'})),
+    ];
+    articles = allArticles.filter(a => (a.tags || []).includes(currentFilter));
+  }
+
+  // Search filter
+  if (searchTerm) {
+    articles = articles.filter(a =>
+      (a.title || '').toLowerCase().includes(searchTerm) ||
+      (a.description || '').toLowerCase().includes(searchTerm) ||
+      (a.source || '').toLowerCase().includes(searchTerm)
+    );
+  }
+
+  if (articles.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#128270;</div>
+        <p>No articles match the current filter.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Group by source
+  const bySource = {};
+  articles.forEach(a => {
+    const key = a.source || 'Unknown';
+    if (!bySource[key]) bySource[key] = [];
+    bySource[key].push(a);
+  });
+
+  let html = '';
+  for (const [source, items] of Object.entries(bySource)) {
+    html += `<div class="news-section-title">${source} (${items.length})</div>`;
+    items.forEach(a => {
+      const tagsHtml = (a.tags || []).map(t =>
+        `<span class="tag tag-${t}">${t}</span>`
+      ).join('');
+
+      html += `
+        <div class="news-card">
+          <div class="news-source">${a.source || ''} ${a.pub_date ? '| ' + a.pub_date.substring(0, 16) : ''}</div>
+          <a class="news-title" href="${a.link || '#'}" target="_blank" rel="noopener">${escapeHtml(a.title || '')}</a>
+          ${a.description ? `<div class="news-desc">${escapeHtml(a.description)}</div>` : ''}
+          ${tagsHtml ? `<div class="news-tags">${tagsHtml}</div>` : ''}
+        </div>
+      `;
+    });
+  }
+
+  container.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Initialize
+init();
+</script>
+</body>
+</html>

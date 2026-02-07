@@ -2,9 +2,6 @@
   "hostname": "frontend-web-node-010",
   "role": "frontend-web",
   "version": "1.0.0",
-  "ip": "10.0.151.26",
-  "resources": {
-    "cpu": "4vCPU",
-    "mem": "16GB"
-  }
+  "ip": "10.0.140.155",
+  "max_connections": 5000
 }

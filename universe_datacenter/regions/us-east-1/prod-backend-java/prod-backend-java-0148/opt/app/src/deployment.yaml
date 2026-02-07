@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: prod-backend-java-0084
+  name: prod-backend-java-0104
 spec:
   replicas: 3

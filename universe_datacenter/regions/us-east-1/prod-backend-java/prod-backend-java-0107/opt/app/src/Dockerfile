@@ -1,3 +1,3 @@
 FROM alpine:latest
-RUN echo 'Building server-node-041'
+RUN echo 'Building server-node-045'
 CMD ['start.sh']

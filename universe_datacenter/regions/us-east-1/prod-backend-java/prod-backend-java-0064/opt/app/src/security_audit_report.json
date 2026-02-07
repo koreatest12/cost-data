@@ -1,0 +1,12 @@
+{
+    "scan_id": "SCAN-2026-X99",
+    "timestamp": "2026-02-07 11:51:57.048573",
+    "firewall_status": "Active (Enforced)",
+    "open_ports": [
+        443,
+        80,
+        22
+    ],
+    "vulnerabilities_found": 0,
+    "compliance_check": "PASSED"
+}

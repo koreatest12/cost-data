@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: prod-blockchain-node-0033
+  name: prod-ai-gpu-cluster-0025
 spec:
   replicas: 3

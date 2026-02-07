@@ -1,12 +1,12 @@
 {
-  "host": "svc-payment-node-007",
-  "role": "svc-payment",
+  "host": "svc-backend-java-node-001",
+  "role": "svc-backend-java",
   "version": "2.5.0-Enterprise",
   "resources": {
     "cpu": "4Core",
     "ram": "16GB"
   },
-  "created_at": "2026-02-07 12:33:17.456426",
+  "created_at": "2026-02-07 12:33:17.460213",
   "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.662912"
+  "last_updated": "2026-02-07 12:33:26.669226"
 }

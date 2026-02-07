@@ -1,12 +1,11 @@
 {
-  "host": "svc-payment-node-001",
-  "role": "svc-payment",
-  "version": "2.5.0-Enterprise",
+  "hostname": "frontend-web-node-008",
+  "role": "frontend-web",
+  "version": "2.1.0-stable",
+  "ip": "10.0.223.248",
   "resources": {
-    "cpu": "4Core",
-    "ram": "16GB"
+    "cpu": "4vCPU",
+    "mem": "16GB"
   },
-  "created_at": "2026-02-07 12:33:17.453838",
-  "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.664397"
+  "patched_at": "2026-02-07 12:22:28.435936"
 }

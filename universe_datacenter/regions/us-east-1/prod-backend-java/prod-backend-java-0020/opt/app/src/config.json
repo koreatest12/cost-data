@@ -1,12 +1,12 @@
 {
-  "host": "svc-frontend-node-node-003",
-  "role": "svc-frontend-node",
+  "host": "infra-redis-node-009",
+  "role": "infra-redis",
   "version": "2.5.0-Enterprise",
   "resources": {
     "cpu": "4Core",
     "ram": "16GB"
   },
-  "created_at": "2026-02-07 12:33:17.478294",
+  "created_at": "2026-02-07 12:33:17.491301",
   "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.673963"
+  "last_updated": "2026-02-07 12:33:26.651565"
 }

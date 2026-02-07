@@ -1,11 +1,12 @@
 {
-  "hostname": "payment-gateway-node-009",
-  "role": "payment-gateway",
-  "version": "2.1.0-stable",
-  "ip": "10.0.206.197",
+  "host": "infra-redis-node-003",
+  "role": "infra-redis",
+  "version": "2.5.0-Enterprise",
   "resources": {
-    "cpu": "4vCPU",
-    "mem": "16GB"
+    "cpu": "4Core",
+    "ram": "16GB"
   },
-  "patched_at": "2026-02-07 12:22:28.416744"
+  "created_at": "2026-02-07 12:33:17.488832",
+  "security_patch": "APPLIED",
+  "last_updated": "2026-02-07 12:33:26.650441"
 }

@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: infra-redis-cache-0015
+  name: infra-k8s-worker-0085
 spec:
   replicas: 3

@@ -1,0 +1,10 @@
+{
+  "host": "infra-postgres-node-003",
+  "role": "infra-postgres",
+  "version": "1.0.0-legacy",
+  "resources": {
+    "cpu": "4Core",
+    "ram": "16GB"
+  },
+  "created_at": "2026-02-07 12:33:17.497154"
+}

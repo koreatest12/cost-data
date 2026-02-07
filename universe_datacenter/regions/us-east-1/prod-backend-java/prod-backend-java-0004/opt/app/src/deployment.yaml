@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: infra-k8s-worker-0101
+  name: prod-backend-java-0061
 spec:
   replicas: 3

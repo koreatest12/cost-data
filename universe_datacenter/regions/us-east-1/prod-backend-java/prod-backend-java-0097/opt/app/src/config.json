@@ -1,12 +1,12 @@
 {
-  "hostname": "redis-cache-cluster-node-005",
-  "role": "redis-cache-cluster",
+  "hostname": "java-backend-api-node-006",
+  "role": "java-backend-api",
   "version": "2.0.0-Enterprise",
-  "ip": "10.20.20.64",
+  "ip": "10.20.36.105",
   "resources": {
     "cpu": "8vCPU",
     "mem": "32GB"
   },
   "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.285025"
+  "updated_at": "2026-02-07 12:28:05.277740"
 }

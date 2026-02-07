@@ -1,4 +1,3 @@
-FROM redis:latest
-EXPOSE 8080
-# UPDATED by CI/CD Pipeline
-ENV APP_VERSION=2.0.0
+FROM alpine:latest
+RUN echo 'Building server-node-025'
+CMD ['start.sh']

@@ -1,12 +1,12 @@
 {
-  "hostname": "node-frontend-web-node-011",
-  "role": "node-frontend-web",
-  "version": "2.0.0-Enterprise",
-  "ip": "10.20.225.114",
+  "host": "ops-email-sender-node-002",
+  "role": "ops-email-sender",
+  "version": "2.5.0-Enterprise",
   "resources": {
-    "cpu": "8vCPU",
-    "mem": "32GB"
+    "cpu": "4Core",
+    "ram": "16GB"
   },
-  "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.272442"
+  "created_at": "2026-02-07 12:33:17.498797",
+  "security_patch": "APPLIED",
+  "last_updated": "2026-02-07 12:33:26.658455"
 }

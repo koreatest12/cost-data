@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: legacy-mainframe-0014
+  name: prod-ai-gpu-cluster-0033
 spec:
   replicas: 3

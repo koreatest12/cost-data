@@ -1,0 +1,443 @@
+{
+  "generation_1": [
+    {
+      "id": 1,
+      "name": "Bulbasaur",
+      "korean_name": "이상해씨",
+      "type": ["Grass", "Poison"],
+      "max_cp": 1115,
+      "base_stats": {
+        "attack": 118,
+        "defense": 111,
+        "stamina": 128
+      },
+      "evolution": {
+        "evolves_to": "Ivysaur",
+        "candy_required": 25
+      },
+      "height": 0.7,
+      "weight": 6.9,
+      "shiny_available": true
+    },
+    {
+      "id": 2,
+      "name": "Ivysaur",
+      "korean_name": "이상해풀",
+      "type": ["Grass", "Poison"],
+      "max_cp": 1699,
+      "base_stats": {
+        "attack": 151,
+        "defense": 143,
+        "stamina": 155
+      },
+      "evolution": {
+        "evolves_from": "Bulbasaur",
+        "evolves_to": "Venusaur",
+        "candy_required": 100
+      },
+      "height": 1.0,
+      "weight": 13.0,
+      "shiny_available": true
+    },
+    {
+      "id": 3,
+      "name": "Venusaur",
+      "korean_name": "이상해꽃",
+      "type": ["Grass", "Poison"],
+      "max_cp": 2720,
+      "base_stats": {
+        "attack": 198,
+        "defense": 189,
+        "stamina": 190
+      },
+      "evolution": {
+        "evolves_from": "Ivysaur"
+      },
+      "height": 2.0,
+      "weight": 100.0,
+      "shiny_available": true,
+      "mega_evolution": {
+        "available": true,
+        "max_cp": 3698,
+        "mega_energy_required": 200
+      }
+    },
+    {
+      "id": 4,
+      "name": "Charmander",
+      "korean_name": "파이리",
+      "type": ["Fire"],
+      "max_cp": 1108,
+      "base_stats": {
+        "attack": 116,
+        "defense": 93,
+        "stamina": 118
+      },
+      "evolution": {
+        "evolves_to": "Charmeleon",
+        "candy_required": 25
+      },
+      "height": 0.6,
+      "weight": 8.5,
+      "shiny_available": true
+    },
+    {
+      "id": 5,
+      "name": "Charmeleon",
+      "korean_name": "리자드",
+      "type": ["Fire"],
+      "max_cp": 1653,
+      "base_stats": {
+        "attack": 158,
+        "defense": 126,
+        "stamina": 151
+      },
+      "evolution": {
+        "evolves_from": "Charmander",
+        "evolves_to": "Charizard",
+        "candy_required": 100
+      },
+      "height": 1.1,
+      "weight": 19.0,
+      "shiny_available": true
+    },
+    {
+      "id": 6,
+      "name": "Charizard",
+      "korean_name": "리자몽",
+      "type": ["Fire", "Flying"],
+      "max_cp": 2889,
+      "base_stats": {
+        "attack": 223,
+        "defense": 173,
+        "stamina": 186
+      },
+      "evolution": {
+        "evolves_from": "Charmeleon"
+      },
+      "height": 1.7,
+      "weight": 90.5,
+      "shiny_available": true,
+      "mega_evolution": {
+        "available": true,
+        "forms": ["Mega Charizard X", "Mega Charizard Y"],
+        "max_cp": 3850,
+        "mega_energy_required": 200
+      }
+    },
+    {
+      "id": 7,
+      "name": "Squirtle",
+      "korean_name": "꼬부기",
+      "type": ["Water"],
+      "max_cp": 1146,
+      "base_stats": {
+        "attack": 94,
+        "defense": 121,
+        "stamina": 127
+      },
+      "evolution": {
+        "evolves_to": "Wartortle",
+        "candy_required": 25
+      },
+      "height": 0.5,
+      "weight": 9.0,
+      "shiny_available": true
+    },
+    {
+      "id": 8,
+      "name": "Wartortle",
+      "korean_name": "어니부기",
+      "type": ["Water"],
+      "max_cp": 1582,
+      "base_stats": {
+        "attack": 126,
+        "defense": 155,
+        "stamina": 153
+      },
+      "evolution": {
+        "evolves_from": "Squirtle",
+        "evolves_to": "Blastoise",
+        "candy_required": 100
+      },
+      "height": 1.0,
+      "weight": 22.5,
+      "shiny_available": true
+    },
+    {
+      "id": 9,
+      "name": "Blastoise",
+      "korean_name": "거북왕",
+      "type": ["Water"],
+      "max_cp": 2466,
+      "base_stats": {
+        "attack": 171,
+        "defense": 207,
+        "stamina": 188
+      },
+      "evolution": {
+        "evolves_from": "Wartortle"
+      },
+      "height": 1.6,
+      "weight": 85.5,
+      "shiny_available": true,
+      "mega_evolution": {
+        "available": true,
+        "max_cp": 3394,
+        "mega_energy_required": 200
+      }
+    },
+    {
+      "id": 25,
+      "name": "Pikachu",
+      "korean_name": "피카츄",
+      "type": ["Electric"],
+      "max_cp": 1060,
+      "base_stats": {
+        "attack": 112,
+        "defense": 96,
+        "stamina": 111
+      },
+      "evolution": {
+        "evolves_from": "Pichu",
+        "evolves_to": "Raichu",
+        "candy_required": 50
+      },
+      "height": 0.4,
+      "weight": 6.0,
+      "shiny_available": true,
+      "costume_forms": [
+        "Party Hat Pikachu",
+        "Santa Hat Pikachu",
+        "Witch Hat Pikachu",
+        "Fragment Hat Pikachu",
+        "Kariyushi Shirt Pikachu"
+      ]
+    },
+    {
+      "id": 133,
+      "name": "Eevee",
+      "korean_name": "이브이",
+      "type": ["Normal"],
+      "max_cp": 1210,
+      "base_stats": {
+        "attack": 104,
+        "defense": 114,
+        "stamina": 146
+      },
+      "evolution": {
+        "evolves_to": [
+          "Vaporeon",
+          "Jolteon",
+          "Flareon",
+          "Espeon",
+          "Umbreon",
+          "Leafeon",
+          "Glaceon",
+          "Sylveon"
+        ],
+        "candy_required": 25
+      },
+      "height": 0.3,
+      "weight": 6.5,
+      "shiny_available": true,
+      "costume_forms": [
+        "Flower Crown Eevee"
+      ]
+    },
+    {
+      "id": 150,
+      "name": "Mewtwo",
+      "korean_name": "뮤츠",
+      "type": ["Psychic"],
+      "max_cp": 4178,
+      "base_stats": {
+        "attack": 300,
+        "defense": 182,
+        "stamina": 214
+      },
+      "height": 2.0,
+      "weight": 122.0,
+      "shiny_available": true,
+      "legendary": true,
+      "raid_exclusive": true
+    },
+    {
+      "id": 151,
+      "name": "Mew",
+      "korean_name": "뮤",
+      "type": ["Psychic"],
+      "max_cp": 3265,
+      "base_stats": {
+        "attack": 210,
+        "defense": 210,
+        "stamina": 225
+      },
+      "height": 0.4,
+      "weight": 4.0,
+      "shiny_available": true,
+      "mythical": true,
+      "special_research": true
+    }
+  ],
+  "generation_2": [
+    {
+      "id": 152,
+      "name": "Chikorita",
+      "korean_name": "치코리타",
+      "type": ["Grass"],
+      "max_cp": 1003,
+      "base_stats": {
+        "attack": 92,
+        "defense": 122,
+        "stamina": 128
+      },
+      "evolution": {
+        "evolves_to": "Bayleef",
+        "candy_required": 25
+      },
+      "height": 0.9,
+      "weight": 6.4,
+      "shiny_available": true
+    },
+    {
+      "id": 172,
+      "name": "Pichu",
+      "korean_name": "피츄",
+      "type": ["Electric"],
+      "max_cp": 608,
+      "base_stats": {
+        "attack": 77,
+        "defense": 63,
+        "stamina": 85
+      },
+      "evolution": {
+        "evolves_to": "Pikachu",
+        "candy_required": 25
+      },
+      "height": 0.3,
+      "weight": 2.0,
+      "shiny_available": true,
+      "baby": true,
+      "egg_only": true
+    },
+    {
+      "id": 249,
+      "name": "Lugia",
+      "korean_name": "루기아",
+      "type": ["Psychic", "Flying"],
+      "max_cp": 3703,
+      "base_stats": {
+        "attack": 193,
+        "defense": 310,
+        "stamina": 235
+      },
+      "height": 5.2,
+      "weight": 216.0,
+      "shiny_available": true,
+      "legendary": true,
+      "raid_exclusive": true
+    },
+    {
+      "id": 250,
+      "name": "Ho-Oh",
+      "korean_name": "칠색조",
+      "type": ["Fire", "Flying"],
+      "max_cp": 3863,
+      "base_stats": {
+        "attack": 239,
+        "defense": 244,
+        "stamina": 214
+      },
+      "height": 3.8,
+      "weight": 199.0,
+      "shiny_available": true,
+      "legendary": true,
+      "raid_exclusive": true
+    }
+  ],
+  "generation_3": [
+    {
+      "id": 252,
+      "name": "Treecko",
+      "korean_name": "나무지기",
+      "type": ["Grass"],
+      "max_cp": 1079,
+      "base_stats": {
+        "attack": 124,
+        "defense": 94,
+        "stamina": 120
+      },
+      "evolution": {
+        "evolves_to": "Grovyle",
+        "candy_required": 25
+      },
+      "height": 0.5,
+      "weight": 5.0,
+      "shiny_available": true
+    },
+    {
+      "id": 382,
+      "name": "Kyogre",
+      "korean_name": "가이오가",
+      "type": ["Water"],
+      "max_cp": 4115,
+      "base_stats": {
+        "attack": 270,
+        "defense": 228,
+        "stamina": 205
+      },
+      "height": 4.5,
+      "weight": 352.0,
+      "shiny_available": true,
+      "legendary": true,
+      "raid_exclusive": true,
+      "primal_reversion": {
+        "available": true,
+        "max_cp": 5596
+      }
+    },
+    {
+      "id": 383,
+      "name": "Groudon",
+      "korean_name": "그란돈",
+      "type": ["Ground"],
+      "max_cp": 4115,
+      "base_stats": {
+        "attack": 270,
+        "defense": 228,
+        "stamina": 205
+      },
+      "height": 3.5,
+      "weight": 950.0,
+      "shiny_available": true,
+      "legendary": true,
+      "raid_exclusive": true,
+      "primal_reversion": {
+        "available": true,
+        "max_cp": 5596
+      }
+    },
+    {
+      "id": 384,
+      "name": "Rayquaza",
+      "korean_name": "레쿠쟈",
+      "type": ["Dragon", "Flying"],
+      "max_cp": 3835,
+      "base_stats": {
+        "attack": 284,
+        "defense": 170,
+        "stamina": 213
+      },
+      "height": 7.0,
+      "weight": 206.5,
+      "shiny_available": true,
+      "legendary": true,
+      "raid_exclusive": true,
+      "mega_evolution": {
+        "available": true,
+        "max_cp": 4336
+      }
+    }
+  ]
+}

@@ -12,7 +12,7 @@
     - **배포 위치:** `/opt/app/bin/` (Distributed)
 
     ## 3️⃣ 데이터 자산
-    - **총 파일 객체:** 270,035 Files managed
+    - **총 파일 객체:** 688,579 Files managed
     - **DB 레코드:** 200,000+ Rows (Users, Payments, Metrics)
     - **메인 DB:** `universe_datacenter/central_core.db`
     

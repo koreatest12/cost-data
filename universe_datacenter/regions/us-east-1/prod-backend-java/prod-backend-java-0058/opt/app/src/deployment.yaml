@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: prod-frontend-react-0113
+  name: legacy-mainframe-0004
 spec:
   replicas: 3
