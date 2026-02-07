@@ -1,0 +1,11 @@
+{
+  "hostname": "message-queue-node-004",
+  "role": "message-queue",
+  "version": "2.1.0-stable",
+  "ip": "10.0.203.121",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  },
+  "patched_at": "2026-02-07 12:22:28.432766"
+}

@@ -1,0 +1,6 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prod-frontend-react-0104
+spec:
+  replicas: 3

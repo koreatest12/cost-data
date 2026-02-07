@@ -1,0 +1,11 @@
+{
+  "hostname": "redis-cache-node-010",
+  "role": "redis-cache",
+  "version": "2.1.0-stable",
+  "ip": "10.0.243.248",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  },
+  "patched_at": "2026-02-07 12:22:28.419780"
+}

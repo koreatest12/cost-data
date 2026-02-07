@@ -1,0 +1,12 @@
+{
+  "hostname": "kafka-message-broker-node-001",
+  "role": "kafka-message-broker",
+  "version": "2.0.0-Enterprise",
+  "ip": "10.20.75.110",
+  "resources": {
+    "cpu": "8vCPU",
+    "mem": "32GB"
+  },
+  "security_patch": "CVE-2026-FIXED",
+  "updated_at": "2026-02-07 12:28:05.283060"
+}

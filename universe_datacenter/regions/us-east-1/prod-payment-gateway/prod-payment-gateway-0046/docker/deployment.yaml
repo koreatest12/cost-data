@@ -1,0 +1,6 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prod-payment-gateway-0046
+spec:
+  replicas: 3

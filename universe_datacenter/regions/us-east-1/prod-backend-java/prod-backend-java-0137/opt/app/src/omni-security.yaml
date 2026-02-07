@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: omni-security
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: omni-security
+  template:
+    metadata:
+      labels:
+        app: omni-security
+    spec:
+      containers:
+      - name: app
+        image: ghcr.io/koreatest12/cost-data/omni-security-service:latest
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30

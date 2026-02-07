@@ -1,0 +1,7 @@
+{
+  "hostname": "backend-api-node-001",
+  "role": "backend-api",
+  "version": "1.0.0",
+  "ip": "10.0.51.22",
+  "max_connections": 5000
+}
