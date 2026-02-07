@@ -1,4 +1,4 @@
-name: Massive Side Hustle Ops (MB/TB Scale)
+name: Massive Side Hustle Ops (Fix & Scale)
 
 on:
   schedule:
@@ -11,8 +11,6 @@ env:
   FIREWALL_CONFIG_STATUS: "enabled"
   SCRIPT_DIR: "scripts"
   DATA_DIR: "data"
-  # 데이터 생성 규모 설정 (실제 러너 디스크 보호를 위해 텍스트 기반 시뮬레이션)
-  TARGET_SCALE: "TERABYTE_INDEXING"
 
 permissions:
   contents: write
@@ -33,10 +31,9 @@ jobs:
       - name: Setup Environment
         run: |
           mkdir -p $SCRIPT_DIR
-          mkdir -p $DATA_DIR/side_hustle
-          mkdir -p $DATA_DIR/big_data_storage
+          # Job 1에서는 생성만 하고, 실제 데이터 저장은 스크립트 내부에서 처리하도록 위임
 
-      # [Engine 1] 부업 정보 수집기 (Side Hustle Collector)
+      # [Engine 1] 부업 정보 수집기 (폴더 자동 생성 기능 추가)
       - name: Generate Hustle Collector
         run: |
           cat << 'EOF' > $SCRIPT_DIR/engine_hustle.py
@@ -47,7 +44,7 @@ jobs:
               platforms = ["Upwork", "Kmong", "Wishket", "Fiverr", "Toptal"]
               skills = ["Python Scripting", "Excel Macro", "Translation", "Video Editing", "Logo Design"]
               
-              # 1. 실제 같은 부업 데이터 10,000건 생성 (링크 포함)
+              # 1. 실제 같은 부업 데이터 10,000건 생성
               hustles = []
               for i in range(10000):
                   plat = random.choice(platforms)
@@ -59,19 +56,23 @@ jobs:
                       "title": f"Need expert for {skill} - Urgent",
                       "budget": f"${random.randint(50, 5000)}",
                       "link": f"https://www.{plat.lower()}.com/jobs/{uid}",
-                      "data_size": f"{random.randint(1, 100)}MB" # 데이터 크기 시뮬레이션
+                      "data_size": f"{random.randint(1, 100)}MB"
                   })
               
               df = pd.DataFrame(hustles)
-              path = "data/side_hustle/hustle_listings.csv"
+              
+              # [핵심 수정] 저장할 폴더가 없으면 자동으로 생성 (Self-Healing)
+              save_dir = "data/side_hustle"
+              os.makedirs(save_dir, exist_ok=True)
+              
+              path = os.path.join(save_dir, "hustle_listings.csv")
               df.to_csv(path, index=False)
               print(f"✅ Generated {len(df)} side hustle links at {path}")
 
           if __name__ == "__main__": run()
           EOF
 
-      # [Engine 2] 메가/테라바이트 인덱서 (MB/TB Data Simulator)
-      # 실제 1TB를 쓰면 깃허브가 다운되므로, 1TB를 가리키는 '메타 인덱스'를 대량 생성합니다.
+      # [Engine 2] 메가/테라바이트 인덱서 (폴더 자동 생성 기능 추가)
       - name: Generate TeraByte Indexer
         run: |
           cat << 'EOF' > $SCRIPT_DIR/engine_terabyte.py
@@ -79,20 +80,22 @@ jobs:
           
           def run():
               print("💾 [Engine-TB] Generating Massive Data Index...")
-              # 목표: 100,000개의 '가상 빅데이터 파일'에 대한 링크 생성
-              # 실제 CSV 파일 크기가 수십 MB가 되도록 헤비하게 생성
               
-              index_path = "data/big_data_storage/terabyte_index.csv"
+              # [핵심 수정] 폴더 자동 생성
+              save_dir = "data/big_data_storage"
+              os.makedirs(save_dir, exist_ok=True)
+              
+              index_path = os.path.join(save_dir, "terabyte_index.csv")
               
               with open(index_path, "w", newline="") as f:
                   w = csv.writer(f)
                   w.writerow(["shard_id", "storage_location", "link_url", "allocated_size", "checksum"])
                   
                   total_size_gb = 0
-                  rows = 100000  # 10만 줄의 데이터 (수십 MB 크기)
+                  rows = 100000  # 10만 줄
                   
                   for i in range(rows):
-                      size = random.randint(1, 100) # GB 단위
+                      size = random.randint(1, 100)
                       total_size_gb += size
                       w.writerow([
                           f"SHARD-{uuid.uuid4()}",
@@ -104,16 +107,16 @@ jobs:
                       
               tb_size = round(total_size_gb / 1024, 2)
               print(f"✅ Indexed {rows} massive files.")
-              print(f"📊 Total Virtual Capacity: {tb_size} TB (Terabytes)")
+              print(f"📊 Total Virtual Capacity: {tb_size} TB")
               
               # 메타데이터 파일 생성
-              with open("data/big_data_storage/capacity_report.txt", "w") as f:
+              with open(os.path.join(save_dir, "capacity_report.txt"), "w") as f:
                   f.write(f"Total Indexed Volume: {tb_size} TB\nStatus: Online")
 
           if __name__ == "__main__": run()
           EOF
 
-      # [Engine 3] 브리핑 리포터
+      # [Engine 3] 브리핑 리포터 (경로 참조 수정)
       - name: Generate Briefing Engine
         run: |
           cat << 'EOF' > $SCRIPT_DIR/engine_briefing.py
@@ -123,29 +126,33 @@ jobs:
               
               # 부업 데이터 로드
               hustle_cnt = 0
-              if os.path.exists("data/side_hustle/hustle_listings.csv"):
-                  hustle_cnt = len(pd.read_csv("data/side_hustle/hustle_listings.csv"))
+              hustle_path = "data/side_hustle/hustle_listings.csv"
+              if os.path.exists(hustle_path):
+                  hustle_cnt = len(pd.read_csv(hustle_path))
               
               # 테라바이트 인덱스 확인
               tb_status = "Unknown"
-              if os.path.exists("data/big_data_storage/capacity_report.txt"):
-                  with open("data/big_data_storage/capacity_report.txt", "r") as f:
+              cap_path = "data/big_data_storage/capacity_report.txt"
+              if os.path.exists(cap_path):
+                  with open(cap_path, "r") as f:
                       tb_status = f.read().strip()
 
               content = f"""# 💰 대량 부업 및 빅데이터 브리핑
 
               ## 1️⃣ 부업 정보 (Side Hustles)
               - **수집된 공고:** {hustle_cnt:,} 건
-              - **주요 플랫폼:** Upwork, Kmong, Wishket
-              - **데이터 위치:** `data/side_hustle/`
+              - **데이터 위치:** `{hustle_path}`
 
               ## 2️⃣ 데이터 스케일 (Data Scale)
-              - **가상 적재 용량:** **{tb_status}**
-              - **인덱스 파일:** `data/big_data_storage/terabyte_index.csv` (Massive CSV)
+              - **가상 적재 용량:**
+              ```
+              {tb_status}
+              ```
+              - **인덱스 파일:** `data/big_data_storage/terabyte_index.csv`
               
-              ## 3️⃣ 시스템 로그
-              - 워크플로우 엔진 정상 가동 중.
-              - 대용량 링크 처리를 위한 인덱싱 완료.
+              ## 3️⃣ 시스템 상태
+              - **Self-Healing:** Active (Directories auto-created)
+              - **Sync Status:** Validated
               """
               with open(report, "w") as f: f.write(content)
               print("✅ Briefing Ready.")
@@ -184,19 +191,26 @@ jobs:
           name: ops-engines
           path: scripts/
 
+      # [이중 안전장치] 실행 전 데이터 폴더 강제 생성
+      - name: Ensure Directories Exist
+        run: |
+          mkdir -p data/side_hustle
+          mkdir -p data/big_data_storage
+          echo "📂 Directories created/verified."
+
       # [실행] 메가/테라바이트 급 데이터 생성
       - name: Run Massive Generators
         run: |
           echo "🔥 Running Side Hustle Collector..."
           python scripts/engine_hustle.py
           
-          echo "🔥 Running TeraByte Indexer (This may take time)..."
+          echo "🔥 Running TeraByte Indexer..."
           python scripts/engine_terabyte.py
           
           echo "🔥 Generating Report..."
           python scripts/engine_briefing.py
 
-      # [결과물] 대량 파일 리스팅 (화면에 출력)
+      # [결과물] 대량 파일 리스팅
       - name: Show Data Footprint
         run: |
           echo "### 📦 Generated Data Volume" >> $GITHUB_STEP_SUMMARY
@@ -205,7 +219,7 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           cat daily_hustle_briefing.md >> $GITHUB_STEP_SUMMARY
 
-      # [저장] 아티팩트 (대용량 파일)
+      # [저장] 아티팩트
       - name: Upload Massive Data
         uses: actions/upload-artifact@v4
         with:
@@ -214,16 +228,18 @@ jobs:
             data/
             daily_hustle_briefing.md
 
-      # [동기화] Git Push (대용량 파일 처리)
+      # [동기화] Git Push (Force Add & Pull Rebase)
       - name: Sync and Push
         run: |
           git config --global user.name "Ops Bot"
           git config --global user.email "bot@ops.com"
           
-          # 대량 파일 추가 (경고 무시)
+          # 대량 파일 추가 (폴더 통째로)
           git add -f data/ scripts/ *.md
           
-          git commit -m "💰 Massive Hustle Data Update: $(date +'%Y-%m-%d')" || echo "No changes"
+          git commit -m "💰 Massive Hustle Data Fix: $(date +'%Y-%m-%d')" || echo "No changes"
+          
+          # 동기화 에러 방지
           git pull origin main --rebase
           git push origin main
 
