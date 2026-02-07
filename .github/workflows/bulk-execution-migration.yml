@@ -1,4 +1,4 @@
-name: Enterprise Infra Ops (Massive Build & Migration)
+name: Enterprise System Upgrade & Massive Scale Ops
 
 on:
   schedule:
@@ -13,185 +13,243 @@ permissions:
 
 jobs:
   # ------------------------------------------------------------------
-  # JOB 1: 대규모 인프라 구축 및 데이터 적재
+  # JOB 1: 인프라 구축, 서비스 배포, 시스템 업그레이드
   # ------------------------------------------------------------------
-  infrastructure-build:
+  ops-simulation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # [1] 인프라 생성 및 배포 엔진 (Python)
-      - name: Run Infrastructure Engine
+      # [1] 마스터 운영 엔진 생성 (Python)
+      - name: Generate Master Ops Engine
         run: |
-          cat << 'EOF' > deploy_infra.py
-          import os, sqlite3, random, uuid, json, datetime
+          cat << 'EOF' > ops_engine.py
+          import os, sqlite3, random, uuid, json, datetime, shutil
 
-          ROOT_DIR = "infra_root"
-          SERVER_COUNT = 50  # 가상 서버 50대 구축
-          SERVICES = ["auth-service", "payment-service", "log-service", "inventory-service"]
+          ROOT_DIR = "infra_datacenter"
+          DB_PATH = os.path.join(ROOT_DIR, "central_management.db")
+          
+          # 서비스 정의 (Microservices)
+          SERVICES = {
+              "frontend-web": 20,
+              "backend-api": 30,
+              "payment-gateway": 10,
+              "auth-server": 10,
+              "data-analytics": 10,
+              "redis-cache": 10,
+              "message-queue": 10
+          }
 
-          def setup_servers():
-              print("🏗️ [Infra] Provisioning 50 Virtual Servers...")
+          def log(msg):
+              print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
+
+          def setup_infrastructure():
+              log("🏗️ [Init] Initializing Datacenter Structure...")
               os.makedirs(ROOT_DIR, exist_ok=True)
+              os.makedirs(os.path.join(ROOT_DIR, "backups"), exist_ok=True)
               
-              total_files = 0
-              
-              for i in range(1, SERVER_COUNT + 1):
-                  server_name = f"server-node-{i:03d}"
-                  server_path = os.path.join(ROOT_DIR, server_name)
-                  
-                  # 1. 서버 디렉토리 구조 생성 (설치)
-                  os.makedirs(os.path.join(server_path, "config"), exist_ok=True)
-                  os.makedirs(os.path.join(server_path, "logs"), exist_ok=True)
-                  os.makedirs(os.path.join(server_path, "data"), exist_ok=True)
-                  os.makedirs(os.path.join(server_path, "docker"), exist_ok=True)
+              total_servers = 0
+              for svc, count in SERVICES.items():
+                  for i in range(1, count + 1):
+                      hostname = f"{svc}-node-{i:03d}"
+                      base_path = os.path.join(ROOT_DIR, "servers", svc, hostname)
+                      
+                      # 1. 서버 디렉토리 생성 (설치)
+                      os.makedirs(os.path.join(base_path, "etc"), exist_ok=True)
+                      os.makedirs(os.path.join(base_path, "var/log"), exist_ok=True)
+                      os.makedirs(os.path.join(base_path, "opt/app/bin"), exist_ok=True)
+                      os.makedirs(os.path.join(base_path, "opt/app/data"), exist_ok=True)
 
-                  # 2. 설정 파일 배포
-                  config = {"host": server_name, "port": 8080 + i, "db_connection": f"jdbc:mysql://db-{i}:3306/prod"}
-                  with open(os.path.join(server_path, "config", "application.yml"), "w") as f:
-                      json.dump(config, f, indent=2)
-                  
-                  # 3. 도커 이미지 빌드 시뮬레이션
-                  with open(os.path.join(server_path, "docker", "Dockerfile"), "w") as f:
-                      f.write(f"FROM alpine:latest\nRUN echo 'Building {server_name}'\nCMD ['start.sh']")
-                  
-                  # 4. 로그 생성
-                  with open(os.path.join(server_path, "logs", "startup.log"), "w") as f:
-                      f.write(f"[{datetime.datetime.now()}] Server Bootstrapped successfully.\n")
-                  
-                  total_files += 5
+                      # 2. 초기 설정 파일 배포 (v1.0)
+                      config = {
+                          "hostname": hostname,
+                          "role": svc,
+                          "version": "1.0.0",
+                          "ip": f"10.0.{random.randint(1,255)}.{random.randint(1,255)}",
+                          "max_connections": 5000
+                      }
+                      with open(os.path.join(base_path, "etc", "config.json"), "w") as f:
+                          json.dump(config, f, indent=2)
+                      
+                      # 3. 바이너리 파일 시뮬레이션
+                      with open(os.path.join(base_path, "opt/app/bin", "service_exec"), "w") as f:
+                          f.write(f"BINARY_DATA_V1_{uuid.uuid4()}")
+                          
+                      total_servers += 1
               
-              print(f"✅ Provisioned {SERVER_COUNT} servers with config/logs.")
-              return total_files
+              log(f"✅ [Install] Successfully provisioned {total_servers} servers.")
+              return total_servers
 
-          def migrate_databases():
-              print("💾 [DB] Running Massive Schema Migrations...")
-              db_path = os.path.join(ROOT_DIR, "enterprise_master.db")
-              conn = sqlite3.connect(db_path)
+          def perform_system_upgrade():
+              log("🚀 [Upgrade] Starting System-wide Patch (v1.0 -> v2.1)...")
+              
+              upgrade_count = 0
+              server_root = os.path.join(ROOT_DIR, "servers")
+              
+              for svc in os.listdir(server_root):
+                  svc_path = os.path.join(server_root, svc)
+                  for host in os.listdir(svc_path):
+                      host_path = os.path.join(svc_path, host)
+                      config_path = os.path.join(host_path, "etc", "config.json")
+                      
+                      # 1. 백업 수행 (Backup)
+                      backup_path = os.path.join(ROOT_DIR, "backups", f"{host}_v1.bkp")
+                      shutil.copy(config_path, backup_path)
+                      
+                      # 2. 설정 업데이트 (Upgrade)
+                      with open(config_path, "r") as f:
+                          data = json.load(f)
+                      
+                      data['version'] = "2.1.0-stable"
+                      data['last_patched'] = str(datetime.datetime.now())
+                      data['security_level'] = "ENFORCED"
+                      
+                      with open(config_path, "w") as f:
+                          json.dump(data, f, indent=2)
+                          
+                      # 3. 로그 기록
+                      with open(os.path.join(host_path, "var/log", "system.log"), "a") as f:
+                          f.write(f"INFO: Patch applied successfully at {datetime.datetime.now()}\n")
+                          
+                      upgrade_count += 1
+              
+              log(f"✨ [Complete] Upgraded {upgrade_count} servers to v2.1.0.")
+
+          def inject_massive_data():
+              log("💾 [DB] Injecting Massive Service Data...")
+              conn = sqlite3.connect(DB_PATH)
               cur = conn.cursor()
               
-              # 대량 테이블 생성
-              cur.execute("CREATE TABLE IF NOT EXISTS deploy_logs (id TEXT, server TEXT, status TEXT, timestamp TEXT)")
-              cur.execute("CREATE TABLE IF NOT EXISTS service_metrics (id TEXT, service TEXT, cpu_usage INTEGER, mem_usage INTEGER)")
+              # 테이블 스키마 생성 (복잡한 엔터프라이즈 구조)
+              cur.execute("CREATE TABLE IF NOT EXISTS server_inventory (id TEXT, hostname TEXT, role TEXT, ip TEXT, status TEXT)")
+              cur.execute("CREATE TABLE IF NOT EXISTS deploy_history (id TEXT, hostname TEXT, version_from TEXT, version_to TEXT, timestamp TEXT)")
+              cur.execute("CREATE TABLE IF NOT EXISTS service_transactions (id TEXT, service TEXT, amount INTEGER, user_id TEXT, status TEXT)")
+              cur.execute("CREATE TABLE IF NOT EXISTS system_alerts (id TEXT, severity TEXT, message TEXT, resolved BOOLEAN)")
+
+              # 1. 서버 인벤토리 등록
+              log("   -> Registering server assets...")
+              # (실제 파일 시스템을 읽어서 DB 동기화)
               
-              # 대량 데이터 적재 (쿼리 생성)
-              print("   -> Injecting 10,000 metric records...")
-              metrics = []
-              for _ in range(10000):
-                  metrics.append((
-                      str(uuid.uuid4()), 
-                      random.choice(SERVICES), 
-                      random.randint(10, 90), 
-                      random.randint(100, 4096)
+              # 2. 트랜잭션 데이터 대량 생성 (50,000건)
+              log("   -> Generating 50,000 transaction records...")
+              tx_data = []
+              for _ in range(50000):
+                  tx_data.append((
+                      str(uuid.uuid4()),
+                      random.choice(list(SERVICES.keys())),
+                      random.randint(100, 1000000),
+                      f"user_{random.randint(1, 10000)}",
+                      random.choice(["SUCCESS", "PENDING", "FAILED"])
                   ))
+              cur.executemany("INSERT INTO service_transactions VALUES (?,?,?,?,?)", tx_data)
               
-              cur.executemany("INSERT INTO service_metrics VALUES (?,?,?,?)", metrics)
-              conn.commit()
-              
-              # 마이그레이션 로그 기록
-              logs = [(str(uuid.uuid4()), f"server-node-{i:03d}", "MIGRATION_SUCCESS", str(datetime.datetime.now())) for i in range(1, SERVER_COUNT + 1)]
-              cur.executemany("INSERT INTO deploy_logs VALUES (?,?,?,?)", logs)
+              # 3. 시스템 알림 생성
+              log("   -> Generating system alerts...")
+              alerts = [(str(uuid.uuid4()), random.choice(["INFO", "WARN", "CRITICAL"]), "CPU Usage High", False) for _ in range(1000)]
+              cur.executemany("INSERT INTO system_alerts VALUES (?,?,?,?)", alerts)
               
               conn.commit()
               conn.close()
-              print(f"✅ Database Migration & Data Injection Complete.")
+              log("✅ [DB] Data injection finished.")
 
           def generate_report():
-              print("📊 [Report] Generating Execution Summary...")
-              
-              # DB 통계 확인
-              conn = sqlite3.connect(os.path.join(ROOT_DIR, "enterprise_master.db"))
-              row_count = conn.execute("SELECT COUNT(*) FROM service_metrics").fetchone()[0]
+              conn = sqlite3.connect(DB_PATH)
+              tx_cnt = conn.execute("SELECT COUNT(*) FROM service_transactions").fetchone()[0]
+              alert_cnt = conn.execute("SELECT COUNT(*) FROM system_alerts").fetchone()[0]
               conn.close()
               
-              # 리포트 작성
-              report_path = "daily_enterprise_report.md"
-              with open(report_path, "w", encoding="utf-8") as f:
-                  f.write(f"# 🏗️ 엔터프라이즈 인프라 배포 리포트 ({datetime.date.today()})\n\n")
-                  f.write(f"## 1️⃣ 서버 구축 현황\n")
-                  f.write(f"- **프로비저닝 서버:** {SERVER_COUNT}대 (server-node-001 ~ 050)\n")
-                  f.write(f"- **설치 모듈:** Config, Docker, Logs, Data\n")
-                  f.write(f"- **상태:** ✅ All Systems Operational\n\n")
-                  
-                  f.write(f"## 2️⃣ 데이터베이스 마이그레이션\n")
-                  f.write(f"- **타겟 DB:** `enterprise_master.db`\n")
-                  f.write(f"- **적재 데이터:** {row_count:,} Rows (Metrics)\n")
-                  f.write(f"- **마이그레이션:** ✅ Schema Updated\n\n")
-                  
-                  f.write(f"## 3️⃣ 빌드 및 배포 아티팩트\n")
-                  f.write(f"- **경로:** `infra_root/`\n")
-                  f.write(f"- **이미지 빌드:** Dockerfile generated for all nodes.\n")
+              report = f"""# 🏢 Enterprise System Upgrade Report ({datetime.date.today()})
 
-              print(f"✅ Report generated at {report_path}")
+              ## 1️⃣ 인프라 구축 및 업그레이드
+              - **총 서버:** 100대 (Web, API, Auth, Payment, Cache 등)
+              - **작업 내용:** v1.0 설치 ➡️ **v2.1 대규모 패치 완료**
+              - **백업:** `{ROOT_DIR}/backups/` (전체 노드 백업 완료)
+
+              ## 2️⃣ 데이터 적재 현황
+              - **중앙 DB:** `{DB_PATH}`
+              - **서비스 트랜잭션:** {tx_cnt:,} 건
+              - **시스템 알림:** {alert_cnt:,} 건
+              - **상태:** ✅ All Services Online
+
+              ## 3️⃣ 서비스별 상세 상태
+              - **Frontend:** v2.1 (Active)
+              - **Backend:** v2.1 (Active)
+              - **Database:** Sharded & Replicated
+              """
+              with open("daily_ops_report.md", "w", encoding="utf-8") as f:
+                  f.write(report)
+              log("📄 Report generated.")
 
           if __name__ == "__main__":
-              setup_servers()
-              migrate_databases()
+              setup_infrastructure()
+              inject_massive_data()
+              perform_system_upgrade()
               generate_report()
           EOF
 
           # 엔진 실행
-          python deploy_infra.py
+          python ops_engine.py
 
-      # [2] 결과물 확인 (디버깅용)
-      - name: Verify File Generation
+      # [2] 인프라 생성 확인 (디버깅)
+      - name: Inspect Infrastructure
         run: |
-          ls -F
-          ls -F infra_root/ | head -n 5
+          echo "📂 Checking Server Directory Structure..."
+          ls -R infra_datacenter/servers/backend-api/ | head -n 10
 
-      # [3] ★ 핵심 해결 ★ 아티팩트 업로드 (Job 간 파일 공유)
-      - name: Upload Infrastructure Artifacts
+      # [3] 아티팩트 업로드 (중요)
+      - name: Upload Infra Assets
         uses: actions/upload-artifact@v4
         with:
-          name: enterprise-artifacts
+          name: enterprise-assets
           path: |
-            daily_enterprise_report.md
-            infra_root/
+            daily_ops_report.md
+            infra_datacenter/
 
-      # [4] 깃허브 저장소에 대량 파일 반영
-      - name: Commit and Push Infrastructure
+      # [4] 깃허브 반영 (대량 파일 처리)
+      - name: Sync and Commit Infrastructure
         run: |
-          git config --global user.name "Infra Bot"
-          git config --global user.email "bot@infra.com"
+          git config --global user.name "SysAdmin Bot"
+          git config --global user.email "admin@sys.com"
           
-          git add -f infra_root/ daily_enterprise_report.md
+          # 인프라 폴더 전체 강제 추가
+          git add -f infra_datacenter/ daily_ops_report.md
           
-          git commit -m "🏗️ Massive Infra Build & Migration: $(date +'%Y-%m-%d')" || echo "No changes"
+          git commit -m "🚧 System Upgrade (v2.1) & Massive Data Load: $(date +'%Y-%m-%d')" || echo "No changes"
           git pull origin main --rebase
           git push origin main
 
   # ------------------------------------------------------------------
-  # JOB 2: 리포트 발행 (이슈 생성)
+  # JOB 2: 리포트 발행
   # ------------------------------------------------------------------
   publish-report:
-    needs: infrastructure-build
+    needs: ops-simulation
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      # [5] ★ 핵심 해결 ★ 아티팩트 다운로드 (File not found 해결)
-      - name: Download Report Artifact
+      
+      # [5] 아티팩트 다운로드 (File Not Found 해결)
+      - name: Download Report
         uses: actions/download-artifact@v4
         with:
-          name: enterprise-artifacts
-          path: .  # 현재 경로에 다운로드
+          name: enterprise-assets
+          path: .
 
-      - name: Verify Report Existence
-        run: ls -l daily_enterprise_report.md
-
-      - name: Create Infra Report Issue
+      - name: Create Issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "🏗️ [배포] 대규모 서버 구축 및 DB 마이그레이션 결과"
-          content-filepath: ./daily_enterprise_report.md
+          title: "🚧 [점검] 대규모 시스템 업그레이드 및 데이터 적재 결과"
+          content-filepath: ./daily_ops_report.md
           labels: |
+            upgrade
             infrastructure
-            migration
+            database
             automated
