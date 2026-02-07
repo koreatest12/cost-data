@@ -1,4 +1,4 @@
-name: Enterprise Integration & Massive Ops
+name: Ultimate Enterprise Integration & Upgrade Ops
 
 on:
   schedule:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   # ------------------------------------------------------------------
-  # JOB 1: 인프라 구축, 외부 데이터 통합, 시스템 배포
+  # JOB 1: 인프라 구축, 다국어 서비스 빌드, 시스템 업그레이드
   # ------------------------------------------------------------------
   ops-simulation:
     runs-on: ubuntu-latest
@@ -47,164 +47,191 @@ jobs:
           EXTERNAL_REPO = "cost_data_repo"
           DB_PATH = os.path.join(ROOT_DIR, "central_management.db")
           
+          # 서비스 정의 (Microservices - Java & Python & DB)
           SERVICES = {
-              "frontend-web": 20,
-              "backend-api": 30,
-              "payment-gateway": 10,
-              "auth-server": 10,
-              "data-analytics": 10,
-              "redis-cache": 10,
-              "message-queue": 10
+              "java-backend-api": 20,
+              "python-data-processor": 15,
+              "node-frontend-web": 15,
+              "go-auth-server": 10,
+              "postgres-db-shard": 10,
+              "redis-cache-cluster": 10,
+              "kafka-message-broker": 10,
+              "docker-registry": 5
           }
 
           def log(msg):
               print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {msg}")
 
           def setup_infrastructure():
-              log("🏗️ [Init] Initializing Datacenter Structure...")
+              log("🏗️ [Init] Initializing Enterprise Datacenter Structure...")
               os.makedirs(ROOT_DIR, exist_ok=True)
               os.makedirs(os.path.join(ROOT_DIR, "backups"), exist_ok=True)
+              os.makedirs(os.path.join(ROOT_DIR, "artifacts"), exist_ok=True)
               
-              total_servers = 0
+              total_nodes = 0
               for svc, count in SERVICES.items():
                   for i in range(1, count + 1):
                       hostname = f"{svc}-node-{i:03d}"
-                      base_path = os.path.join(ROOT_DIR, "servers", svc, hostname)
+                      base_path = os.path.join(ROOT_DIR, "clusters", svc, hostname)
                       
                       # 서버 디렉토리 구조 (표준 리눅스 구조)
                       os.makedirs(os.path.join(base_path, "etc"), exist_ok=True)
                       os.makedirs(os.path.join(base_path, "var/log"), exist_ok=True)
                       os.makedirs(os.path.join(base_path, "opt/app/bin"), exist_ok=True)
                       os.makedirs(os.path.join(base_path, "opt/app/data"), exist_ok=True)
-                      os.makedirs(os.path.join(base_path, "opt/app/external_modules"), exist_ok=True) # 외부 모듈 적재 경로
+                      os.makedirs(os.path.join(base_path, "docker"), exist_ok=True) # 도커 설정 경로
 
                       # 기본 설정 파일
                       config = {
                           "hostname": hostname,
                           "role": svc,
-                          "version": "1.0.0",
-                          "ip": f"10.0.{random.randint(1,255)}.{random.randint(1,255)}",
-                          "resources": {"cpu": "4vCPU", "mem": "16GB"}
+                          "version": "1.0.0-legacy",
+                          "ip": f"10.20.{random.randint(1,255)}.{random.randint(1,255)}",
+                          "resources": {"cpu": "8vCPU", "mem": "32GB"}
                       }
                       with open(os.path.join(base_path, "etc", "config.json"), "w") as f:
                           json.dump(config, f, indent=2)
                       
-                      total_servers += 1
-              
-              log(f"✅ [Install] Provisioned {total_servers} servers.")
-              return total_servers
+                      # 도커 파일 생성 (가상)
+                      with open(os.path.join(base_path, "docker", "Dockerfile"), "w") as f:
+                          if "java" in svc:
+                              f.write("FROM openjdk:17-alpine\nCOPY build/libs/*.jar app.jar\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]")
+                          elif "python" in svc:
+                              f.write("FROM python:3.9-slim\nCOPY . /app\nRUN pip install -r requirements.txt\nCMD [\"python\", \"app.py\"]")
+                          else:
+                              f.write(f"FROM {svc.split('-')[0]}:latest\nEXPOSE 8080")
 
-          def perform_system_upgrade():
-              log("🚀 [Upgrade] System-wide Patch & Backup (v1.0 -> v2.1)...")
-              upgrade_count = 0
-              server_root = os.path.join(ROOT_DIR, "servers")
+                      total_nodes += 1
               
-              for svc in os.listdir(server_root):
-                  svc_path = os.path.join(server_root, svc)
-                  for host in os.listdir(svc_path):
-                      host_path = os.path.join(svc_path, host)
-                      config_path = os.path.join(host_path, "etc", "config.json")
-                      
-                      # 백업
-                      shutil.copy(config_path, os.path.join(ROOT_DIR, "backups", f"{host}_v1.bkp"))
-                      
-                      # 업그레이드
-                      with open(config_path, "r") as f: data = json.load(f)
-                      data['version'] = "2.1.0-stable"
-                      data['patched_at'] = str(datetime.datetime.now())
-                      with open(config_path, "w") as f: json.dump(data, f, indent=2)
-                          
-                      upgrade_count += 1
-              log(f"✨ [Complete] Upgraded {upgrade_count} nodes.")
+              log(f"✅ [Install] Provisioned {total_nodes} nodes across {len(SERVICES)} service clusters.")
+              return total_nodes
 
-          def integrate_external_data():
-              log(f"📦 [External] Integrating resources from '{EXTERNAL_REPO}'...")
+          def integrate_external_resources():
+              log(f"📦 [Integration] Importing resources from '{EXTERNAL_REPO}'...")
               
               conn = sqlite3.connect(DB_PATH)
               cur = conn.cursor()
-              cur.execute("CREATE TABLE IF NOT EXISTS external_deployments (id TEXT, filename TEXT, target_server TEXT, path TEXT, deployed_at TEXT)")
+              cur.execute("CREATE TABLE IF NOT EXISTS deployment_log (id TEXT, filename TEXT, target_cluster TEXT, status TEXT, deployed_at TEXT)")
               
-              deployed_files = 0
+              deployed_count = 0
               
               if not os.path.exists(EXTERNAL_REPO):
                   log("⚠️ External repository not found. Skipping integration.")
                   return
 
-              # 외부 리포지토리의 모든 파일 탐색
+              # 외부 리포지토리 파일 탐색 및 배포
               for root, dirs, files in os.walk(EXTERNAL_REPO):
-                  if ".git" in root: continue # git 폴더 제외
+                  if ".git" in root: continue 
                   
                   for file in files:
                       src_file = os.path.join(root, file)
+                      ext = file.split('.')[-1]
                       
-                      # 시뮬레이션: 각 파일을 무작위 서버 5대에 '추가 패키지'로 배포
-                      # 데이터 분석 서버와 백엔드 서버에 집중 배포
-                      target_types = ["backend-api", "data-analytics"]
+                      # 파일 확장자에 따라 적절한 클러스터에 배포
+                      target_cluster = ""
+                      if ext in ["java", "jar", "class"]: target_cluster = "java-backend-api"
+                      elif ext in ["py", "ipynb"]: target_cluster = "python-data-processor"
+                      elif ext in ["js", "ts", "html", "css"]: target_cluster = "node-frontend-web"
+                      elif ext in ["sql", "db"]: target_cluster = "postgres-db-shard"
+                      else: target_cluster = "kafka-message-broker" # 기타 파일
                       
-                      for svc_type in target_types:
-                          servers = os.listdir(os.path.join(ROOT_DIR, "servers", svc_type))
-                          selected_hosts = random.sample(servers, min(len(servers), 3)) # 각 타입별 3대 선정
-                          
-                          for host in selected_hosts:
-                              dest_dir = os.path.join(ROOT_DIR, "servers", svc_type, host, "opt/app/external_modules")
-                              shutil.copy(src_file, os.path.join(dest_dir, file))
+                      # 해당 클러스터의 모든 노드에 복사 (대량 배포)
+                      cluster_path = os.path.join(ROOT_DIR, "clusters", target_cluster)
+                      if os.path.exists(cluster_path):
+                          for node in os.listdir(cluster_path):
+                              dest_path = os.path.join(cluster_path, node, "opt/app/bin", file)
+                              shutil.copy(src_file, dest_path)
                               
-                              # DB에 배포 이력 기록
-                              cur.execute("INSERT INTO external_deployments VALUES (?,?,?,?,?)", 
-                                          (str(uuid.uuid4()), file, host, dest_dir, str(datetime.datetime.now())))
-                              deployed_files += 1
+                              cur.execute("INSERT INTO deployment_log VALUES (?,?,?,?,?)", 
+                                          (str(uuid.uuid4()), file, f"{target_cluster}/{node}", "DEPLOYED", str(datetime.datetime.now())))
+                              deployed_count += 1
 
               conn.commit()
               conn.close()
-              log(f"✅ [External] Deployed {deployed_files} external artifacts to infrastructure.")
+              log(f"✅ [Integration] Deployed {deployed_count} artifacts to appropriate clusters.")
 
-          def inject_massive_data():
+          def perform_massive_upgrade():
+              log("🚀 [Upgrade] Executing Rolling Update (v1.0 -> v2.0-Enterprise)...")
+              upgraded_count = 0
+              
+              clusters_root = os.path.join(ROOT_DIR, "clusters")
+              for svc in os.listdir(clusters_root):
+                  svc_path = os.path.join(clusters_root, svc)
+                  for host in os.listdir(svc_path):
+                      config_path = os.path.join(svc_path, host, "etc", "config.json")
+                      
+                      # 1. 설정 파일 업데이트
+                      with open(config_path, "r") as f: data = json.load(f)
+                      data['version'] = "2.0.0-Enterprise"
+                      data['security_patch'] = "CVE-2026-FIXED"
+                      data['updated_at'] = str(datetime.datetime.now())
+                      with open(config_path, "w") as f: json.dump(data, f, indent=2)
+                      
+                      # 2. 도커 이미지 리빌드 시뮬레이션
+                      docker_path = os.path.join(svc_path, host, "docker", "Dockerfile")
+                      with open(docker_path, "a") as f:
+                          f.write("\n# UPDATED by CI/CD Pipeline\nENV APP_VERSION=2.0.0")
+                          
+                      upgraded_count += 1
+                      
+              log(f"✨ [Complete] Successfully upgraded {upgraded_count} instances.")
+
+          def inject_db_transactions():
               log("💾 [DB] Injecting Massive Transaction Data...")
               conn = sqlite3.connect(DB_PATH)
               cur = conn.cursor()
               
-              cur.execute("CREATE TABLE IF NOT EXISTS service_transactions (id TEXT, service TEXT, amount INTEGER, user_id TEXT, status TEXT)")
+              cur.execute("CREATE TABLE IF NOT EXISTS global_transactions (id TEXT, region TEXT, amount INTEGER, user_id TEXT, status TEXT)")
               
-              # 50,000건 트랜잭션 생성
-              data = [(str(uuid.uuid4()), random.choice(list(SERVICES.keys())), random.randint(100, 10000), f"user_{i}", "COMPLETED") for i in range(50000)]
-              cur.executemany("INSERT INTO service_transactions VALUES (?,?,?,?,?)", data)
+              # 100,000건 트랜잭션 생성 (대량 데이터)
+              data = []
+              regions = ["KR-Seoul", "US-East", "EU-Frankfurt", "JP-Tokyo"]
+              for i in range(100000):
+                  data.append((
+                      str(uuid.uuid4()), 
+                      random.choice(regions), 
+                      random.randint(10, 10000), 
+                      f"user_{random.randint(1,50000)}", 
+                      "COMMITTED"
+                  ))
               
+              cur.executemany("INSERT INTO global_transactions VALUES (?,?,?,?,?)", data)
               conn.commit()
               conn.close()
-              log("✅ [DB] Data injection finished.")
+              log("✅ [DB] 100,000 Transactions injected.")
 
           def generate_report():
               conn = sqlite3.connect(DB_PATH)
-              tx_cnt = conn.execute("SELECT COUNT(*) FROM service_transactions").fetchone()[0]
-              ext_cnt = conn.execute("SELECT COUNT(*) FROM external_deployments").fetchone()[0]
+              tx_cnt = conn.execute("SELECT COUNT(*) FROM global_transactions").fetchone()[0]
+              deploy_cnt = conn.execute("SELECT COUNT(*) FROM deployment_log").fetchone()[0]
               conn.close()
               
-              report = f"""# 🏢 Enterprise Integration & Ops Report ({datetime.date.today()})
+              report = f"""# 🏢 Ultimate Enterprise Integration Report ({datetime.date.today()})
 
-              ## 1️⃣ 인프라 및 업그레이드
-              - **총 서버:** 100대 (Fully Provisioned)
-              - **시스템 버전:** v1.0 ➡️ **v2.1 (Patched)**
-              - **백업 상태:** Secure (`{ROOT_DIR}/backups/`)
+              ## 1️⃣ 인프라 및 업그레이드 현황
+              - **총 노드 수:** 95 Nodes (Microservices Architecture)
+              - **지원 스택:** Java, Python, Node.js, Go, Postgres, Redis, Kafka
+              - **시스템 버전:** v1.0-legacy ➡️ **v2.0-Enterprise (Upgraded)**
+              - **컨테이너:** All nodes Dockerized & Image Built
 
-              ## 2️⃣ 외부 데이터 통합 (`koreatest12/cost-data`)
+              ## 2️⃣ 외부 리소스 통합 (`koreatest12/cost-data`)
               - **소스 리포지토리:** `{EXTERNAL_REPO}`
-              - **배포된 아티팩트:** {ext_cnt:,} Files
-              - **적재 위치:** `/opt/app/external_modules/` (Distributed)
-              - **상태:** ✅ Integrated & Loaded
+              - **배포된 아티팩트:** {deploy_cnt:,} instances
+              - **배포 전략:** File extension based routing (Java -> Backend, Py -> Data, etc.)
 
-              ## 3️⃣ 서비스 데이터베이스
-              - **트랜잭션 로그:** {tx_cnt:,} Rows
-              - **DB 파일:** `{DB_PATH}`
+              ## 3️⃣ 대규모 데이터베이스 상태
+              - **글로벌 트랜잭션:** {tx_cnt:,} Rows
+              - **메인 DB:** `{DB_PATH}`
               """
-              with open("daily_integration_report.md", "w", encoding="utf-8") as f:
+              with open("daily_ultimate_report.md", "w", encoding="utf-8") as f:
                   f.write(report)
               log("📄 Report generated.")
 
           if __name__ == "__main__":
               setup_infrastructure()
-              perform_system_upgrade()
-              integrate_external_data() # 외부 데이터 통합 실행
-              inject_massive_data()
+              integrate_external_resources() # 외부 리포지토리 연동 및 배포
+              perform_massive_upgrade()      # 시스템 일괄 업그레이드
+              inject_db_transactions()       # 대량 DB 데이터 적재
               generate_report()
           EOF
 
@@ -212,10 +239,11 @@ jobs:
           python ops_engine.py
 
       # [2] 인프라 확인 (디버깅)
-      - name: Inspect Infrastructure
+      - name: Inspect Java Cluster
         run: |
-          echo "📂 Checking External Modules on Backend Server..."
-          ls -R infra_datacenter/servers/backend-api/backend-api-node-001/opt/app/external_modules/
+          echo "📂 Checking Java Backend Cluster..."
+          ls -R infra_datacenter/clusters/java-backend-api/java-backend-api-node-001/
+          cat infra_datacenter/clusters/java-backend-api/java-backend-api-node-001/etc/config.json
 
       # [3] 아티팩트 업로드
       - name: Upload Infra Assets
@@ -223,19 +251,19 @@ jobs:
         with:
           name: enterprise-assets
           path: |
-            daily_integration_report.md
+            daily_ultimate_report.md
             infra_datacenter/
 
       # [4] 깃허브 반영 (대량 파일 처리)
       - name: Sync and Commit Infrastructure
         run: |
-          git config --global user.name "SysAdmin Bot"
-          git config --global user.email "admin@sys.com"
+          git config --global user.name "DevOps Bot"
+          git config --global user.email "bot@devops.com"
           
           # 인프라 폴더 전체 강제 추가
-          git add -f infra_datacenter/ daily_integration_report.md
+          git add -f infra_datacenter/ daily_ultimate_report.md
           
-          git commit -m "🚧 Integrated External Data & System Upgrade: $(date +'%Y-%m-%d')" || echo "No changes"
+          git commit -m "🚀 Ultimate Ops: Integration, Upgrade & Massive Scale: $(date +'%Y-%m-%d')" || echo "No changes"
           git pull origin main --rebase
           git push origin main
 
@@ -258,10 +286,10 @@ jobs:
       - name: Create Issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "🏗️ [통합] 외부 데이터 적재 및 시스템 업그레이드 결과"
-          content-filepath: ./daily_integration_report.md
+          title: "🚀 [통합] 대규모 다국어 서비스 빌드 및 업그레이드 리포트"
+          content-filepath: ./daily_ultimate_report.md
           labels: |
             integration
-            infrastructure
-            external-data
+            upgrade
+            microservices
             automated
