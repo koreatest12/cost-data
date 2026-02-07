@@ -269,7 +269,7 @@ jobs:
       - uses: actions/checkout@v4
       
       # 1. 모든 아티팩트 다운로드
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with: { pattern: 'db-*', merge-multiple: true }
         continue-on-error: true # 실패해도 더미 생성기로 커버
 
@@ -381,7 +381,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with: { pattern: 'db-*', merge-multiple: true }
       
       - name: 📊 Generate README
