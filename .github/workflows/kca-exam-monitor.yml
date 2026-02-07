@@ -1,74 +1,56 @@
-name: KCA 정보보안기사 대량 아카이빙 시스템 (v3.0 Bypass)
+name: KCA 정보보안기사 통합 시스템 (All-in-One)
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
-  workflow_dispatch:
+    - cron: '0 */4 * * *'  # 4시간마다 자동 실행 (대량 갱신)
+  workflow_dispatch:       # 수동 실행 버튼
   push:
-    branches: [ main ]
-    paths:
-      - 'scripts/**'
-      - '.github/workflows/**'
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main ]     # 코드 푸시 시 실행
 
 permissions:
   contents: write
   issues: write
 
 jobs:
-  archive-process:
+  run-integrated-system:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    
+    timeout-minutes: 15
+
     steps:
-      - name: 소스 체크아웃
+      - name: 📂 소스 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: 파이썬 3.12 설정
+      - name: 🐍 Python 3.12 설정
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
 
-      - name: 필수 디렉토리 생성
-        run: mkdir -p data/kca-notifications scripts/kca-monitor
+      - name: 📦 필수 라이브러리 대량 설치
+        # curl_cffi: 403 차단 우회용 핵심 엔진
+        # pytz: 한국 시간대 처리
+        run: |
+          pip install curl_cffi beautifulsoup4 requests pytz
 
-      # [핵심] curl_cffi 설치 (403 우회용)
-      - name: 라이브러리 설치
-        run: pip install curl_cffi beautifulsoup4
+      - name: 🛠️ 디렉토리 자동 생성
+        run: mkdir -p scripts data
 
-      - name: 대량 수집 및 아카이빙 실행
-        id: run_script
-        run: python scripts/kca-monitor/kca_exam_monitor.py
+      - name: 🚀 통합 스크립트 실행 (일정주입+크롤링+뉴스+대시보드)
+        run: python scripts/kca_all_in_one.py
 
-      - name: 전체 보드 및 데이터 업데이트 반영
+      - name: 💾 결과 대량 반영 (Git Commit & Push)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/ KCA_NOTICE_BOARD.md
           
+          # 생성된 모든 데이터와 대시보드 추가
+          git add KCA_NOTICE_BOARD.md data/
+          
+          # 변경사항이 있을 경우에만 커밋
           if ! git diff --staged --quiet; then
-            git commit -m "🚀 KCA 정보보안기사 데이터 업데이트 (신규: ${{ steps.run_script.outputs.new_count }}건)"
+            git commit -m "🚀 [Auto] KCA 정보보안기사 및 보안뉴스 대량 업데이트 ($(date +'%Y-%m-%d %H:%M'))"
             git pull --rebase origin main
             git push origin main
+          else
+            echo "변경사항이 없어 커밋하지 않습니다."
           fi
-
-      - name: 신규 정보 발생 시 Issue 알림
-        if: steps.run_script.outputs.has_changes == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            if (fs.existsSync('data/kca-notifications/latest_report.md')) {
-              const report = fs.readFileSync('data/kca-notifications/latest_report.md', 'utf8');
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: `📚 [신규] 정보보안기사 학습 정보 업데이트`,
-                body: report + "\n\n---\n[전체 대시보드 바로가기](./KCA_NOTICE_BOARD.md)",
-                labels: ['kca-exam', 'study-material']
-              });
-            }
