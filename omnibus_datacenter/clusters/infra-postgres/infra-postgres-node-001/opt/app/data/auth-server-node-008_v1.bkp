@@ -1,0 +1,7 @@
+{
+  "hostname": "auth-server-node-008",
+  "role": "auth-server",
+  "version": "1.0.0",
+  "ip": "10.0.110.224",
+  "max_connections": 5000
+}

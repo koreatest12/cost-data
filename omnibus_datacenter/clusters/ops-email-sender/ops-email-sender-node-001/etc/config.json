@@ -1,0 +1,12 @@
+{
+  "host": "ops-email-sender-node-001",
+  "role": "ops-email-sender",
+  "version": "2.5.0-Enterprise",
+  "resources": {
+    "cpu": "4Core",
+    "ram": "16GB"
+  },
+  "created_at": "2026-02-07 12:33:17.498405",
+  "security_patch": "APPLIED",
+  "last_updated": "2026-02-07 12:33:26.658693"
+}

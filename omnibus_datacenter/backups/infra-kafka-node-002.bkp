@@ -1,0 +1,10 @@
+{
+  "host": "infra-kafka-node-002",
+  "role": "infra-kafka",
+  "version": "1.0.0-legacy",
+  "resources": {
+    "cpu": "4Core",
+    "ram": "16GB"
+  },
+  "created_at": "2026-02-07 12:33:17.492625"
+}

@@ -1,0 +1,12 @@
+{
+  "host": "svc-backend-java-node-017",
+  "role": "svc-backend-java",
+  "version": "2.5.0-Enterprise",
+  "resources": {
+    "cpu": "4Core",
+    "ram": "16GB"
+  },
+  "created_at": "2026-02-07 12:33:17.466843",
+  "security_patch": "APPLIED",
+  "last_updated": "2026-02-07 12:33:26.669672"
+}
