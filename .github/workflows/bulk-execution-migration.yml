@@ -1,4 +1,4 @@
-name: Massive Side Hustle Ops (Fix & Scale)
+name: Massive Side Hustle Ops (Fix File Not Found)
 
 on:
   schedule:
@@ -31,9 +31,9 @@ jobs:
       - name: Setup Environment
         run: |
           mkdir -p $SCRIPT_DIR
-          # Job 1에서는 생성만 하고, 실제 데이터 저장은 스크립트 내부에서 처리하도록 위임
+          # Job 1에서는 폴더 구조만 잡고, 실제 생성은 각 엔진에 위임
 
-      # [Engine 1] 부업 정보 수집기 (폴더 자동 생성 기능 추가)
+      # [Engine 1] 부업 정보 수집기 (Self-Healing 폴더 생성 포함)
       - name: Generate Hustle Collector
         run: |
           cat << 'EOF' > $SCRIPT_DIR/engine_hustle.py
@@ -61,7 +61,7 @@ jobs:
               
               df = pd.DataFrame(hustles)
               
-              # [핵심 수정] 저장할 폴더가 없으면 자동으로 생성 (Self-Healing)
+              # 폴더 자동 생성 (에러 방지 핵심)
               save_dir = "data/side_hustle"
               os.makedirs(save_dir, exist_ok=True)
               
@@ -72,7 +72,7 @@ jobs:
           if __name__ == "__main__": run()
           EOF
 
-      # [Engine 2] 메가/테라바이트 인덱서 (폴더 자동 생성 기능 추가)
+      # [Engine 2] 메가/테라바이트 인덱서
       - name: Generate TeraByte Indexer
         run: |
           cat << 'EOF' > $SCRIPT_DIR/engine_terabyte.py
@@ -81,7 +81,6 @@ jobs:
           def run():
               print("💾 [Engine-TB] Generating Massive Data Index...")
               
-              # [핵심 수정] 폴더 자동 생성
               save_dir = "data/big_data_storage"
               os.makedirs(save_dir, exist_ok=True)
               
@@ -92,7 +91,7 @@ jobs:
                   w.writerow(["shard_id", "storage_location", "link_url", "allocated_size", "checksum"])
                   
                   total_size_gb = 0
-                  rows = 100000  # 10만 줄
+                  rows = 100000  # 10만 줄 생성
                   
                   for i in range(rows):
                       size = random.randint(1, 100)
@@ -109,7 +108,7 @@ jobs:
               print(f"✅ Indexed {rows} massive files.")
               print(f"📊 Total Virtual Capacity: {tb_size} TB")
               
-              # 메타데이터 파일 생성
+              # 메타데이터 생성
               with open(os.path.join(save_dir, "capacity_report.txt"), "w") as f:
                   f.write(f"Total Indexed Volume: {tb_size} TB\nStatus: Online")
 
@@ -120,24 +119,23 @@ jobs:
       - name: Generate Briefing Engine
         run: |
           cat << 'EOF' > $SCRIPT_DIR/engine_briefing.py
-          import pandas as pd, os
+          import pandas as pd, os, datetime
           def run():
               report = "daily_hustle_briefing.md"
+              today = datetime.datetime.now().strftime("%Y-%m-%d")
               
-              # 부업 데이터 로드
               hustle_cnt = 0
               hustle_path = "data/side_hustle/hustle_listings.csv"
               if os.path.exists(hustle_path):
                   hustle_cnt = len(pd.read_csv(hustle_path))
               
-              # 테라바이트 인덱스 확인
               tb_status = "Unknown"
               cap_path = "data/big_data_storage/capacity_report.txt"
               if os.path.exists(cap_path):
                   with open(cap_path, "r") as f:
                       tb_status = f.read().strip()
 
-              content = f"""# 💰 대량 부업 및 빅데이터 브리핑
+              content = f"""# 💰 대량 부업 및 빅데이터 브리핑 ({today})
 
               ## 1️⃣ 부업 정보 (Side Hustles)
               - **수집된 공고:** {hustle_cnt:,} 건
@@ -151,11 +149,11 @@ jobs:
               - **인덱스 파일:** `data/big_data_storage/terabyte_index.csv`
               
               ## 3️⃣ 시스템 상태
-              - **Self-Healing:** Active (Directories auto-created)
+              - **Self-Healing:** Active
               - **Sync Status:** Validated
               """
-              with open(report, "w") as f: f.write(content)
-              print("✅ Briefing Ready.")
+              with open(report, "w", encoding="utf-8") as f: f.write(content)
+              print(f"✅ Briefing Ready: {report}")
           if __name__ == "__main__": run()
           EOF
 
@@ -191,23 +189,17 @@ jobs:
           name: ops-engines
           path: scripts/
 
-      # [이중 안전장치] 실행 전 데이터 폴더 강제 생성
+      # 실행 전 폴더 생성 (안전장치)
       - name: Ensure Directories Exist
         run: |
           mkdir -p data/side_hustle
           mkdir -p data/big_data_storage
-          echo "📂 Directories created/verified."
 
-      # [실행] 메가/테라바이트 급 데이터 생성
+      # 엔진 가동
       - name: Run Massive Generators
         run: |
-          echo "🔥 Running Side Hustle Collector..."
           python scripts/engine_hustle.py
-          
-          echo "🔥 Running TeraByte Indexer..."
           python scripts/engine_terabyte.py
-          
-          echo "🔥 Generating Report..."
           python scripts/engine_briefing.py
 
       # [결과물] 대량 파일 리스팅
@@ -219,7 +211,7 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           cat daily_hustle_briefing.md >> $GITHUB_STEP_SUMMARY
 
-      # [저장] 아티팩트
+      # [중요] Job 3에서 쓸 파일들을 아티팩트로 업로드
       - name: Upload Massive Data
         uses: actions/upload-artifact@v4
         with:
@@ -228,23 +220,18 @@ jobs:
             data/
             daily_hustle_briefing.md
 
-      # [동기화] Git Push (Force Add & Pull Rebase)
+      # 동기화 및 푸시
       - name: Sync and Push
         run: |
           git config --global user.name "Ops Bot"
           git config --global user.email "bot@ops.com"
-          
-          # 대량 파일 추가 (폴더 통째로)
           git add -f data/ scripts/ *.md
-          
           git commit -m "💰 Massive Hustle Data Fix: $(date +'%Y-%m-%d')" || echo "No changes"
-          
-          # 동기화 에러 방지
           git pull origin main --rebase
           git push origin main
 
   # ------------------------------------------------------------------
-  # JOB 3: 리포트 발행
+  # JOB 3: 리포트 발행 (에러 해결 파트)
   # ------------------------------------------------------------------
   publish-report:
     needs: execution-storage
@@ -252,6 +239,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
+      # [핵심 해결] Job 2에서 생성한 브리핑 파일 다운로드
+      - name: Download Briefing Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terabyte-index-package
+          # 현재 경로(.)에 다운로드하여 이슈 생성기가 찾을 수 있게 함
+          path: .
+        
+      - name: Check File Existence
+        run: ls -al daily_hustle_briefing.md
         
       - name: Create Issue
         uses: peter-evans/create-issue-from-file@v5
