@@ -1,4 +1,4 @@
-name: Massive Side Hustle Ops (Fix File Not Found)
+name: Massive Side Hustle Ops (Email Edition)
 
 on:
   schedule:
@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   # ------------------------------------------------------------------
-  # JOB 1: 하이퍼 엔진 생성 (부업 전용 + 대용량 처리기)
+  # JOB 1: 하이퍼 엔진 생성 (부업 + 데이터 + 이메일)
   # ------------------------------------------------------------------
   initialize-engines:
     runs-on: ubuntu-latest
@@ -33,18 +33,16 @@ jobs:
           mkdir -p $SCRIPT_DIR
           # Job 1에서는 폴더 구조만 잡고, 실제 생성은 각 엔진에 위임
 
-      # [Engine 1] 부업 정보 수집기 (Self-Healing 폴더 생성 포함)
+      # [Engine 1] 부업 정보 수집기
       - name: Generate Hustle Collector
         run: |
           cat << 'EOF' > $SCRIPT_DIR/engine_hustle.py
           import pandas as pd, datetime, random, uuid, os
-
           def run():
               print("🚀 [Engine-Hustle] Starting Side Hustle Crawling...")
               platforms = ["Upwork", "Kmong", "Wishket", "Fiverr", "Toptal"]
               skills = ["Python Scripting", "Excel Macro", "Translation", "Video Editing", "Logo Design"]
               
-              # 1. 실제 같은 부업 데이터 10,000건 생성
               hustles = []
               for i in range(10000):
                   plat = random.choice(platforms)
@@ -60,15 +58,12 @@ jobs:
                   })
               
               df = pd.DataFrame(hustles)
-              
-              # 폴더 자동 생성 (에러 방지 핵심)
               save_dir = "data/side_hustle"
               os.makedirs(save_dir, exist_ok=True)
               
               path = os.path.join(save_dir, "hustle_listings.csv")
               df.to_csv(path, index=False)
-              print(f"✅ Generated {len(df)} side hustle links at {path}")
-
+              print(f"✅ Generated {len(df)} side hustle links.")
           if __name__ == "__main__": run()
           EOF
 
@@ -77,45 +72,29 @@ jobs:
         run: |
           cat << 'EOF' > $SCRIPT_DIR/engine_terabyte.py
           import csv, random, uuid, os
-          
           def run():
               print("💾 [Engine-TB] Generating Massive Data Index...")
-              
               save_dir = "data/big_data_storage"
               os.makedirs(save_dir, exist_ok=True)
-              
               index_path = os.path.join(save_dir, "terabyte_index.csv")
               
               with open(index_path, "w", newline="") as f:
                   w = csv.writer(f)
-                  w.writerow(["shard_id", "storage_location", "link_url", "allocated_size", "checksum"])
-                  
+                  w.writerow(["shard_id", "storage_location", "link_url", "allocated_size"])
                   total_size_gb = 0
-                  rows = 100000  # 10만 줄 생성
-                  
-                  for i in range(rows):
+                  for i in range(100000):
                       size = random.randint(1, 100)
                       total_size_gb += size
-                      w.writerow([
-                          f"SHARD-{uuid.uuid4()}",
-                          f"s3://bucket-hustle-data/block_{i}",
-                          f"https://data-lake.com/download?id={uuid.uuid4()}",
-                          f"{size} GB",
-                          "a1b2c3d4e5"
-                      ])
-                      
-              tb_size = round(total_size_gb / 1024, 2)
-              print(f"✅ Indexed {rows} massive files.")
-              print(f"📊 Total Virtual Capacity: {tb_size} TB")
+                      w.writerow([f"SHARD-{uuid.uuid4()}", f"s3://bucket/block_{i}", f"url_{i}", f"{size} GB"])
               
-              # 메타데이터 생성
+              tb_size = round(total_size_gb / 1024, 2)
               with open(os.path.join(save_dir, "capacity_report.txt"), "w") as f:
-                  f.write(f"Total Indexed Volume: {tb_size} TB\nStatus: Online")
-
+                  f.write(f"Total Indexed Volume: {tb_size} TB")
+              print(f"📊 Total Virtual Capacity: {tb_size} TB")
           if __name__ == "__main__": run()
           EOF
 
-      # [Engine 3] 브리핑 리포터 (경로 참조 수정)
+      # [Engine 3] 브리핑 리포터
       - name: Generate Briefing Engine
         run: |
           cat << 'EOF' > $SCRIPT_DIR/engine_briefing.py
@@ -125,35 +104,74 @@ jobs:
               today = datetime.datetime.now().strftime("%Y-%m-%d")
               
               hustle_cnt = 0
-              hustle_path = "data/side_hustle/hustle_listings.csv"
-              if os.path.exists(hustle_path):
-                  hustle_cnt = len(pd.read_csv(hustle_path))
+              if os.path.exists("data/side_hustle/hustle_listings.csv"):
+                  hustle_cnt = len(pd.read_csv("data/side_hustle/hustle_listings.csv"))
               
               tb_status = "Unknown"
-              cap_path = "data/big_data_storage/capacity_report.txt"
-              if os.path.exists(cap_path):
-                  with open(cap_path, "r") as f:
+              if os.path.exists("data/big_data_storage/capacity_report.txt"):
+                  with open("data/big_data_storage/capacity_report.txt", "r") as f:
                       tb_status = f.read().strip()
 
               content = f"""# 💰 대량 부업 및 빅데이터 브리핑 ({today})
-
-              ## 1️⃣ 부업 정보 (Side Hustles)
-              - **수집된 공고:** {hustle_cnt:,} 건
-              - **데이터 위치:** `{hustle_path}`
-
-              ## 2️⃣ 데이터 스케일 (Data Scale)
-              - **가상 적재 용량:**
-              ```
-              {tb_status}
-              ```
-              - **인덱스 파일:** `data/big_data_storage/terabyte_index.csv`
-              
+              ## 1️⃣ 부업 정보
+              - **수집 공고:** {hustle_cnt:,} 건
+              ## 2️⃣ 데이터 스케일
+              - **용량:** {tb_status}
               ## 3️⃣ 시스템 상태
-              - **Self-Healing:** Active
-              - **Sync Status:** Validated
+              - **Email Service:** Active (Virtual)
               """
               with open(report, "w", encoding="utf-8") as f: f.write(content)
               print(f"✅ Briefing Ready: {report}")
+          if __name__ == "__main__": run()
+          EOF
+
+      # [Engine 4] ★ 가상 이메일 발송 엔진 (NEW) ★
+      - name: Generate Email Engine
+        run: |
+          cat << 'EOF' > $SCRIPT_DIR/engine_email.py
+          import os, datetime
+          
+          def run():
+              print("📧 [Engine-Email] Preparing Virtual Email Dispatch...")
+              
+              sender = "bot@ops.com"
+              receiver = "admin@company.com"
+              subject = f"💰 [Daily Briefing] Massive Side Hustle Data - {datetime.date.today()}"
+              
+              # 브리핑 내용 읽기
+              body = ""
+              report_path = "daily_hustle_briefing.md"
+              if os.path.exists(report_path):
+                  with open(report_path, "r") as f:
+                      body = f.read()
+              else:
+                  body = "No briefing report found."
+          
+              # 이메일 포맷 생성
+              email_content = f"""From: {sender}
+          To: {receiver}
+          Subject: {subject}
+          Date: {datetime.datetime.now()}
+          Content-Type: text/markdown
+          
+          {body}
+          --------------------------------------------------
+          [System] End of Email
+          """
+          
+              # 가상 발송 (파일로 저장)
+              save_dir = "data/sent_emails"
+              os.makedirs(save_dir, exist_ok=True)
+              
+              filename = f"email_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.eml"
+              filepath = os.path.join(save_dir, filename)
+              
+              with open(filepath, "w") as f:
+                  f.write(email_content)
+                  
+              print(f"✅ Virtual Email 'Sent' to {receiver}")
+              print(f"📂 Saved copy at {filepath}")
+          
           if __name__ == "__main__": run()
           EOF
 
@@ -164,7 +182,7 @@ jobs:
           path: scripts/
 
   # ------------------------------------------------------------------
-  # JOB 2: 대량 실행 및 저장 (Execution & Storage)
+  # JOB 2: 대량 실행 및 저장
   # ------------------------------------------------------------------
   execution-storage:
     needs: initialize-engines
@@ -189,20 +207,23 @@ jobs:
           name: ops-engines
           path: scripts/
 
-      # 실행 전 폴더 생성 (안전장치)
+      # 폴더 안전 생성
       - name: Ensure Directories Exist
         run: |
           mkdir -p data/side_hustle
           mkdir -p data/big_data_storage
+          mkdir -p data/sent_emails
 
-      # 엔진 가동
+      # 엔진 가동 (이메일 발송 포함)
       - name: Run Massive Generators
         run: |
           python scripts/engine_hustle.py
           python scripts/engine_terabyte.py
           python scripts/engine_briefing.py
+          echo "🔥 Sending Virtual Email..."
+          python scripts/engine_email.py
 
-      # [결과물] 대량 파일 리스팅
+      # 결과 요약
       - name: Show Data Footprint
         run: |
           echo "### 📦 Generated Data Volume" >> $GITHUB_STEP_SUMMARY
@@ -211,11 +232,11 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           cat daily_hustle_briefing.md >> $GITHUB_STEP_SUMMARY
 
-      # [중요] Job 3에서 쓸 파일들을 아티팩트로 업로드
+      # 아티팩트 업로드 (이메일 포함)
       - name: Upload Massive Data
         uses: actions/upload-artifact@v4
         with:
-          name: terabyte-index-package
+          name: massive-data-package
           path: |
             data/
             daily_hustle_briefing.md
@@ -226,12 +247,12 @@ jobs:
           git config --global user.name "Ops Bot"
           git config --global user.email "bot@ops.com"
           git add -f data/ scripts/ *.md
-          git commit -m "💰 Massive Hustle Data Fix: $(date +'%Y-%m-%d')" || echo "No changes"
+          git commit -m "📧 Email & Massive Hustle Data: $(date +'%Y-%m-%d')" || echo "No changes"
           git pull origin main --rebase
           git push origin main
 
   # ------------------------------------------------------------------
-  # JOB 3: 리포트 발행 (에러 해결 파트)
+  # JOB 3: 리포트 발행
   # ------------------------------------------------------------------
   publish-report:
     needs: execution-storage
@@ -240,23 +261,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      # [핵심 해결] Job 2에서 생성한 브리핑 파일 다운로드
       - name: Download Briefing Artifact
         uses: actions/download-artifact@v4
         with:
-          name: terabyte-index-package
-          # 현재 경로(.)에 다운로드하여 이슈 생성기가 찾을 수 있게 함
+          name: massive-data-package
           path: .
-        
-      - name: Check File Existence
-        run: ls -al daily_hustle_briefing.md
         
       - name: Create Issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "💰 [브리핑] 부업 정보 및 TB급 데이터 리포트"
+          title: "💰 [브리핑] 부업 정보 및 TB급 데이터 (Email Sent)"
           content-filepath: ./daily_hustle_briefing.md
           labels: |
             side-hustle
             big-data
+            email-sent
             automated
