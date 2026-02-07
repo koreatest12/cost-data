@@ -1,4 +1,5 @@
-FROM postgres:latest
+FROM openjdk:17
 WORKDIR /app
 COPY . .
-CMD ["run"]
+RUN ./gradlew build
+CMD ['start']

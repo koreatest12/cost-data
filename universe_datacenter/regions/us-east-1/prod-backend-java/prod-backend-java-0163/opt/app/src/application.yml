@@ -1,0 +1,5 @@
+{
+  "host": "server-node-050",
+  "port": 8130,
+  "db_connection": "jdbc:mysql://db-50:3306/prod"
+}

@@ -1,0 +1,10 @@
+{
+  "hostname": "message-queue-node-006",
+  "role": "message-queue",
+  "version": "1.0.0",
+  "ip": "10.0.95.37",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
+}

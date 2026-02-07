@@ -1,11 +1,9 @@
 {
-  "hostname": "backend-api-node-022",
-  "role": "backend-api",
+  "hostname": "frontend-web-node-014",
+  "role": "frontend-web",
   "version": "2.1.0-stable",
-  "ip": "10.0.184.155",
-  "resources": {
-    "cpu": "4vCPU",
-    "mem": "16GB"
-  },
-  "patched_at": "2026-02-07 12:22:28.428210"
+  "ip": "10.0.63.76",
+  "max_connections": 5000,
+  "last_patched": "2026-02-07 12:17:51.012692",
+  "security_level": "ENFORCED"
 }

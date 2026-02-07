@@ -1,0 +1,407 @@
+{
+  "poke_balls": [
+    {
+      "name": "Poke Ball",
+      "korean_name": "몬스터볼",
+      "type": "Basic Ball",
+      "catch_rate_multiplier": 1.0,
+      "obtainable_from": ["PokeStops", "Gyms", "Gifts", "Shop"],
+      "shop_price": 20,
+      "description": "A standard Poke Ball for catching Pokemon"
+    },
+    {
+      "name": "Great Ball",
+      "korean_name": "수퍼볼",
+      "type": "Enhanced Ball",
+      "catch_rate_multiplier": 1.5,
+      "obtainable_from": ["PokeStops", "Gyms", "Gifts", "Shop"],
+      "shop_price": 100,
+      "unlock_level": 12,
+      "description": "A better ball with improved catch rate"
+    },
+    {
+      "name": "Ultra Ball",
+      "korean_name": "하이퍼볼",
+      "type": "Premium Ball",
+      "catch_rate_multiplier": 2.0,
+      "obtainable_from": ["PokeStops", "Gyms", "Gifts", "Shop"],
+      "shop_price": 200,
+      "unlock_level": 20,
+      "description": "The best standard ball with highest catch rate"
+    },
+    {
+      "name": "Premier Ball",
+      "korean_name": "프리미어볼",
+      "type": "Special Ball",
+      "catch_rate_multiplier": 1.0,
+      "obtainable_from": ["Raid Rewards"],
+      "description": "Special ball given after raids, cannot be stored"
+    }
+  ],
+  "potions_and_revives": [
+    {
+      "name": "Potion",
+      "korean_name": "상처약",
+      "type": "Healing Item",
+      "heal_amount": 20,
+      "obtainable_from": ["PokeStops", "Gyms", "Gifts"],
+      "unlock_level": 5,
+      "description": "Restores 20 HP to a Pokemon"
+    },
+    {
+      "name": "Super Potion",
+      "korean_name": "좋은상처약",
+      "type": "Healing Item",
+      "heal_amount": 50,
+      "obtainable_from": ["PokeStops", "Gyms", "Gifts", "Shop"],
+      "shop_price": 200,
+      "unlock_level": 10,
+      "description": "Restores 50 HP to a Pokemon"
+    },
+    {
+      "name": "Hyper Potion",
+      "korean_name": "고급상처약",
+      "type": "Healing Item",
+      "heal_amount": 200,
+      "obtainable_from": ["PokeStops", "Gyms", "Gifts", "Shop"],
+      "shop_price": 300,
+      "unlock_level": 15,
+      "description": "Restores 200 HP to a Pokemon"
+    },
+    {
+      "name": "Max Potion",
+      "korean_name": "풀회복약",
+      "type": "Healing Item",
+      "heal_amount": "Full",
+      "obtainable_from": ["PokeStops", "Gyms", "Gifts", "Shop"],
+      "shop_price": 200,
+      "unlock_level": 25,
+      "description": "Fully restores a Pokemon's HP"
+    },
+    {
+      "name": "Revive",
+      "korean_name": "기력의조각",
+      "type": "Revival Item",
+      "heal_amount": "50%",
+      "obtainable_from": ["PokeStops", "Gyms", "Gifts", "Raids"],
+      "unlock_level": 5,
+      "description": "Revives fainted Pokemon with 50% HP"
+    },
+    {
+      "name": "Max Revive",
+      "korean_name": "기력의덩어리",
+      "type": "Revival Item",
+      "heal_amount": "Full",
+      "obtainable_from": ["PokeStops", "Gyms", "Gifts", "Raids"],
+      "unlock_level": 30,
+      "description": "Revives fainted Pokemon with full HP"
+    }
+  ],
+  "berries": [
+    {
+      "name": "Razz Berry",
+      "korean_name": "라즈열매",
+      "type": "Catch Assist Berry",
+      "effect": "Increases catch rate",
+      "multiplier": 1.5,
+      "obtainable_from": ["PokeStops", "Gyms", "Research", "Leveling"],
+      "description": "Makes Pokemon easier to catch"
+    },
+    {
+      "name": "Nanab Berry",
+      "korean_name": "나나열매",
+      "type": "Movement Berry",
+      "effect": "Calms Pokemon movement",
+      "obtainable_from": ["PokeStops", "Gyms", "Research"],
+      "description": "Prevents Pokemon from moving or attacking"
+    },
+    {
+      "name": "Pinap Berry",
+      "korean_name": "파일열매",
+      "type": "Candy Berry",
+      "effect": "Doubles candy received",
+      "candy_multiplier": 2.0,
+      "obtainable_from": ["PokeStops", "Gyms", "Research"],
+      "description": "Doubles candy from successful catch"
+    },
+    {
+      "name": "Golden Razz Berry",
+      "korean_name": "금색라즈열매",
+      "type": "Premium Catch Assist",
+      "effect": "Greatly increases catch rate",
+      "multiplier": 2.5,
+      "obtainable_from": ["Raids", "Research", "Gyms"],
+      "gym_effect": "Fully restores motivation",
+      "description": "Greatly increases catch rate or fully restores gym motivation"
+    },
+    {
+      "name": "Silver Pinap Berry",
+      "korean_name": "은색파일열매",
+      "type": "Premium Candy Berry",
+      "effect": "Increases catch rate and candy",
+      "catch_multiplier": 1.8,
+      "candy_multiplier": 2.33,
+      "obtainable_from": ["Special Research", "Events"],
+      "description": "Increases catch rate and gives extra candy"
+    }
+  ],
+  "evolution_items": [
+    {
+      "name": "Sun Stone",
+      "korean_name": "태양의돌",
+      "type": "Evolution Item",
+      "used_for": ["Gloom → Bellossom", "Sunkern → Sunflora", "Petilil → Lilligant", "Cottonee → Whimsicott"],
+      "obtainable_from": ["7-Day PokeStop Streak", "Special Research", "Gifts"]
+    },
+    {
+      "name": "King's Rock",
+      "korean_name": "왕의징표석",
+      "type": "Evolution Item",
+      "used_for": ["Poliwhirl → Politoed", "Slowpoke → Slowking"],
+      "obtainable_from": ["7-Day PokeStop Streak", "Special Research", "Gifts"]
+    },
+    {
+      "name": "Metal Coat",
+      "korean_name": "금속코트",
+      "type": "Evolution Item",
+      "used_for": ["Onix → Steelix", "Scyther → Scizor"],
+      "obtainable_from": ["7-Day PokeStop Streak", "Special Research", "Gifts"]
+    },
+    {
+      "name": "Dragon Scale",
+      "korean_name": "용의비늘",
+      "type": "Evolution Item",
+      "used_for": ["Seadra → Kingdra"],
+      "obtainable_from": ["7-Day PokeStop Streak", "Special Research", "Gifts"]
+    },
+    {
+      "name": "Up-Grade",
+      "korean_name": "업그레이드",
+      "type": "Evolution Item",
+      "used_for": ["Porygon → Porygon2"],
+      "obtainable_from": ["7-Day PokeStop Streak", "Special Research", "Gifts"]
+    },
+    {
+      "name": "Sinnoh Stone",
+      "korean_name": "신오의돌",
+      "type": "Evolution Item",
+      "used_for": ["Multiple Gen 4 evolutions"],
+      "obtainable_from": ["Research Breakthrough", "Training Battles", "GO Battle League"]
+    },
+    {
+      "name": "Unova Stone",
+      "korean_name": "하나의돌",
+      "type": "Evolution Item",
+      "used_for": ["Multiple Gen 5 evolutions"],
+      "obtainable_from": ["Research Breakthrough", "Special Research"]
+    }
+  ],
+  "battle_items": [
+    {
+      "name": "Fast TM",
+      "korean_name": "빠른 기술머신",
+      "type": "Move Changer",
+      "effect": "Changes Fast Move",
+      "obtainable_from": ["Raids", "GO Battle League", "Research"],
+      "description": "Teaches a Pokemon a different Fast Attack"
+    },
+    {
+      "name": "Charged TM",
+      "korean_name": "차지 기술머신",
+      "type": "Move Changer",
+      "effect": "Changes Charged Move",
+      "obtainable_from": ["Raids", "GO Battle League", "Research"],
+      "description": "Teaches a Pokemon a different Charged Attack"
+    },
+    {
+      "name": "Elite Fast TM",
+      "korean_name": "엘리트 빠른 기술머신",
+      "type": "Premium Move Changer",
+      "effect": "Changes to any Fast Move including legacy",
+      "obtainable_from": ["Shop", "Special Events", "Community Day Box"],
+      "shop_price": 1280,
+      "description": "Teaches any Fast Attack including Community Day moves"
+    },
+    {
+      "name": "Elite Charged TM",
+      "korean_name": "엘리트 차지 기술머신",
+      "type": "Premium Move Changer",
+      "effect": "Changes to any Charged Move including legacy",
+      "obtainable_from": ["Shop", "Special Events", "Community Day Box"],
+      "shop_price": 1280,
+      "description": "Teaches any Charged Attack including Community Day moves"
+    }
+  ],
+  "power_up_items": [
+    {
+      "name": "Stardust",
+      "korean_name": "별의모래",
+      "type": "Currency",
+      "used_for": "Power ups and second charge move",
+      "obtainable_from": ["Catching Pokemon", "Hatching Eggs", "Raids", "Gyms", "GO Battle League"],
+      "description": "Primary currency for powering up Pokemon"
+    },
+    {
+      "name": "Candy",
+      "korean_name": "사탕",
+      "type": "Species Currency",
+      "used_for": "Evolution and power ups",
+      "obtainable_from": ["Catching", "Transferring", "Walking Buddy", "Rare Candy"],
+      "description": "Species-specific resource for evolution and power ups"
+    },
+    {
+      "name": "Rare Candy",
+      "korean_name": "이상한사탕",
+      "type": "Universal Candy",
+      "used_for": "Convert to any Pokemon candy",
+      "obtainable_from": ["Raids", "GO Battle League", "Special Research"],
+      "description": "Can be converted to candy for any Pokemon"
+    },
+    {
+      "name": "Candy XL",
+      "korean_name": "XL사탕",
+      "type": "Premium Currency",
+      "used_for": "Power ups beyond level 40",
+      "obtainable_from": ["Catching (Level 31+)", "Transferring", "Trading", "Walking"],
+      "unlock_level": 40,
+      "description": "Required to power up Pokemon beyond level 40"
+    },
+    {
+      "name": "Rare Candy XL",
+      "korean_name": "이상한사탕XL",
+      "type": "Universal Premium Candy",
+      "used_for": "Convert to any Pokemon XL candy",
+      "obtainable_from": ["Raids (Level 40+)", "GO Battle League", "Events"],
+      "unlock_level": 40,
+      "description": "Can be converted to XL candy for any Pokemon"
+    }
+  ],
+  "incense_and_lures": [
+    {
+      "name": "Incense",
+      "korean_name": "향로",
+      "type": "Spawn Attractor",
+      "duration": "60 minutes",
+      "effect": "Attracts Pokemon to player",
+      "obtainable_from": ["Shop", "Level Rewards", "Research"],
+      "shop_price": 40,
+      "description": "Attracts wild Pokemon to your location for 1 hour"
+    },
+    {
+      "name": "Daily Adventure Incense",
+      "korean_name": "데일리 어드벤처 향로",
+      "type": "Special Incense",
+      "duration": "15 minutes",
+      "effect": "Attracts rare Pokemon while moving",
+      "obtainable_from": ["Daily free item"],
+      "special_spawns": true,
+      "description": "Free daily incense that spawns special Pokemon while walking"
+    },
+    {
+      "name": "Lure Module",
+      "korean_name": "루어모듈",
+      "type": "PokeStop Attractor",
+      "duration": "30 minutes",
+      "effect": "Attracts Pokemon to PokeStop",
+      "obtainable_from": ["Shop", "Level Rewards", "Research"],
+      "shop_price": 100,
+      "description": "Attracts wild Pokemon to a PokeStop for 30 minutes"
+    },
+    {
+      "name": "Glacial Lure Module",
+      "korean_name": "글레이셜 루어모듈",
+      "type": "Special Lure",
+      "duration": "30 minutes",
+      "effect": "Attracts Ice and Water type Pokemon",
+      "evolution_bonus": ["Eevee → Glaceon"],
+      "obtainable_from": ["Shop", "Special Research"],
+      "shop_price": 200,
+      "description": "Attracts Ice and Water types, evolves Glaceon"
+    },
+    {
+      "name": "Mossy Lure Module",
+      "korean_name": "이끼 루어모듈",
+      "type": "Special Lure",
+      "duration": "30 minutes",
+      "effect": "Attracts Grass, Bug, and Poison type Pokemon",
+      "evolution_bonus": ["Eevee → Leafeon"],
+      "obtainable_from": ["Shop", "Special Research"],
+      "shop_price": 200,
+      "description": "Attracts Grass, Bug, and Poison types, evolves Leafeon"
+    },
+    {
+      "name": "Magnetic Lure Module",
+      "korean_name": "마그네틱 루어모듈",
+      "type": "Special Lure",
+      "duration": "30 minutes",
+      "effect": "Attracts Electric, Steel, and Rock type Pokemon",
+      "evolution_bonus": ["Magneton → Magnezone", "Nosepass → Probopass"],
+      "obtainable_from": ["Shop", "Special Research"],
+      "shop_price": 200,
+      "description": "Attracts Electric, Steel, and Rock types, special evolutions"
+    },
+    {
+      "name": "Rainy Lure Module",
+      "korean_name": "레이니 루어모듈",
+      "type": "Special Lure",
+      "duration": "30 minutes",
+      "effect": "Attracts Water, Bug, and Electric type Pokemon",
+      "evolution_bonus": ["Sliggoo → Goodra"],
+      "obtainable_from": ["Shop", "Special Research"],
+      "shop_price": 200,
+      "description": "Attracts Water, Bug, and Electric types, evolves Goodra"
+    }
+  ],
+  "raid_passes": [
+    {
+      "name": "Raid Pass",
+      "korean_name": "레이드패스",
+      "type": "Raid Entry",
+      "limit": "1 free per day",
+      "raid_types": ["In-person raids"],
+      "obtainable_from": ["Gyms (1 free daily)", "Shop"],
+      "shop_price": 100,
+      "description": "Allows entry to in-person raids"
+    },
+    {
+      "name": "Remote Raid Pass",
+      "korean_name": "리모트 레이드패스",
+      "type": "Remote Raid Entry",
+      "limit": "Can participate remotely",
+      "raid_types": ["Remote raids"],
+      "obtainable_from": ["Shop", "Bundles", "Weekly Box"],
+      "shop_price": 195,
+      "description": "Allows remote participation in raids"
+    },
+    {
+      "name": "Premium Battle Pass",
+      "korean_name": "프리미엄 배틀패스",
+      "type": "Multiple Raid Entry",
+      "limit": "Can store multiple",
+      "raid_types": ["In-person raids", "Premium Battle League entry"],
+      "obtainable_from": ["Shop"],
+      "shop_price": 100,
+      "description": "Allows entry to multiple in-person raids and premium battles"
+    }
+  ],
+  "storage_upgrades": [
+    {
+      "name": "Pokemon Storage Upgrade",
+      "korean_name": "포켓몬 보관함 업그레이드",
+      "type": "Storage",
+      "increases_by": 50,
+      "max_storage": 6800,
+      "shop_price": 200,
+      "description": "Increases Pokemon storage by 50"
+    },
+    {
+      "name": "Item Bag Upgrade",
+      "korean_name": "도구 가방 업그레이드",
+      "type": "Storage",
+      "increases_by": 50,
+      "max_storage": 5800,
+      "shop_price": 200,
+      "description": "Increases item storage by 50"
+    }
+  ]
+}

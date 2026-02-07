@@ -1,3 +1,4 @@
-FROM alpine:latest
-RUN echo 'Building server-node-049'
-CMD ['start.sh']
+FROM postgres:latest
+WORKDIR /app
+COPY . .
+CMD ["run"]

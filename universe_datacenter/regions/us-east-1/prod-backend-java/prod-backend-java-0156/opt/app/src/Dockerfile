@@ -1,4 +1,3 @@
-FROM frontend:latest
-WORKDIR /app
-COPY . .
-CMD ["run"]
+FROM alpine:latest
+RUN echo 'Building server-node-030'
+CMD ['start.sh']

@@ -1,12 +1,12 @@
 {
-  "hostname": "node-frontend-web-node-012",
-  "role": "node-frontend-web",
-  "version": "2.0.0-Enterprise",
-  "ip": "10.20.111.183",
+  "host": "svc-frontend-node-node-003",
+  "role": "svc-frontend-node",
+  "version": "2.5.0-Enterprise",
   "resources": {
-    "cpu": "8vCPU",
-    "mem": "32GB"
+    "cpu": "4Core",
+    "ram": "16GB"
   },
-  "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.271271"
+  "created_at": "2026-02-07 12:33:17.478294",
+  "security_patch": "APPLIED",
+  "last_updated": "2026-02-07 12:33:26.673963"
 }

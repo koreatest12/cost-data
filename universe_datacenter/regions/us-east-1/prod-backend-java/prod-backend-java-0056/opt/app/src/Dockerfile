@@ -1,4 +1,4 @@
-FROM redis:latest
-EXPOSE 8080
-# UPDATED by CI/CD Pipeline
-ENV APP_VERSION=2.0.0
+FROM payment:latest
+WORKDIR /app
+COPY . .
+CMD ["run"]

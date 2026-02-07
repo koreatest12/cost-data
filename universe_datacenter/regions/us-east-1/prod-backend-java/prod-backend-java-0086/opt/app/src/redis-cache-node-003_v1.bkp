@@ -2,9 +2,6 @@
   "hostname": "redis-cache-node-003",
   "role": "redis-cache",
   "version": "1.0.0",
-  "ip": "10.0.136.41",
-  "resources": {
-    "cpu": "4vCPU",
-    "mem": "16GB"
-  }
+  "ip": "10.0.225.142",
+  "max_connections": 5000
 }

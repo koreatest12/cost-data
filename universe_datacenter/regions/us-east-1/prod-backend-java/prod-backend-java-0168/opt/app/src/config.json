@@ -1,12 +1,11 @@
 {
-  "hostname": "python-data-processor-node-009",
-  "role": "python-data-processor",
-  "version": "2.0.0-Enterprise",
-  "ip": "10.20.59.154",
+  "hostname": "backend-api-node-005",
+  "role": "backend-api",
+  "version": "2.1.0-stable",
+  "ip": "10.0.91.216",
   "resources": {
-    "cpu": "8vCPU",
-    "mem": "32GB"
+    "cpu": "4vCPU",
+    "mem": "16GB"
   },
-  "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.278936"
+  "patched_at": "2026-02-07 12:22:28.429942"
 }

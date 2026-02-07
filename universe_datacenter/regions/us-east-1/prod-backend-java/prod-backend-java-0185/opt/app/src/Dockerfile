@@ -1,4 +1,3 @@
-FROM email:latest
-WORKDIR /app
-COPY . .
-CMD ["run"]
+FROM alpine:latest
+RUN echo 'Building server-node-010'
+CMD ['start.sh']

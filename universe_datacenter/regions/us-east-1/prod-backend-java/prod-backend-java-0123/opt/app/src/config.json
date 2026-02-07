@@ -1,11 +1,11 @@
 {
-  "hostname": "payment-gateway-node-007",
-  "role": "payment-gateway",
+  "hostname": "frontend-web-node-014",
+  "role": "frontend-web",
   "version": "2.1.0-stable",
-  "ip": "10.0.168.139",
+  "ip": "10.0.156.130",
   "resources": {
     "cpu": "4vCPU",
     "mem": "16GB"
   },
-  "patched_at": "2026-02-07 12:22:28.418102"
+  "patched_at": "2026-02-07 12:22:28.437857"
 }

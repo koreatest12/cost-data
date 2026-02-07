@@ -1,5 +1,5 @@
-FROM openjdk:17-alpine
-COPY build/libs/*.jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
-# UPDATED by CI/CD Pipeline
-ENV APP_VERSION=2.0.0
+FROM python:3.9-slim
+WORKDIR /app
+COPY . .
+RUN pip install -r req.txt
+CMD ['start']

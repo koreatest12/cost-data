@@ -1,0 +1,369 @@
+{
+  "gyms": {
+    "overview": {
+      "description": "Gyms are locations where Trainers can battle and place Pokemon to defend",
+      "korean_description": "체육관은 트레이너가 배틀하고 포켓몬을 배치하여 방어할 수 있는 장소입니다"
+    },
+    "mechanics": {
+      "max_defenders": 6,
+      "same_species_limit": 1,
+      "motivation_system": {
+        "description": "Pokemon lose motivation (CP) over time and when defeated",
+        "korean_description": "포켓몬은 시간이 지남에 따라 그리고 패배할 때 동기(CP)를 잃습니다",
+        "decay_rate": "Faster for higher CP Pokemon",
+        "feeding_berries": "Restores motivation",
+        "max_motivation_time": "Approximately 3 days for full decay"
+      },
+      "coin_rewards": {
+        "rate": "1 coin per 10 minutes",
+        "daily_limit": 50,
+        "requirement": "Pokemon must return from gym"
+      },
+      "badge_levels": [
+        {"level": "Basic", "battles_won": 0, "berry_fed": 0, "hours_defended": 0},
+        {"level": "Bronze", "battles_won": 10, "berry_fed": 10, "hours_defended": 10},
+        {"level": "Silver", "battles_won": 100, "berry_fed": 100, "hours_defended": 100},
+        {"level": "Gold", "battles_won": 500, "berry_fed": 500, "hours_defended": 500}
+      ]
+    },
+    "battle_mechanics": {
+      "attack_types": ["Fast Attack", "Charged Attack"],
+      "shields": 0,
+      "type_effectiveness": "Standard Pokemon type chart applies",
+      "dodging": "Available but timing-based"
+    }
+  },
+  "raids": {
+    "overview": {
+      "description": "Cooperative battles against powerful Boss Pokemon",
+      "korean_description": "강력한 보스 포켓몬에 대한 협동 배틀"
+    },
+    "tiers": [
+      {
+        "tier": 1,
+        "stars": 1,
+        "recommended_trainers": "1-2",
+        "boss_cp_range": "3000-5000",
+        "typical_pokemon": ["Shinx", "Klink", "Timburr"],
+        "rewards": "Lower tier rewards, good for solo players"
+      },
+      {
+        "tier": 3,
+        "stars": 3,
+        "recommended_trainers": "2-4",
+        "boss_cp_range": "12000-18000",
+        "typical_pokemon": ["Machamp", "Gengar", "Tyranitar"],
+        "rewards": "Rare Candy, Golden Razz Berry, TMs"
+      },
+      {
+        "tier": 5,
+        "stars": 5,
+        "recommended_trainers": "5-20",
+        "boss_cp_range": "40000-60000",
+        "typical_pokemon": ["Legendary Pokemon"],
+        "rewards": "Highest tier rewards, Rare Candy XL, guaranteed",
+        "korean_note": "전설의 포켓몬 레이드"
+      },
+      {
+        "tier": "Mega",
+        "stars": "Mega",
+        "recommended_trainers": "4-10",
+        "boss_cp_range": "50000-70000",
+        "typical_pokemon": ["Mega Evolutions"],
+        "rewards": "Mega Energy, increased XL Candy chance",
+        "korean_note": "메가 진화 레이드"
+      },
+      {
+        "tier": "Elite",
+        "stars": "EX",
+        "recommended_trainers": "Variable",
+        "description": "Special invitation-only raids",
+        "korean_description": "특별 초대 전용 레이드"
+      }
+    ],
+    "raid_mechanics": {
+      "duration": "45 minutes per raid",
+      "lobby_time": "120 seconds",
+      "max_group_size": 20,
+      "private_lobbies": "Available with code",
+      "remote_raid_limit": "5 trainers per raid",
+      "damage_bonus": {
+        "team_contribution": "+0-3 Premier Balls",
+        "damage_dealt": "+0-3 Premier Balls",
+        "gym_control": "+0-2 Premier Balls"
+      }
+    },
+    "rewards": {
+      "guaranteed": ["Premier Balls", "Stardust", "XP"],
+      "common": ["Revives", "Potions", "Hyper Potions", "Rare Candy"],
+      "uncommon": ["Golden Razz Berry", "Fast TM", "Charged TM"],
+      "rare": ["Rare Candy XL (from Tier 5)", "Elite TMs (special events)"]
+    }
+  },
+  "go_battle_league": {
+    "overview": {
+      "description": "PvP battling system with seasonal rankings",
+      "korean_description": "시즌 랭킹을 가진 PvP 배틀 시스템"
+    },
+    "leagues": [
+      {
+        "name": "Great League",
+        "korean_name": "그레이트리그",
+        "cp_limit": 1500,
+        "meta_pokemon": ["Azumarill", "Galarian Stunfisk", "Medicham", "Registeel"]
+      },
+      {
+        "name": "Ultra League",
+        "korean_name": "울트라리그",
+        "cp_limit": 2500,
+        "meta_pokemon": ["Giratina (Altered)", "Registeel", "Cresselia", "Talonflame"]
+      },
+      {
+        "name": "Master League",
+        "korean_name": "마스터리그",
+        "cp_limit": "None",
+        "meta_pokemon": ["Dialga", "Groudon", "Kyogre", "Mewtwo", "Zacian"]
+      },
+      {
+        "name": "Master League Classic",
+        "korean_name": "마스터리그 클래식",
+        "cp_limit": "None",
+        "xl_candy": "Not allowed",
+        "max_level": 40
+      }
+    ],
+    "mechanics": {
+      "team_size": 3,
+      "shields": 2,
+      "switch_cooldown": "60 seconds",
+      "charged_move_minigame": "Required for damage bonus",
+      "type_effectiveness": {
+        "super_effective": "1.6x damage",
+        "not_very_effective": "0.625x damage",
+        "double_weakness": "2.56x damage"
+      }
+    },
+    "ranking_system": {
+      "ranks": [
+        {"rank": 1, "battles_required": 0},
+        {"rank": 10, "battles_required": 45},
+        {"rank": 20, "rating_required": 2000, "korean_note": "에이스 트레이너"},
+        {"rank": 21, "rating_required": 2500, "title": "Veteran"},
+        {"rank": 22, "rating_required": 2750, "title": "Expert"},
+        {"rank": 23, "rating_required": 3000, "title": "Legend"}
+      ],
+      "season_duration": "Approximately 3 months",
+      "rating_system": "Elo-based MMR"
+    },
+    "rewards": {
+      "per_set": "5 battles per set",
+      "daily_sets": "5 sets (25 battles) with free pass",
+      "win_rewards": {
+        "1_win": ["Stardust"],
+        "2_wins": ["Pokemon Encounter or Item"],
+        "3_wins": ["Rare Candy or TM"],
+        "4_wins": ["Pokemon Encounter"],
+        "5_wins": ["Rare Candy XL (Rank 20+)"]
+      },
+      "end_of_season": {
+        "rank_20": "Elite Fast TM",
+        "rank_19": "Elite Charged TM",
+        "legend_rank": "Exclusive Pose and Avatar Item"
+      }
+    }
+  },
+  "buddy_system": {
+    "overview": {
+      "description": "Pokemon companion system with various benefits",
+      "korean_description": "다양한 혜택을 제공하는 포켓몬 동료 시스템"
+    },
+    "buddy_levels": [
+      {
+        "level": "Good Buddy",
+        "hearts_required": 0,
+        "benefits": ["Adventure together", "View Buddy profile page"]
+      },
+      {
+        "level": "Great Buddy",
+        "hearts_required": 70,
+        "benefits": ["Catch assist", "CP boost in battles"]
+      },
+      {
+        "level": "Ultra Buddy",
+        "hearts_required": 150,
+        "benefits": ["Find locations", "Find presents"]
+      },
+      {
+        "level": "Best Buddy",
+        "hearts_required": 300,
+        "benefits": ["CP Boost (1 level)", "Best Buddy ribbon"],
+        "korean_note": "최고의 친구 CP 부스트"
+      }
+    ],
+    "heart_activities": [
+      {"activity": "Walk 2km", "hearts": 1, "daily_limit": 1},
+      {"activity": "Give a treat", "hearts": 1, "daily_limit": 1},
+      {"activity": "Play together", "hearts": 1, "daily_limit": 1},
+      {"activity": "Battle together", "hearts": 1, "daily_limit": 1},
+      {"activity": "Take a snapshot", "hearts": 1, "daily_limit": 1},
+      {"activity": "Visit new location", "hearts": 1, "daily_limit": 1},
+      {"activity": "Visit location", "hearts": 1, "daily_limit": 1},
+      {"activity": "Bonus heart (emotions)", "hearts": 1, "daily_limit": 1}
+    ],
+    "candy_earning": {
+      "walking_distance": "Varies by Pokemon species (1km, 3km, 5km, or 20km)",
+      "xl_candy_chance": "Possible after level 31",
+      "excited_buddy_bonus": "Halves walking distance"
+    }
+  },
+  "trading": {
+    "overview": {
+      "description": "Exchange Pokemon with friends",
+      "korean_description": "친구들과 포켓몬 교환"
+    },
+    "requirements": {
+      "minimum_level": 10,
+      "proximity": "100 meters",
+      "friendship_level": "Required for special trades"
+    },
+    "costs": {
+      "standard_trade": {
+        "stardust": "100-1,000,000 based on friendship and Pokemon"
+      },
+      "special_trade": {
+        "description": "Legendary, Shiny, or Pokemon not in Pokedex",
+        "daily_limit": 1,
+        "stardust_range": "20,000-1,000,000",
+        "korean_note": "특별 교환은 하루 1회 제한"
+      }
+    },
+    "friendship_levels": [
+      {
+        "level": "Good Friend",
+        "days": 1,
+        "trade_discount": "0%",
+        "attack_iv_floor": 1
+      },
+      {
+        "level": "Great Friend",
+        "days": 7,
+        "trade_discount": "20%",
+        "attack_iv_floor": 2
+      },
+      {
+        "level": "Ultra Friend",
+        "days": 30,
+        "trade_discount": "92%",
+        "attack_iv_floor": 3
+      },
+      {
+        "level": "Best Friend",
+        "days": 90,
+        "trade_discount": "96%",
+        "attack_iv_floor": 5,
+        "korean_note": "절친 레벨"
+      }
+    ],
+    "lucky_pokemon": {
+      "chance": "Varies by age of Pokemon",
+      "guaranteed": "If both Pokemon are from July-August 2016 and player has <10 luckies",
+      "benefits": ["50% reduced stardust for power ups", "Minimum 12/12/12 IVs"],
+      "lucky_friend": {
+        "description": "Special friendship status",
+        "trigger": "Random after Best Friend daily interaction",
+        "benefit": "Next trade is guaranteed Lucky Pokemon",
+        "korean_description": "행운의 친구 - 다음 교환이 행운의 포켓몬 보장"
+      }
+    }
+  },
+  "team_go_rocket": {
+    "overview": {
+      "description": "Battle Team GO Rocket for Shadow Pokemon",
+      "korean_description": "로켓단과 배틀하여 섀도우 포켓몬 획득"
+    },
+    "grunt_types": [
+      "Normal", "Fire", "Water", "Grass", "Electric", "Ice", 
+      "Fighting", "Poison", "Ground", "Flying", "Psychic", 
+      "Bug", "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"
+    ],
+    "leaders": [
+      {
+        "name": "Cliff",
+        "korean_name": "클리프",
+        "difficulty": "Hard",
+        "rewards": "Shadow Legendary encounters (during events)"
+      },
+      {
+        "name": "Sierra",
+        "korean_name": "시에라",
+        "difficulty": "Hard",
+        "rewards": "Shadow Legendary encounters (during events)"
+      },
+      {
+        "name": "Arlo",
+        "korean_name": "알로",
+        "difficulty": "Hard",
+        "rewards": "Shadow Legendary encounters (during events)"
+      },
+      {
+        "name": "Giovanni",
+        "korean_name": "비주기",
+        "difficulty": "Very Hard",
+        "requirements": "Special Research",
+        "rewards": "Shadow Legendary Pokemon",
+        "korean_note": "로켓단 보스"
+      }
+    ],
+    "shadow_pokemon": {
+      "description": "Pokemon with boosted attack but reduced defense",
+      "attack_bonus": "+20%",
+      "defense_penalty": "-20%",
+      "charged_move": "Frustration (can be TMed during events)",
+      "purification": {
+        "cost": "Candy and Stardust (reduced amounts)",
+        "benefits": [
+          "Returns to normal form",
+          "Level increases by 25 (up to level 25)",
+          "IVs increase by 2 each (max 15)",
+          "Learns Return"
+        ]
+      },
+      "shadow_bonus_raids": "+20% damage in raids and gyms"
+    }
+  },
+  "research_tasks": {
+    "types": [
+      {
+        "type": "Field Research",
+        "description": "Daily tasks from PokeStops",
+        "korean_description": "포켓스톱의 일일 과제",
+        "rewards": "Pokemon encounters, items, Stardust",
+        "breakthrough": {
+          "requirement": "7 stamps (1 per day)",
+          "rewards": "Rare Pokemon encounter, XP, items"
+        }
+      },
+      {
+        "type": "Special Research",
+        "description": "Story-based research questlines",
+        "korean_description": "스토리 기반 연구 퀘스트",
+        "permanent": true,
+        "rewards": "Mythical Pokemon, rare items"
+      },
+      {
+        "type": "Timed Research",
+        "description": "Limited-time event research",
+        "korean_description": "기간 한정 이벤트 연구",
+        "duration": "Varies by event",
+        "rewards": "Event-specific Pokemon and items"
+      },
+      {
+        "type": "Season Research",
+        "description": "Season-long research tasks",
+        "korean_description": "시즌 연구 과제",
+        "duration": "Entire season (3 months)",
+        "rewards": "Exclusive Pokemon, XP, items"
+      }
+    ]
+  }
+}

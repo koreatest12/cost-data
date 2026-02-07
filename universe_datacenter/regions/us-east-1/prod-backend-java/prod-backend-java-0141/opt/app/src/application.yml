@@ -1,5 +1,5 @@
 {
-  "host": "server-node-003",
-  "port": 8083,
-  "db_connection": "jdbc:mysql://db-3:3306/prod"
+  "host": "server-node-017",
+  "port": 8097,
+  "db_connection": "jdbc:mysql://db-17:3306/prod"
 }

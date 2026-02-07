@@ -1,4 +1,4 @@
-FROM postgres:latest
+FROM email:latest
 WORKDIR /app
 COPY . .
 CMD ["run"]

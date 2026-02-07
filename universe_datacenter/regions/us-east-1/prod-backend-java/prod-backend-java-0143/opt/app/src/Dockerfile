@@ -1,4 +1,3 @@
-FROM kafka:latest
-WORKDIR /app
-COPY . .
-CMD ["run"]
+FROM alpine:latest
+RUN echo 'Building server-node-040'
+CMD ['start.sh']

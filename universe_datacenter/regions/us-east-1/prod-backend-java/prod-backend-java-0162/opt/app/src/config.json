@@ -1,11 +1,12 @@
 {
-  "hostname": "backend-api-node-029",
-  "role": "backend-api",
-  "version": "2.1.0-stable",
-  "ip": "10.0.138.179",
+  "host": "svc-payment-node-009",
+  "role": "svc-payment",
+  "version": "2.5.0-Enterprise",
   "resources": {
-    "cpu": "4vCPU",
-    "mem": "16GB"
+    "cpu": "4Core",
+    "ram": "16GB"
   },
-  "patched_at": "2026-02-07 12:22:28.426131"
+  "created_at": "2026-02-07 12:33:17.457264",
+  "security_patch": "APPLIED",
+  "last_updated": "2026-02-07 12:33:26.662573"
 }

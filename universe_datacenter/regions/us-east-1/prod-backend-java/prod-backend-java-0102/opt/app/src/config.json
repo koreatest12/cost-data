@@ -1,12 +1,12 @@
 {
-  "hostname": "postgres-db-shard-node-007",
-  "role": "postgres-db-shard",
+  "hostname": "docker-registry-node-001",
+  "role": "docker-registry",
   "version": "2.0.0-Enterprise",
-  "ip": "10.20.121.84",
+  "ip": "10.20.29.254",
   "resources": {
     "cpu": "8vCPU",
     "mem": "32GB"
   },
   "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.283633"
+  "updated_at": "2026-02-07 12:28:05.278424"
 }

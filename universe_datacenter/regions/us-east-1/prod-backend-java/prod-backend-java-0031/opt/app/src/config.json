@@ -1,12 +1,12 @@
 {
-  "host": "svc-data-python-node-016",
-  "role": "svc-data-python",
+  "host": "svc-auth-go-node-009",
+  "role": "svc-auth-go",
   "version": "2.5.0-Enterprise",
   "resources": {
     "cpu": "4Core",
     "ram": "16GB"
   },
-  "created_at": "2026-02-07 12:33:17.475388",
+  "created_at": "2026-02-07 12:33:17.487154",
   "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.653562"
+  "last_updated": "2026-02-07 12:33:26.671703"
 }

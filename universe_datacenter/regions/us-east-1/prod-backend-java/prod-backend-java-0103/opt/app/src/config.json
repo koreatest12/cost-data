@@ -1,11 +1,12 @@
 {
-  "hostname": "payment-gateway-node-005",
-  "role": "payment-gateway",
-  "version": "2.1.0-stable",
-  "ip": "10.0.253.221",
+  "hostname": "docker-registry-node-002",
+  "role": "docker-registry",
+  "version": "2.0.0-Enterprise",
+  "ip": "10.20.48.164",
   "resources": {
-    "cpu": "4vCPU",
-    "mem": "16GB"
+    "cpu": "8vCPU",
+    "mem": "32GB"
   },
-  "patched_at": "2026-02-07 12:22:28.417569"
+  "security_patch": "CVE-2026-FIXED",
+  "updated_at": "2026-02-07 12:28:05.278753"
 }

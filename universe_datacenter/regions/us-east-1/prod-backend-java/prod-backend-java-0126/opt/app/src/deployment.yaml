@@ -1,21 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: omni-job
-  labels:
-    app: omni-job
+  name: prod-ai-gpu-cluster-0048
 spec:
   replicas: 3
-  selector:
-    matchLabels:
-      app: omni-job
-  template:
-    metadata:
-      labels:
-        app: omni-job
-    spec:
-      containers:
-      - name: app
-        image: ghcr.io/koreatest12/cost-data/omni-job-service:latest
-        ports:
-        - containerPort: 8080

@@ -1,12 +1,12 @@
 {
-  "host": "infra-redis-node-008",
-  "role": "infra-redis",
-  "version": "2.5.0-Enterprise",
+  "hostname": "java-backend-api-node-011",
+  "role": "java-backend-api",
+  "version": "2.0.0-Enterprise",
+  "ip": "10.20.39.242",
   "resources": {
-    "cpu": "4Core",
-    "ram": "16GB"
+    "cpu": "8vCPU",
+    "mem": "32GB"
   },
-  "created_at": "2026-02-07 12:33:17.490884",
-  "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.652787"
+  "security_patch": "CVE-2026-FIXED",
+  "updated_at": "2026-02-07 12:28:05.276981"
 }

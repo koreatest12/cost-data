@@ -1,12 +1,12 @@
 {
-  "hostname": "redis-cache-cluster-node-007",
-  "role": "redis-cache-cluster",
-  "version": "2.0.0-Enterprise",
-  "ip": "10.20.179.168",
+  "host": "svc-backend-java-node-018",
+  "role": "svc-backend-java",
+  "version": "2.5.0-Enterprise",
   "resources": {
-    "cpu": "8vCPU",
-    "mem": "32GB"
+    "cpu": "4Core",
+    "ram": "16GB"
   },
-  "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.285370"
+  "created_at": "2026-02-07 12:33:17.467279",
+  "security_patch": "APPLIED",
+  "last_updated": "2026-02-07 12:33:26.665750"
 }

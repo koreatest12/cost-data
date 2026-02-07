@@ -1,12 +1,12 @@
 {
-  "hostname": "postgres-db-shard-node-001",
-  "role": "postgres-db-shard",
+  "hostname": "node-frontend-web-node-006",
+  "role": "node-frontend-web",
   "version": "2.0.0-Enterprise",
-  "ip": "10.20.163.151",
+  "ip": "10.20.71.236",
   "resources": {
     "cpu": "8vCPU",
     "mem": "32GB"
   },
   "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.284150"
+  "updated_at": "2026-02-07 12:28:05.271075"
 }

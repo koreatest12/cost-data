@@ -1,12 +1,11 @@
 {
-  "host": "ops-email-sender-node-005",
-  "role": "ops-email-sender",
-  "version": "2.5.0-Enterprise",
+  "hostname": "redis-cache-node-004",
+  "role": "redis-cache",
+  "version": "2.1.0-stable",
+  "ip": "10.0.40.240",
   "resources": {
-    "cpu": "4Core",
-    "ram": "16GB"
+    "cpu": "4vCPU",
+    "mem": "16GB"
   },
-  "created_at": "2026-02-07 12:33:17.500071",
-  "security_patch": "APPLIED",
-  "last_updated": "2026-02-07 12:33:26.659188"
+  "patched_at": "2026-02-07 12:22:28.420869"
 }

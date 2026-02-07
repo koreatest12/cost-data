@@ -1,0 +1,10 @@
+{
+  "hostname": "payment-gateway-node-002",
+  "role": "payment-gateway",
+  "version": "1.0.0",
+  "ip": "10.0.237.7",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
+}

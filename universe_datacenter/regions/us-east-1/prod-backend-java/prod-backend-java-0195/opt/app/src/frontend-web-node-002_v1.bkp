@@ -1,0 +1,10 @@
+{
+  "hostname": "frontend-web-node-002",
+  "role": "frontend-web",
+  "version": "1.0.0",
+  "ip": "10.0.155.85",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
+}

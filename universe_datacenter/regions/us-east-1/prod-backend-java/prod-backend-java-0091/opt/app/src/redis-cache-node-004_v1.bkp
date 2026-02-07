@@ -1,0 +1,7 @@
+{
+  "hostname": "redis-cache-node-004",
+  "role": "redis-cache",
+  "version": "1.0.0",
+  "ip": "10.0.67.65",
+  "max_connections": 5000
+}

@@ -1,4 +1,5 @@
-FROM backend:latest
+FROM python:3.9-slim
 WORKDIR /app
 COPY . .
-CMD ["run"]
+RUN pip install -r req.txt
+CMD ['start']

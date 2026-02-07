@@ -1,4 +1,4 @@
-FROM data:latest
+FROM backend:latest
 WORKDIR /app
 COPY . .
 CMD ["run"]

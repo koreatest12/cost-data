@@ -1,4 +1,3 @@
-FROM auth:latest
-WORKDIR /app
-COPY . .
-CMD ["run"]
+FROM alpine:latest
+RUN echo 'Building server-node-045'
+CMD ['start.sh']

@@ -1,0 +1,7 @@
+{
+  "hostname": "payment-gateway-node-008",
+  "role": "payment-gateway",
+  "version": "1.0.0",
+  "ip": "10.0.144.192",
+  "max_connections": 5000
+}

@@ -1,5 +1,3 @@
-FROM openjdk:17-alpine
-COPY build/libs/*.jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
-# UPDATED by CI/CD Pipeline
-ENV APP_VERSION=2.0.0
+FROM alpine:latest
+RUN echo 'Building server-node-025'
+CMD ['start.sh']

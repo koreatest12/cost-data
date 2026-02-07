@@ -1,3 +1,5 @@
-FROM alpine:latest
-RUN echo 'Building server-node-022'
-CMD ['start.sh']
+FROM python:3.9-slim
+WORKDIR /app
+COPY . .
+RUN pip install -r req.txt
+CMD ['start']

@@ -1,4 +1,5 @@
-FROM node:latest
-EXPOSE 8080
-# UPDATED by CI/CD Pipeline
-ENV APP_VERSION=2.0.0
+FROM python:3.9-slim
+WORKDIR /app
+COPY . .
+RUN pip install -r req.txt
+CMD ['start']

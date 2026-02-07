@@ -1,12 +1,11 @@
 {
-  "hostname": "node-frontend-web-node-004",
-  "role": "node-frontend-web",
-  "version": "2.0.0-Enterprise",
-  "ip": "10.20.184.170",
+  "hostname": "auth-server-node-008",
+  "role": "auth-server",
+  "version": "2.1.0-stable",
+  "ip": "10.0.83.99",
   "resources": {
-    "cpu": "8vCPU",
-    "mem": "32GB"
+    "cpu": "4vCPU",
+    "mem": "16GB"
   },
-  "security_patch": "CVE-2026-FIXED",
-  "updated_at": "2026-02-07 12:28:05.270352"
+  "patched_at": "2026-02-07 12:22:28.415615"
 }

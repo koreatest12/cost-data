@@ -1,9 +1,12 @@
 {
-  "hostname": "frontend-web-node-007",
-  "role": "frontend-web",
-  "version": "2.1.0-stable",
-  "ip": "10.0.55.27",
-  "max_connections": 5000,
-  "last_patched": "2026-02-07 12:17:51.013936",
-  "security_level": "ENFORCED"
+  "hostname": "node-frontend-web-node-015",
+  "role": "node-frontend-web",
+  "version": "2.0.0-Enterprise",
+  "ip": "10.20.1.237",
+  "resources": {
+    "cpu": "8vCPU",
+    "mem": "32GB"
+  },
+  "security_patch": "CVE-2026-FIXED",
+  "updated_at": "2026-02-07 12:28:05.272085"
 }
