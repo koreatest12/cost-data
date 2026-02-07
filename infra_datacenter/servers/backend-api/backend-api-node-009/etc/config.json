@@ -1,0 +1,9 @@
+{
+  "hostname": "backend-api-node-009",
+  "role": "backend-api",
+  "version": "2.1.0-stable",
+  "ip": "10.0.91.70",
+  "max_connections": 5000,
+  "last_patched": "2026-02-07 12:17:50.999171",
+  "security_level": "ENFORCED"
+}

@@ -1,0 +1,9 @@
+{
+  "hostname": "data-analytics-node-005",
+  "role": "data-analytics",
+  "version": "2.1.0-stable",
+  "ip": "10.0.10.244",
+  "max_connections": 5000,
+  "last_patched": "2026-02-07 12:17:50.986520",
+  "security_level": "ENFORCED"
+}

@@ -1,0 +1,9 @@
+{
+  "hostname": "redis-cache-node-002",
+  "role": "redis-cache",
+  "version": "2.1.0-stable",
+  "ip": "10.0.238.216",
+  "max_connections": 5000,
+  "last_patched": "2026-02-07 12:17:50.994357",
+  "security_level": "ENFORCED"
+}

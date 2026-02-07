@@ -1,0 +1,9 @@
+{
+  "hostname": "frontend-web-node-018",
+  "role": "frontend-web",
+  "version": "2.1.0-stable",
+  "ip": "10.0.9.81",
+  "max_connections": 5000,
+  "last_patched": "2026-02-07 12:17:51.012402",
+  "security_level": "ENFORCED"
+}
