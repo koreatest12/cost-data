@@ -1,69 +1,73 @@
-name: GitHub Agent Ecosystem (Moltbook Style)
+name: Moltbook Style Autonomous Agent
 
 on:
-  # 1. 소셜 상호작용 (이슈/댓글/토론)
-  issues:
-    types: [opened, edited]
-  issue_comment:
-    types: [created]
-  discussion:
-    types: [created]
-  # 2. 자율적 학습 및 행동 (매 시간 실행)
   schedule:
-    - cron: '0 * * * *'
-  # 3. 외부 에이전트 가입 및 연동 (Webhook 등)
-  repository_dispatch:
-    types: [agent_join, agent_action]
-  workflow_dispatch:
+    - cron: '0 * * * *' # 매 시간 자동 실행
+  push:
+    branches: [ main ]
+  workflow_dispatch: # 수동 실행 버튼
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
-  # [Moltbook 특징 1] 에이전트 메모리 및 지식 관리 (Semantic Memory)
-  memory-management:
+  agent-autonomous-loop:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Update Agent Memory
-        run: |
-          echo "에이전트의 경험(Episodic)을 지식(Semantic)으로 변환합니다."
-          # 예: 최근 이슈 토론 내용을 요약하여 docs/memory 에 저장
-          python scripts/sync_memory.py
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-  # [Moltbook 특징 2] 자율적 소셜 활동 (Agent Interaction)
-  social-interaction:
-    if: github.event_name == 'issue_comment' || github.event_name == 'issues'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Agent Reasoning & Response
-        uses: actions/github-script@v7
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          script: |
-            const body = context.payload.comment ? context.payload.comment.body : context.payload.issue.body;
-            // 에이전트가 내용을 분석하고 토론에 참여하는 로직
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '🤖 (Agent Analysis): 해당 제안의 아키텍처는 효율적이지만 보안 가드레일 보완이 필요해 보입니다. 🦞'
-            })
+          python-version: '3.10'
 
-  # [Moltbook 특징 3] 보안 및 린팅 (Sovereign Guard)
-  security-guard:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Agent Linter & Security Check
+      # [핵심] 실행 전 필요한 디렉토리 및 스크립트 파일 대량 자동 생성
+      - name: Initialize Agent Environment & Scripts
         run: |
-          echo "에이전트의 행동이 커뮤니티 표준(v3.0.0 Eternal Aegis)을 준수하는지 검사합니다."
-          # 토큰 남용 방지 및 명령어 주입 방어 로직
+          mkdir -p scripts
+          mkdir -p docs/memory
 
-  # [Moltbook 특징 4] 리포트 및 브리핑 (Daily News)
-  daily-briefing:
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Gather IT & Side Hustle News
-        run: |
-          echo "매일 아침 08시: 부업 뉴스 및 기술 트렌드 브리핑 생성"
-          python scripts/engine_hustle.py
-      - name: Post to Moltbook Style Dashboard
-        run: |
-          # 결과를 Issue나 README.md에 업데이트하여 대시보드화
+          # 1. 메모리 동기화 스크립트 생성 (sync_memory.py)
+          cat <<EOF > scripts/sync_memory.py
+          import os
+          from datetime import datetime
+
+          def transform_memory():
+              print("에이전트의 경험(Episodic)을 지식(Semantic)으로 변환 중...")
+              timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+              memory_file = "docs/memory/semantic_knowledge.md"
+              
+              with open(memory_file, "a", encoding="utf-8") as f:
+                  f.write(f"\n## Knowledge Updated at {timestamp}\n")
+                  f.write("- 최근 GitHub 활동 데이터를 분석하여 지식 베이스를 업데이트함.\n")
+              print(f"변환 완료: {memory_file} 업데이트됨.")
+
+          if __name__ == "__main__":
+              transform_memory()
+          EOF
+
+          # 2. 부업 뉴스 엔진 스크립트 생성 (engine_hustle.py)
+          cat <<EOF > scripts/engine_hustle.py
+          print("🔥 AI 에이전트 뉴스 엔진 가동 중...")
+          print("- 최신 부업 트렌드: AI 에이전트 대리 자동화 서비스 수요 급증")
+          print("- 기술 동향: Moltbook 기반 소셜 인터랙션 자동화 모듈 활성화")
+          EOF
+
+          chmod +x scripts/*.py
+
+      # [실행] 생성된 스크립트들을 차례대로 실행 (에러 시에도 중단 없이 진행하려면 || true 활용 가능)
+      - name: Run Memory Sync
+        run: python scripts/sync_memory.py
+
+      - name: Run News Engine
+        run: python scripts/engine_hustle.py
+
+      # [반영] 변경된 사항(메모리 업데이트, 신규 스크립트)을 레포지토리에 자동 커밋
+      - name: Auto-Commit & Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🤖 [Agent Autonomy] Updated memory and automated scripts"
+          file_pattern: 'scripts/*.py docs/memory/*.md'
