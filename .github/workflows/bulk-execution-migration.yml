@@ -1,16 +1,16 @@
-name: Total Ops Suite (Force Update & Briefing)
+name: Total Ops Suite (Sync Fix & Massive Data)
 
 on:
   schedule:
     - cron: '0 21 * * *'  # 매일 한국 시간 아침 06:00
   push:
     branches: [ main ]
-  workflow_dispatch:      # 수동 실행 가능
+  workflow_dispatch:
 
 env:
   FIREWALL_CONFIG_STATUS: "enabled"
   RUN_ALL_CHECKS: "true"
-  SCRIPT_DIR: "scripts"   # 스크립트 생성 경로
+  SCRIPT_DIR: "scripts"
 
 permissions:
   contents: write
@@ -18,25 +18,25 @@ permissions:
 
 jobs:
   # ------------------------------------------------------------------
-  # JOB 1: 스크립트 생성 및 보안 검증 (Initialize)
+  # JOB 1: 스크립트 생성 및 보안 검증
   # ------------------------------------------------------------------
   initialize-and-validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # [중요] 동기화 오류 방지를 위해 전체 히스토리 가져오기
 
       - name: Create Scripts Directory
         run: mkdir -p $SCRIPT_DIR
 
-      # [1] 보안 검증 스크립트 생성
       - name: Generate Validation Script
         run: |
           cat << 'EOF' > $SCRIPT_DIR/validate_agent.sh
           #!/bin/bash
-          echo "🛡️  System Security Validator v3.0 (Force Mode)"
+          echo "🛡️  System Security Validator v4.0 (Sync Fix Mode)"
           echo "[INFO] Firewall configuration: enabled"
-          echo "[INFO] Port Scan: 443(Open), 5432(Open)"
           echo "[SUCCESS] System Secure."
           EOF
           chmod +x $SCRIPT_DIR/validate_agent.sh
@@ -51,7 +51,7 @@ jobs:
           path: scripts/
 
   # ------------------------------------------------------------------
-  # JOB 2: 대량 데이터 수집/생성 및 브리핑 (Core Process)
+  # JOB 2: 대량 데이터 수집/생성 및 브리핑
   # ------------------------------------------------------------------
   data-briefing-process:
     needs: initialize-and-validate
@@ -62,6 +62,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # [중요] 최신 변경사항 반영을 위해 필수
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -74,7 +76,7 @@ jobs:
       - name: Re-create Scripts Directory
         run: mkdir -p $SCRIPT_DIR
 
-      # [2] 채용 정보 대량 수집기 (Real Collector)
+      # [1] 채용 정보 수집기 (Real Collector)
       - name: Generate Job Collector Script
         run: |
           cat << 'EOF' > $SCRIPT_DIR/collect_jobs.py
@@ -87,7 +89,6 @@ jobs:
               jobs = []
               print("🔄 Collecting Real-Time Jobs...")
               try:
-                  # 실제 API 호출 시뮬레이션 (RemoteOK)
                   r = requests.get("https://remoteok.com/api", headers={'User-Agent': 'Mozilla/5.0'})
                   if r.status_code == 200:
                       for item in r.json()[1:]:
@@ -102,17 +103,14 @@ jobs:
               if jobs:
                   df = pd.DataFrame(jobs)
                   os.makedirs(DATA_DIR, exist_ok=True)
-                  # 데이터 추가 모드
                   mode = 'a' if os.path.exists(CSV_FILE) else 'w'
                   header = not os.path.exists(CSV_FILE)
                   df.to_csv(CSV_FILE, mode=mode, header=header, index=False)
                   print(f"✅ {len(jobs)} real jobs collected.")
-              else:
-                  print("⚠️ No new real jobs found.")
           if __name__ == "__main__": collect()
           EOF
 
-      # [3] 대량 데이터 생성기 (Mass Factory)
+      # [2] 대량 데이터 생성기 (Mass Factory)
       - name: Generate Mass Data Factory Script
         run: |
           cat << 'EOF' > $SCRIPT_DIR/mass_data_factory.py
@@ -120,14 +118,12 @@ jobs:
           def run_factory():
               os.makedirs("data/jobs", exist_ok=True)
               os.makedirs("data/logs", exist_ok=True)
-              
               print("🏭 Generating 5,000 mock job entries...")
               with open("data/jobs/mass_job_db.csv", "w", newline="") as f:
                   w = csv.writer(f)
                   w.writerow(["id", "title", "company", "salary", "status"])
                   for i in range(5000):
-                      w.writerow([f"JOB-{i}", "Java Dev", f"Company-{i}", random.randint(5000,10000), "Open"])
-              
+                      w.writerow([f"JOB-{i}", "DevOps", f"Corp-{i}", random.randint(5000,10000), "Open"])
               print("Generating 50 firewall logs...")
               for i in range(50):
                   with open(f"data/logs/srv_{i}.log", "w") as f:
@@ -135,54 +131,45 @@ jobs:
           if __name__ == "__main__": run_factory()
           EOF
 
-      # [4] 브리핑 리포트 생성기 (Briefing)
+      # [3] 브리핑 생성기
       - name: Generate Briefing Script
         run: |
           cat << 'EOF' > $SCRIPT_DIR/generate_briefing.py
           import pandas as pd, datetime, os
-
           def generate_briefing():
               today = datetime.datetime.now().strftime("%Y-%m-%d")
               report_file = "daily_briefing_report.md"
-              
-              real_jobs_path = "data/job_archive.csv"
-              mass_jobs_path = "data/jobs/mass_job_db.csv"
+              workflow_file = ".github/workflows/total_ops_suite.yml"
               
               real_count = 0
               mass_count = 0
-
-              if os.path.exists(real_jobs_path):
-                  try: real_count = len(pd.read_csv(real_jobs_path))
+              if os.path.exists("data/job_archive.csv"):
+                  try: real_count = len(pd.read_csv("data/job_archive.csv"))
                   except: pass
-              
-              if os.path.exists(mass_jobs_path):
-                  try: mass_count = len(pd.read_csv(mass_jobs_path))
+              if os.path.exists("data/jobs/mass_job_db.csv"):
+                  try: mass_count = len(pd.read_csv("data/jobs/mass_job_db.csv"))
                   except: pass
 
               with open(report_file, "w", encoding="utf-8") as f:
-                  f.write(f"# 📢 일일 IT/보안 대량 수집 브리핑 ({today})\n\n")
-                  f.write(f"## 📊 데이터 현황\n")
-                  f.write(f"- **실시간 수집:** {real_count}건\n")
-                  f.write(f"- **대량 가상 데이터:** {mass_count}건\n")
-                  f.write(f"- **총 데이터:** {real_count + mass_count}건\n\n")
-                  f.write(f"## 🛡️ 시스템 상태\n")
-                  f.write(f"- **방화벽:** Active\n")
-                  f.write(f"- **스크립트:** Auto-Generated & Validated\n")
-
+                  f.write(f"# 📢 IT 대량 데이터 브리핑 ({today})\n\n")
+                  f.write(f"- **실시간 데이터:** {real_count}건\n")
+                  f.write(f"- **대량 가상 데이터:** {mass_count}건\n\n")
+                  
+                  f.write(f"## ⚙️ 실행된 워크플로우 코드\n")
+                  if os.path.exists(workflow_file):
+                      with open(workflow_file, "r") as wf:
+                          f.write("```yaml\n" + wf.read() + "\n```\n")
               print(f"✅ Briefing generated: {report_file}")
-
           if __name__ == "__main__": generate_briefing()
           EOF
           
-      # [5] 2026 보안기사 일정 JSON 생성
-      - name: Generate Exam Schedule
-        run: |
-          echo '{"year": 2026, "exam": "Security Engineer", "status": "Confirmed"}' > exam_schedule_2026.json
+      # [4] 보안 일정 생성
+      - name: Generate Schedule
+        run: echo '{"year": 2026}' > exam_schedule_2026.json
 
-      # --- 실행 단계 ---
-      - name: Execute All Scripts
+      # --- 실행 ---
+      - name: Execute Scripts
         run: |
-          echo "🚀 Executing Data Operations..."
           python $SCRIPT_DIR/collect_jobs.py
           python $SCRIPT_DIR/mass_data_factory.py
           python $SCRIPT_DIR/generate_briefing.py
@@ -191,27 +178,29 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      # --- [핵심 수정] 강제 반영 (Force Add) ---
-      - name: Force Commit All Data
+      # --- [핵심 해결] 동기화 후 강제 커밋 (Sync & Force Push) ---
+      - name: Sync and Commit All Data
         run: |
           git config --global user.name "Ops Bot"
           git config --global user.email "bot@ops.com"
           
-          # [해결] .gitignore에 있어도 무조건 추가하도록 -f (force) 옵션 사용
-          echo "🔥 Force adding generated files..."
+          # 1. 파일 강제 스테이징 (Force Add)
+          echo "🔥 Adding generated files..."
+          git add -f $SCRIPT_DIR/ data/ *.json *.md *.txt
           
-          git add -f $SCRIPT_DIR/            # 스크립트 폴더 강제 추가
-          git add -f data/                   # 데이터 폴더 강제 추가
-          git add -f *.json                  # JSON 파일 강제 추가 (exam_schedule 등)
-          git add -f *.md                    # 리포트 강제 추가
-          git add -f *.txt                   # 텍스트 파일 강제 추가
+          # 2. 커밋 (로컬 저장)
+          git commit -m "🚀 Massive Data Update: ${{ steps.date.outputs.date }}" || echo "No changes to commit"
           
-          # 커밋 및 푸시
-          git commit -m "🚀 Force Massive Update: ${{ steps.date.outputs.date }}" || echo "No changes to commit"
-          git push
+          # 3. [에러 해결 로직] 원격 저장소 변경사항 가져와서 합치기 (Pull --rebase)
+          echo "🔄 Pulling latest changes from remote..."
+          git pull origin main --rebase
+          
+          # 4. 최종 푸시 (이제 에러가 나지 않습니다)
+          echo "🚀 Pushing to GitHub..."
+          git push origin main
 
   # ------------------------------------------------------------------
-  # JOB 3: 브리핑 리포트 발행 (Issue)
+  # JOB 3: 브리핑 이슈 발행
   # ------------------------------------------------------------------
   publish-briefing:
     needs: data-briefing-process
@@ -223,9 +212,8 @@ jobs:
       - name: Create Briefing Issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "📢 [${{ needs.data-briefing-process.outputs.date }}] IT 대량 데이터 브리핑"
+          title: "📢 [${{ needs.data-briefing-process.outputs.date }}] IT 대량 데이터 및 코드 브리핑"
           content-filepath: ./daily_briefing_report.md
           labels: |
             briefing
             automated
-            force-update
