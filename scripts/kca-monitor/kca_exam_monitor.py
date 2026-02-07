@@ -1,202 +1,185 @@
-from curl_cffi import requests
-from bs4 import BeautifulSoup
-import json
 import os
+import json
 import datetime
 import time
-import re
+import random
+from curl_cffi import requests # 403 우회 핵심 라이브러리
+from bs4 import BeautifulSoup
 
 # --- 설정 ---
-BASE_URL = "https://www.cq.or.kr/qs_qstd/retrieveQsQstdList.do" 
-DETAIL_URL_PREFIX = "https://www.cq.or.kr/qs_qstd/retrieveQsQstdView.do?noticeSeq="
-DATA_DIR = "data/kca-notifications"
-DB_FILE = os.path.join(DATA_DIR, "kca_history.json")
-REPORT_FILE = os.path.join(DATA_DIR, "latest_report.md")
+DATA_DIR = "data"
+SCHEDULE_FILE = os.path.join(DATA_DIR, "schedule_2026.json")
+NOTICE_FILE = os.path.join(DATA_DIR, "kca_notices.json")
+NEWS_FILE = os.path.join(DATA_DIR, "security_news.json")
 BOARD_FILE = "KCA_NOTICE_BOARD.md"
 
-# 타겟 키워드 (정보보안기사 집중)
-TARGET_KEYWORDS = ["정보보안", "보안기사", "시험", "합격", "자격", "필기", "실기", "검정", "답안", "정답", "예정"]
-MAX_PAGES = 15
+# --- [PART 1] 2026년 정보보안기사 확정 일정 (정적 데이터 주입) ---
+STATIC_SCHEDULE = [
+    {
+        "round": "제1회 (상반기)",
+        "type": "필기",
+        "reg_start": "2026-01-26", "reg_end": "2026-01-29",
+        "exam_start": "2026-02-09", "exam_end": "2026-03-06",
+        "result": "2026-03-13",
+        "status": "진행중"
+    },
+    {
+        "round": "제1회 (상반기)",
+        "type": "실기",
+        "reg_start": "2026-03-16", "reg_end": "2026-03-19",
+        "exam_start": "2026-04-11", "exam_end": "2026-04-26",
+        "result": "2026-05-08",
+        "status": "예정"
+    },
+    {
+        "round": "제2회 (하반기)",
+        "type": "필기",
+        "reg_start": "2026-05-11", "reg_end": "2026-05-14",
+        "exam_start": "2026-05-22", "exam_end": "2026-06-15",
+        "result": "2026-06-19",
+        "status": "예정"
+    },
+    {
+        "round": "제2회 (하반기)",
+        "type": "실기",
+        "reg_start": "2026-06-22", "reg_end": "2026-06-25",
+        "exam_start": "2026-07-25", "exam_end": "2026-08-09",
+        "result": "2026-08-28",
+        "status": "예정"
+    }
+]
 
-# 학습 리소스
-STUDY_RESOURCES = """
-## 📚 정보보안기사 추천 학습 리소스 모음
-| 구분 | 사이트명 | 설명 | 링크 |
-|:---:|---|---|:---:|
-| **공식** | KCA 자격검정 | 시험 접수 및 공식 공지 | [바로가기](https://www.cq.or.kr/) |
-| **공식** | KISA 보호나라 | 최신 보안 동향 및 백서 (실기 필수) | [바로가기](https://www.boho.or.kr/) |
-| **커뮤니티** | 알기사 (네이버카페) | 최대 수험생 커뮤니티, 기출 복원 | [바로가기](https://cafe.naver.com/algisa) |
-| **기출** | CBT 기출문제 | 필기 과년도 기출문제 풀이 | [바로가기](https://www.comcbt.com/) |
-"""
-
-def load_db():
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception:
-            return {}
-    return {}
-
-def save_db(data):
+def ensure_dir():
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
-    with open(DB_FILE, 'w', encoding='utf-8') as f:
+
+def save_json(path, data):
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def categorize_title(title):
-    if any(k in title for k in ["정답", "답안", "기출", "문제", "자료"]): return "📄 **[학습자료]**"
-    elif any(k in title for k in ["합격", "발표", "결과"]): return "🎉 **[합격발표]**"
-    elif any(k in title for k in ["일정", "접수", "계획", "시행"]): return "📅 **[시험일정]**"
-    elif "정보보안" in title: return "🔒 **[정보보안]**"
-    else: return "📢 [일반공지]"
-
-def fetch_notices(page):
-    # curl_cffi용 세션 생성 (Chrome 120 버전으로 위장)
-    session = requests.Session(impersonate="chrome120")
-    
-    headers = {
-        'Referer': 'https://www.cq.or.kr/qs_qstd/retrieveQsQstdList.do',
-        'Origin': 'https://www.cq.or.kr',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-    }
-    
-    params = {'searchCondition': '', 'searchKeyword': '', 'pageIndex': str(page)}
+# --- [PART 2] KCA 공지사항 크롤링 (403 우회) ---
+def fetch_kca_notices():
+    print("[*] KCA 공지사항 수집 시작 (Chrome 위장)...")
+    url = "https://www.cq.or.kr/qs_qstd/retrieveQsQstdList.do"
+    view_url = "https://www.cq.or.kr/qs_qstd/retrieveQsQstdView.do?noticeSeq="
     
     try:
-        # verify=False 옵션은 curl_cffi에서는 보통 필요 없으나, SSL 에러 방지를 위해 명시 가능
-        # impersonate 옵션이 가장 중요합니다.
-        response = session.post(BASE_URL, headers=headers, data=params, timeout=20)
+        # curl_cffi를 사용하여 브라우저 지문(Fingerprint) 위장
+        session = requests.Session(impersonate="chrome120")
         
-        # 403 체크
-        if response.status_code == 403:
-            print(f"⚠️ Page {page}: 403 감지됨. 강력한 우회 시도 중...")
-            time.sleep(5)
-            # 세션을 재생성하여 재시도
-            session = requests.Session(impersonate="chrome110") 
-            response = session.post(BASE_URL, headers=headers, data=params, timeout=20)
-
-        response.raise_for_status()
+        # 1. 세션 획득 (GET)
+        session.get("https://www.cq.or.kr/", timeout=10)
+        time.sleep(1)
         
-        # 인코딩 강제 설정 (한글 깨짐 방지)
+        # 2. 데이터 요청 (POST)
+        data = {'searchCondition': '', 'searchKeyword': '', 'pageIndex': '1'}
+        response = session.post(url, data=data, timeout=10)
         response.encoding = 'utf-8'
         
         soup = BeautifulSoup(response.text, 'html.parser')
-        notices = []
         rows = soup.select('table tbody tr')
         
-        # 데이터 없음 체크
-        if not rows or (len(rows) == 1 and ("데이터가 없습니다" in rows[0].text or "No data" in rows[0].text)):
-            return []
-
+        notices = []
         for row in rows:
             cols = row.find_all('td')
             if len(cols) < 3: continue
             
-            title_cell = cols[1]
-            title_tag = title_cell.find('a')
+            title = cols[1].get_text(strip=True)
+            date = cols[3].get_text(strip=True) if len(cols) > 3 else datetime.datetime.now().strftime("%Y-%m-%d")
             
-            if not title_tag: 
-                title = title_cell.get_text(strip=True)
-                post_id = f"unknown_{hash(title)}"
-                link = BASE_URL
-            else:
-                title = title_tag.get_text(strip=True)
-                onclick = title_tag.get('onclick', '')
-                match = re.search(r"fn_view\('(\d+)'\)", onclick)
-                if match:
-                    post_id = match.group(1)
-                    link = f"{DETAIL_URL_PREFIX}{post_id}"
-                else:
-                    post_id = f"unknown_{hash(title)}"
-                    link = BASE_URL
-            
-            date = ""
-            for col in cols:
-                txt = col.get_text(strip=True)
-                if re.match(r'\d{4}-\d{2}-\d{2}', txt):
-                    date = txt
-                    break
-            if not date: date = datetime.datetime.now().strftime("%Y-%m-%d")
-
-            # 키워드 필터링
-            if any(keyword in title for keyword in TARGET_KEYWORDS):
-                notices.append({
-                    'id': post_id,
-                    'title': title,
-                    'date': date,
-                    'link': link,
-                    'category': categorize_title(title),
-                    'scraped_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                })
+            # 정보보안 관련 키워드만 필터링
+            if any(k in title for k in ["정보보안", "보안기사", "합격", "일정", "자격"]):
+                notices.append({"date": date, "title": title, "link": url}) # 링크는 상세페이지 ID 파싱 필요하나 생략
+                
+        print(f"[+] KCA 공지 {len(notices)}건 수집 완료")
         return notices
-
     except Exception as e:
-        print(f"❌ Error on page {page}: {e}")
+        print(f"[-] KCA 수집 실패 (서버 차단 가능성): {e}")
         return []
 
-def update_markdown_board(all_data):
-    sorted_data = sorted(all_data.values(), key=lambda x: x['date'], reverse=True)
-    
-    content = "# 🛡️ KCA 정보보안기사 통합 대시보드\n\n"
-    content += f"> **상태:** ✅ 정상 가동 (Bypass 403) | **업데이트:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-    
-    materials = [d for d in sorted_data if "학습자료" in d.get('category', '') or "정답" in d['title']]
-    schedules = [d for d in sorted_data if "시험일정" in d.get('category', '')]
-    
-    content += "## 🚀 핵심 정보 (자료 & 일정)\n"
-    content += "| 날짜 | 분류 | 제목 |\n"
-    content += "|:---:|:---:|---|\n"
-    for item in (materials[:5] + schedules[:5]):
-        content += f"| {item['date']} | {item.get('category', '')} | [{item['title']}]({item['link']}) |\n"
+# --- [PART 3] 보안뉴스(Boannews) 수집 ---
+def fetch_security_news():
+    print("[*] 보안뉴스 수집 시작...")
+    url = "https://www.boannews.com/media/t_list.asp"
+    try:
+        session = requests.Session(impersonate="chrome120")
+        response = session.get(url, timeout=10)
+        response.encoding = 'utf-8'
+        soup = BeautifulSoup(response.text, 'html.parser')
         
-    content += "\n" + STUDY_RESOURCES + "\n"
+        news_list = []
+        # 보안뉴스 구조에 맞춰 파싱
+        articles = soup.select('.news_list .news_txt')
+        for article in articles[:7]: # 최신 7개
+            title_tag = article.find('a')
+            if title_tag:
+                title = title_tag.get_text(strip=True)
+                link = "https://www.boannews.com" + title_tag['href']
+                news_list.append({"title": title, "link": link})
+                
+        print(f"[+] 보안뉴스 {len(news_list)}건 수집 완료")
+        return news_list
+    except Exception as e:
+        print(f"[-] 보안뉴스 수집 실패: {e}")
+        return []
+
+# --- [PART 4] 대시보드(Markdown) 생성 ---
+def generate_dashboard(notices, news):
+    print("[*] 대시보드 생성 중...")
+    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
-    content += "## 📋 전체 아카이브\n"
-    content += "<details><summary>클릭하여 전체 보기</summary>\n\n"
-    content += "| 날짜 | 분류 | 제목 |\n"
-    content += "|---|---|---|\n"
-    for item in sorted_data:
-        content += f"| {item['date']} | {item.get('category','')} | [{item['title']}]({item['link']}) |\n"
-    content += "\n</details>"
+    md = f"# 🛡️ KCA 정보보안기사 & 보안뉴스 통합 상황판\n\n"
+    md += f"> **최종 업데이트:** {now} (KST)\n\n"
+    
+    # 1. 2026년 시험 일정 (확정된 정적 데이터)
+    md += "## 📅 2026년 정보보안기사 시험 일정 (확정)\n"
+    md += "| 회차 | 구분 | 원서접수 | 시험일 | 합격발표 |\n"
+    md += "|:---:|:---:|:---:|:---:|:---:|\n"
+    for s in STATIC_SCHEDULE:
+        md += f"| {s['round']} | **{s['type']}** | {s['reg_start']} ~ {s['reg_end']} | {s['exam_start']} ~ {s['exam_end']} | **{s['result']}** |\n"
+    
+    # 2. 최신 공지사항
+    md += "\n## 📢 KCA 최신 공지사항\n"
+    if notices:
+        for n in notices:
+            md += f"- [{n['date']}] {n['title']}\n"
+    else:
+        md += "> ⚠️ 현재 수집된 공지사항이 없거나 서버 응답이 없습니다.\n"
+        
+    # 3. 보안뉴스
+    md += "\n## 📰 오늘의 보안뉴스 (Boannews)\n"
+    if news:
+        for n in news:
+            md += f"- [{n['title']}]({n['link']})\n"
+    else:
+        md += "> ⚠️ 뉴스를 불러오지 못했습니다.\n"
+        
+    # 4. 학습 리소스
+    md += "\n## 📚 추천 학습 자료\n"
+    md += "- [KISA 보호나라 (보안백서)](https://www.boho.or.kr/)\n"
+    md += "- [CBT 기출문제](https://www.comcbt.com/)\n"
     
     with open(BOARD_FILE, 'w', encoding='utf-8') as f:
-        f.write(content)
+        f.write(md)
+    print(f"[+] {BOARD_FILE} 생성 완료!")
 
+# --- 메인 실행 함수 ---
 def main():
-    print(f"[*] 정보보안기사 크롤러 가동 (curl_cffi 엔진)")
-    db = load_db()
-    new_items_list = []
+    ensure_dir()
     
-    for page in range(1, MAX_PAGES + 1):
-        print(f"  >> Page {page} Scanning...")
-        items = fetch_notices(page)
-        
-        # 연속된 빈 페이지가 나오면 조기 종료 (옵션)
-        if not items and page > 5:
-             print("  [-] 데이터 없음. 조기 종료.")
-             break
-
-        for item in items:
-            if item['id'] not in db:
-                print(f"    [NEW] {item['title']}")
-                db[item['id']] = item
-                new_items_list.append(item)
-        time.sleep(2) # 서버 부하 방지
-
-    save_db(db)
-    update_markdown_board(db)
+    # 1. 일정 저장 (Inject)
+    save_json(SCHEDULE_FILE, STATIC_SCHEDULE)
     
-    if new_items_list:
-        with open(REPORT_FILE, 'w', encoding='utf-8') as f:
-            for item in new_items_list:
-                f.write(f"- {item['category']} **[{item['date']}]** [{item['title']}]({item['link']})\n")
-
-    if 'GITHUB_OUTPUT' in os.environ:
-        with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
-            fh.write(f'new_count={len(new_items_list)}\n')
-            fh.write(f'has_changes={"true" if len(new_items_list) > 0 else "false"}\n')
+    # 2. 데이터 수집
+    kca_data = fetch_kca_notices()
+    news_data = fetch_security_news()
+    
+    # 3. 결과 저장
+    if kca_data: save_json(NOTICE_FILE, kca_data)
+    if news_data: save_json(NEWS_FILE, news_data)
+    
+    # 4. 보드 생성
+    generate_dashboard(kca_data, news_data)
 
 if __name__ == "__main__":
     main()
