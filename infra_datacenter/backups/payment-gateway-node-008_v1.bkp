@@ -2,6 +2,9 @@
   "hostname": "payment-gateway-node-008",
   "role": "payment-gateway",
   "version": "1.0.0",
-  "ip": "10.0.144.192",
-  "max_connections": 5000
+  "ip": "10.0.65.165",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
 }

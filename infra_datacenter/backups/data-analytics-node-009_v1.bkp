@@ -2,6 +2,9 @@
   "hostname": "data-analytics-node-009",
   "role": "data-analytics",
   "version": "1.0.0",
-  "ip": "10.0.8.126",
-  "max_connections": 5000
+  "ip": "10.0.113.197",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
 }

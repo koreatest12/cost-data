@@ -2,8 +2,10 @@
   "hostname": "frontend-web-node-004",
   "role": "frontend-web",
   "version": "2.1.0-stable",
-  "ip": "10.0.128.132",
-  "max_connections": 5000,
-  "last_patched": "2026-02-07 12:17:51.011511",
-  "security_level": "ENFORCED"
+  "ip": "10.0.101.211",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  },
+  "patched_at": "2026-02-07 12:22:28.436765"
 }

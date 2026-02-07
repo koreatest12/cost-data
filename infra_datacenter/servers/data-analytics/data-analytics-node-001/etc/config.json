@@ -2,8 +2,10 @@
   "hostname": "data-analytics-node-001",
   "role": "data-analytics",
   "version": "2.1.0-stable",
-  "ip": "10.0.156.126",
-  "max_connections": 5000,
-  "last_patched": "2026-02-07 12:17:50.985922",
-  "security_level": "ENFORCED"
+  "ip": "10.0.77.64",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  },
+  "patched_at": "2026-02-07 12:22:28.412213"
 }

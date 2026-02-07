@@ -2,8 +2,10 @@
   "hostname": "backend-api-node-008",
   "role": "backend-api",
   "version": "2.1.0-stable",
-  "ip": "10.0.24.238",
-  "max_connections": 5000,
-  "last_patched": "2026-02-07 12:17:51.005130",
-  "security_level": "ENFORCED"
+  "ip": "10.0.196.96",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  },
+  "patched_at": "2026-02-07 12:22:28.430782"
 }

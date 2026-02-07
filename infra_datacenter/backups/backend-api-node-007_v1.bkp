@@ -2,6 +2,9 @@
   "hostname": "backend-api-node-007",
   "role": "backend-api",
   "version": "1.0.0",
-  "ip": "10.0.105.178",
-  "max_connections": 5000
+  "ip": "10.0.173.13",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
 }

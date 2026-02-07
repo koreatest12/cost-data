@@ -2,8 +2,10 @@
   "hostname": "message-queue-node-001",
   "role": "message-queue",
   "version": "2.1.0-stable",
-  "ip": "10.0.221.178",
-  "max_connections": 5000,
-  "last_patched": "2026-02-07 12:17:51.005454",
-  "security_level": "ENFORCED"
+  "ip": "10.0.148.235",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  },
+  "patched_at": "2026-02-07 12:22:28.431076"
 }

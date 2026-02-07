@@ -2,8 +2,10 @@
   "hostname": "auth-server-node-005",
   "role": "auth-server",
   "version": "2.1.0-stable",
-  "ip": "10.0.110.60",
-  "max_connections": 5000,
-  "last_patched": "2026-02-07 12:17:50.989189",
-  "security_level": "ENFORCED"
+  "ip": "10.0.4.73",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  },
+  "patched_at": "2026-02-07 12:22:28.415339"
 }

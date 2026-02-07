@@ -2,6 +2,9 @@
   "hostname": "auth-server-node-007",
   "role": "auth-server",
   "version": "1.0.0",
-  "ip": "10.0.131.87",
-  "max_connections": 5000
+  "ip": "10.0.160.240",
+  "resources": {
+    "cpu": "4vCPU",
+    "mem": "16GB"
+  }
 }
