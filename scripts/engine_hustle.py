@@ -22,7 +22,7 @@ def run():
     
     df = pd.DataFrame(hustles)
     
-    # [핵심 수정] 저장할 폴더가 없으면 자동으로 생성 (Self-Healing)
+    # 폴더 자동 생성 (에러 방지 핵심)
     save_dir = "data/side_hustle"
     os.makedirs(save_dir, exist_ok=True)
     

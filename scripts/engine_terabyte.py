@@ -3,7 +3,6 @@ import csv, random, uuid, os
 def run():
     print("💾 [Engine-TB] Generating Massive Data Index...")
     
-    # [핵심 수정] 폴더 자동 생성
     save_dir = "data/big_data_storage"
     os.makedirs(save_dir, exist_ok=True)
     
@@ -14,7 +13,7 @@ def run():
         w.writerow(["shard_id", "storage_location", "link_url", "allocated_size", "checksum"])
         
         total_size_gb = 0
-        rows = 100000  # 10만 줄
+        rows = 100000  # 10만 줄 생성
         
         for i in range(rows):
             size = random.randint(1, 100)
@@ -31,7 +30,7 @@ def run():
     print(f"✅ Indexed {rows} massive files.")
     print(f"📊 Total Virtual Capacity: {tb_size} TB")
     
-    # 메타데이터 파일 생성
+    # 메타데이터 생성
     with open(os.path.join(save_dir, "capacity_report.txt"), "w") as f:
         f.write(f"Total Indexed Volume: {tb_size} TB\nStatus: Online")
 
