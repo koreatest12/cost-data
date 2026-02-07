@@ -1,0 +1,12 @@
+{
+  "hostname": "go-auth-server-node-005",
+  "role": "go-auth-server",
+  "version": "2.0.0-Enterprise",
+  "ip": "10.20.151.79",
+  "resources": {
+    "cpu": "8vCPU",
+    "mem": "32GB"
+  },
+  "security_patch": "CVE-2026-FIXED",
+  "updated_at": "2026-02-07 12:28:05.274413"
+}

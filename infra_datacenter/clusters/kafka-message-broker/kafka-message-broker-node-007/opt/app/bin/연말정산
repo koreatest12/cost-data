@@ -1,0 +1,120 @@
+class YearEndSettlement:
+    def __init__(self, name, total_salary):
+        self.name = name
+        self.total_salary = total_salary  # 총급여액
+        self.data = {
+            "pension": 0,          # 국민연금
+            "insurance_health": 0, # 건강/고용보험
+            "housing_saving": 0,   # 주택청약
+            "credit_card": 0,      # 신용카드 등
+            "debit_card": 0,       # 체크카드 등
+            "cash_receipt": 0,     # 현금영수증
+            "medical_expense": 0,  # 의료비 지출액
+            "medical_silson": 0,   # 실손보험 수령액
+            "insurance_guarantee": 0, # 보장성 보험
+            "donation": 0          # 기부금
+        }
+
+    def set_data(self, **kwargs):
+        """PDF 데이터 입력"""
+        for key, value in kwargs.items():
+            if key in self.data:
+                self.data[key] = value
+
+    def calculate(self):
+        print(f"--- {self.name}님의 2025년 귀속 연말정산 시뮬레이션 ---")
+        print(f"설정된 총급여액: {self.total_salary:,}원\n")
+
+        # 1. 근로소득공제 (간이 계산)
+        income_deduction = self._calc_income_deduction()
+        print(f"[1] 근로소득공제 예상액: {int(income_deduction):,}원")
+
+        # 2. 인적공제 (본인 1인 가정)
+        basic_deduction = 1_500_000
+        print(f"[2] 본인 기본공제: {basic_deduction:,}원")
+
+        # 3. 연금/보험료 공제 (전액 공제)
+        pension_deduction = self.data["pension"]
+        insurance_deduction = self.data["insurance_health"]
+        print(f"[3] 연금/건강/고용보험 공제: {pension_deduction + insurance_deduction:,}원")
+
+        # 4. 주택마련저축 공제 (납입액의 40%, 한도 적용 필요)
+        # 총급여 7천만원 이하 가정
+        housing_deduction = min(self.data["housing_saving"] * 0.4, 2_400_000) # 한도는 상황에 따라 다름 (최대 400 등)
+        print(f"[4] 주택청약 소득공제 (40%): {int(housing_deduction):,}원")
+
+        # 5. 신용카드 등 소득공제
+        # 최저사용금액(총급여의 25%) 초과분부터 공제
+        min_usage = self.total_salary * 0.25
+        total_usage = self.data["credit_card"] + self.data["debit_card"] + self.data["cash_receipt"]
+        
+        card_deduction = 0
+        if total_usage > min_usage:
+            # 단순화를 위해 초과분에 대해 직불/현금 비중이 높으므로 평균 30% 적용 가정 (상세 로직은 복잡함)
+            # 실제로는 신용 15%, 직불/현금 30% 등으로 순차 계산해야 함
+            deductible_usage = total_usage - min_usage
+            card_deduction = deductible_usage * 0.30 # 대략적 계산
+            # 공제 한도 (보통 300만원)
+            card_deduction = min(card_deduction, 3_000_000)
+            
+        print(f"[5] 신용카드 등 소득공제 예상액: {int(card_deduction):,}원")
+        print(f"    (총 사용액: {total_usage:,}원, 최저사용기준: {int(min_usage):,}원)")
+
+        # 6. 의료비 세액공제
+        # 총급여의 3% 초과금액에 대해 15% 공제 (실손보험금 차감 필수)
+        net_medical = self.data["medical_expense"] - self.data["medical_silson"]
+        medical_threshold = self.total_salary * 0.03
+        medical_credit = 0
+        
+        if net_medical > medical_threshold:
+            eligible_amount = min(net_medical - medical_threshold, 7_000_000) # 한도 700만원
+            medical_credit = eligible_amount * 0.15
+            
+        print(f"[6] 의료비 세액공제: {int(medical_credit):,}원")
+        print(f"    (순수 의료비: {net_medical:,}원, 문턱값: {int(medical_threshold):,}원)")
+
+        # 7. 보장성보험료 세액공제 (12% 또는 15%, 한도 100만원의 12%)
+        insurance_credit = min(self.data["insurance_guarantee"], 1_000_000) * 0.12
+        print(f"[7] 보장성보험 세액공제: {int(insurance_credit):,}원")
+
+        # 8. 기부금 세액공제 (1천만원 이하 15%)
+        donation_credit = self.data["donation"] * 0.15
+        print(f"[8] 기부금 세액공제: {int(donation_credit):,}원")
+        
+        total_tax_credit = medical_credit + insurance_credit + donation_credit
+        print(f"\n>> 총 예상 세액공제액 합계: {int(total_tax_credit):,}원")
+
+    def _calc_income_deduction(self):
+        # 2024~2025년 귀속 근로소득공제 간이 테이블 (구간별 요율 적용)
+        s = self.total_salary
+        if s <= 5_000_000: return s * 0.7
+        elif s <= 15_000_000: return 3_500_000 + (s - 5_000_000) * 0.4
+        elif s <= 45_000_000: return 7_500_000 + (s - 15_000_000) * 0.15
+        elif s <= 100_000_000: return 12_000_000 + (s - 45_000_000) * 0.05
+        else: return 14_750_000 + (s - 100_000_000) * 0.02
+
+# --- 실행부 ---
+
+# 김병권 님의 데이터 로드 (주민번호 뒷자리는 보안상 제외)
+user_tax = YearEndSettlement("김병권", total_salary=40_000_000) # 예시 연봉 4,000만원 설정
+
+user_tax.set_data(
+    [cite_start]pension=1_236_000,           # [cite: 44]
+    [cite_start]insurance_health=1_126_370 + 252_360, # 건강+장기요양 [cite: 10] + [cite_start]고용 [cite: 27]
+    [cite_start]housing_saving=1_200_000,    # [cite: 184]
+    
+    # 신용카드 등 (합계금액 기준 입력)
+    [cite_start]credit_card=412_670,         # [cite: 109]
+    [cite_start]debit_card=13_086_527,       # [cite: 129]
+    [cite_start]cash_receipt=2_502_383,      # [cite: 149]
+    
+    # 의료비
+    [cite_start]medical_expense=2_695_380,   # [cite: 74]
+    [cite_start]medical_silson=1_163_706,    # [cite: 93]
+    
+    # 기타
+    [cite_start]insurance_guarantee=761_880, # [cite: 61]
+    [cite_start]donation=120_000             # [cite: 204]
+)
+
+user_tax.calculate()
