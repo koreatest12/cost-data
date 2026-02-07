@@ -2,10 +2,13 @@ name: KCA 정보보안기사 대량 아카이빙 시스템
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
-  workflow_dispatch:
+    - cron: '*/30 * * * *' # 30분마다 실행
+  workflow_dispatch:       # 수동 실행 가능
   push:
     branches: [ main ]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/**'
 
 permissions:
   contents: write
@@ -14,6 +17,7 @@ permissions:
 jobs:
   archive-process:
     runs-on: ubuntu-latest
+    
     steps:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
@@ -24,23 +28,34 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: 필수 디렉토리 생성
+        run: |
+          mkdir -p data/kca-notifications
+          mkdir -p scripts/kca-monitor
+
       - name: 라이브러리 설치
         run: pip install requests beautifulsoup4
 
       - name: 대량 수집 및 아카이빙 실행
         id: run_script
+        # 스크립트 경로가 맞는지 확인 필요 (위에서 생성한 파일명과 일치해야 함)
         run: python scripts/kca-monitor/kca_exam_monitor.py
 
       - name: 전체 보드 및 데이터 업데이트 반영
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 파일 추가 (DB파일, 리포트, 메인보드)
           git add data/ KCA_NOTICE_BOARD.md
-          # 변경사항이 있을 때만 커밋 (데이터베이스나 MD 파일 변경 시)
+          
+          # 변경사항 확인 및 커밋
           if ! git diff --staged --quiet; then
-            git commit -m "🗂️ KCA 공지사항 데이터베이스 업데이트 (신규: ${{ steps.run_script.outputs.new_count }}건)"
+            git commit -m "🗂️ KCA 공지사항 DB 업데이트 (신규: ${{ steps.run_script.outputs.new_count }}건)"
             git pull --rebase origin main
             git push origin main
+          else
+            echo "변경사항이 없습니다."
           fi
 
       - name: 신규 공지 발생 시 Issue 알림
@@ -49,14 +64,17 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const report = fs.readFileSync('data/kca-notifications/latest_report.md', 'utf8');
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `📢 [신규] KCA 정보보안기사 공지사항 업데이트`,
-              body: report + "\n\n---\n[전체 공지사항 보드 보기](./KCA_NOTICE_BOARD.md)",
-              labels: ['notification', 'kca-exam']
-            });
+            // 리포트 파일이 존재하는지 확인
+            if (fs.existsSync('data/kca-notifications/latest_report.md')) {
+              const report = fs.readFileSync('data/kca-notifications/latest_report.md', 'utf8');
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `📢 [신규] KCA 정보보안기사 공지사항 ${new Date().toISOString().split('T')[0]}`,
+                body: report + "\n\n---\n[전체 공지사항 보드 보기](./KCA_NOTICE_BOARD.md)",
+                labels: ['notification', 'kca-exam', 'info-sec']
+              });
+            }
 
       - name: 요약 리포트 표시
         if: always()
