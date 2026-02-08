@@ -1,92 +1,30 @@
-name: Moltbook Agent Ecosystem
+name: "☢️ Nuke All History & Artifacts"
 
 on:
   schedule:
-    - cron: '0 23 * * *'
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+    - cron: "*/15 * * * *"  # 15분마다 강제 실행 (매우 공격적)
+  workflow_dispatch:        # 수동 실행 버튼
 
 permissions:
-  contents: write
-  issues: write
+  actions: write
+  contents: read
 
 jobs:
-  autonomous-agent-loop:
+  nuke-storage:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: 1. 모든 워크플로우 실행 기록 삭제 (성공/실패 불문)
+        uses: Mattraks/delete-workflow-runs@v2
         with:
-          # 히스토리 충돌 방지를 위해 전체 이력을 가져옵니다.
-          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 0        # 0일 보관 (즉시 삭제)
+          keep_minimum_runs: 0  # 단 하나의 기록도 남기지 않음
+          delete_run_by_conclusion_pattern: "cancelled, skipped, success, failure"
 
-      - name: Setup Python & Directories
-        run: |
-          # 모든 경로를 확실히 생성하고, 빈 파일을 만들어 git-auto-commit 에러를 방지합니다.
-          mkdir -p scripts docs/memory logs
-          touch logs/.gitkeep 
-          python -m pip install --upgrade pip
-
-      - name: Generate Agent Engine Scripts
-        run: |
-          # [A] 메모리 관리 엔진
-          cat <<EOF > scripts/memory_engine.py
-          import os
-          from datetime import datetime
-          def sync_memory():
-              os.makedirs("docs/memory", exist_ok=True)
-              timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-              with open("docs/memory/semantic_knowledge.md", "a", encoding="utf-8") as f:
-                  f.write(f"\n- **Update [{timestamp}]**: 지식베이스 동기화 완료.\n")
-          if __name__ == "__main__": sync_memory()
-          EOF
-
-          # [B] 뉴스 엔진 (파일 생성 보장)
-          cat <<EOF > scripts/news_engine.py
-          import os
-          def collect_news():
-              os.makedirs("logs", exist_ok=True)
-              news_data = ["1. AI 에이전트 시장 확대", "2. 자동화 워크플로우 최적화", "3. 수익화 모델 다변화"]
-              with open("logs/daily_news.txt", "w", encoding="utf-8") as f:
-                  f.write("\n".join(news_data))
-          if __name__ == "__main__": collect_news()
-          EOF
-
-          # [C] 대시보드 엔진
-          cat <<EOF > scripts/dashboard_engine.py
-          import re, os
-          def update_dashboard():
-              news_file = "logs/daily_news.txt"
-              if not os.path.exists(news_file): return
-              with open(news_file, "r", encoding="utf-8") as f: news = f.read()
-              if not os.path.exists("README.md"): 
-                  with open("README.md", "w") as f: f.write("# Agent Dashboard\n")
-              with open("README.md", "r", encoding="utf-8") as f: content = f.read()
-              marker_start, marker_end = "", ""
-              new_section = f"{marker_start}\n### 🤖 Agent Daily Briefing\n{news}\n{marker_end}"
-              updated = re.sub(f"{marker_start}.*?{marker_end}", new_section, content, flags=re.DOTALL) if marker_start in content else content + "\n" + new_section
-              with open("README.md", "w", encoding="utf-8") as f: f.write(updated)
-          if __name__ == "__main__": update_dashboard()
-          EOF
-
-      - name: Execute Agent Intelligence
-        run: |
-          python scripts/memory_engine.py
-          python scripts/news_engine.py
-          python scripts/dashboard_engine.py
-
-      # [중요] Diverged branch 문제 해결을 위한 Git 설정
-      - name: Prevent Git Conflict
-        run: |
-          git config pull.rebase false
-          git pull origin main --rebase
-
-      - name: Reflect Changes to Repository
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: 2. 모든 아티팩트(용량 주범) 강제 삭제
+        uses: geekyeggo/delete-artifact@v2
         with:
-          commit_message: "🤖 [Moltbook-Agent] Fix pathspec error and sync memory"
-          # 파일이 없어도 에러가 나지 않도록 유연하게 설정하거나, 폴더 전체를 지정합니다.
-          file_pattern: 'scripts/*.py docs/memory/*.md logs/*.txt README.md'
-          # 파일이 없는 경우에도 에러를 발생시키지 않음
-          disable_globbing: false
+          name: |
+            *
+          useGlob: true
