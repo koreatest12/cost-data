@@ -2,7 +2,7 @@ version: 2
 
 updates:
   # -------------------------------------------------------------
-  # 1. 인프라 및 CI/CD (가장 중요)
+  # 1. 인프라 및 CI/CD (가장 중요 & 긴급)
   # -------------------------------------------------------------
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -33,37 +33,54 @@ updates:
       - "terraform"
 
   # -------------------------------------------------------------
-  # 2. 백엔드 (Java, Python, Go 등)
+  # 2. 백엔드 (Java, Python, Go - 병렬 처리)
   # -------------------------------------------------------------
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 99
-    
+    labels:
+      - "java"
+      - "maven"
+      - "backend"
+
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 99
+    labels:
+      - "java"
+      - "gradle"
+      - "backend"
 
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 99
+    labels:
+      - "python"
+      - "backend"
 
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 99
+    labels:
+      - "go"
+      - "backend"
 
   # -------------------------------------------------------------
-  # 3. 프론트엔드 (npm, yarn)
+  # 3. 프론트엔드 (Node.js)
   # -------------------------------------------------------------
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 99
+    labels:
+      - "javascript"
+      - "frontend"
