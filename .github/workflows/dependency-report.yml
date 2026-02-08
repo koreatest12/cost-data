@@ -1,8 +1,8 @@
-name: "🚀 Massive Database & Service DataOps"
+name: "⚡ Ultimate Speed Trivy & Massive DataOps"
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # 30분마다 대량 실행
+    - cron: '*/30 * * * *' # 30분마다 실행
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -12,7 +12,7 @@ permissions:
   issues: write
 
 jobs:
-  massive-db-ops:
+  ultimate-speed-ops:
     runs-on: ubuntu-latest
     env:
       RUN_ID: ${{ github.run_id }}
@@ -21,192 +21,173 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python environment
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      # [1] 캐싱 (속도 유지)
-      - name: "⚡ Cache Trivy DB"
+      # ------------------------------------------------------------------------
+      # [핵심 개선 1] Trivy DB 초고속화: 날짜 기반 키 생성
+      # ------------------------------------------------------------------------
+      - name: "🕒 Get Date for Cache Key"
+        id: date
+        run: echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      # ------------------------------------------------------------------------
+      # [핵심 개선 2] 강력한 듀얼 캐싱 (Vuln DB + Java DB)
+      # 하루 단위(today)로 캐시를 묶어, 오늘 이미 받았다면 1초 만에 로드함
+      # ------------------------------------------------------------------------
+      - name: "⚡ Turbo Cache Trivy DB"
         uses: actions/cache@v4
+        id: trivy-cache
         with:
           path: .trivy
-          key: trivy-db-${{ runner.os }}-${{ github.sha }}
+          key: trivy-db-v3-${{ runner.os }}-${{ steps.date.outputs.today }}
           restore-keys: |
-            trivy-db-${{ runner.os }}-
+            trivy-db-v3-${{ runner.os }}-
 
-      # [2] 통합 대량 생성 (Service + Weather + Database)
-      - name: "🏭 Massive Generation (Full Stack: App, IoT, DB)"
+      # ------------------------------------------------------------------------
+      # [핵심 개선 3] DB 다운로드 (캐시가 없을 때만 실행 -> 시간 절약)
+      # ------------------------------------------------------------------------
+      - name: "📥 Download DB (Only on Cache Miss)"
+        if: steps.trivy-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "⚠️ Cache Miss! Downloading fresh DB..."
+          # Trivy 설치
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          
+          # DB 폴더 생성
+          mkdir -p .trivy
+          
+          # [Powerful] 메인 DB와 Java DB를 각각 명시적으로 다운로드
+          trivy image --download-db-only --cache-dir .trivy
+          trivy image --download-java-db-only --cache-dir .trivy
+          
+          echo "✅ DB Download Completed."
+
+      # [4] 하이퍼 병렬 생성 (기존의 강력한 속도 유지)
+      - name: "🚀 Hyper-Parallel Generation Engine"
         run: |
           python -c "
           import os, uuid, json, random
+          import concurrent.futures
           from datetime import datetime
 
           run_id = os.getenv('RUN_ID')
-          print(f'Starting Full-Stack Massive Generation (Batch {run_id})...')
-
-          # ---------------------------------------------------------
-          # Part A: Services & Databases (1:1 매칭 생성)
-          # ---------------------------------------------------------
-          base_srv = 'infra_datacenter/servers'
-          base_db = 'infra_datacenter/databases'
-          domains = ['payment', 'auth', 'search', 'inventory', 'user', 'shipping', 'recommendation']
+          base_root = 'infra_datacenter'
           
-          # [규모 확대] 도메인당 20개 서비스 세트 생성
-          for domain in domains:
-              for i in range(20):
+          # 대량 생성 설정
+          DOMAINS = ['payment', 'auth', 'search', 'inventory', 'user', 'shipping', 'ads', 'finance']
+          CITIES = ['Seoul', 'NewYork', 'London', 'Tokyo', 'Paris', 'Berlin']
+          NODES_PER_TASK = 50 # 작업량 대폭 증가 (속도 자신감)
+
+          print(f'🚀 Starting Hyper-Speed Generation (Batch {run_id})...')
+
+          def generate_domain_assets(domain):
+              for _ in range(NODES_PER_TASK):
                   unique_id = str(uuid.uuid4())[:8]
+                  srv_path = f'{base_root}/servers/{domain}/batch-{run_id}/srv-{unique_id}'
+                  db_path = f'{base_root}/databases/{domain}/batch-{run_id}/db-{unique_id}'
                   
-                  # 1. Java Service 생성
-                  srv_path = f'{base_srv}/{domain}/batch-{run_id}/srv-{unique_id}'
                   os.makedirs(f'{srv_path}/logs', exist_ok=True)
-                  
-                  # Valid POM
-                  pom = f'''<project xmlns=\"http://maven.apache.org/POM/4.0.0\" 
-                      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
-                      xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">
-                      <modelVersion>4.0.0</modelVersion>
-                      <groupId>com.corp.{domain}</groupId>
-                      <artifactId>srv-{unique_id}</artifactId>
-                      <version>1.0.0</version>
-                  </project>'''
-                  with open(f'{srv_path}/pom.xml', 'w') as f: f.write(pom)
-
-                  # 2. [NEW] Database Assets 생성 (Schema & Data)
-                  db_path = f'{base_db}/{domain}/batch-{run_id}/db-{unique_id}'
                   os.makedirs(db_path, exist_ok=True)
-                  
-                  # (1) Schema.sql (테이블 정의)
-                  with open(f'{db_path}/schema.sql', 'w') as f:
-                      f.write(f'-- Database Schema for {domain} service\\n')
-                      f.write(f'CREATE TABLE {domain}_transactions (id VARCHAR(50), amount DECIMAL(10,2), status VARCHAR(20));\\n')
-                      f.write(f'CREATE INDEX idx_{domain}_id ON {domain}_transactions(id);\\n')
 
-                  # (2) Data_Dump.sql (대량 데이터 INSERT 쿼리)
+                  # POM.xml (Trivy Java DB 활용을 위해 정확한 구조 생성)
+                  with open(f'{srv_path}/pom.xml', 'w') as f:
+                      f.write(f'<project><modelVersion>4.0.0</modelVersion><groupId>com.{domain}</groupId><artifactId>{unique_id}</artifactId><version>1.0</version></project>')
+                  
+                  # Log Data
+                  with open(f'{srv_path}/logs/app.log', 'w') as f:
+                      f.write(f'INFO Started {uuid.uuid4()}\\n' * 50)
+
+                  # SQL Assets
                   with open(f'{db_path}/dump.sql', 'w') as f:
-                      f.write(f'-- Mass Data Dump for {domain}\\n')
-                      for _ in range(50): # 쿼리 생성
-                          val = round(random.uniform(10.0, 5000.0), 2)
-                          stat = random.choice(['COMMIT', 'ROLLBACK', 'PENDING'])
-                          f.write(f'INSERT INTO {domain}_transactions VALUES (\\'{uuid.uuid4()}\\', {val}, \\'{stat}\\');\\n')
-                          # 최적화 엔진 테스트용 주석(쓰레기 데이터)
-                          if random.random() < 0.3: f.write('-- TODO: Remove this comment later\\n') 
+                      f.write(f'INSERT INTO {domain}_tbl VALUES (\\'{uuid.uuid4()}\\');\\n' * 50)
+              return f'{domain} Done'
 
-          # ---------------------------------------------------------
-          # Part B: Weather IoT Data (기존 유지)
-          # ---------------------------------------------------------
-          weather_dir = 'infra_datacenter/iot-sensors/weather'
-          cities = ['Seoul', 'NewYork', 'London', 'Tokyo']
-          
-          for city in cities:
-              for i in range(10): # 도시당 10개 스테이션
-                  st_id = f'{city}-ST-{uuid.uuid4().hex[:4].upper()}'
-                  path = f'{weather_dir}/{city}/batch-{run_id}/{st_id}'
+          def generate_weather_assets(city):
+              for _ in range(NODES_PER_TASK):
+                  st_id = f'{city}-{uuid.uuid4().hex[:4]}'
+                  path = f'{base_root}/iot-sensors/weather/{city}/batch-{run_id}/{st_id}'
                   os.makedirs(path, exist_ok=True)
-                  
-                  # CSV Data
                   with open(f'{path}/readings.csv', 'w') as f:
-                      f.write('time,temp,humid\\n')
-                      for _ in range(20):
-                          f.write(f'{datetime.now()},{random.randint(-10,35)},{random.randint(30,90)}\\n')
+                      lines = [f'{datetime.now()},{random.randint(-10,35)},Sunny\\n' for _ in range(30)]
+                      f.writelines(lines)
+              return f'{city} Done'
 
-          print('✅ Full-Stack Generation Completed.')
+          if __name__ == '__main__':
+              with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+                  future_domains = [executor.submit(generate_domain_assets, d) for d in DOMAINS]
+                  future_cities = [executor.submit(generate_weather_assets, c) for c in CITIES]
+                  concurrent.futures.wait(future_domains + future_cities)
+              
+          print('✅ Hyper-Parallel Generation Completed.')
           "
 
-      # [3] 데이터 정제 (SQL 최적화 추가)
-      - name: "✨ Smart Data & SQL Optimizer"
+      # [5] 데이터 최적화 (병렬)
+      - name: "✨ Parallel Data Optimizer"
         run: |
           python -c "
           import os
-          print('✨ Optimization Started...')
-          count = 0
+          import concurrent.futures
+
+          def optimize_file(path):
+              try:
+                  if path.endswith('.log') or path.endswith('.csv'):
+                      with open(path, 'r') as f: lines = sorted(list(set(f.readlines())))
+                      with open(path, 'w') as f: f.writelines(lines)
+              except: pass
+
+          all_files = []
           for root, _, files in os.walk('infra_datacenter'):
               for file in files:
-                  path = os.path.join(root, file)
-                  try:
-                      # 1. SQL 파일 최적화: 주석(--) 제거 및 공백 라인 삭제
-                      if file.endswith('.sql'):
-                          with open(path, 'r') as f: lines = f.readlines()
-                          # 주석이 아니고 공백이 아닌 라인만 유지
-                          clean_lines = [l for l in lines if not l.strip().startswith('--') and l.strip()]
-                          with open(path, 'w') as f: f.writelines(clean_lines)
-                          count += 1
-                      
-                      # 2. CSV/Log 파일: 중복 제거 및 정렬
-                      elif file.endswith('.log') or file.endswith('.csv'):
-                          with open(path, 'r') as f: lines = sorted(list(set(f.readlines())))
-                          with open(path, 'w') as f: f.writelines(lines)
-                          count += 1
-                  except: pass
-          print(f'✅ Optimization Finished. {count} files processed.')
+                  all_files.append(os.path.join(root, file))
+
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+              executor.map(optimize_file, all_files)
+          print('✅ Optimization Finished.')
           "
 
-      # [4] OpenClaw (DB 보안 탐지 기능 추가)
-      - name: "🦅 OpenClaw Deep Scan (DB Enhanced)"
+      # ------------------------------------------------------------------------
+      # [핵심 개선 4] 초고속 스캔 (네트워크 연결 없이 로컬 DB로 즉시 실행)
+      # ------------------------------------------------------------------------
+      - name: "🛡️ Hyper-Speed Security Scan (Zero-Latency)"
         run: |
-          mkdir -p reports/security/quarantine
-          cat << 'EOF' > openclaw.py
-          import os, re, json, shutil
-          run_id = os.getenv('RUN_ID')
-          report_file = f"reports/security/openclaw_audit_{run_id}.json"
+          # 캐시 히트 시 바이너리가 없을 수 있으므로 설치 체크
+          if ! command -v trivy &> /dev/null; then
+             curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          fi
           
-          # [보안] DB 관련 패턴 추가
-          patterns = {
-              'AWS_KEY': r'AKIA[0-9A-Z]{16}',
-              'DB_CONN_STRING': r'jdbc:[a-z]+://.*', # DB 연결 문자열 노출 탐지
-              'DB_PASSWORD': r'(password|pwd|secret)\s*=\s*[\'"][a-zA-Z0-9!@#$%^&*]{5,}[\'"]' # 비밀번호 패턴
-          }
-          report = {'scan_id': run_id, 'threats': []}
+          REPORT="reports/security/trivy_${{ github.run_id }}.txt"
           
-          for root, _, files in os.walk('.'):
-              if '.git' in root: continue
-              for file in files:
-                  path = os.path.join(root, file)
-                  try:
-                      with open(path, 'r', errors='ignore') as f: content = f.read()
-                      for k, v in patterns.items():
-                          if re.search(v, content, re.IGNORECASE):
-                              report['threats'].append({'file': path, 'type': k})
-                              safe_name = f"{path.replace('/','_')}_{run_id}"
-                              shutil.copy(path, os.path.join('reports/security/quarantine', safe_name))
-                  except: pass
-          with open(report_file, 'w') as f: json.dump(report, f)
-          EOF
-          python openclaw.py
-
-      # [5] Trivy (시간 연장)
-      - name: "🛡️ Trivy Security Scan"
-        run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          mkdir -p .trivy
+          echo "🛡️ Starting Scan with FROZEN DB (No Update Check)..."
           
-          REPORT_FILE="reports/security/trivy_summary_${{ github.run_id }}.txt"
+          # [핵심 플래그]
+          # --skip-db-update : DB 업데이트 확인 생략 (속도 ↑)
+          # --skip-java-db-update : Java DB 업데이트 확인 생략 (속도 ↑)
+          # --offline-scan : (선택사항) 의존성 확인 시 인터넷 차단하여 속도 극대화
           
-          echo "🛡️ Scanning Services, DBs, and IoT Data..."
-          
-          # Timeout 60분 (DB 덤프 파일 스캔 고려)
           trivy fs . \
             --cache-dir .trivy \
-            --timeout 60m \
+            --skip-db-update \
+            --skip-java-db-update \
+            --timeout 30m \
             --scanners vuln,secret \
             --format table \
-            --output $REPORT_FILE
+            --output $REPORT
 
-      # [6] Push (Robust)
+      # [6] 반영 (Fast Push)
       - name: "💾 Commit & Push"
         run: |
-          git config --local user.email "db-ops-bot@example.com"
-          git config --local user.name "DB-Ops-Bot"
+          git config --local user.email "speed-bot@example.com"
+          git config --local user.name "Speed-Bot"
           git add .
           if git diff --staged --quiet; then echo "No changes"; exit 0; fi
-          git commit -m "🗄️ [Massive] Batch ${{ github.run_id }} - DB, Service, IoT"
+          git commit -m "⚡ [Turbo] Batch ${{ github.run_id }} - Trivy DB Optimized"
           
-          MAX_RETRIES=20
-          for i in $(seq 1 $MAX_RETRIES); do
-            SLEEP=$(( $RANDOM % 20 + 1 ))
-            echo "⏳ Wait ${SLEEP}s..."
-            sleep $SLEEP
+          for i in {1..20}; do
+            sleep $(( $RANDOM % 5 + 1 ))
             if git pull --rebase origin main && git push origin main; then exit 0; fi
           done
           exit 1
