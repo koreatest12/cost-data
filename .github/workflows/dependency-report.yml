@@ -1,8 +1,8 @@
-name: "🚀 Enterprise Parallel Operations & Security"
+name: "🚀 Massive Scale Enterprise Ops & Security"
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/30 * * * *' # 30분마다 대량 생성
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -11,11 +11,12 @@ permissions:
   contents: write
   issues: write
 
-# [중요] 동시성 그룹 설정이 없어야 병렬 실행이 가능합니다. (Cancel-in-progress 제거)
-
 jobs:
-  parallel-secure-ops:
+  massive-execution:
     runs-on: ubuntu-latest
+    env:
+      # [핵심] 파이썬 스크립트에서 사용할 환경변수 미리 선언
+      RUN_ID: ${{ github.run_id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,7 +28,7 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      # [1] 캐싱 (동시 실행 시에도 읽기 전용으로 안전하게 공유됨)
+      # [1] Trivy DB 캐싱 (속도 최적화)
       - name: "⚡ Cache Trivy DB"
         uses: actions/cache@v4
         with:
@@ -36,155 +37,156 @@ jobs:
           restore-keys: |
             trivy-db-${{ runner.os }}-
 
-      # [2] 충돌 없는 대량 생성 (UUID 기반 격리)
-      - name: "🏭 Generate Unique Data Nodes"
+      # [2] 대량 데이터 생성 (에러 수정 + 규모 10배 확대)
+      - name: "🏭 Massive Data Generation (Scale-Out)"
         run: |
+          # 파이썬 내부에서 환경변수 RUN_ID를 직접 호출하여 에러 방지
           python -c "
           import os, uuid, json, random
           from datetime import datetime
 
-          # 실행마다 고유한 배치 ID 부여
-          BATCH_ID = '${{ github.run_id }}'
-          BASE_DIR = 'infra_datacenter/servers'
-          DOMAINS = ['payment', 'logistics', 'auth', 'inventory', 'user-profile']
+          run_id = os.getenv('RUN_ID')
+          base_dir = 'infra_datacenter/servers'
           
-          # 노드 개수 확장
-          NODES_PER_RUN = 5 
+          # [규모 확대] 8개 도메인 x 20개 노드 = 실행 당 160개 서비스 생성
+          domains = ['payment', 'logistics', 'auth', 'inventory', 'user', 'notification', 'search', 'recommendation']
+          nodes_per_domain = 20 
 
-          print(f'Starting Parallel Batch {BATCH_ID} in {BASE_DIR}...')
-          
-          for domain in DOMAINS:
-              for i in range(NODES_PER_RUN):
+          print(f'Starting Massive Batch {run_id} ({len(domains)*nodes_per_domain} nodes)...')
+
+          for domain in domains:
+              for i in range(nodes_per_domain):
                   unique_id = str(uuid.uuid4())[:8]
-                  # 경로 충돌 방지를 위해 UUID 사용
-                  node_path = f'{BASE_DIR}/{domain}/service-{unique_id}'
+                  # 충돌 방지를 위해 경로에 run_id 포함
+                  node_path = f'{base_dir}/{domain}/batch-{run_id}/srv-{unique_id}'
                   
                   os.makedirs(f'{node_path}/src/main/resources', exist_ok=True)
                   os.makedirs(f'{node_path}/logs', exist_ok=True)
-                  
-                  # POM 생성 (Trivy 에러 방지)
-                  pom_content = f'''<project xmlns=\"http://maven.apache.org/POM/4.0.0\"
+
+                  # 1. Valid POM.xml 생성 (Trivy 에러 방지)
+                  pom_content = f'''<project xmlns=\"http://maven.apache.org/POM/4.0.0\" 
                       xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
                       xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">
                       <modelVersion>4.0.0</modelVersion>
-                      <groupId>com.enterprise.{domain}</groupId>
-                      <artifactId>service-{unique_id}</artifactId>
+                      <groupId>com.corp.{domain}</groupId>
+                      <artifactId>srv-{unique_id}</artifactId>
                       <version>1.0.0</version>
                       <properties><java.version>17</java.version></properties>
                   </project>'''
-                  
                   with open(f'{node_path}/pom.xml', 'w') as f: f.write(pom_content)
 
-                  # 로그 생성
-                  with open(f'{node_path}/logs/app.log', 'w') as f:
-                      f.write(f'Batch execution {BATCH_ID} initialized.\\n')
+                  # 2. 대량 로그 데이터 (최적화 대상)
+                  with open(f'{node_path}/logs/access.log', 'w') as f:
+                      for _ in range(20): # 파일 크기 조절
+                          f.write(f'[{datetime.now()}] INFO Processed request {uuid.uuid4()}\\n')
           
-          print('✅ Unique Data Generation Completed.')
+          print('✅ Massive Generation Completed.')
           "
 
-      # [3] 데이터 최적화 (기존 유지)
+      # [3] 데이터 정제 및 최적화
       - name: "✨ Smart Data Optimizer"
         run: |
-          cat << 'EOF' > data_optimizer.py
-          import os, time
-          # (최적화 로직은 파일 내부 내용만 변경하므로 충돌 위험 낮음)
-          print("Optimization starting...")
+          python -c "
+          import os
+          print('✨ Optimization Started...')
+          # XML/JSON은 건너뛰고, 로그 파일만 중복 제거
           for root, _, files in os.walk('infra_datacenter'):
               for file in files:
-                  if file.endswith('.xml') or file.endswith('.json'): continue
-                  path = os.path.join(root, file)
-                  try:
-                      with open(path,'r') as f: lines = sorted(list(set(f.readlines())))
-                      with open(path,'w') as f: f.writelines(lines)
-                  except: pass
-          EOF
-          python data_optimizer.py
+                  if file.endswith('.log') or file.endswith('.csv'):
+                      path = os.path.join(root, file)
+                      try:
+                          with open(path, 'r') as f: lines = sorted(list(set(f.readlines())))
+                          with open(path, 'w') as f: f.writelines(lines)
+                      except: pass
+          print('✅ Optimization Finished.')
+          "
 
-      # [4] OpenClaw (리포트 파일명 격리 적용)
-      - name: "🦅 OpenClaw Deep Scan"
+      # [4] OpenClaw 보안 스캔 (변수 에러 완벽 수정)
+      - name: "🦅 OpenClaw Deep Scan (Fixed)"
         run: |
           mkdir -p reports/security/quarantine
           
-          # 리포트 파일명에 Run ID 포함 -> 충돌 방지
-          REPORT_FILE = "reports/security/openclaw_audit_${{ github.run_id }}.json"
-          
-          cat << EOF > openclaw.py
+          # 파이썬 스크립트 생성 (환경변수 활용으로 문법 에러 제거)
+          cat << 'EOF' > openclaw.py
           import os, re, json, shutil
           from datetime import datetime
+
+          run_id = os.getenv('RUN_ID')
+          report_filename = f"reports/security/openclaw_audit_{run_id}.json"
           
-          REPORT = {'scan_id': '${{ github.run_id }}', 'threats': []}
-          PATTERNS = {'AWS_KEY': r'AKIA[0-9A-Z]{16}'}
+          patterns = {'AWS_KEY': r'AKIA[0-9A-Z]{16}'}
+          report = {'scan_id': run_id, 'threats': []}
+
+          print(f"🦅 Scanning into {report_filename}...")
           
           for root, _, files in os.walk('.'):
               if '.git' in root: continue
               for file in files:
                   path = os.path.join(root, file)
                   try:
-                      with open(path,'r', errors='ignore') as f: content = f.read()
-                      for k,v in PATTERNS.items():
+                      with open(path, 'r', errors='ignore') as f: content = f.read()
+                      for k, v in patterns.items():
                           if re.search(v, content):
-                              REPORT['threats'].append({'file': path, 'type': k})
-                              # 격리 파일도 고유 이름으로 저장
-                              safe_name = f"{path.replace('/','_')}_${{ github.run_id }}"
+                              report['threats'].append({'file': path, 'type': k})
+                              # 격리 (파일명 충돌 방지)
+                              safe_name = f"{path.replace('/','_')}_{run_id}"
                               shutil.copy(path, os.path.join('reports/security/quarantine', safe_name))
                   except: pass
-                  
-          with open('$REPORT_FILE', 'w') as f: json.dump(REPORT, f)
+
+          with open(report_filename, 'w') as f: json.dump(report, f)
           EOF
+          
           python openclaw.py
 
-      # [5] Trivy 스캔 (리포트 파일명 격리 적용)
+      # [5] Trivy 보안 스캔 (파일명 변수 처리 수정)
       - name: "🛡️ Trivy Security Scan"
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
           mkdir -p .trivy
           
-          # 고유한 리포트 파일명 생성
+          # 쉘 변수 할당 시 공백 제거 (VAR=VAL)
           REPORT_FILE="reports/security/trivy_summary_${{ github.run_id }}.txt"
+          
+          echo "🛡️ Saving report to $REPORT_FILE"
           
           trivy fs . \
             --cache-dir .trivy \
-            --timeout 30m \
+            --timeout 45m \
             --scanners vuln,secret \
             --format table \
             --output $REPORT_FILE
 
-      # [6] Git Push 충돌 방지 전략 (Random Backoff & Retry)
-      - name: "💾 Safe Push with Random Backoff"
+      # [6] Git Push (대량 파일 처리를 위한 재시도 로직 강화)
+      - name: "💾 Commit & Push (Robust Retry)"
         run: |
-          git config --local user.email "parallel-bot@example.com"
-          git config --local user.name "Parallel-Ops-Bot"
+          git config --local user.email "massive-bot@example.com"
+          git config --local user.name "Massive-Ops-Bot"
           
           git add .
           
           if git diff --staged --quiet; then echo "No changes"; exit 0; fi
           
-          git commit -m "⚙️ [Ops] Batch ${{ github.run_id }} - Scale & Audit"
+          git commit -m "🚀 [Massive] Batch ${{ github.run_id }} - Generated & Audited"
           
-          # [핵심] 동시성 충돌 방지를 위한 재시도 로직 강화
-          MAX_RETRIES=10
+          # 충돌 방지 및 대량 푸시 성공률 향상 로직
+          MAX_RETRIES=20
           for i in $(seq 1 $MAX_RETRIES); do
-            
-            # 1. Random Jitter: 1~15초 사이 랜덤 대기 (서로 겹치지 않게)
-            SLEEP_TIME=$(( $RANDOM % 15 + 1 ))
-            echo "⏳ Waiting ${SLEEP_TIME}s to avoid collision (Attempt $i/$MAX_RETRIES)..."
+            # 랜덤 대기 (1~20초)
+            SLEEP_TIME=$(( $RANDOM % 20 + 1 ))
+            echo "⏳ Waiting ${SLEEP_TIME}s (Attempt $i/$MAX_RETRIES)..."
             sleep $SLEEP_TIME
             
-            # 2. Rebase Pull (원격 변경사항 내 커밋 앞으로 가져오기)
+            # Pull Rebase 후 Push
             if git pull --rebase origin main; then
-              # 3. Push 시도
               if git push origin main; then
                 echo "✅ Push Success!"
                 exit 0
-              else
-                echo "⚠️ Push failed, retrying..."
               fi
             else
-              echo "⚠️ Rebase failed (conflict?), resolving automatically..."
-              # 충돌 시 일단 내 변경사항 우선 (자동화 봇 특성상) 혹은 중단
+              echo "⚠️ Rebase conflict. Aborting rebase and retrying..."
               git rebase --abort || true
             fi
           done
           
-          echo "❌ Failed to push after $MAX_RETRIES attempts."
+          echo "❌ Push failed after many attempts."
           exit 1
