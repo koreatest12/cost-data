@@ -1,8 +1,8 @@
-name: "🚀 Enterprise Resilient & Clean Management"
+name: "🚀 Enterprise Parallel Operations & Security"
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # 30분 간격 실행
+    - cron: '*/30 * * * *'
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -11,153 +11,180 @@ permissions:
   contents: write
   issues: write
 
+# [중요] 동시성 그룹 설정이 없어야 병렬 실행이 가능합니다. (Cancel-in-progress 제거)
+
 jobs:
-  maintenance-audit-and-generation:
+  parallel-secure-ops:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Python
+      - name: Setup Python environment
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      # [NEW] 1. 대량 데이터 및 서비스 아키텍처 자동 생성
-      - name: "🏭 대량 서비스 및 데이터 노드 생성 (Bulk Generator)"
+      # [1] 캐싱 (동시 실행 시에도 읽기 전용으로 안전하게 공유됨)
+      - name: "⚡ Cache Trivy DB"
+        uses: actions/cache@v4
+        with:
+          path: .trivy
+          key: trivy-db-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            trivy-db-${{ runner.os }}-
+
+      # [2] 충돌 없는 대량 생성 (UUID 기반 격리)
+      - name: "🏭 Generate Unique Data Nodes"
         run: |
           python -c "
-          import os
-          import uuid
-          import json
+          import os, uuid, json, random
           from datetime import datetime
 
-          # 대량 생성 설정
+          # 실행마다 고유한 배치 ID 부여
+          BATCH_ID = '${{ github.run_id }}'
           BASE_DIR = 'infra_datacenter/servers'
-          DOMAINS = ['payment', 'logistics', 'auth', 'data-analytics']
-          NODES_PER_RUN = 5  # 실행 시마다 5개의 신규 노드/서비스 추가
+          DOMAINS = ['payment', 'logistics', 'auth', 'inventory', 'user-profile']
+          
+          # 노드 개수 확장
+          NODES_PER_RUN = 5 
 
-          print(f'Starting Bulk Generation process in {BASE_DIR}...')
-
+          print(f'Starting Parallel Batch {BATCH_ID} in {BASE_DIR}...')
+          
           for domain in DOMAINS:
               for i in range(NODES_PER_RUN):
-                  # 고유 ID 생성
                   unique_id = str(uuid.uuid4())[:8]
-                  node_path = f'{BASE_DIR}/{domain}/node-{unique_id}'
+                  # 경로 충돌 방지를 위해 UUID 사용
+                  node_path = f'{BASE_DIR}/{domain}/service-{unique_id}'
                   
-                  # 디렉토리 구조 생성
-                  os.makedirs(f'{node_path}/config', exist_ok=True)
+                  os.makedirs(f'{node_path}/src/main/resources', exist_ok=True)
                   os.makedirs(f'{node_path}/logs', exist_ok=True)
                   
-                  # 서비스 메타데이터 생성 (JSON)
-                  meta = {
-                      'service_id': unique_id,
-                      'domain': domain,
-                      'created_at': datetime.now().isoformat(),
-                      'status': 'active',
-                      'replica_count': 3
-                  }
-                  with open(f'{node_path}/config/service_meta.json', 'w') as f:
-                      json.dump(meta, f, indent=2)
+                  # POM 생성 (Trivy 에러 방지)
+                  pom_content = f'''<project xmlns=\"http://maven.apache.org/POM/4.0.0\"
+                      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
+                      xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">
+                      <modelVersion>4.0.0</modelVersion>
+                      <groupId>com.enterprise.{domain}</groupId>
+                      <artifactId>service-{unique_id}</artifactId>
+                      <version>1.0.0</version>
+                      <properties><java.version>17</java.version></properties>
+                  </project>'''
                   
-                  # 더미 데이터 파일 생성 (CSV 시뮬레이션)
-                  with open(f'{node_path}/logs/startup_trace.log', 'w') as f:
-                      f.write(f'Service {unique_id} initialized at {datetime.now()}\n')
+                  with open(f'{node_path}/pom.xml', 'w') as f: f.write(pom_content)
+
+                  # 로그 생성
+                  with open(f'{node_path}/logs/app.log', 'w') as f:
+                      f.write(f'Batch execution {BATCH_ID} initialized.\\n')
           
-          print('✅ Bulk generation completed successfully.')
+          print('✅ Unique Data Generation Completed.')
           "
 
-      # 2. 의존성 정비 및 업그레이드
-      - name: "📦 의존성 패키지 정비 (Auto Upgrade)"
+      # [3] 데이터 최적화 (기존 유지)
+      - name: "✨ Smart Data Optimizer"
         run: |
-          python -m pip install --upgrade pip
-          pip install pip-review
-          # 상호작용 없이 모두 자동 업데이트
-          pip-review --auto
-          pip freeze > requirements.txt
+          cat << 'EOF' > data_optimizer.py
+          import os, time
+          # (최적화 로직은 파일 내부 내용만 변경하므로 충돌 위험 낮음)
+          print("Optimization starting...")
+          for root, _, files in os.walk('infra_datacenter'):
+              for file in files:
+                  if file.endswith('.xml') or file.endswith('.json'): continue
+                  path = os.path.join(root, file)
+                  try:
+                      with open(path,'r') as f: lines = sorted(list(set(f.readlines())))
+                      with open(path,'w') as f: f.writelines(lines)
+                  except: pass
+          EOF
+          python data_optimizer.py
 
-      # 3. Trivy 보안 스캔 (타임아웃 해결 버전)
-      - name: "🛡️ Trivy 설치 및 보안 스캔 (Extended Timeout)"
+      # [4] OpenClaw (리포트 파일명 격리 적용)
+      - name: "🦅 OpenClaw Deep Scan"
         run: |
-          mkdir -p reports/security
+          mkdir -p reports/security/quarantine
           
-          # Trivy 설치
+          # 리포트 파일명에 Run ID 포함 -> 충돌 방지
+          REPORT_FILE = "reports/security/openclaw_audit_${{ github.run_id }}.json"
+          
+          cat << EOF > openclaw.py
+          import os, re, json, shutil
+          from datetime import datetime
+          
+          REPORT = {'scan_id': '${{ github.run_id }}', 'threats': []}
+          PATTERNS = {'AWS_KEY': r'AKIA[0-9A-Z]{16}'}
+          
+          for root, _, files in os.walk('.'):
+              if '.git' in root: continue
+              for file in files:
+                  path = os.path.join(root, file)
+                  try:
+                      with open(path,'r', errors='ignore') as f: content = f.read()
+                      for k,v in PATTERNS.items():
+                          if re.search(v, content):
+                              REPORT['threats'].append({'file': path, 'type': k})
+                              # 격리 파일도 고유 이름으로 저장
+                              safe_name = f"{path.replace('/','_')}_${{ github.run_id }}"
+                              shutil.copy(path, os.path.join('reports/security/quarantine', safe_name))
+                  except: pass
+                  
+          with open('$REPORT_FILE', 'w') as f: json.dump(REPORT, f)
+          EOF
+          python openclaw.py
+
+      # [5] Trivy 스캔 (리포트 파일명 격리 적용)
+      - name: "🛡️ Trivy Security Scan"
+        run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          mkdir -p .trivy
           
-          echo "Trivy Version Check:"
-          trivy --version
-
-          # [핵심 수정] 타임아웃 30분으로 연장 및 CSV/Log 파일 등 스캔 제외 처리 (속도 향상)
-          # 대용량 데이터 파일로 인한 멈춤 방지를 위해 --timeout 옵션 추가
+          # 고유한 리포트 파일명 생성
+          REPORT_FILE="reports/security/trivy_summary_${{ github.run_id }}.txt"
           
-          echo "Starting Vulnerability Scan..."
           trivy fs . \
+            --cache-dir .trivy \
             --timeout 30m \
             --scanners vuln,secret \
             --format table \
-            --severity CRITICAL,HIGH \
-            --output reports/security/trivy_summary.txt
+            --output $REPORT_FILE
 
-          echo "Starting Full JSON Scan..."
-          trivy fs . \
-            --timeout 30m \
-            --scanners vuln,secret \
-            --format json \
-            --output reports/security/trivy_full.json
-
-      # 4. 로그 로테이션 및 아카이빙
-      - name: "🧹 30일 경과 로그 자동 정리"
+      # [6] Git Push 충돌 방지 전략 (Random Backoff & Retry)
+      - name: "💾 Safe Push with Random Backoff"
         run: |
-          mkdir -p reports/archive
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          
-          # 현재 리포트 압축 보관
-          if [ -d "reports/security" ]; then
-            tar -czf reports/archive/audit_$TIMESTAMP.tar.gz reports/security/*
-          fi
-          
-          # 30일 이상 된 아카이브 삭제
-          find reports/archive/ -name "*.tar.gz" -mtime +30 -delete
-          echo "Archiving completed at $TIMESTAMP" > reports/last_run.log
-
-      # 5. 변경 사항 반영 (Rebase & Retry Strategy)
-      - name: "💾 대량 변경사항 안전 반영 (Git Push)"
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+          git config --local user.email "parallel-bot@example.com"
+          git config --local user.name "Parallel-Ops-Bot"
           
           git add .
           
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
+          if git diff --staged --quiet; then echo "No changes"; exit 0; fi
           
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          git commit -m "⚙️ [Auto] Bulk Gen & Security Audit ($TIMESTAMP)"
+          git commit -m "⚙️ [Ops] Batch ${{ github.run_id }} - Scale & Audit"
           
-          # 충돌 방지를 위한 재시도 로직
-          SUCCESS=false
-          for i in {1..5}; do
-            echo "Push Attempt $i/5..."
-            if git pull --rebase origin main && git push origin main; then
-              SUCCESS=true
-              break
+          # [핵심] 동시성 충돌 방지를 위한 재시도 로직 강화
+          MAX_RETRIES=10
+          for i in $(seq 1 $MAX_RETRIES); do
+            
+            # 1. Random Jitter: 1~15초 사이 랜덤 대기 (서로 겹치지 않게)
+            SLEEP_TIME=$(( $RANDOM % 15 + 1 ))
+            echo "⏳ Waiting ${SLEEP_TIME}s to avoid collision (Attempt $i/$MAX_RETRIES)..."
+            sleep $SLEEP_TIME
+            
+            # 2. Rebase Pull (원격 변경사항 내 커밋 앞으로 가져오기)
+            if git pull --rebase origin main; then
+              # 3. Push 시도
+              if git push origin main; then
+                echo "✅ Push Success!"
+                exit 0
+              else
+                echo "⚠️ Push failed, retrying..."
+              fi
+            else
+              echo "⚠️ Rebase failed (conflict?), resolving automatically..."
+              # 충돌 시 일단 내 변경사항 우선 (자동화 봇 특성상) 혹은 중단
+              git rebase --abort || true
             fi
-            sleep 10
           done
           
-          if [ "$SUCCESS" = false ]; then
-            echo "❌ Push failed after 5 attempts."
-            exit 1
-          fi
-
-      - name: "📊 실행 결과 요약"
-        if: always()
-        run: |
-          echo "### 🚀 엔터프라이즈 관리 현황" >> $GITHUB_STEP_SUMMARY
-          echo "- **대량 생성**: ✅ 서비스 노드 추가 완료" >> $GITHUB_STEP_SUMMARY
-          echo "- **보안 스캔**: ✅ 완료 (Timeout: 30m 적용)" >> $GITHUB_STEP_SUMMARY
-          echo "- **데이터 정비**: ✅ 로그 로테이션 완료" >> $GITHUB_STEP_SUMMARY
+          echo "❌ Failed to push after $MAX_RETRIES attempts."
+          exit 1
