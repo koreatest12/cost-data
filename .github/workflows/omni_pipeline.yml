@@ -1,4 +1,4 @@
-name: Universe Scale Final (Fix OOM & Compress)
+name: Universe Scale Final (Fix Git Conflict)
 
 on:
   schedule:
@@ -12,13 +12,9 @@ permissions:
   issues: write
 
 jobs:
-  # ------------------------------------------------------------------
-  # JOB 1: 유니버스 엔진 가동 & 데이터 압축 업로드
-  # ------------------------------------------------------------------
   universe-simulation:
     runs-on: ubuntu-latest
     env:
-      # Node.js 메모리 한계 상향 (압축 과정 안정성 확보)
       NODE_OPTIONS: "--max-old-space-size=8192"
     steps:
       # [1] 디스크 공간 최대 확보
@@ -33,13 +29,15 @@ jobs:
 
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 전체 히스토리 가져오기 (Rebase 충돌 방지)
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      # [2] 대량 데이터 생성 엔진 (130만 개 파일 생성)
+      # [2] 대량 데이터 생성 엔진
       - name: Run Universe Engine
         run: |
           cat << 'EOF' > universe_engine.py
@@ -48,8 +46,7 @@ jobs:
           ROOT_DIR = "universe_datacenter"
           DB_PATH = os.path.join(ROOT_DIR, "central_core.db")
           
-          # 파일 개수 조절 (130만개 유지를 위해 클러스터당 노드 수 설정)
-          # 노드 5000개 * 파일 260개 = 약 130만개
+          # 파일 개수 조절 (클러스터당 노드 수 설정)
           CLUSTERS = {
               "prod-payment": 500,
               "prod-backend": 1000,
@@ -70,11 +67,10 @@ jobs:
               for cluster, count in CLUSTERS.items():
                   for i in range(1, count + 1):
                       hostname = f"{cluster}-{i:04d}"
-                      # 폴더 깊이를 줄여서 생성 속도 향상
                       path = os.path.join(ROOT_DIR, cluster, hostname)
                       os.makedirs(path, exist_ok=True)
                       
-                      # 노드당 설정 파일 5개씩 생성
+                      # 노드당 설정 파일 생성
                       for k in range(5):
                           with open(os.path.join(path, f"config_{k}.json"), "w") as f:
                               json.dump({"host": hostname, "id": str(uuid.uuid4())}, f)
@@ -106,16 +102,14 @@ jobs:
 
           python universe_engine.py
 
-      # [3] ★ 핵심 해결책: 압축 (Archiving) ★
-      # 130만 개의 파일을 1개의 tar.gz 파일로 묶습니다.
+      # [3] 데이터 압축 (메모리 에러 방지)
       - name: Compress Massive Data
         run: |
-          echo "📦 Compressing 1.3M files into a single archive..."
+          echo "📦 Compressing files into a single archive..."
           tar -czf universe_data.tar.gz universe_datacenter/ daily_report.md
-          echo "✅ Compression complete. File size:"
-          du -h universe_data.tar.gz
+          echo "✅ Compression complete."
 
-      # [4] 압축된 단일 파일 업로드 (메모리 에러 해결)
+      # [4] 압축 파일 업로드
       - name: Upload Compressed Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -123,21 +117,33 @@ jobs:
           path: universe_data.tar.gz
           retention-days: 1
 
-      # [5] 깃허브 반영 (선택 사항: 파일이 너무 많아 .tar.gz만 올리거나 제외)
+      # [5] ★ 핵심 수정: Git 충돌 방지 로직 (Stash -> Pull -> Pop -> Commit) ★
       - name: Commit & Push Report Only
         run: |
           git config --global user.name "Universe Bot"
           git config --global user.email "bot@universe.com"
           
-          # 130만개 파일을 git add 하면 git도 터집니다. 리포트만 반영합니다.
+          # 1. 현재 변경사항(생성된 파일들)을 잠시 스태시(Stash)로 대피
+          echo "💾 Stashing changes..."
+          git stash --include-untracked
+          
+          # 2. 원격 저장소의 최신 변경사항을 가져옴 (Rebase)
+          echo "🔄 Pulling latest changes..."
+          git pull origin main --rebase
+          
+          # 3. 대피시켰던 변경사항을 다시 적용 (Pop)
+          echo "📂 Applying stashed changes..."
+          git stash pop || echo "No stash to pop or conflict occurred"
+          
+          # 4. 리포트 파일만 스테이징 및 커밋 (대량 파일 제외)
           git add daily_report.md
           
-          git commit -m "🌌 Universe Ops: Massive Simulation Report: $(date +'%Y-%m-%d')" || echo "No changes"
-          git pull origin main --rebase
+          # 5. 커밋 및 푸시
+          git commit -m "🌌 Universe Ops: Massive Simulation Report: $(date +'%Y-%m-%d')" || echo "No changes to commit"
           git push origin main
 
   # ------------------------------------------------------------------
-  # JOB 2: 리포트 발행 & 데이터 검증
+  # JOB 2: 리포트 발행
   # ------------------------------------------------------------------
   publish-report:
     needs: universe-simulation
@@ -146,7 +152,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # [6] 압축 파일 다운로드 및 해제
       - name: Download & Extract Artifact
         uses: actions/download-artifact@v4
         with:
@@ -157,8 +162,7 @@ jobs:
         run: |
           echo "📂 Extracting archive..."
           tar -xzf universe_data.tar.gz
-          echo "✅ Extraction complete. Verifying file count..."
-          find universe_datacenter -type f | wc -l
+          echo "✅ Extraction complete."
 
       - name: Create Issue
         uses: peter-evans/create-issue-from-file@v5
