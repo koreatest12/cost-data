@@ -235,7 +235,7 @@ jobs:
           done
 
       - name: ☕ JDK 17 Setup & Build
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with: { java-version: '17', distribution: 'temurin', cache: maven }
 
       - name: 🔨 Compile
