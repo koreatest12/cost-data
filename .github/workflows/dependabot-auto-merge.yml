@@ -1,18 +1,28 @@
-name: Dependabot Auto-Merge
+name: Dependabot Massive Auto-Merge & Capacity Ops
 
 on:
+  # 1. 실시간 감지 (기존 기능)
   pull_request:
     types: [opened, synchronize, reopened]
+  # 2. 수동 대량 실행 (쌓인 PR 일괄 처리용)
+  workflow_dispatch:
+  # 3. 정기 대량 실행 (매일 아침 06:00 KST)
+  schedule:
+    - cron: '0 21 * * *'
 
 permissions:
   contents: write
   pull-requests: write
+  checks: read
+  statuses: read
 
 jobs:
-  auto-merge:
+  # ------------------------------------------------------------------
+  # JOB 1: 개별 PR 실시간 처리 (기존 로직 강화)
+  # ------------------------------------------------------------------
+  realtime-auto-merge:
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
-
     steps:
       - name: Dependabot metadata
         id: metadata
@@ -20,26 +30,85 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Auto-approve Dependabot PRs
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: |
-          gh pr review --approve "$PR_URL"
+      - name: Auto-approve (Minor/Patch)
+        if: steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge for Dependabot PRs
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
-        run: |
-          gh pr merge --auto --squash "$PR_URL"
+      - name: Enable Auto-Merge (Squash)
+        if: steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Comment on major version updates
+      - name: Alert Major Updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-major'
         run: |
-          gh pr comment "$PR_URL" --body "⚠️ 이 PR은 메이저 버전 업데이트입니다. 수동 검토가 필요합니다."
+          gh pr comment "$PR_URL" --body "⚠️ **메이저 업데이트 감지**: 호환성 검토가 필요하여 자동 병합이 보류되었습니다."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ------------------------------------------------------------------
+  # JOB 2: 대량 일괄 병합 및 용량 최적화 (Bulk & Capacity Ops)
+  # ------------------------------------------------------------------
+  bulk-merge-all:
+    # 수동 실행하거나 스케줄일 때만 실행
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      # [1] 용량 부족 방지 (대량 빌드/테스트 대비)
+      - name: Free Disk Space (Capacity Optimization)
+        run: |
+          echo "🧹 Cleaning up disk space for massive operations..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo docker image prune --all --force
+          df -h
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # [2] 대량 PR 스캔 및 일괄 병합 엔진
+      - name: Run Bulk Merge Engine
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🚀 Starting Massive Bulk Merge Operation..."
+          
+          # Dependabot이 생성한 'Open' 상태의 모든 PR을 최대 100개까지 조회
+          PRS=$(gh pr list --search "author:app/dependabot is:open" --limit 100 --json url,title,number,headRefName)
+          
+          echo "$PRS" | jq -c '.[]' | while read -r pr; do
+            URL=$(echo "$pr" | jq -r '.url')
+            TITLE=$(echo "$pr" | jq -r '.title')
+            NUM=$(echo "$pr" | jq -r '.number')
+            
+            echo "---------------------------------------------------"
+            echo "🔍 Processing PR #$NUM: $TITLE"
+            
+            # 메이저 업데이트인지 확인 (제목 기반 필터링)
+            # (Note: 메이저 업데이트는 보통 파괴적 변경이 있으므로 자동 병합에서 제외하는 것이 안전함)
+            if [[ "$TITLE" != *"major"* ]]; then
+              echo "✅ Minor/Patch update detected. Proceeding..."
+              
+              # 1. 승인 (Approve)
+              gh pr review "$URL" --approve || echo "⚠️ Already approved or error."
+              
+              # 2. 자동 병합 활성화 (CI 통과 시 병합됨)
+              gh pr merge "$URL" --auto --squash || echo "⚠️ Merge failed or checks pending."
+              
+              echo "✨ Auto-merge enabled for #$NUM"
+            else
+              echo "🛑 Major update detected. Skipping auto-merge."
+            fi
+          done
+          
+          echo "🎉 Bulk operation completed."
+
+      - name: Report Result
+        run: echo "Massive update cycle finished."
