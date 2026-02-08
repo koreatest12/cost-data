@@ -1,33 +1,117 @@
-name: Fixed Master Infra Patch
+name: Dependabot Massive Merge Ops (Parallel & Batch)
 
 on:
-  push:
-    branches: [ "main" ]
+  # 1. 실시간: PR이 열릴 때마다 즉시 반응
+  pull_request:
+    types: [opened, synchronize, reopened]
+  
+  # 2. 수동 트리거: 쌓여있는 PR을 버튼 하나로 대량 처리
+  workflow_dispatch:
+    inputs:
+      max_limit:
+        description: '한 번에 처리할 최대 PR 개수 (기본: 100)'
+        required: false
+        default: '100'
+
+  # 3. 스케줄: 매일 4번(6시간 간격) 자동으로 청소
+  schedule:
+    - cron: '0 0,6,12,18 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  issues: write
 
 jobs:
-  patch-and-build:
+  # ------------------------------------------------------------------
+  # JOB 1: 실시간 초고속 처리 (Event Driven)
+  # ------------------------------------------------------------------
+  realtime-flash-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Metadata Fetch
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      # [병렬 처리 핵심] 승인과 병합 활성화를 동시에 수행
+      - name: Approve and Enable Auto-Merge
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. 승인 (Approve)
+          gh pr review "$PR_URL" --approve
+          
+          # 2. 자동 병합 활성화 (Squash) - 테스트 통과 시 즉시 병합됨
+          gh pr merge --auto --squash "$PR_URL"
+
+  # ------------------------------------------------------------------
+  # JOB 2: 대량 일괄 처리 (Batch Sweep Engine)
+  # ------------------------------------------------------------------
+  batch-massive-sweep:
+    # 수동 실행 또는 스케줄 실행 시에만 작동
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Secrets 설정 오류를 사전에 체크합니다.
-      - name: Check DB Secrets
+      - name: Run Massive Merge Engine
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LIMIT: ${{ inputs.max_limit || 100 }} # 입력값 없으면 100개
         run: |
-          if [ -z "${{ secrets.DB_HOST }}" ]; then
-            echo "❌ ERROR: DB_HOST is not set in GitHub Secrets!"
-            exit 1
+          echo "🚀 [Massive Ops] Starting Bulk Merge Sequence for up to $LIMIT PRs..."
+          
+          # 1. Dependabot이 만든 'Open' 상태의 PR 목록 확보 (대량)
+          # json으로 필요한 정보만 가져와서 속도 최적화
+          gh pr list \
+            --search "author:app/dependabot is:open" \
+            --limit "$LIMIT" \
+            --json url,number,title,headRefName \
+            > pr_list.json
+
+          COUNT=$(jq '. | length' pr_list.json)
+          echo "📊 Found $COUNT open Dependabot PRs."
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "✅ No PRs to merge. Exiting."
+            exit 0
           fi
 
-      - name: Run SQL Patch
-        env:
-          PGPASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-        run: |
-          # 변수를 명확히 할당하여 에러를 방지합니다.
-          psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -f ./scripts/patch_all.sql
+          # 2. 루프를 돌며 비동기적으로 처리 명령 전송
+          # (주의: 여기서 'gh pr merge --auto'는 병합을 예약하는 것이므로 즉시 완료되지 않아도 넘어감 -> 속도 빠름)
+          jq -c '.[]' pr_list.json | while read -r pr; do
+            URL=$(echo "$pr" | jq -r '.url')
+            NUM=$(echo "$pr" | jq -r '.number')
+            TITLE=$(echo "$pr" | jq -r '.title')
+            
+            echo "---------------------------------------------------"
+            echo "⚡ Processing #$NUM: $TITLE"
 
-      - name: Maven Build (File Sync)
-        run: mvn clean package -DskipTests
+            # 메이저 업데이트 보호 (Major는 건너뜀)
+            if [[ "$TITLE" == *"major"* ]]; then
+               echo "🛡️ Major version detected. Skipping safety check."
+               continue
+            fi
+
+            # 병렬 처리: 승인과 병합 예약을 백그라운드(&)로 던지지 않고 순차 실행하되, 
+            # '--auto' 옵션 덕분에 CI 완료를 기다리지 않고 바로 다음으로 넘어감 (Non-blocking)
+            
+            # A. 승인 (이미 승인되어 있어도 에러 무시하고 진행)
+            gh pr review "$URL" --approve || true
+            
+            # B. 자동 병합 큐에 등록 (Squash)
+            gh pr merge "$URL" --auto --squash || echo "⚠️ Failed to queue #$NUM"
+            
+            echo "✅ Queued #$NUM for auto-merge."
+          done
+
+      - name: Final Summary
+        run: |
+          echo "🎉 Massive merge commands sent. GitHub will merge them as checks pass."
