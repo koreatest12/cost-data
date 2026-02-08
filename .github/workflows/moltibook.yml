@@ -1,30 +1,99 @@
-name: "☢️ Nuke All History & Artifacts"
+name: "☢️ Ultimate Nuke: Dump & Destroy (Fix 404)"
 
 on:
   schedule:
-    - cron: "*/15 * * * *"  # 15분마다 강제 실행 (매우 공격적)
-  workflow_dispatch:        # 수동 실행 버튼
+    - cron: "*/15 * * * *"  # 15분마다 실행
+  workflow_dispatch:        # 수동 실행
 
 permissions:
-  actions: write
-  contents: read
+  actions: write   # 삭제 필수 권한
+  contents: write  # 덤프 저장 권한
 
 jobs:
-  nuke-storage:
+  archive-and-destroy:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. 모든 워크플로우 실행 기록 삭제 (성공/실패 불문)
-        uses: Mattraks/delete-workflow-runs@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          retain_days: 0        # 0일 보관 (즉시 삭제)
-          keep_minimum_runs: 0  # 단 하나의 기록도 남기지 않음
-          delete_run_by_conclusion_pattern: "cancelled, skipped, success, failure"
+      - name: 리포지토리 체크아웃
+        uses: actions/checkout@v4
 
-      - name: 2. 모든 아티팩트(용량 주범) 강제 삭제
-        uses: geekyeggo/delete-artifact@v2
-        with:
-          name: |
-            *
-          useGlob: true
+      # ----------------------------------------------------------------
+      # 1. [데이터 백업] 삭제 전 기록을 JSON으로 떠서 별도 브랜치에 저장
+      # ----------------------------------------------------------------
+      - name: 📦 실행 기록 덤프 및 백업 (Archive)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name "Archiver Bot"
+          git config --global user.email "bot@archive.system"
+
+          TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
+          DUMP_FILE="workflow_history_${TIMESTAMP}.json"
+          
+          echo "Generating dump file..."
+          # 최신 500개 기록 추출
+          gh run list --all --limit 500 --json databaseId,workflowName,createdAt,status,conclusion > "$DUMP_FILE"
+          
+          # 백업 브랜치로 이동 (없으면 생성)
+          git checkout backup-history 2>/dev/null || git checkout --orphan backup-history
+          git pull origin backup-history --rebase || echo "No remote branch yet"
+          
+          mv "$GITHUB_WORKSPACE/$DUMP_FILE" .
+          git add "$DUMP_FILE"
+          git commit -m "📦 Archive logs: $TIMESTAMP"
+          
+          git push origin backup-history
+
+      # ----------------------------------------------------------------
+      # 2. [강제 삭제] GitHub CLI를 사용한 직접 타격 (에러 해결 핵심)
+      # ----------------------------------------------------------------
+      - name: 🗑️ 아티팩트(Artifacts) 강제 삭제 (Fix 404)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Listing artifacts..."
+          # API를 통해 아티팩트 ID 목록 조회
+          ARTIFACT_IDS=$(gh api repos/${{ github.repository }}/actions/artifacts --paginate -q '.artifacts[].id')
+          
+          if [ -z "$ARTIFACT_IDS" ]; then
+            echo "No artifacts found to delete."
+          else
+            for id in $ARTIFACT_IDS; do
+              echo "Deleting artifact ID: $id"
+              # API 직접 호출로 삭제 (404 에러 방지)
+              gh api -X DELETE repos/${{ github.repository }}/actions/artifacts/$id || echo "Failed to delete $id (Already deleted?)"
+            done
+          fi
+
+      - name: ☢️ 워크플로우 실행 기록(Runs) 대량 삭제
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Deleting workflow runs..."
+          # 완료된(삭제 가능한) 런 ID 조회
+          RUN_IDS=$(gh run list --json databaseId --limit 500 -q '.[].databaseId')
+          
+          if [ -z "$RUN_IDS" ]; then
+            echo "No workflow runs to delete."
+          else
+            for id in $RUN_IDS; do
+              echo "Deleting Run ID: $id"
+              gh run delete $id --delete-logs || echo "Failed to delete run $id"
+            done
+          fi
+
+      - name: 🧹 GitHub Actions 캐시(Caches) 초기화
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+        run: |
+          echo "Listing caches..."
+          CACHE_IDS=$(gh api repos/${{ github.repository }}/actions/caches --paginate -q '.actions_caches[].id')
+          
+          if [ -z "$CACHE_IDS" ]; then
+             echo "No caches found."
+          else
+             for id in $CACHE_IDS; do
+               echo "Deleting Cache ID: $id"
+               gh api -X DELETE repos/${{ github.repository }}/actions/caches/$id || echo "Failed to delete cache $id"
+             done
+          fi
