@@ -1,0 +1,28 @@
+name: "🚀 Maximize Runner Disk Space"
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  expand-space:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 현재 디스크 용량 확인
+        run: df -h
+
+      - name: 🧹 불필요한 패키지 삭제 및 용량 증설
+        run: |
+          echo "Listing Initial Space..."
+          df -h
+          
+          echo "Removing heavy unnecessary tools..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          
+          echo "Space after cleanup:"
+          df -h
