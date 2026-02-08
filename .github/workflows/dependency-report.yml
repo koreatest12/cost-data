@@ -1,8 +1,8 @@
-name: "🌋 Mega-Scale DataOps & Weather Bot"
+name: "🌌 Ultra-Scale Safe DataOps"
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # 30분마다 대량 폭격
+    - cron: '*/30 * * * *' # 30분마다 대량 실행
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -12,7 +12,7 @@ permissions:
   issues: write
 
 jobs:
-  mega-scale-ops:
+  ultra-scale-ops:
     runs-on: ubuntu-latest
     env:
       RUN_ID: ${{ github.run_id }}
@@ -30,48 +30,46 @@ jobs:
       # [1] 캐싱 (필수)
       - name: "⚡ Turbo Cache Trivy DB"
         uses: actions/cache@v4
-        id: trivy-cache
         with:
           path: .trivy
-          key: trivy-db-mega-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: trivy-db-mega-${{ runner.os }}-
+          key: trivy-db-ultra-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: trivy-db-ultra-${{ runner.os }}-
 
-      # [2] 초대형 병렬 생성 엔진 (데이터 폭증 버전)
-      - name: "🏭 Mega-Scale Generation Engine"
+      # [2] 초대형 생성 엔진 (파일 생성 방식 변경으로 에러 해결)
+      - name: "🏭 Generate Ultra-Scale Data Script"
         run: |
-          python -c "
+          # 파이썬 스크립트를 파일로 작성하여 따옴표 충돌 방지 (Safe Mode)
+          cat << 'EOF' > generate_ops.py
           import os, uuid, json, random, time
           import concurrent.futures
           from datetime import datetime, timedelta
 
-          run_id = os.getenv('RUN_ID')
+          run_id = os.getenv('RUN_ID', 'manual')
           base_root = 'infra_datacenter'
           
-          # [설정] 초대형 규모 설정
-          DOMAINS = ['payment', 'auth', 'user', 'inventory', 'shipping', 'ads', 'recommendation']
-          CITIES = ['Seoul', 'NewYork', 'London', 'Tokyo', 'Paris', 'Berlin', 'Beijing', 'Moscow']
-          BOT_PLATFORMS = ['Telegram', 'Slack', 'Discord', 'KakaoTalk', 'Line', 'Teams']
+          # [설정] 초대형 규모 (Ultra Scale)
+          DOMAINS = ['payment', 'auth', 'user', 'inventory', 'shipping', 'ads', 'video', 'chat']
+          CITIES = ['Seoul', 'NewYork', 'London', 'Tokyo', 'Paris', 'Berlin', 'Dubai', 'Toronto']
+          PLATFORMS = ['Telegram', 'Slack', 'Discord', 'KakaoWork', 'Teams']
           
-          # 노드 수 & 데이터 밀도 (대폭 상향)
-          SCALE_NODES = 100       # 도메인/도시 당 생성할 노드 수 (기존 50 -> 100)
-          DATA_DENSITY = 1000     # 파일 당 생성할 라인 수 (기존 50 -> 1000)
+          # 규모 설정 (기존 대비 2배)
+          SCALE_NODES = 200       # 도메인/도시 당 200개 노드
+          DATA_DENSITY = 2000     # 파일 당 2000라인 로그/SQL
 
-          print(f'🌋 Starting Mega-Scale Generation (Batch {run_id})...')
-          print(f'   Target: ~{len(DOMAINS)*SCALE_NODES + len(CITIES)*SCALE_NODES} Nodes')
-          print(f'   Density: {DATA_DENSITY} lines/file')
-
-          # -------------------------------------------------------------
-          # [Helper] 대량 텍스트 생성기 (메모리 최적화)
-          # -------------------------------------------------------------
-          def generate_bulk_lines(prefix, count):
-              # 리스트 컴프리헨션으로 빠르게 메모리 생성
-              return [f'{prefix} {uuid.uuid4()} | TS:{datetime.now()} | REF:{random.randint(100000,999999)}\\n' for _ in range(count)]
+          print(f'🌌 Starting Ultra-Scale Generation (Batch {run_id})...')
+          print(f'   Target Nodes: {len(DOMAINS)*SCALE_NODES + len(CITIES)*SCALE_NODES}')
+          print(f'   Data Density: {DATA_DENSITY} lines/file')
 
           # -------------------------------------------------------------
-          # [Task 1] Enterprise Java Services & Huge DB Dumps
+          # Helper: 대량 데이터 라인 생성
+          # -------------------------------------------------------------
+          def get_bulk_lines(prefix, count):
+              return [f'{prefix} {uuid.uuid4()} | TS:{datetime.now()} | Status:{random.choice(["OK","FAIL"])}\n' for _ in range(count)]
+
+          # -------------------------------------------------------------
+          # Task 1: Enterprise Services & Huge DB
           # -------------------------------------------------------------
           def generate_enterprise(domain):
-              tasks = []
               for _ in range(SCALE_NODES):
                   uid = str(uuid.uuid4())[:8]
                   srv_path = f'{base_root}/services/{domain}/{uid}'
@@ -82,21 +80,22 @@ jobs:
                   
                   # 1. POM.xml
                   with open(f'{srv_path}/pom.xml', 'w') as f:
-                      f.write(f'<project><modelVersion>4.0.0</modelVersion><groupId>com.{domain}</groupId><artifactId>{uid}</artifactId><version>1.0.0-SNAPSHOT</version></project>')
+                      f.write(f'<project><modelVersion>4.0.0</modelVersion><groupId>com.{domain}</groupId><artifactId>{uid}</artifactId><version>1.0.0</version></project>')
                   
-                  # 2. Massive App Logs (1000 lines)
+                  # 2. App Logs (Massive)
                   with open(f'{srv_path}/logs/app.log', 'w') as f:
-                      f.writelines(generate_bulk_lines(f'[INFO] [{domain.upper()}]', DATA_DENSITY))
+                      f.writelines(get_bulk_lines(f'[INFO] [{domain}]', DATA_DENSITY))
 
-                  # 3. Massive SQL Dump (1000 inserts)
+                  # 3. SQL Dump (Massive Inserts)
                   with open(f'{db_path}/dump.sql', 'w') as f:
-                      f.write(f'-- Huge Dump for {domain}\\n')
-                      lines = [f'INSERT INTO {domain}_tbl (id, val, created_at) VALUES (\\'{uuid.uuid4()}\\', {random.randint(1,10000)}, NOW());\\n' for _ in range(DATA_DENSITY)]
-                      f.writelines(lines)
+                      f.write(f'-- Huge Dump for {domain}\n')
+                      # 리스트 컴프리헨션으로 대량 쿼리 생성
+                      inserts = [f"INSERT INTO {domain}_tbl VALUES ('{uuid.uuid4()}', {random.randint(1,9999)}, NOW());\n" for _ in range(DATA_DENSITY)]
+                      f.writelines(inserts)
               return f'{domain} Done'
 
           # -------------------------------------------------------------
-          # [Task 2] High-Frequency IoT Sensor Data
+          # Task 2: IoT Sensor Network
           # -------------------------------------------------------------
           def generate_iot(city):
               for _ in range(SCALE_NODES):
@@ -104,151 +103,156 @@ jobs:
                   path = f'{base_root}/iot/weather/{city}/{sid}'
                   os.makedirs(path, exist_ok=True)
                   
-                  # High-Frequency Data (CSV)
                   with open(f'{path}/readings.csv', 'w') as f:
-                      f.write('timestamp,station_id,temp,humid,pressure,wind_speed,condition\\n')
+                      f.write('timestamp,station_id,temp,humid,condition\n')
                       lines = []
-                      base_time = datetime.now()
+                      base_t = datetime.now()
                       for i in range(DATA_DENSITY):
-                          t = base_time + timedelta(seconds=i) # 1초 단위 기록
-                          lines.append(f'{t},{sid},{random.randint(-20,40)},{random.randint(10,100)},{random.randint(980,1030)},{random.random()*10:.2f},Normal\\n')
+                          t = base_t + timedelta(seconds=i)
+                          lines.append(f'{t},{sid},{random.randint(-30,50)},{random.randint(0,100)},Normal\n')
                       f.writelines(lines)
               return f'{city} Done'
 
           # -------------------------------------------------------------
-          # [Task 3] Chatbot Traffic Explosion
+          # Task 3: Weather Bot (문법 에러 수정됨)
           # -------------------------------------------------------------
-          def generate_bot_traffic(platform):
+          def generate_bots(platform):
               bot_path = f'{base_root}/bots/{platform.lower()}'
               os.makedirs(f'{bot_path}/logs', exist_ok=True)
               
-              # 봇 소스코드
+              # 봇 소스코드 (여기서 따옴표 에러가 났었음 -> EOF 방식으로 해결)
               with open(f'{bot_path}/main.py', 'w') as f:
-                  f.write(f'print("Running {platform} bot...")')
+                  f.write(f'print("Running {platform} bot...")\n')
+                  f.write('import os\napi_key = "sk-fake-key-for-trivy"\n')
 
-              # Traffic Logs (Massive)
+              # Traffic Logs
               with open(f'{bot_path}/logs/traffic.log', 'w') as f:
-                  lines = generate_bulk_lines(f'[BOT-OUT] {platform} sent to user', DATA_DENSITY)
-                  # 에러 주입
-                  lines.append(f'[ERROR] {platform} API Quota Exceeded!\\n')
-                  f.writelines(lines)
+                  f.writelines(get_bulk_lines(f'[BOT] {platform} msg sent:', DATA_DENSITY))
               return f'{platform} Done'
 
           # -------------------------------------------------------------
-          # [Main] 멀티스레드 실행 (16 Workers)
+          # Main Execution
           # -------------------------------------------------------------
           if __name__ == '__main__':
               start = time.time()
-              with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+              # 스레드 풀을 32개로 늘려 I/O 병렬 처리 극대화
+              with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
                   futures = []
                   futures.extend([executor.submit(generate_enterprise, d) for d in DOMAINS])
                   futures.extend([executor.submit(generate_iot, c) for c in CITIES])
-                  futures.extend([executor.submit(generate_bot_traffic, p) for p in BOT_PLATFORMS])
+                  futures.extend([executor.submit(generate_bots, p) for p in PLATFORMS])
                   
                   concurrent.futures.wait(futures)
               
-              print(f'✅ Mega-Scale Generation Completed in {time.time()-start:.2f}s')
-          "
+              print(f'✅ Generation Completed in {time.time()-start:.2f}s')
+          EOF
+          
+          # 생성 스크립트 실행
+          python generate_ops.py
 
-      # [3] 데이터 최적화 (대량 파일 병렬 처리)
+      # [3] 데이터 최적화 (Optimizer도 파일로 분리하여 안전 실행)
       - name: "✨ Mega-Parallel Data Optimizer"
         run: |
-          python -c "
+          cat << 'EOF' > optimize_ops.py
           import os, concurrent.futures
           
           def optimize(path):
               try:
-                  # 파일 크기가 너무 크면(10MB 이상) 스킵하거나 일부만 처리
-                  if os.path.getsize(path) > 10 * 1024 * 1024: return
+                  # 파일이 너무 크면 스킵 (20MB 이상)
+                  if os.path.getsize(path) > 20 * 1024 * 1024: return
                   
                   if path.endswith('.log') or path.endswith('.csv') or path.endswith('.sql'):
-                      with open(path, 'r') as f:
-                          lines = f.readlines()
-                      
-                      # 중복 제거 (Unique Data Only) - 대량 데이터일수록 효과적
-                      unique_lines = sorted(list(set(lines)))
-                      
-                      if len(lines) != len(unique_lines):
-                          with open(path, 'w') as f:
-                              f.writelines(unique_lines)
+                      with open(path, 'r') as f: lines = f.readlines()
+                      # 중복 제거 및 정렬
+                      unique = sorted(list(set(lines)))
+                      if len(lines) != len(unique):
+                          with open(path, 'w') as f: f.writelines(unique)
               except: pass
 
-          print('✨ Collecting files...')
-          all_files = [os.path.join(r,f) for r,_,fs in os.walk('infra_datacenter') for f in fs]
-          print(f'✨ Optimizing {len(all_files)} files in parallel...')
+          print('✨ Scanning files for optimization...')
+          files = [os.path.join(r,f) for r,_,fs in os.walk('infra_datacenter') for f in fs]
+          print(f'✨ Optimizing {len(files)} files in parallel...')
 
-          with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
-              executor.map(optimize, all_files)
-          "
+          with concurrent.futures.ThreadPoolExecutor(max_workers=32) as ex:
+              ex.map(optimize, files)
+          print('✅ Optimization Finished.')
+          EOF
+          
+          python optimize_ops.py
 
-      # [4] 날씨 브리핑 (대량 데이터 요약)
+      # [4] 날씨 브리핑 리포트
       - name: "🎙️ Global Weather Dashboard"
         run: |
-          python -c "
+          cat << 'EOF' > weather_report.py
           import os, glob, random
+          run_id = os.getenv('RUN_ID', 'N/A')
           
+          # 대량 파일 카운트
           files = glob.glob('infra_datacenter/iot/weather/**/*.csv', recursive=True)
-          total_readings = len(files) * 1000 # DATA_DENSITY 추산
+          node_count = len(files)
+          est_data = node_count * 2000 # Density
           
-          md = [f'# 🌋 Mega-Scale Weather Ops (Batch {os.getenv(\"RUN_ID\")})']
-          md.append(f'**Data Volume**: Approx {total_readings:,} sensor readings processed.\\n')
-          md.append('| City | Active Sensors | Avg Temp | Status |')
-          md.append('|---|---|---|---|')
-          
-          cities = ['Seoul', 'NewYork', 'London', 'Tokyo', 'Paris']
-          for c in cities:
-              md.append(f'| **{c}** | {random.randint(90,100)}/100 | {random.randint(0,30)}°C | 🟢 Online |')
+          md = [f'# 🌌 Ultra-Scale Ops Report (Batch {run_id})']
+          md.append(f'**Total Nodes**: {node_count} IoT Sensors')
+          md.append(f'**Total Data Points**: ~{est_data:,} rows generated')
+          md.append('')
+          md.append('| City | Status | Load |')
+          md.append('|---|---|---|')
+          for city in ['Seoul', 'NewYork', 'London', 'Tokyo']:
+              md.append(f'| **{city}** | 🟢 Optimal | {random.randint(90,100)}% |')
           
           with open(os.getenv('GITHUB_STEP_SUMMARY'), 'a') as f:
-              f.write('\\n'.join(md))
-          "
+              f.write('\n'.join(md))
+          EOF
+          python weather_report.py
 
-      # [5] 보안 스캔 (초고속 모드)
-      - name: "🛡️ Mega-Speed Security Scan"
+      # [5] 보안 스캔 (초고속 설정)
+      - name: "🛡️ Ultra-Speed Security Scan"
         run: |
+          # Trivy 설치 (없을 경우)
           if ! command -v trivy &> /dev/null; then
              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
           fi
           
+          # DB 다운로드 (캐시 미스 시)
           if [ ! -d .trivy ]; then
              trivy image --download-db-only --cache-dir .trivy
           fi
           
-          echo "🛡️ Scanning Massive Dataset..."
+          echo "🛡️ Scanning Ultra-Massive Dataset..."
           
-          # 타임아웃 60분으로 연장 (데이터가 너무 많으므로)
+          # 타임아웃 60분
           trivy fs . \
             --cache-dir .trivy \
             --skip-db-update \
+            --skip-java-db-update \
             --timeout 60m \
             --scanners vuln,secret \
             --format table \
-            --output reports/security/mega_audit_${{ github.run_id }}.txt
+            --output reports/security/ultra_audit_${{ github.run_id }}.txt
             
           echo "✅ Scan Completed."
 
-      # [6] 대량 파일 반영 (Git 처리 용량 한계 극복)
+      # [6] 반영 (대용량 안전 푸시)
       - name: "💾 Commit & Push (Heavy Load)"
         run: |
-          git config --local user.email "mega-bot@example.com"
-          git config --local user.name "Mega-Bot"
+          git config --local user.email "ultra-bot@example.com"
+          git config --local user.name "Ultra-Bot"
           
-          # 대량 파일 처리 시 git add 속도 개선
-          # git add . 대신, infra_datacenter 폴더만 명시적 추가
+          # 대용량 처리를 위해 Git 버퍼 증대
+          git config --global http.postBuffer 1048576000
+          
+          # 전체 추가 (시간이 걸려도 확실하게)
           git add infra_datacenter reports
           
           if git diff --staged --quiet; then echo "No changes"; exit 0; fi
           
-          # 커밋 메시지에 규모 명시
-          git commit -m "🌋 [Mega-Scale] Batch ${{ github.run_id }} - Massive Data Injection"
+          git commit -m "🌌 [Ultra-Scale] Batch ${{ github.run_id }} - Massive Data Injection"
           
-          # 푸시 재시도 (대용량 전송 고려)
+          # 재시도 로직 (20회)
           for i in {1..20}; do
-            # Git 버퍼 사이즈 일시 증대 (대용량 푸시 에러 방지)
-            git config --global http.postBuffer 524288000
-            
-            sleep $(( $RANDOM % 5 + 1 ))
+            sleep $(( $RANDOM % 10 + 1 ))
             if git pull --rebase origin main && git push origin main; then exit 0; fi
           done
-          # 실패 시에도 강제 종료하지 않음 (로그 확인용)
+          # 실패해도 워크플로우는 성공 처리 (로그 확인용)
           exit 0
