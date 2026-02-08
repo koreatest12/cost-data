@@ -2,36 +2,19 @@ version: 2
 
 updates:
   # -------------------------------------------------------------
-  # 1. GitHub Actions (CI/CD 파이프라인 대량 업데이트)
+  # 1. 인프라 및 CI/CD (가장 중요)
   # -------------------------------------------------------------
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
-      time: "06:00"
+      time: "00:00"
       timezone: "Asia/Seoul"
     open-pull-requests-limit: 99
     labels:
       - "actions"
-      - "massive-update"
+      - "urgent"
 
-  # -------------------------------------------------------------
-  # 2. Python (AI, 데이터 분석)
-  # -------------------------------------------------------------
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    allow:
-      - dependency-type: "all"
-    open-pull-requests-limit: 99
-    labels:
-      - "python"
-      - "dependencies"
-
-  # -------------------------------------------------------------
-  # 3. Docker (컨테이너 인프라)
-  # -------------------------------------------------------------
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -41,30 +24,6 @@ updates:
       - "docker"
       - "infrastructure"
 
-  # -------------------------------------------------------------
-  # 4. Java / Maven / Gradle (백엔드)
-  # -------------------------------------------------------------
-  - package-ecosystem: "maven"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 99
-    labels:
-      - "java"
-      - "backend"
-
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 99
-    labels:
-      - "java"
-      - "gradle"
-
-  # -------------------------------------------------------------
-  # 5. Terraform (IaC)
-  # -------------------------------------------------------------
   - package-ecosystem: "terraform"
     directory: "/"
     schedule:
@@ -72,4 +31,39 @@ updates:
     open-pull-requests-limit: 99
     labels:
       - "terraform"
-      - "cloud"
+
+  # -------------------------------------------------------------
+  # 2. 백엔드 (Java, Python, Go 등)
+  # -------------------------------------------------------------
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+    
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+
+  # -------------------------------------------------------------
+  # 3. 프론트엔드 (npm, yarn)
+  # -------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
