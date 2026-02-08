@@ -1,6 +1,101 @@
-updates:
-- directory: /
-  package-ecosystem: github-actions
-  schedule:
-    interval: daily
 version: 2
+
+updates:
+  # -------------------------------------------------------------
+  # 1. GitHub Actions (CI/CD 파이프라인 대량 업데이트)
+  # -------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "06:00"      # 매일 아침 06:00 (한국시간 15:00) 점검
+      timezone: "Asia/Seoul"
+    # [핵심] 한계를 99개로 늘려 대량의 PR 허용 (기본값은 5개)
+    open-pull-requests-limit: 99
+    labels:
+      - "actions"
+      - "massive-update"
+
+  # -------------------------------------------------------------
+  # 2. Python (인공지능, 데이터 분석, 크롤러 엔진)
+  # -------------------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # 모든 패키지(직접/간접 의존성) 전부 체크
+    allow:
+      - dependency-type: "all"
+    open-pull-requests-limit: 99
+    labels:
+      - "python"
+      - "dependencies"
+
+  # -------------------------------------------------------------
+  # 3. Docker (컨테이너 인프라, 쿠버네티스 이미지)
+  # -------------------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+    labels:
+      - "docker"
+      - "infrastructure"
+
+  # -------------------------------------------------------------
+  # 4. npm (프론트엔드, Node.js 서버)
+  # -------------------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+    labels:
+      - "javascript"
+      - "frontend"
+
+  # -------------------------------------------------------------
+  # 5. Maven / Gradle (자바 백엔드, 엔터프라이즈 시스템)
+  # -------------------------------------------------------------
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+    labels:
+      - "java"
+      - "backend"
+
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+    labels:
+      - "java"
+      - "gradle"
+
+  # -------------------------------------------------------------
+  # 6. Go (블록체인 노드, 고성능 서버)
+  # -------------------------------------------------------------
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+    labels:
+      - "golang"
+      - "blockchain"
+
+  # -------------------------------------------------------------
+  # 7. Terraform (IaC 인프라 관리)
+  # -------------------------------------------------------------
+  - package-ecosystem: "terraform"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 99
+    labels:
+      - "terraform"
+      - "cloud"
