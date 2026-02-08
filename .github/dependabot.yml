@@ -1,139 +1,75 @@
 version: 2
 
-# -------------------------------------------------------------
-# [Gemini Intelligence] Global Configuration
-# 모든 패키지 매니저에 대해 대량(Massive) 업데이트 및 그룹화 적용
-# -------------------------------------------------------------
-
 updates:
   # -------------------------------------------------------------
-  # 1. GitHub Actions (CI/CD 파이프라인)
+  # 1. GitHub Actions (CI/CD 파이프라인 대량 업데이트)
   # -------------------------------------------------------------
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"   # GitHub 지원 최대 빈도
-      time: "00:00"
+      interval: "daily"
+      time: "06:00"
       timezone: "Asia/Seoul"
     open-pull-requests-limit: 99
-    # [Smart Grouping] 모든 액션 업데이트를 하나로 묶음
-    groups:
-      github-actions:
-        patterns:
-          - "*"
     labels:
       - "actions"
       - "massive-update"
 
   # -------------------------------------------------------------
-  # 2. Python (PIP) - AI & Data
+  # 2. Python (AI, 데이터 분석)
   # -------------------------------------------------------------
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "daily"
+    allow:
+      - dependency-type: "all"
     open-pull-requests-limit: 99
-    # [Smart Grouping] 파이썬 의존성을 하나로 통합
-    groups:
-      python-dependencies:
-        patterns:
-          - "*"
     labels:
       - "python"
-      - "ai-engine"
+      - "dependencies"
 
   # -------------------------------------------------------------
-  # 3. Docker (Infrastructure)
+  # 3. Docker (컨테이너 인프라)
   # -------------------------------------------------------------
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 99
-    groups:
-      docker-images:
-        patterns:
-          - "*"
     labels:
       - "docker"
       - "infrastructure"
 
   # -------------------------------------------------------------
-  # 4. npm (Frontend & Node.js)
-  # -------------------------------------------------------------
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 99
-    groups:
-      npm-dependencies:
-        patterns:
-          - "*"
-    labels:
-      - "javascript"
-      - "frontend"
-
-  # -------------------------------------------------------------
-  # 5. Maven (Java Backend)
+  # 4. Java / Maven / Gradle (백엔드)
   # -------------------------------------------------------------
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 99
-    groups:
-      maven-dependencies:
-        patterns:
-          - "*"
     labels:
       - "java"
       - "backend"
 
-  # -------------------------------------------------------------
-  # 6. Gradle (Java/Kotlin Enterprise)
-  # -------------------------------------------------------------
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 99
-    groups:
-      gradle-dependencies:
-        patterns:
-          - "*"
     labels:
       - "java"
       - "gradle"
 
   # -------------------------------------------------------------
-  # 7. Go (Blockchain & High Performance)
-  # -------------------------------------------------------------
-  - package-ecosystem: "gomod"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 99
-    groups:
-      go-dependencies:
-        patterns:
-          - "*"
-    labels:
-      - "golang"
-      - "blockchain"
-
-  # -------------------------------------------------------------
-  # 8. Terraform (Cloud Infrastructure)
+  # 5. Terraform (IaC)
   # -------------------------------------------------------------
   - package-ecosystem: "terraform"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 99
-    groups:
-      terraform-modules:
-        patterns:
-          - "*"
     labels:
       - "terraform"
       - "cloud"
