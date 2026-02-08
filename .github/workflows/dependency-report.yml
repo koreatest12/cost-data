@@ -1,8 +1,8 @@
-name: "🚀 Massive Scale Enterprise Ops & Security"
+name: "🚀 Massive Database & Service DataOps"
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # 30분마다 대량 생성
+    - cron: '*/30 * * * *' # 30분마다 대량 실행
   workflow_dispatch:
   push:
     branches: [ main ]
@@ -12,10 +12,9 @@ permissions:
   issues: write
 
 jobs:
-  massive-execution:
+  massive-db-ops:
     runs-on: ubuntu-latest
     env:
-      # [핵심] 파이썬 스크립트에서 사용할 환경변수 미리 선언
       RUN_ID: ${{ github.run_id }}
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +27,7 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      # [1] Trivy DB 캐싱 (속도 최적화)
+      # [1] 캐싱 (속도 유지)
       - name: "⚡ Cache Trivy DB"
         uses: actions/cache@v4
         with:
@@ -37,87 +36,128 @@ jobs:
           restore-keys: |
             trivy-db-${{ runner.os }}-
 
-      # [2] 대량 데이터 생성 (에러 수정 + 규모 10배 확대)
-      - name: "🏭 Massive Data Generation (Scale-Out)"
+      # [2] 통합 대량 생성 (Service + Weather + Database)
+      - name: "🏭 Massive Generation (Full Stack: App, IoT, DB)"
         run: |
-          # 파이썬 내부에서 환경변수 RUN_ID를 직접 호출하여 에러 방지
           python -c "
           import os, uuid, json, random
           from datetime import datetime
 
           run_id = os.getenv('RUN_ID')
-          base_dir = 'infra_datacenter/servers'
+          print(f'Starting Full-Stack Massive Generation (Batch {run_id})...')
+
+          # ---------------------------------------------------------
+          # Part A: Services & Databases (1:1 매칭 생성)
+          # ---------------------------------------------------------
+          base_srv = 'infra_datacenter/servers'
+          base_db = 'infra_datacenter/databases'
+          domains = ['payment', 'auth', 'search', 'inventory', 'user', 'shipping', 'recommendation']
           
-          # [규모 확대] 8개 도메인 x 20개 노드 = 실행 당 160개 서비스 생성
-          domains = ['payment', 'logistics', 'auth', 'inventory', 'user', 'notification', 'search', 'recommendation']
-          nodes_per_domain = 20 
-
-          print(f'Starting Massive Batch {run_id} ({len(domains)*nodes_per_domain} nodes)...')
-
+          # [규모 확대] 도메인당 20개 서비스 세트 생성
           for domain in domains:
-              for i in range(nodes_per_domain):
+              for i in range(20):
                   unique_id = str(uuid.uuid4())[:8]
-                  # 충돌 방지를 위해 경로에 run_id 포함
-                  node_path = f'{base_dir}/{domain}/batch-{run_id}/srv-{unique_id}'
                   
-                  os.makedirs(f'{node_path}/src/main/resources', exist_ok=True)
-                  os.makedirs(f'{node_path}/logs', exist_ok=True)
-
-                  # 1. Valid POM.xml 생성 (Trivy 에러 방지)
-                  pom_content = f'''<project xmlns=\"http://maven.apache.org/POM/4.0.0\" 
+                  # 1. Java Service 생성
+                  srv_path = f'{base_srv}/{domain}/batch-{run_id}/srv-{unique_id}'
+                  os.makedirs(f'{srv_path}/logs', exist_ok=True)
+                  
+                  # Valid POM
+                  pom = f'''<project xmlns=\"http://maven.apache.org/POM/4.0.0\" 
                       xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
                       xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">
                       <modelVersion>4.0.0</modelVersion>
                       <groupId>com.corp.{domain}</groupId>
                       <artifactId>srv-{unique_id}</artifactId>
                       <version>1.0.0</version>
-                      <properties><java.version>17</java.version></properties>
                   </project>'''
-                  with open(f'{node_path}/pom.xml', 'w') as f: f.write(pom_content)
+                  with open(f'{srv_path}/pom.xml', 'w') as f: f.write(pom)
 
-                  # 2. 대량 로그 데이터 (최적화 대상)
-                  with open(f'{node_path}/logs/access.log', 'w') as f:
-                      for _ in range(20): # 파일 크기 조절
-                          f.write(f'[{datetime.now()}] INFO Processed request {uuid.uuid4()}\\n')
+                  # 2. [NEW] Database Assets 생성 (Schema & Data)
+                  db_path = f'{base_db}/{domain}/batch-{run_id}/db-{unique_id}'
+                  os.makedirs(db_path, exist_ok=True)
+                  
+                  # (1) Schema.sql (테이블 정의)
+                  with open(f'{db_path}/schema.sql', 'w') as f:
+                      f.write(f'-- Database Schema for {domain} service\\n')
+                      f.write(f'CREATE TABLE {domain}_transactions (id VARCHAR(50), amount DECIMAL(10,2), status VARCHAR(20));\\n')
+                      f.write(f'CREATE INDEX idx_{domain}_id ON {domain}_transactions(id);\\n')
+
+                  # (2) Data_Dump.sql (대량 데이터 INSERT 쿼리)
+                  with open(f'{db_path}/dump.sql', 'w') as f:
+                      f.write(f'-- Mass Data Dump for {domain}\\n')
+                      for _ in range(50): # 쿼리 생성
+                          val = round(random.uniform(10.0, 5000.0), 2)
+                          stat = random.choice(['COMMIT', 'ROLLBACK', 'PENDING'])
+                          f.write(f'INSERT INTO {domain}_transactions VALUES (\\'{uuid.uuid4()}\\', {val}, \\'{stat}\\');\\n')
+                          # 최적화 엔진 테스트용 주석(쓰레기 데이터)
+                          if random.random() < 0.3: f.write('-- TODO: Remove this comment later\\n') 
+
+          # ---------------------------------------------------------
+          # Part B: Weather IoT Data (기존 유지)
+          # ---------------------------------------------------------
+          weather_dir = 'infra_datacenter/iot-sensors/weather'
+          cities = ['Seoul', 'NewYork', 'London', 'Tokyo']
           
-          print('✅ Massive Generation Completed.')
+          for city in cities:
+              for i in range(10): # 도시당 10개 스테이션
+                  st_id = f'{city}-ST-{uuid.uuid4().hex[:4].upper()}'
+                  path = f'{weather_dir}/{city}/batch-{run_id}/{st_id}'
+                  os.makedirs(path, exist_ok=True)
+                  
+                  # CSV Data
+                  with open(f'{path}/readings.csv', 'w') as f:
+                      f.write('time,temp,humid\\n')
+                      for _ in range(20):
+                          f.write(f'{datetime.now()},{random.randint(-10,35)},{random.randint(30,90)}\\n')
+
+          print('✅ Full-Stack Generation Completed.')
           "
 
-      # [3] 데이터 정제 및 최적화
-      - name: "✨ Smart Data Optimizer"
+      # [3] 데이터 정제 (SQL 최적화 추가)
+      - name: "✨ Smart Data & SQL Optimizer"
         run: |
           python -c "
           import os
           print('✨ Optimization Started...')
-          # XML/JSON은 건너뛰고, 로그 파일만 중복 제거
+          count = 0
           for root, _, files in os.walk('infra_datacenter'):
               for file in files:
-                  if file.endswith('.log') or file.endswith('.csv'):
-                      path = os.path.join(root, file)
-                      try:
+                  path = os.path.join(root, file)
+                  try:
+                      # 1. SQL 파일 최적화: 주석(--) 제거 및 공백 라인 삭제
+                      if file.endswith('.sql'):
+                          with open(path, 'r') as f: lines = f.readlines()
+                          # 주석이 아니고 공백이 아닌 라인만 유지
+                          clean_lines = [l for l in lines if not l.strip().startswith('--') and l.strip()]
+                          with open(path, 'w') as f: f.writelines(clean_lines)
+                          count += 1
+                      
+                      # 2. CSV/Log 파일: 중복 제거 및 정렬
+                      elif file.endswith('.log') or file.endswith('.csv'):
                           with open(path, 'r') as f: lines = sorted(list(set(f.readlines())))
                           with open(path, 'w') as f: f.writelines(lines)
-                      except: pass
-          print('✅ Optimization Finished.')
+                          count += 1
+                  except: pass
+          print(f'✅ Optimization Finished. {count} files processed.')
           "
 
-      # [4] OpenClaw 보안 스캔 (변수 에러 완벽 수정)
-      - name: "🦅 OpenClaw Deep Scan (Fixed)"
+      # [4] OpenClaw (DB 보안 탐지 기능 추가)
+      - name: "🦅 OpenClaw Deep Scan (DB Enhanced)"
         run: |
           mkdir -p reports/security/quarantine
-          
-          # 파이썬 스크립트 생성 (환경변수 활용으로 문법 에러 제거)
           cat << 'EOF' > openclaw.py
           import os, re, json, shutil
-          from datetime import datetime
-
           run_id = os.getenv('RUN_ID')
-          report_filename = f"reports/security/openclaw_audit_{run_id}.json"
+          report_file = f"reports/security/openclaw_audit_{run_id}.json"
           
-          patterns = {'AWS_KEY': r'AKIA[0-9A-Z]{16}'}
+          # [보안] DB 관련 패턴 추가
+          patterns = {
+              'AWS_KEY': r'AKIA[0-9A-Z]{16}',
+              'DB_CONN_STRING': r'jdbc:[a-z]+://.*', # DB 연결 문자열 노출 탐지
+              'DB_PASSWORD': r'(password|pwd|secret)\s*=\s*[\'"][a-zA-Z0-9!@#$%^&*]{5,}[\'"]' # 비밀번호 패턴
+          }
           report = {'scan_id': run_id, 'threats': []}
-
-          print(f"🦅 Scanning into {report_filename}...")
           
           for root, _, files in os.walk('.'):
               if '.git' in root: continue
@@ -126,67 +166,47 @@ jobs:
                   try:
                       with open(path, 'r', errors='ignore') as f: content = f.read()
                       for k, v in patterns.items():
-                          if re.search(v, content):
+                          if re.search(v, content, re.IGNORECASE):
                               report['threats'].append({'file': path, 'type': k})
-                              # 격리 (파일명 충돌 방지)
                               safe_name = f"{path.replace('/','_')}_{run_id}"
                               shutil.copy(path, os.path.join('reports/security/quarantine', safe_name))
                   except: pass
-
-          with open(report_filename, 'w') as f: json.dump(report, f)
+          with open(report_file, 'w') as f: json.dump(report, f)
           EOF
-          
           python openclaw.py
 
-      # [5] Trivy 보안 스캔 (파일명 변수 처리 수정)
+      # [5] Trivy (시간 연장)
       - name: "🛡️ Trivy Security Scan"
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
           mkdir -p .trivy
           
-          # 쉘 변수 할당 시 공백 제거 (VAR=VAL)
           REPORT_FILE="reports/security/trivy_summary_${{ github.run_id }}.txt"
           
-          echo "🛡️ Saving report to $REPORT_FILE"
+          echo "🛡️ Scanning Services, DBs, and IoT Data..."
           
+          # Timeout 60분 (DB 덤프 파일 스캔 고려)
           trivy fs . \
             --cache-dir .trivy \
-            --timeout 45m \
+            --timeout 60m \
             --scanners vuln,secret \
             --format table \
             --output $REPORT_FILE
 
-      # [6] Git Push (대량 파일 처리를 위한 재시도 로직 강화)
-      - name: "💾 Commit & Push (Robust Retry)"
+      # [6] Push (Robust)
+      - name: "💾 Commit & Push"
         run: |
-          git config --local user.email "massive-bot@example.com"
-          git config --local user.name "Massive-Ops-Bot"
-          
+          git config --local user.email "db-ops-bot@example.com"
+          git config --local user.name "DB-Ops-Bot"
           git add .
-          
           if git diff --staged --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "🗄️ [Massive] Batch ${{ github.run_id }} - DB, Service, IoT"
           
-          git commit -m "🚀 [Massive] Batch ${{ github.run_id }} - Generated & Audited"
-          
-          # 충돌 방지 및 대량 푸시 성공률 향상 로직
           MAX_RETRIES=20
           for i in $(seq 1 $MAX_RETRIES); do
-            # 랜덤 대기 (1~20초)
-            SLEEP_TIME=$(( $RANDOM % 20 + 1 ))
-            echo "⏳ Waiting ${SLEEP_TIME}s (Attempt $i/$MAX_RETRIES)..."
-            sleep $SLEEP_TIME
-            
-            # Pull Rebase 후 Push
-            if git pull --rebase origin main; then
-              if git push origin main; then
-                echo "✅ Push Success!"
-                exit 0
-              fi
-            else
-              echo "⚠️ Rebase conflict. Aborting rebase and retrying..."
-              git rebase --abort || true
-            fi
+            SLEEP=$(( $RANDOM % 20 + 1 ))
+            echo "⏳ Wait ${SLEEP}s..."
+            sleep $SLEEP
+            if git pull --rebase origin main && git push origin main; then exit 0; fi
           done
-          
-          echo "❌ Push failed after many attempts."
           exit 1
