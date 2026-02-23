@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-02-22 23:26:38",
+  "last_updated": "2026-02-23 23:33:41",
   "description": "Daily Security News Index - Cumulative news data generated every morning at 08:00 KST",
   "sources": {
     "global": [
@@ -17,6 +17,16 @@
     ]
   },
   "dates": [
+    {
+      "date": "2026-02-23",
+      "total": 255,
+      "details": {
+        "PORTAL_KEYWORD": 0,
+        "GLOBAL_TIER_1": 105,
+        "CLOUD_&_VENDOR": 100,
+        "KOREA_OFFICIAL": 50
+      }
+    },
     {
       "date": "2026-02-22",
       "total": 265,
