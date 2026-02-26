@@ -1,0 +1,1802 @@
+{
+  "meta": {
+    "date": "2026-02-26",
+    "timestamp": "2026-02-26 23:29:58",
+    "stats": {
+      "total": 255,
+      "categories": {
+        "PORTAL_KEYWORD": 0,
+        "GLOBAL_TIER_1": 105,
+        "CLOUD_&_VENDOR": 110,
+        "KOREA_OFFICIAL": 40
+      }
+    }
+  },
+  "articles": [
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Previously harmless Google API keys now expose Gemini AI data",
+      "link": "https://www.bleepingcomputer.com/news/security/previously-harmless-google-api-keys-now-expose-gemini-ai-data/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Trend Micro warns of critical Apex One code execution flaws",
+      "link": "https://www.bleepingcomputer.com/news/security/trend-micro-warns-of-critical-apex-one-rce-vulnerabilities/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "European DYI chain ManoMano data breach impacts 38 million customers",
+      "link": "https://www.bleepingcomputer.com/news/security/european-dyi-chain-manomano-data-breach-impacts-38-million-customers/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Critical Juniper Networks PTX flaw allows full router takeover",
+      "link": "https://www.bleepingcomputer.com/news/security/critical-juniper-networks-ptx-flaw-allows-full-router-takeover/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Olympique Marseille confirms 'attempted' cyberattack after data leak",
+      "link": "https://www.bleepingcomputer.com/news/security/olympique-marseille-football-club-confirms-cyberattack-after-data-leak/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Ransomware payment rate drops to record low as attacks surge",
+      "link": "https://www.bleepingcomputer.com/news/security/ransomware-payment-rate-drops-to-record-low-as-attacks-surge/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Microsoft expands Windows restore to more enterprise devices",
+      "link": "https://www.bleepingcomputer.com/news/security/microsoft-expands-windows-restore-to-more-enterprise-devices/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "New York sues Valve for promoting illegal gambling via game loot boxes",
+      "link": "https://www.bleepingcomputer.com/news/gaming/new-york-sues-valve-for-promoting-illegal-gambling-via-game-loot-boxes/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Medical device maker UFP Technologies warns of data stolen in cyberattack",
+      "link": "https://www.bleepingcomputer.com/news/security/medical-device-maker-ufp-technologies-warns-of-data-stolen-in-cyberattack/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Fake Next.js job interview tests backdoor developer's devices",
+      "link": "https://www.bleepingcomputer.com/news/security/fake-nextjs-job-interview-tests-backdoor-developers-devices/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Critical Cisco SD-WAN bug exploited in zero-day attacks since 2023",
+      "link": "https://www.bleepingcomputer.com/news/security/critical-cisco-sd-wan-bug-exploited-in-zero-day-attacks-since-2023/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Chinese cyberspies breached dozens of telecom firms, govt agencies",
+      "link": "https://www.bleepingcomputer.com/news/security/chinese-cyberspies-breached-dozens-of-telecom-firms-govt-agencies/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Marquis sues SonicWall over backup breach that led to ransomware attack",
+      "link": "https://www.bleepingcomputer.com/news/security/marquis-sues-sonicwall-over-backup-breach-that-led-to-ransomware-attack/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "The OpenClaw Hype: Analysis of Chatter from Open-Source Deep and Dark Web",
+      "link": "https://www.bleepingcomputer.com/news/security/the-openclaw-hype-analysis-of-chatter-from-open-source-deep-and-dark-web/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Zyxel warns of critical RCE flaw affecting over a dozen routers",
+      "link": "https://www.bleepingcomputer.com/news/security/zyxel-warns-of-critical-rce-flaw-affecting-over-a-dozen-routers/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Aeternum C2 Botnet Stores Encrypted Commands on Polygon Blockchain to Evade Takedown",
+      "link": "https://thehackernews.com/2026/02/aeternum-c2-botnet-stores-encrypted.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "UAT-10027 Targets U.S. Education and Healthcare with Dohdoor Backdoor",
+      "link": "https://thehackernews.com/2026/02/uat-10027-targets-us-education-and.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "ThreatsDay Bulletin: Kali Linux + Claude, Chrome Crash Traps, WinRAR Flaws, LockBit & 15+ Stories",
+      "link": "https://thehackernews.com/2026/02/threatsday-bulletin-kali-linux-claude.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Expert Recommends: Prepare for PQC Right Now",
+      "link": "https://thehackernews.com/2026/02/expert-recommends-prepare-for-pqc-right.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Microsoft Warns Developers of Fake Next.js Job Repos Delivering In-Memory Malware",
+      "link": "https://thehackernews.com/2026/02/fake-nextjs-repos-target-developers.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Malicious StripeApi NuGet Package Mimicked Official Library and Stole API Tokens",
+      "link": "https://thehackernews.com/2026/02/malicious-stripeapi-nuget-package.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Cisco SD-WAN Zero-Day CVE-2026-20127 Exploited Since 2023 for Admin Access",
+      "link": "https://thehackernews.com/2026/02/cisco-sd-wan-zero-day-cve-2026-20127.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Google Disrupts UNC2814 GRIDTIDE Campaign After 53 Breaches Across 42 Countries",
+      "link": "https://thehackernews.com/2026/02/google-disrupts-unc2814-gridtide.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Claude Code Flaws Allow Remote Code Execution and API Key Exfiltration",
+      "link": "https://thehackernews.com/2026/02/claude-code-flaws-allow-remote-code.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "SLH Offers $500–$1,000 Per Call to Recruit Women for IT Help Desk Vishing Attacks",
+      "link": "https://thehackernews.com/2026/02/slh-offers-5001000-per-call-to-recruit.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Top 5 Ways Broken Triage Increases Business Risk Instead of Reducing It",
+      "link": "https://thehackernews.com/2026/02/top-5-ways-broken-triage-increases.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Malicious NuGet Packages Stole ASP.NET Data; npm Package Dropped Malware",
+      "link": "https://thehackernews.com/2026/02/malicious-nuget-packages-stole-aspnet.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Manual Processes Are Putting National Security at Risk",
+      "link": "https://thehackernews.com/2026/02/manual-processes-are-putting-national.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Defense Contractor Employee Jailed for Selling 8 Zero-Days to Russian Broker",
+      "link": "https://thehackernews.com/2026/02/defense-contractor-employee-jailed-for.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "SolarWinds Patches 4 Critical Serv-U 15.5 Flaws Allowing Root Code Execution",
+      "link": "https://thehackernews.com/2026/02/solarwinds-patches-4-critical-serv-u.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "CISA Confirms Active Exploitation of FileZen CVE-2026-25108 Vulnerability",
+      "link": "https://thehackernews.com/2026/02/cisa-confirms-active-exploitation-of.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "RoguePilot Flaw in GitHub Codespaces Enabled Copilot to Leak GITHUB_TOKEN",
+      "link": "https://thehackernews.com/2026/02/roguepilot-flaw-in-github-codespaces.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "UAC-0050 Targets European Financial Institution With Spoofed Domain and RMS Malware",
+      "link": "https://thehackernews.com/2026/02/uac-0050-targets-european-financial.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Identity Prioritization isn't a Backlog Problem - It's a Risk Math Problem",
+      "link": "https://thehackernews.com/2026/02/identity-prioritization-isnt-backlog.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Lazarus Group Uses Medusa Ransomware in Middle East and U.S. Healthcare Attacks",
+      "link": "https://thehackernews.com/2026/02/lazarus-group-uses-medusa-ransomware-in.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Marquis v. SonicWall Lawsuit Ups the Breach Blame Game",
+      "link": "https://www.darkreading.com/cloud-security/marquis-sonicwall-lawsuit-breach-blame-game",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Cisco SD-WAN Zero-Day Under Exploitation for 3 Years",
+      "link": "https://www.darkreading.com/vulnerabilities-threats/cisco-sd-wan-zero-day-exploitation-3-years",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Chinese Police Use ChatGPT to Smear Japan PM Takaichi",
+      "link": "https://www.darkreading.com/cyberattacks-data-breaches/chinese-police-chatgpt-smear-japan-pm-takaichi",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Flaws in Claude Code Put Developers' Machines at Risk",
+      "link": "https://www.darkreading.com/application-security/flaws-claude-code-developer-machines-risk",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "RAMP Forum Seizure Fractures Ransomware Ecosystem",
+      "link": "https://www.darkreading.com/threat-intelligence/ramp-forum-seizure-fractures-ransomware-ecosystem",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "PCI Council Says Threats to Payments Systems Are Speeding Up",
+      "link": "https://www.darkreading.com/cyber-risk/pci-council-threats-payments-systems-speeding-up",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Malicious Next.js Repos Target Developers Via Fake Job Interviews",
+      "link": "https://www.darkreading.com/cyberattacks-data-breaches/malicious-nextjs-repos-developers-fake-job-interviews",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Why 'Call This Number' TOAD Emails Beat Gateways",
+      "link": "https://www.darkreading.com/threat-intelligence/why-call-this-number-toad-emails-beat-gateways",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "'Richter Scale' Model Measures Magnitude of OT Cyber Incidents",
+      "link": "https://www.darkreading.com/ics-ot-security/richter-scale-model-measures-cyber-incidents",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Operation Red Card 2.0 Leads to 651 Arrests in Africa",
+      "link": "https://www.darkreading.com/cybersecurity-operations/operation-red-card-2-0-leads-to-651-arrests-in-africa",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Attackers Now Need Just 29 Minutes to Own a Network",
+      "link": "https://www.darkreading.com/cyber-risk/attackers-now-need-just-29-minutes-to-own-a-network",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Lazarus Group Picks a New Poison: Medusa Ransomware",
+      "link": "https://www.darkreading.com/cyberattacks-data-breaches/lazarus-group-new-position-medusa-ransomware",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "As Cybersecurity Firms Chase AI, VC Market Skyrockets",
+      "link": "https://www.darkreading.com/cybersecurity-analytics/cybersecurity-firms-chase-ai-vc-market-skyrockets",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Spitting Cash: ATM Jackpotting Attacks Surged in 2025",
+      "link": "https://www.darkreading.com/cyber-risk/atm-jackpotting-attacks-surged-2025",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "More Than Dashboards: AI Decisions Must Be Provable",
+      "link": "https://www.darkreading.com/cyber-risk/more-dashboards-ai-decisions-provable",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Iran's MuddyWater Targets Orgs With Fresh Malware as Tensions Mount",
+      "link": "https://www.darkreading.com/threat-intelligence/iran-muddywater-new-malware-tensions-mount",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Enigma Cipher Device Still Holds Secrets for Cyber Pros",
+      "link": "https://www.darkreading.com/threat-intelligence/enigma-cipher-device-secrets-cyber-pros",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "600+ FortiGate Devices Hacked by AI-Armed Amateur",
+      "link": "https://www.darkreading.com/threat-intelligence/600-fortigate-devices-hacked-ai-amateur",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Attackers Use New Tool to Scan for React2Shell Exposure",
+      "link": "https://www.darkreading.com/application-security/attackers-new-tool-scan-react2shell-exposure",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "'God-Like' Attack Machines: AI Agents Ignore Security Policies",
+      "link": "https://www.darkreading.com/application-security/ai-agents-ignore-security-policies",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Apple iPhone and iPad Cleared for Classified NATO Use",
+      "link": "https://www.securityweek.com/apple-iphone-and-ipad-cleared-for-classified-nato-use/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Four Risks Boards Cannot Treat as Background Noise",
+      "link": "https://www.securityweek.com/four-risks-boards-cannot-treat-as-background-noise/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Claude Code Flaws Exposed Developer Devices to Silent Hacking",
+      "link": "https://www.securityweek.com/claude-code-flaws-exposed-developer-devices-to-silent-hacking/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Gambit Security Emerges From Stealth With $61 Million in Funding",
+      "link": "https://www.securityweek.com/gambit-security-emerges-from-stealth-with-61-million-in-funding/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Zyxel Patches Critical Vulnerability in Many Device Models",
+      "link": "https://www.securityweek.com/zyxel-patches-critical-vulnerability-in-many-device-models/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "US Sanctions Russian Exploit Broker Operation Zero",
+      "link": "https://www.securityweek.com/us-sanctions-russian-exploit-broker-operation-zero/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Trend Micro Patches Critical Apex One Vulnerabilities",
+      "link": "https://www.securityweek.com/trend-micro-patches-critical-apex-one-vulnerabilities/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Cisco Patches Catalyst SD-WAN Zero-Day Exploited by Highly Sophisticated Hackers",
+      "link": "https://www.securityweek.com/cisco-patches-catalyst-sd-wan-zero-day-exploited-by-highly-sophisticated-hackers/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "The Blast Radius Problem: Stolen Credentials Are Weaponizing Agentic AI",
+      "link": "https://www.securityweek.com/the-blast-radius-problem-stolen-credentials-are-weaponizing-agentic-ai/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Google Disrupts Chinese Hackers Targeting Telecoms, Governments",
+      "link": "https://www.securityweek.com/google-disrupts-chinese-cyberespionage-campaign-targeting-telecoms-governments/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Cisco says hackers have been exploiting a critical bug to break into big customer networks since 2023",
+      "link": "https://techcrunch.com/2026/02/26/cisco-says-hackers-have-been-exploiting-a-critical-bug-to-break-into-big-customer-networks-since-2023/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Spyware makers sentenced to prison in Greece for wiretapping politicians and journalists",
+      "link": "https://techcrunch.com/2026/02/26/spyware-maker-sentenced-to-prison-in-greece-for-wiretapping-politicians-and-journalists/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "US cybersecurity agency CISA reportedly in dire shape amid Trump cuts and layoffs",
+      "link": "https://techcrunch.com/2026/02/25/us-cybersecurity-agency-cisa-reportedly-in-dire-shape-amid-trump-cuts-and-layoffs/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Inside the story of the US defense contractor who leaked hacking tools to Russia",
+      "link": "https://techcrunch.com/2026/02/25/inside-the-story-of-the-us-defense-contractor-who-leaked-hacking-tools-to-russia/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Former L3Harris Trenchant boss jailed for selling hacking tools to Russian broker",
+      "link": "https://techcrunch.com/2026/02/24/former-l3harris-trenchant-boss-jailed-for-selling-hacking-tools-to-russian-broker/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "CarGurus data breach affects 12.5 million accounts",
+      "link": "https://techcrunch.com/2026/02/24/cargurus-data-breach-affects-12-5-million-accounts/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Treasury sanctions Russian zero-day broker accused of buying exploits stolen from US defense contractor",
+      "link": "https://techcrunch.com/2026/02/24/treasury-sanctions-russian-zero-day-broker-accused-of-buying-exploits-stolen-from-u-s-defense-contractor/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Marquis sues firewall provider SonicWall, alleges security failings with its firewall backup led to ransomware attack",
+      "link": "https://techcrunch.com/2026/02/24/marquis-sonicwall-lawsuit-ransomware-firewall-breach/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Conduent data breach grows, affecting at least 25M people",
+      "link": "https://techcrunch.com/2026/02/24/conduent-data-breach-grows-affecting-at-least-25m-people/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Americans are destroying Flock surveillance cameras",
+      "link": "https://techcrunch.com/2026/02/23/americans-are-destroying-flock-surveillance-cameras/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "VPN flaws allowed Chinese hackers to compromise dozens of Ivanti customers, says report",
+      "link": "https://techcrunch.com/2026/02/23/vpn-flaws-allowed-chinese-hackers-to-compromise-dozens-of-ivanti-customers-says-report/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "5 days left to lock in the lowest TechCrunch Disrupt 2026 ticket rates",
+      "link": "https://techcrunch.com/2026/02/23/5-days-left-to-lock-in-the-lowest-techcrunch-disrupt-2026-ticket-rates/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "6 days left to lock in the lowest TechCrunch Disrupt 2026 rates",
+      "link": "https://techcrunch.com/2026/02/22/6-days-left-to-lock-in-the-lowest-techcrunch-disrupt-2026-rates/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "7 days until ticket prices rise for TechCrunch Disrupt 2026",
+      "link": "https://techcrunch.com/2026/02/21/7-days-until-ticket-prices-rise-for-techcrunch-disrupt-2026/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Ukrainian man jailed for identity theft that helped North Koreans get jobs at US companies",
+      "link": "https://techcrunch.com/2026/02/20/ukrainian-man-jailed-for-identity-theft-that-helped-north-koreans-get-jobs-at-us-companies/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "FBI says ATM ‘jackpotting’ attacks are on the rise, and netting hackers millions in stolen cash",
+      "link": "https://techcrunch.com/2026/02/19/fbi-says-atm-jackpotting-attacks-are-on-the-rise-and-netting-hackers-millions-in-stolen-cash/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Cellebrite cut off Serbia citing abuse of its phone unlocking tools. Why not others?",
+      "link": "https://techcrunch.com/2026/02/19/cellebrite-cut-off-serbia-citing-abuse-of-its-phone-unlocking-tools-why-not-others/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Google says its AI systems helped deter Play Store malware in 2025",
+      "link": "https://techcrunch.com/2026/02/19/google-says-its-ai-systems-helped-deter-play-store-malware-in-2025/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Sex toys maker Tenga says hacker stole customer information",
+      "link": "https://techcrunch.com/2026/02/19/sex-toys-maker-tenga-says-hacker-stole-customer-information/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "TechCrunch Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Bug in student admissions website exposed children’s personal information",
+      "link": "https://techcrunch.com/2026/02/19/bug-in-student-admissions-website-exposed-childrens-personal-information/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "This AI Agent Is Designed to Not Go Rogue",
+      "link": "https://www.wired.com/story/ironcurtain-ai-agent-security/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "How Mexico's ‘CJNG’ Drug Cartel Embraced AI, Drones, and Social Media",
+      "link": "https://www.wired.com/story/how-mexicos-cjng-drug-cartel-embraced-ai-drones-and-social-media/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Here’s What a Google Subpoena Response Looks Like, Courtesy of the Epstein Files",
+      "link": "https://www.wired.com/story/heres-what-a-google-subpoena-response-looks-like-courtesy-of-the-epstein-files/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Password Managers Share a Hidden Weakness",
+      "link": "https://www.wired.com/story/security-news-this-week-password-managers-share-a-hidden-weakness/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "‘Narco-Submarine’ Carrying 4 Tons of Cocaine Captured by Mexico's Navy",
+      "link": "https://www.wired.com/story/narco-submarine-carrying-4-tons-of-cocaine-captured-by-mexicos-navy/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "DHS Wants a Single Search Engine to Flag Faces and Fingerprints Across Agencies",
+      "link": "https://www.wired.com/story/dhs-wants-a-single-search-engine-to-flag-faces-and-fingerprints-across-agencies/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Metadata Exposes Authors of ICE’s ‘Mega’ Detention Center Plans",
+      "link": "https://www.wired.com/story/metadata-exposes-authors-of-ices-mega-detention-center-plans/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Jeffrey Epstein’s Ties to CBP Agents Sparked a DOJ Probe",
+      "link": "https://www.wired.com/story/jeffrey-epstein-cbp-agents-us-virgin-islands/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "A $10K Bounty Awaits Anyone Who Can Hack Ring Cameras to Stop Sharing Data With Amazon",
+      "link": "https://www.wired.com/story/a-10k-bounty-awaits-anyone-who-can-hack-ring-cameras-to-stop-sharing-data-with-amazon/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "An FBI ‘Asset’ Helped Run a Dark Web Site That Sold Fentanyl-Laced Drugs for Years",
+      "link": "https://www.wired.com/story/an-fbi-asset-helped-run-a-dark-web-site-that-sold-fentanyl-laced-drugs-for-years/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "How to Organize Safely in the Age of Surveillance",
+      "link": "https://www.wired.com/story/how-to-organize-safely-in-the-age-of-surveillance/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "A Vast Trove of Exposed Social Security Numbers May Put Millions at Risk of Identity Theft",
+      "link": "https://www.wired.com/story/a-mega-trove-of-exposed-social-security-numbers-underscores-critical-identity-theft-risks/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "The El Paso No-Fly Debacle Is Just the Beginning of a Drone Defense Mess",
+      "link": "https://www.wired.com/story/the-el-paso-no-fly-debacle-is-just-the-beginning-of-the-drone-defense-mess/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Ring Kills Flock Safety Deal After Super Bowl Ad Uproar",
+      "link": "https://www.wired.com/story/security-news-this-week-ring-kills-flock-safety-deal-after-super-bowl-ad-uproar/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Robot Dogs Are on Going on Patrol at the 2026 World Cup in Mexico",
+      "link": "https://www.wired.com/story/robot-dogs-are-on-going-on-patrol-at-the-2026-world-cup-in-mexico/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Crypto-Funded Human Trafficking Is Exploding",
+      "link": "https://www.wired.com/story/crypto-funded-human-trafficking-is-exploding/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "ICE Is Crashing the US Court System in Minnesota",
+      "link": "https://www.wired.com/story/ice-crashing-us-court-system-minnesota/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "CBP Signs Clearview AI Deal to Use Face Recognition for ‘Tactical Targeting’",
+      "link": "https://www.wired.com/story/cbp-signs-clearview-ai-deal-to-use-face-recognition-for-tactical-targeting/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "AI Is Here to Replace Nuclear Treaties. Scared Yet?",
+      "link": "https://www.wired.com/story/satellites-ai-nuclear-treaties/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Wired Security",
+      "category": "GLOBAL_TIER_1",
+      "title": "Iran’s Digital Surveillance Machine Is Almost Complete",
+      "link": "https://www.wired.com/story/irans-digital-surveillance-machine-is-almost-complete/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "AWS successfully completed its first surveillance audit for ISO 42001:2023 with no findings",
+      "link": "https://aws.amazon.com/blogs/security/aws-successfully-completed-its-first-surveillance-audit-for-iso-420012023-with-no-findings/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Inside AWS Security Agent: A multi-agent architecture for automated penetration testing",
+      "link": "https://aws.amazon.com/blogs/security/inside-aws-security-agent-a-multi-agent-architecture-for-automated-penetration-testing/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "AI-augmented threat actor accesses FortiGate devices at scale",
+      "link": "https://aws.amazon.com/blogs/security/ai-augmented-threat-actor-accesses-fortigate-devices-at-scale/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Building an AI-powered defense-in-depth security architecture for serverless microservices",
+      "link": "https://aws.amazon.com/blogs/security/building-an-ai-powered-defense-in-depth-security-architecture-for-serverless-microservices/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Explore scaling options for AWS Directory Service for Microsoft Active Directory",
+      "link": "https://aws.amazon.com/blogs/security/explore-scaling-options-for-aws-directory-service-for-microsoft-active-directory/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "How to get started with security response automation on AWS",
+      "link": "https://aws.amazon.com/blogs/security/how-get-started-security-response-automation-aws/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "File integrity monitoring with AWS Systems Manager and Amazon Security Lake",
+      "link": "https://aws.amazon.com/blogs/security/file-integrity-monitoring-with-aws-systems-manager-and-amazon-security-lake/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "IAM Identity Center now supports IPv6",
+      "link": "https://aws.amazon.com/blogs/security/iam-identity-center-now-supports-ipv6/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Updated PCI PIN compliance package for AWS CloudHSM now available",
+      "link": "https://aws.amazon.com/blogs/security/updated-pci-pin-compliance-package-for-aws-cloudhsm-now-available/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Updated PCI PIN compliance package for AWS Payment Cryptography now available",
+      "link": "https://aws.amazon.com/blogs/security/updated-pci-pin-compliance-package-for-aws-payment-cryptography-now-available/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "AWS achieves 2025 C5 Type 2 attestation report with 183 services in scope",
+      "link": "https://aws.amazon.com/blogs/security/aws-achieves-2025-c5-type-2-attestation-report-with-183-services-in-scope/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "AWS renews the GSMA SAS-SM certification for two AWS Regions and expands to cover four new Regions",
+      "link": "https://aws.amazon.com/blogs/security/aws-renews-the-gsma-sas-sm-certification-for-two-aws-regions-and-expands-to-cover-four-new-regions/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Exploring common centralized and decentralized approaches to secrets management",
+      "link": "https://aws.amazon.com/blogs/security/exploring-common-centralized-and-decentralized-approaches-to-secrets-management/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Fall 2025 SOC 1, 2, and 3 reports are now available with 185 services in scope",
+      "link": "https://aws.amazon.com/blogs/security/fall-2025-soc-1-2-and-3-reports-are-now-available-with-185-services-in-scope/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Implementing data governance on AWS: Automation, tagging, and lifecycle strategy – Part 2",
+      "link": "https://aws.amazon.com/blogs/security/implementing-data-governance-on-aws-automation-tagging-and-lifecycle-strategy-part-2/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Implementing data governance on AWS: Automation, tagging, and lifecycle strategy – Part 1",
+      "link": "https://aws.amazon.com/blogs/security/implementing-data-governance-on-aws-automation-tagging-and-lifecycle-strategy-part-1/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Streamline security response at scale with AWS Security Hub automation",
+      "link": "https://aws.amazon.com/blogs/security/streamline-security-response-at-scale-with-aws-security-hub-automation/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Fall 2025 PCI DSS compliance package available now",
+      "link": "https://aws.amazon.com/blogs/security/fall-2025-pci-dss-compliance-package-available-now/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "AWS named Leader in the 2025 ISG report for Sovereign Cloud Infrastructure Services (EU)",
+      "link": "https://aws.amazon.com/blogs/security/aws-named-leader-in-the-2025-isg-report-for-sovereign-cloud-infrastructure-services-eu/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Real-time malware defense: Leveraging AWS Network Firewall active threat defense",
+      "link": "https://aws.amazon.com/blogs/security/real-time-malware-defense-leveraging-aws-network-firewall-active-threat-defense/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Chromium: CVE-2026-3063 Inappropriate implementation in DevTools",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-3063",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Chromium: CVE-2026-3062 Out of bounds read and write in Tint",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-3062",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Chromium: CVE-2026-3061 Out of bounds read in Media",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-3061",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-23229 crypto: virtio - Add spinlock protection with virtqueue notification",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-23229",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2025-71230 hfs: ensure sb->s_fs_info is always cleaned up",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-71230",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-23224 erofs: fix UAF issue for file-backed mounts w/ directio option",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-23224",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2025-67733 Valkey Affected by RESP Protocol Injection via Lua error_reply",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-67733",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-21863 Malformed Valkey Cluster bus message can lead to Remote DoS",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-21863",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2025-62878 Local Path Provisioner vulnerable to Path Traversal via parameters.pathPattern",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-62878",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-23223 xfs: fix UAF in xchk_btree_check_block_owner",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-23223",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-23225 sched/mmcid: Don't assume CID is CPU owned on mode switch",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-23225",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2025-61143 libtiff up to v4.7.1 was discovered to contain a NULL pointer dereference via the component libtiff/tif_open.c.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-61143",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2025-61144 libtiff up to v4.7.1 was discovered to contain a stack overflow via the readSeparateStripsIntoBuffer function.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-61144",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2025-61145 libtiff up to v4.7.1 was discovered to contain a double free via the component tools/tiffcrop.c.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-61145",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2025-11563 wcurl path traversal with percent-encoded slashes",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2025-11563",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2021-20225 A flaw was found in grub2 in versions prior to 2.06. The option parser allows an attacker to write past the end of a heap-allocated buffer by calling certain commands with a large number of specific short forms of options. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-20225",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2021-20233 A flaw was found in grub2 in versions prior to 2.06. Setparam_prefix() in the menu rendering code performs a length calculation on the assumption that expressing a quoted single quote will require 3 characters while it actually requires 4 characters which allows an attacker to corrupt memory by one byte for each quote in the input. The highest threat from this vulnerability is to data confidentiality and integrity as well as system availability.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-20233",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-27199 Werkzeug safe_join() allows Windows special device names",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-27199",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-2739 This affects versions of the package bn.js before 5.2.3. Calling maskn(0) on any BN instance corrupts the internal state, causing toString(), divmod(), and other methods to enter an infinite loop, hanging the process indefinitely.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-2739",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-26960 node-tar has Arbitrary File Read/Write via Hardlink Target Escape Through Symlink Chain in Extraction",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-26960",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "A Deep Dive into the GetProcessHandleFromHwnd API",
+      "link": "https://projectzero.google/2026/02/gphfh-deep-dive.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Bypassing Administrator Protection by Abusing UI Access",
+      "link": "https://projectzero.google/2026/02/windows-administrator-protection.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Breaking the Sound Barrier, Part II: Exploiting CVE-2024-54529",
+      "link": "https://projectzero.google/2026/01/sound-barrier-2.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Bypassing Windows Administrator Protection",
+      "link": "https://projectzero.google/2026/26/windows-administrator-protection.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "A 0-click exploit chain for the Pixel 9 Part 3: Where do we go from here?",
+      "link": "https://projectzero.google/2026/01/pixel-0-click-part-3.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "A 0-click exploit chain for the Pixel 9 Part 2: Cracking the Sandbox with a Big Wave",
+      "link": "https://projectzero.google/2026/01/pixel-0-click-part-2.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "A 0-click exploit chain for the Pixel 9 Part 1: Decoding Dolby",
+      "link": "https://projectzero.google/2026/01/pixel-0-click-part-1.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Welcome to the new Project Zero Blog",
+      "link": "https://projectzero.google/2025/12/welcome.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Thinking Outside The Box [dusted off draft from 2017]",
+      "link": "https://projectzero.google/2025/12/thinking-outside-the-box.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Google Project Zero",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Windows Exploitation Techniques: Winning Race Conditions with Path Lookups",
+      "link": "https://projectzero.google/2025/12/windows-exploitation-techniques.html",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Bring the Fight to the Edge: Turning Time Into an Advantage in OT Security",
+      "link": "https://unit42.paloaltonetworks.com/ot-edge-security/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "VShell and SparkRAT Observed in Exploitation of BeyondTrust Critical Vulnerability (CVE-2026-1731)",
+      "link": "https://unit42.paloaltonetworks.com/beyondtrust-cve-2026-1731/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Critical Vulnerabilities in Ivanti EPMM Exploited",
+      "link": "https://unit42.paloaltonetworks.com/ivanti-cve-2026-1281-cve-2026-1340/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Phishing on the Edge of the Web and Mobile Using QR Codes",
+      "link": "https://unit42.paloaltonetworks.com/qr-codes-as-attack-vector/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Nation-State Actors Exploit Notepad++ Supply Chain",
+      "link": "https://unit42.paloaltonetworks.com/notepad-infrastructure-compromise/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "A Peek Into Muddled Libra’s Operational Playbook",
+      "link": "https://unit42.paloaltonetworks.com/muddled-libra-ops-playbook/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Novel Technique to Detect Cloud Threat Actor Operations",
+      "link": "https://unit42.paloaltonetworks.com/tracking-threat-groups-through-cloud-logging/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "The Shadow Campaigns: Uncovering Global Espionage",
+      "link": "https://unit42.paloaltonetworks.com/shadow-campaigns-uncovering-global-espionage/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Why Smart People Fall For Phishing Attacks",
+      "link": "https://unit42.paloaltonetworks.com/psychology-of-phishing/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Privileged File System Vulnerability Present in a SCADA System",
+      "link": "https://unit42.paloaltonetworks.com/iconics-suite-cve-2025-0921/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Understanding the Russian Cyberthreat to the 2026 Winter Olympics",
+      "link": "https://unit42.paloaltonetworks.com/russian-cyberthreat-2026-winter-olympics/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Happy 9th Anniversary, CTA: A Celebration of Collaboration in Cyber Defense",
+      "link": "https://unit42.paloaltonetworks.com/cta-9th-anniversary/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "The Next Frontier of Runtime Assembly Attacks: Leveraging LLMs to Generate Phishing JavaScript in Real Time",
+      "link": "https://unit42.paloaltonetworks.com/real-time-malicious-javascript-through-llms/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "DNS OverDoS: Are Private Endpoints Too Private?",
+      "link": "https://unit42.paloaltonetworks.com/dos-attacks-and-azure-private-endpoint/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Anatomy of an Attack: The Payroll Pirates and the Power of Social Engineering",
+      "link": "https://unit42.paloaltonetworks.com/social-engineering-payroll-pirates/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "How we rebuilt Next.js with AI in one week",
+      "link": "https://blog.cloudflare.com/vinext/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Cloudflare One is the first SASE offering modern post-quantum encryption across the full platform",
+      "link": "https://blog.cloudflare.com/post-quantum-sase/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Cloudflare outage on February 20, 2026",
+      "link": "https://blog.cloudflare.com/cloudflare-outage-february-20-2026/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Code Mode: give agents an entire API in 1,000 tokens",
+      "link": "https://blog.cloudflare.com/code-mode-mcp/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Shedding old code with ecdysis: graceful restarts for Rust services at Cloudflare",
+      "link": "https://blog.cloudflare.com/ecdysis-rust-graceful-restarts/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Introducing Markdown for Agents",
+      "link": "https://blog.cloudflare.com/markdown-for-agents/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "2025 Q4 DDoS threat report: A record-setting 31.4 Tbps attack caps a year of massive DDoS assaults",
+      "link": "https://blog.cloudflare.com/ddos-threat-report-2025-q4/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Improve global upload performance with R2 Local Uploads",
+      "link": "https://blog.cloudflare.com/r2-local-uploads/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Google’s AI advantage: why crawler separation is the only path to a fair Internet",
+      "link": "https://blog.cloudflare.com/uk-google-ai-crawler-policy/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Building vertical microfrontends on Cloudflare’s platform",
+      "link": "https://blog.cloudflare.com/vertical-microfrontends/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Introducing Moltworker: a self-hosted personal AI agent, minus the minis",
+      "link": "https://blog.cloudflare.com/moltworker-self-hosted-ai-agent/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Building a serverless, post-quantum Matrix homeserver",
+      "link": "https://blog.cloudflare.com/serverless-matrix-homeserver-workers/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Cable cuts, storms, and DNS: a look at Internet disruptions in Q4 2025",
+      "link": "https://blog.cloudflare.com/q4-2025-internet-disruption-summary/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Route leak incident on January 22, 2026",
+      "link": "https://blog.cloudflare.com/route-leak-incident-january-22-2026/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "How we mitigated a vulnerability in Cloudflare’s ACME validation logic",
+      "link": "https://blog.cloudflare.com/acme-path-vulnerability/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Astro is joining Cloudflare",
+      "link": "https://blog.cloudflare.com/astro-joins-cloudflare/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Human Native is joining Cloudflare",
+      "link": "https://blog.cloudflare.com/human-native-joins-cloudflare/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "What came first: the CNAME or the A record?",
+      "link": "https://blog.cloudflare.com/cname-a-record-order-dns-standards/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "What we know about Iran’s Internet shutdown",
+      "link": "https://blog.cloudflare.com/iran-protests-internet-shutdown/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "A closer look at a BGP anomaly in Venezuela",
+      "link": "https://blog.cloudflare.com/bgp-route-leak-venezuela/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Arkanix Stealer: a C++ & Python infostealer",
+      "link": "https://securelist.com/arkanix-stealer/119006/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Divide and conquer: how the new Keenadu backdoor exposed links between major Android botnets",
+      "link": "https://securelist.com/keenadu-android-backdoor/118913/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "The game is over: when “free” comes at too high a price. What we know about RenEngine",
+      "link": "https://securelist.com/renengine-campaign-with-hijackloader-lumma-and-acr-stealer/118891/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Spam and phishing in 2025",
+      "link": "https://securelist.com/spam-and-phishing-report-2025/118785/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Stan Ghouls targeting Russia and Uzbekistan with NetSupport RAT",
+      "link": "https://securelist.com/stan-ghouls-in-uzbekistan/118738/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "The Notepad++ supply chain attack — unnoticed execution chains and new IoCs",
+      "link": "https://securelist.com/notepad-supply-chain-attack/118708/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Supply chain attack on eScan antivirus: detecting and remediating malicious updates",
+      "link": "https://securelist.com/escan-supply-chain-attack/118688/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "HoneyMyte updates CoolClient and deploys multiple stealers in recent campaigns",
+      "link": "https://securelist.com/honeymyte-updates-coolclient-uses-browser-stealers-and-scripts/118664/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "The HoneyMyte APT evolves with a kernel-mode rootkit and a ToneShell backdoor",
+      "link": "https://securelist.com/honeymyte-kernel-mode-rootkit/118590/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Kaspersky Securelist",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Threat landscape for industrial automation systems in Q3 2025",
+      "link": "https://securelist.com/industrial-threat-report-q3-2025/118602/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Henry IV, Hotspur, Hal, and hallucinations",
+      "link": "https://blog.talosintelligence.com/henry-iv-hotspur-hal-and-hallucinations/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "New Dohdoor malware campaign targets education and health care",
+      "link": "https://blog.talosintelligence.com/new-dohdoor-malware-campaign/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Active exploitation of Cisco Catalyst SD-WAN by UAT-8616",
+      "link": "https://blog.talosintelligence.com/uat-8616-sd-wan/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Using AI to defeat AI",
+      "link": "https://blog.talosintelligence.com/using-ai-to-defeat-ai/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "“Good enough” emulation: Fuzzing a single thread to uncover vulnerabilities",
+      "link": "https://blog.talosintelligence.com/good-enough-emulation/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Hand over the keys for Shannon’s shenanigans",
+      "link": "https://blog.talosintelligence.com/hand-over-the-keys-for-shannons-shenanigans/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Ryan Liles, master of technical diplomacy",
+      "link": "https://blog.talosintelligence.com/ryan-liles-master-of-technical-diplomacy/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "New threat actor, UAT-9921, leverages VoidLink framework in campaigns",
+      "link": "https://blog.talosintelligence.com/voidlink/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Microsoft Patch Tuesday for February 2026 — Snort rules and prominent vulnerabilities",
+      "link": "https://blog.talosintelligence.com/microsoft-patch-tuesday-february-2026/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "All gas, no brakes: Time to come to AI church",
+      "link": "https://blog.talosintelligence.com/all-gas-no-brakes-time-to-come-to-ai-church/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Knife Cutting the Edge: Disclosing a China-nexus gateway-monitoring AitM framework",
+      "link": "https://blog.talosintelligence.com/knife-cutting-the-edge/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "I'm locked in!",
+      "link": "https://blog.talosintelligence.com/im-locked-in/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Microsoft releases update to address zero-day vulnerability in Microsoft Office",
+      "link": "https://blog.talosintelligence.com/microsoft-oob-update-january-2026/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Dissecting UAT-8099: New persistence mechanisms and regional focus",
+      "link": "https://blog.talosintelligence.com/uat-8099-new-persistence-mechanisms-and-regional-focus/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "IR Trends Q4 2025: Exploitation remains dominant, phishing campaign targets Native American tribal organizations",
+      "link": "https://blog.talosintelligence.com/ir-trends-q4-2025/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "Ransom & Dark Web Issues 2026년 2월 4주차",
+      "link": "https://asec.ahnlab.com/ko/92705/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "2026년 1월 APT 공격 동향 보고서(국내)",
+      "link": "https://asec.ahnlab.com/ko/92647/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "Ransom & Dark Web Issues 2026년 2월 3주차",
+      "link": "https://asec.ahnlab.com/ko/92635/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "2026년 1월 인포스틸러 동향 보고서",
+      "link": "https://asec.ahnlab.com/ko/92640/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "2026년 1월 국내외 금융권 관련 보안 이슈",
+      "link": "https://asec.ahnlab.com/ko/92552/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "2026년 1월 APT 그룹 동향 보고서",
+      "link": "https://asec.ahnlab.com/ko/92548/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "Ransom & Dark Web Issues 2026년 2월 2주차",
+      "link": "https://asec.ahnlab.com/ko/92535/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "2026년 1월 피싱 이메일 동향 보고서",
+      "link": "https://asec.ahnlab.com/ko/92526/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "2026년 1월 랜섬웨어 동향 보고서",
+      "link": "https://asec.ahnlab.com/ko/92529/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "Ransom & Dark Web Issues 2026년 2월 1주차",
+      "link": "https://asec.ahnlab.com/ko/92482/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "Ransom & Dark Web Issues 2026년 1월 4주차",
+      "link": "https://asec.ahnlab.com/ko/92384/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "AhnLab EDR을 활용한 최신 RMM 유포 사례 탐지",
+      "link": "https://asec.ahnlab.com/ko/92286/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "Ransom & Dark Web Issues 2026년 1월 3주차",
+      "link": "https://asec.ahnlab.com/ko/92256/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "2025년 12월 국내외 금융권 관련 보안 이슈",
+      "link": "https://asec.ahnlab.com/ko/92190/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "Notepad++ 도구를 위장해 유포 중인 Proxyware",
+      "link": "https://asec.ahnlab.com/ko/92163/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "2025년 12월 APT 그룹 동향 보고서",
+      "link": "https://asec.ahnlab.com/ko/92158/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "국내 사용자들을 대상으로 유포 중인 Remcos RAT",
+      "link": "https://asec.ahnlab.com/ko/92135/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "구글 플레이스토어 가상자산 거래소 규제 강화로 인한 보안 취약점·악성 앱 위험 증가",
+      "link": "https://asec.ahnlab.com/ko/92075/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "Ransom & Dark Web Issues 2026년 1월 2주차",
+      "link": "https://asec.ahnlab.com/ko/92081/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "AhnLab ASEC",
+      "category": "KOREA_OFFICIAL",
+      "title": "2025년 12월 인포스틸러 동향 보고서",
+      "link": "https://asec.ahnlab.com/ko/92118/",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "“실적 사상최대인데 주가는 폭락”… 엔비디아 쇼크에 나스닥 1%대 급락",
+      "link": "https://www.etnews.com/20260227000014",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "버넥트, 신원스틸 현장서 로봇 자율 순찰 통합 모니터링 검증… AI 기반 고도화 추진",
+      "link": "https://www.etnews.com/20260226000393",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "[부음] 최락도(전 국회의원)씨 부인상",
+      "link": "https://www.etnews.com/20260227000013",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "쿠팡, 작년 4분기 영업이익 97% 급감",
+      "link": "https://www.etnews.com/20260227000012",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "[부음] 김동현(글로벌e 기자)씨 외조모상",
+      "link": "https://www.etnews.com/20260227000011",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "정부, 구글에 고정밀지도 반출 허가 '가닥'…산업계·학계, 우려 현실화 조짐에 “개탄”",
+      "link": "https://www.etnews.com/20260227000009",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "사무용 의자로 2시간 질주… 'F1 의자' 레이싱 대회 화제",
+      "link": "https://www.etnews.com/20260226000241",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "구글, 이미지 AI '나노바나나2' 출시…'프로'급 이미지 무료 이용",
+      "link": "https://www.etnews.com/20260227000010",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "고준호 경기도의원, 파주 고교평준화 정책 교육청과 간담회 진행",
+      "link": "https://www.etnews.com/20260227000008",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "인천시, 12개 대학 RISE 1차 연도 성과 공유회 개최",
+      "link": "https://www.etnews.com/20260227000007",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "양주시, GS건설과 백석지구 도시개발사업 공동협력 협약 체결",
+      "link": "https://www.etnews.com/20260227000006",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "아주대의료원, 3월1일 보건대학원장·진료부원장 신임 임명",
+      "link": "https://www.etnews.com/20260227000005",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "유정복 인천시장, 위컴 애비·럭비 스쿨과 국제학교 MOU 체결",
+      "link": "https://www.etnews.com/20260227000004",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "인천시, 관광기업 AX·DX 지원사업 참여기업 모집 시작",
+      "link": "https://www.etnews.com/20260227000003",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "성균관대, 한국피지컬AI협회와 피지컬 AI MOU 체결",
+      "link": "https://www.etnews.com/20260227000002",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "권혁우 수원시장 예비후보, 세력 대신 시민소통 행사 선언",
+      "link": "https://www.etnews.com/20260227000001",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "“닭만 한 공룡, 원래부터 작았다?”… 900g 초소형 공룡 화석 발견",
+      "link": "https://www.etnews.com/20260226000428",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "현대차 아이오닉 9, '2026 대한민국 올해의 차' 3관왕",
+      "link": "https://www.etnews.com/20260226000502",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "이스트소프트, MWC서 'AI 휴먼' 알린다…KT·삼성과 협업 전시도",
+      "link": "https://www.etnews.com/20260226000501",
+      "date": "2026-02-26"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "래블업, VAST 기술 파트너로 합류…MWC서 유럽 AI시장 공략 시동",
+      "link": "https://www.etnews.com/20260226000499",
+      "date": "2026-02-26"
+    }
+  ]
+}
