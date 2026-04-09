@@ -24,7 +24,7 @@ jobs:
 
       # [캐시] Maven 의존성 캐싱 (빌드 속도 최적화)
       - name: Maven 의존성 캐싱 (Windows)
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -193,7 +193,7 @@ jobs:
 
       # [캐시] Maven 의존성 캐싱 (Linux)
       - name: Maven 의존성 캐싱 (Linux)
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
