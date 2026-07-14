@@ -1,8 +1,8 @@
-FROM eclipse-temurin:17-jre-jammy AS builder
+FROM eclipse-temurin:25-jre-jammy AS builder
 WORKDIR /app
 COPY target/*.jar app.jar
 RUN java -Djarmode=layertools -jar app.jar extract
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 RUN groupadd -r omni && useradd -r -g omni omni
 USER omni
 WORKDIR /app
