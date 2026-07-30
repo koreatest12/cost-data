@@ -99,22 +99,22 @@ class YearEndSettlement:
 user_tax = YearEndSettlement("김병권", total_salary=40_000_000) # 예시 연봉 4,000만원 설정
 
 user_tax.set_data(
-    [cite_start]pension=1_236_000,           # [cite: 44]
-    [cite_start]insurance_health=1_126_370 + 252_360, # 건강+장기요양 [cite: 10] + [cite_start]고용 [cite: 27]
-    [cite_start]housing_saving=1_200_000,    # [cite: 184]
+    pension=1_236_000,           # [cite: 44]
+    insurance_health=1_126_370 + 252_360, # 건강+장기요양 [cite: 10] + 고용 [cite: 27]
+    housing_saving=1_200_000,    # [cite: 184]
     
     # 신용카드 등 (합계금액 기준 입력)
-    [cite_start]credit_card=412_670,         # [cite: 109]
-    [cite_start]debit_card=13_086_527,       # [cite: 129]
-    [cite_start]cash_receipt=2_502_383,      # [cite: 149]
+    credit_card=412_670,         # [cite: 109]
+    debit_card=13_086_527,       # [cite: 129]
+    cash_receipt=2_502_383,      # [cite: 149]
     
     # 의료비
-    [cite_start]medical_expense=2_695_380,   # [cite: 74]
-    [cite_start]medical_silson=1_163_706,    # [cite: 93]
+    medical_expense=2_695_380,   # [cite: 74]
+    medical_silson=1_163_706,    # [cite: 93]
     
     # 기타
-    [cite_start]insurance_guarantee=761_880, # [cite: 61]
-    [cite_start]donation=120_000             # [cite: 204]
+    insurance_guarantee=761_880, # [cite: 61]
+    donation=120_000             # [cite: 204]
 )
 
 user_tax.calculate()
