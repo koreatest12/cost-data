@@ -1,7 +1,7 @@
 {
   "meta": {
     "date": "2026-08-07",
-    "timestamp": "2026-08-07 02:14:23",
+    "timestamp": "2026-08-07 23:54:05",
     "stats": {
       "total": 265,
       "categories": {
@@ -13,6 +13,41 @@
     }
   },
   "articles": [
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Metabase SQLi zero-day exploited in customer data-theft attacks",
+      "link": "https://www.bleepingcomputer.com/news/security/framework-tally-disclose-metabase-data-theft-attacks/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Unlimited Technology Systems breach impacts 3.8 million people",
+      "link": "https://www.bleepingcomputer.com/news/security/unlimited-technology-systems-breach-impacts-38-million-people/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Levi Strauss & Co. says hackers stole corporate data in cyberattack",
+      "link": "https://www.bleepingcomputer.com/news/security/levi-strauss-and-co-says-hackers-stole-corporate-data-in-cyberattack/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Real emails, hijacked payments: Two H1 2026 attack chains",
+      "link": "https://www.bleepingcomputer.com/news/security/real-emails-hijacked-payments-two-h1-2026-attack-chains/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "North Carolina Ports confirms cyberattack disrupting operations",
+      "link": "https://www.bleepingcomputer.com/news/security/north-carolina-ports-confirms-cyberattack-disrupting-operations/",
+      "date": "2026-08-07"
+    },
     {
       "source": "BleepingComputer",
       "category": "GLOBAL_TIER_1",
@@ -84,38 +119,87 @@
       "date": "2026-08-07"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "COLDCARD security audit phishing attack installs remote access tool",
-      "link": "https://www.bleepingcomputer.com/news/security/coldcard-security-audit-phishing-attack-installs-remote-access-tool/",
+      "title": "Nearly 800 Malicious npm Packages Deliver Cross-Platform RAT and Infostealer",
+      "link": "https://thehackernews.com/2026/08/nearly-800-malicious-npm-packages.html",
       "date": "2026-08-07"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "CISA warns of hackers exploiting Langflow, N-central, Apache Tomcat flaws",
-      "link": "https://www.bleepingcomputer.com/news/security/cisa-warns-of-hackers-exploiting-langflow-n-central-apache-tomcat-flaws/",
+      "title": "ClickFix Attacks Deliver macOS Stealer That Can Drain Crypto Wallets",
+      "link": "https://thehackernews.com/2026/08/clickfix-attacks-deliver-macos-stealer.html",
       "date": "2026-08-07"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Google Blogger locks hundreds of blogs in malware false positive",
-      "link": "https://www.bleepingcomputer.com/news/google/google-blogger-locks-hundreds-of-blogs-in-malware-false-positive/",
+      "title": "UNC6671 Vishing Attacks Target Personal Phones to Steal SaaS Data",
+      "link": "https://thehackernews.com/2026/08/unc6671-vishing-attacks-target-personal.html",
       "date": "2026-08-07"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "How AI-powered phishing killed blocklists for good",
-      "link": "https://www.bleepingcomputer.com/news/security/how-ai-powered-phishing-killed-blocklists-for-good/",
+      "title": "New WordPress Pre-Auth XSS Could Lead to PHP Code Execution - Patch ASAP",
+      "link": "https://thehackernews.com/2026/08/new-wordpress-pre-auth-xss-could-lead.html",
       "date": "2026-08-07"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "OpenAI, Anthropic AI agents targeted real people and systems in cyber tests",
-      "link": "https://www.bleepingcomputer.com/news/security/openai-anthropic-ai-agents-targeted-real-people-and-systems-in-cyber-tests/",
+      "title": "Growing Up The Hard Way",
+      "link": "https://thehackernews.com/2026/08/growing-up-hard-way.html",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "18-Year-Old Linux SCTP Flaw Could Let Local Users Gain Root and Escape Containers",
+      "link": "https://thehackernews.com/2026/08/18-year-old-linux-sctp-flaw-could-let.html",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "New NatJack Attacks Hijack TCP Sessions and Spoof DNS by Manipulating NAT Tables",
+      "link": "https://thehackernews.com/2026/08/new-natjack-attacks-hijack-tcp-sessions.html",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Microsoft 365 AitM Phishing Hijacks Accounts to Collect Payroll and Finance Emails",
+      "link": "https://thehackernews.com/2026/08/microsoft-365-aitm-phishing-hijacks.html",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "AI-Assisted HTTP Terminator Finds Novel HTTP Desync Techniques and Apache Zero-Day",
+      "link": "https://thehackernews.com/2026/08/ai-assisted-http-terminator-finds-novel.html",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Malware Can Abuse Windows Hello for Business Keys for Persistent Entra ID Access",
+      "link": "https://thehackernews.com/2026/08/malware-can-abuse-windows-hello-for.html",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "Claude Code and Gemini CLI Flaws Let a GitHub Issue Reach CI Workflow Secrets",
+      "link": "https://thehackernews.com/2026/08/claude-code-and-gemini-cli-flaws-let.html",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "The Hacker News",
+      "category": "GLOBAL_TIER_1",
+      "title": "TeamPCP Linked To Redis Attacks Dating Back To 2020 And Later Supply Chain Campaign",
+      "link": "https://thehackernews.com/2026/08/teampcp-linked-to-redis-attacks-dating.html",
       "date": "2026-08-07"
     },
     {
@@ -128,7 +212,7 @@
     {
       "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Cisco Patches 12 SD-WAN and IOS XE Flaws, Including Three 9.8 CVSS Score Bugs",
+      "title": "Cisco Patches 12 SD-WAN and IOS XE Flaws, Including Three 9.9 CVSS Score Bugs",
       "link": "https://thehackernews.com/2026/08/cisco-patches-12-sd-wan-and-ios-xe.html",
       "date": "2026-08-07"
     },
@@ -175,87 +259,10 @@
       "date": "2026-08-07"
     },
     {
-      "source": "The Hacker News",
+      "source": "Dark Reading",
       "category": "GLOBAL_TIER_1",
-      "title": "Attackers Compile khunt Inside Oracle to Turn SQL Injection Into Windows SYSTEM Access",
-      "link": "https://thehackernews.com/2026/08/attackers-compile-khunt-inside-oracle.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "AWS, Google, and Vercel Agent Flaws Let Attackers Trigger Tools Without Running the Model",
-      "link": "https://thehackernews.com/2026/08/aws-google-and-vercel-patch-agent-flaws.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Chinese-Made Zbtlink Routers Ship With Backdoor That Opens Unauthenticated Root Shells",
-      "link": "https://thehackernews.com/2026/08/chinese-made-zbtlink-routers-ship-with.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Ransom Cartel Creator Gets 16 Years in Prison for Operating Ransomware-as-a-Service",
-      "link": "https://thehackernews.com/2026/08/ransom-cartel-creator-gets-16-years-in.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "CISA Flags TeamCity CVE-2026-63077 RCE Flaw Under Active Exploitation in the Wild",
-      "link": "https://thehackernews.com/2026/08/cisa-flags-teamcity-cve-2026-63077-rce.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Snowflake Hacker Pleads Guilty Over Breaches Affecting at Least 100 Million People",
-      "link": "https://thehackernews.com/2026/08/snowflake-hacker-pleads-guilty-over.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Over 250 ClickFix Domains Use Browser Fingerprinting to Hide macOS Malware Lures",
-      "link": "https://thehackernews.com/2026/08/over-250-clickfix-domains-use-browser.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "OpenAI Disrupts Poipet Scam Network Using ChatGPT Across Multiple Fraud Schemes",
-      "link": "https://thehackernews.com/2026/08/openai-disrupts-poipet-scam-network.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Poison Claude Sells Discounted Claude Access While Its Operator Sees Every Customer Prompt",
-      "link": "https://thehackernews.com/2026/08/poison-claude-sells-discounted-claude.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Paperclip AI Flaws Let Attackers Run Host Commands via Malicious Agent Imports",
-      "link": "https://thehackernews.com/2026/08/paperclip-ai-flaws-let-attackers-run.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Veeam, Terraform MCP, Django Patch Critical Flaws, Led by CVSS 10.0 Cross-Tenant Bug",
-      "link": "https://thehackernews.com/2026/08/veeam-terraform-mcp-django-patch.html",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Trojanized npm Packages Employ NullReceiver Tactic to Decode C2 IP from Blockchain",
-      "link": "https://thehackernews.com/2026/08/trojanized-npm-packages-decode-c2-ip.html",
+      "title": "AI-Generated Patches Fail Half the Time",
+      "link": "https://www.darkreading.com/application-security/ai-generated-patches-fail-half-time",
       "date": "2026-08-07"
     },
     {
@@ -263,6 +270,13 @@
       "category": "GLOBAL_TIER_1",
       "title": "The Coordination Gap: How Attackers Are Outpacing Law Enforcement",
       "link": "https://www.darkreading.com/cyberattacks-data-breaches/coordination-gap-attackers-outpacing-law-enforcement",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "Déjà Vu? Meta's AI Escapes Testing Lab in Hacking Joyride",
+      "link": "https://www.darkreading.com/cyberattacks-data-breaches/meta-ai-escapes-lab-hacking-joyride",
       "date": "2026-08-07"
     },
     {
@@ -385,17 +399,52 @@
       "date": "2026-08-07"
     },
     {
-      "source": "Dark Reading",
+      "source": "SecurityWeek",
       "category": "GLOBAL_TIER_1",
-      "title": "CISA Issues Fresh SBOM Guidance. Did They Get It Right?",
-      "link": "https://www.darkreading.com/cybersecurity-operations/cisa-issues-fresh-sbom-guidance",
+      "title": "In Other News: AI Slop Limits Apple Bounties, North Carolina Port Attacks, Hackers Target Wall Street",
+      "link": "https://www.securityweek.com/in-other-news-ai-slop-limits-apple-bounties-north-carolina-port-attacks-hackers-target-wall-street/",
       "date": "2026-08-07"
     },
     {
-      "source": "Dark Reading",
+      "source": "SecurityWeek",
       "category": "GLOBAL_TIER_1",
-      "title": "The Morning After We Pull a Root of Trust, Nobody Owns It",
-      "link": "https://www.darkreading.com/cyber-risk/morning-after-we-pull-root-of-trust-nobody-owns-it",
+      "title": "Vishing Extortion Group UNC6671 Rebrands After Making Millions",
+      "link": "https://www.securityweek.com/vishing-extortion-group-unc6671-rebrands-after-making-millions/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Truck Brake Controller’s Safety Recall Doubled as Hidden Security Fix",
+      "link": "https://www.securityweek.com/truck-brake-controllers-safety-recall-doubled-as-hidden-security-fix/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Black Hat USA 2026 – Summary of Vendor Announcements (Part 4)",
+      "link": "https://www.securityweek.com/black-hat-usa-2026-summary-of-vendor-announcements-part-4/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Microsoft, Apple Release Fresh Security Updates",
+      "link": "https://www.securityweek.com/microsoft-apple-release-fresh-security-updates/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "3.8 Million Impacted by Unlimited Technology Systems Data Breach",
+      "link": "https://www.securityweek.com/3-8-million-impacted-by-unlimited-technology-systems-data-breach/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Critical Vulnerabilities Patched With Chrome 151 Update",
+      "link": "https://www.securityweek.com/critical-vulnerabilities-patched-with-chrome-151-update/",
       "date": "2026-08-07"
     },
     {
@@ -420,52 +469,24 @@
       "date": "2026-08-07"
     },
     {
-      "source": "SecurityWeek",
+      "source": "TechCrunch Security",
       "category": "GLOBAL_TIER_1",
-      "title": "Critical Paperclip Flaw Allowed Admin Access, Code Execution",
-      "link": "https://www.securityweek.com/critical-paperclip-flaw-allowed-admin-access-code-execution/",
+      "title": "Security researchers scanned the Polish web and found courts, hospitals, and airports at risk of hacks",
+      "link": "https://techcrunch.com/2026/08/07/security-researchers-scanned-the-polish-web-and-found-courts-hospitals-and-airports-at-risk-of-hacks/",
       "date": "2026-08-07"
     },
     {
-      "source": "SecurityWeek",
+      "source": "TechCrunch Security",
       "category": "GLOBAL_TIER_1",
-      "title": "Meta AI Hacked External Systems During Cybersecurity Testing",
-      "link": "https://www.securityweek.com/meta-ai-hacked-external-systems-during-cybersecurity-testing/",
+      "title": "Computer maker Framework notifies ‘all customers’ of a data breach",
+      "link": "https://techcrunch.com/2026/08/07/computer-maker-framework-notifies-all-customers-of-a-data-breach/",
       "date": "2026-08-07"
     },
     {
-      "source": "SecurityWeek",
+      "source": "TechCrunch Security",
       "category": "GLOBAL_TIER_1",
-      "title": "Belarusian Ransom Cartel Mastermind Gets 16 Years in Prison",
-      "link": "https://www.securityweek.com/belarusian-ransom-cartel-mastermind-gets-16-years-in-prison/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "GLOBAL_TIER_1",
-      "title": "Cisco Patches Critical SD-WAN, IOS XE, FMC Vulnerabilities",
-      "link": "https://www.securityweek.com/cisco-patches-critical-sd-wan-ios-xe-fmc-vulnerabilities/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "GLOBAL_TIER_1",
-      "title": "Hackers Start Exploiting Recent JetBrains TeamCity Vulnerability",
-      "link": "https://www.securityweek.com/hackers-start-exploiting-recent-jetbrains-teamcity-vulnerability/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "GLOBAL_TIER_1",
-      "title": "How a $50,000 Exploit Chain Turned Bixby Against Samsung Phones",
-      "link": "https://www.securityweek.com/how-a-50000-exploit-chain-turned-bixby-against-samsung-phones/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "GLOBAL_TIER_1",
-      "title": "Black Hat USA 2026 – Summary of Vendor Announcements (Part 3)",
-      "link": "https://www.securityweek.com/black-hat-usa-2026-summary-of-vendor-announcements-part-3/",
+      "title": "Chinese AI model Kimi escaped its cybersecurity testing environment, researchers say",
+      "link": "https://techcrunch.com/2026/08/07/chinese-ai-model-kimi-escaped-its-cybersecurity-testing-environment-researchers-say/",
       "date": "2026-08-07"
     },
     {
@@ -585,27 +606,6 @@
       "category": "GLOBAL_TIER_1",
       "title": "US government bans new foreign-made humanoids, robot dogs, and solar inverters, citing risks to national security",
       "link": "https://techcrunch.com/2026/07/29/us-government-bans-new-foreign-made-humanoids-robot-dogs-and-solar-inverters-citing-risks-to-national-security/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "TechCrunch Security",
-      "category": "GLOBAL_TIER_1",
-      "title": "Cyera agrees to acquire Oasis Security for $1B to safeguard proliferating AI agents",
-      "link": "https://techcrunch.com/2026/07/28/cyera-agrees-to-acquire-oasis-security-for-1b-to-safeguard-proliferating-ai-agents/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "TechCrunch Security",
-      "category": "GLOBAL_TIER_1",
-      "title": "PSA: Your Claude shared chats and Artifacts may have ended up on Google",
-      "link": "https://techcrunch.com/2026/07/27/psa-your-claude-shared-chats-and-artifacts-may-have-ended-up-on-google/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "TechCrunch Security",
-      "category": "GLOBAL_TIER_1",
-      "title": "Microsoft launches its first cybersecurity model, plus a new agentic cybersecurity system",
-      "link": "https://techcrunch.com/2026/07/27/microsoft-launches-its-first-cyber-model-and-a-new-agentic-cybersecurity-system/",
       "date": "2026-08-07"
     },
     {
@@ -751,6 +751,20 @@
     {
       "source": "AWS Security Blog",
       "category": "CLOUD_&_VENDOR",
+      "title": "A decade of enterprise identity in the cloud with AWS Managed Microsoft AD",
+      "link": "https://aws.amazon.com/blogs/security/a-decade-of-enterprise-identity-in-the-cloud-with-aws-managed-microsoft-ad/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Securing your Amazon S3 buckets: Identifying and remediating over-permissioned access",
+      "link": "https://aws.amazon.com/blogs/security/securing-your-amazon-s3-buckets-identifying-and-remediating-over-permissioned-access/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
       "title": "Automate certificates with ACME support in AWS Certificate Manager",
       "link": "https://aws.amazon.com/blogs/security/automate-certificates-with-acme-support-in-aws-certificate-manager/",
       "date": "2026-08-07"
@@ -875,17 +889,87 @@
       "date": "2026-08-07"
     },
     {
-      "source": "AWS Security Blog",
+      "source": "Microsoft Security",
       "category": "CLOUD_&_VENDOR",
-      "title": "Introducing the Amazon GuardDuty investigation agent: on-demand AI-powered threat assessment",
-      "link": "https://aws.amazon.com/blogs/security/introducing-the-amazon-guardduty-investigation-agent-on-demand-ai-powered-threat-assessment/",
+      "title": "CVE-2019-9924 rbash in Bash before 4.4-beta2 did not prevent the shell user from modifying BASH_CMDS, thus allowing the user to execute any command with the permissions of the shell.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2019-9924",
       "date": "2026-08-07"
     },
     {
-      "source": "AWS Security Blog",
+      "source": "Microsoft Security",
       "category": "CLOUD_&_VENDOR",
-      "title": "2026 ISO and CSA STAR certificates are now available with two additional services",
-      "link": "https://aws.amazon.com/blogs/security/2026-iso-and-csa-star-certificates-are-now-available-with-two-additional-services/",
+      "title": "CVE-2019-9192 In the GNU C Library (aka glibc or libc6) through 2.29, check_dst_limits_calc_pos_1 in posix/regexec.c has Uncontrolled Recursion",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2019-9192",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2019-6706 Lua 5.3.5 has a use-after-free in lua_upvaluejoin in lapi.c. For example a crash outcome might be achieved by an attacker who is able to trigger a debug.upvaluejoin call in which the arguments have certain relationships.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2019-6706",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2018-5407 Simultaneous Multi-threading (SMT) in processors can enable local users to exploit software vulnerable to timing attacks via a side-channel timing attack on 'port contention'.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2018-5407",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2018-1128 It was found that cephx authentication protocol did not verify ceph clients correctly and was vulnerable to replay attack. Any attacker having access to ceph cluster network who is able to sniff packets on network can use this vulnerability to authenticate with ceph service and perform actions allowed by ceph service. Ceph branches master, mimic, luminous and jewel are believed to be vulnerable.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2018-1128",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2018-6829 cipher/elgamal.c in Libgcrypt through 1.8.2, when used to encrypt messages directly, improperly encodes plaintexts, which allows attackers to obtain sensitive information by reading ciphertext data (i.e., it does not have semantic security in face of a ciphertext-only attack). The Decisional Diffie-Hellman (DDH) assumption does not hold for Libgcrypt's ElGamal implementation.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2018-6829",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2016-2568 pkexec, when used with --user nonpriv, allows local users to escape to the parent session",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2016-2568",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2010-4052 Stack consumption vulnerability in the regcomp implementation in the GNU C Library (aka glibc or libc6) through 2.11.3, and 2.12.x through 2.12.2, allows context-dependent attackers to cause a denial of service (resource exhaustion) via a regular expression containing adjacent repetition operators, as demonstrated by a {10,}{10,}{10,}{10,} sequence in the proftpd.gnu.c exploit for ProFTPD.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2010-4052",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2007-3205 The parse_str function in (1) PHP, (2) Hardened-PHP, and (3) Suhosin, when called without a second parameter, might allow remote attackers to overwrite arbitrary variables by specifying variable names and values in the string to be parsed.  NOTE: it is not clear whether this is a design limitation of the function or a bug in PHP, although it is likely to be regarded as a bug in Hardened-PHP and Suhosin.",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2007-3205",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-40400 Windows PowerShell Remote Code Execution Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-40400",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-50659 .NET Spoofing Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50659",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-47303 ASP.NET Core Elevation of Privilege Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-47303",
       "date": "2026-08-07"
     },
     {
@@ -942,90 +1026,6 @@
       "category": "CLOUD_&_VENDOR",
       "title": "CVE-2026-59115 Microsoft Entra Provisioning Service Elevation of Privilege Vulnerability",
       "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-59115",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-49163 Application Insights Profiler Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-49163",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-68823 Azure Confidential Ledger Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-68823",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-70332 Microsoft Office SharePoint Spoofing Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-70332",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-56161 Azure Logic Apps Information Disclosure Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-56161",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-62830 Azure SRE Agent Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62830",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-65667 Microsoft Teams Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-65667",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-56162 Azure SQL Database Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-56162",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-50515 Azure Service Bus Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50515",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-62869 Azure Entra ID Spoofing Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62869",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-63522 Azure SQL Database Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-63522",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-63508 Microsoft Planetary Computer Pro Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-63508",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-62873 Microsoft 365 Admin Center Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62873",
       "date": "2026-08-07"
     },
     {
@@ -1096,6 +1096,13 @@
       "category": "CLOUD_&_VENDOR",
       "title": "Welcome to the new Project Zero Blog",
       "link": "https://projectzero.google/2025/12/welcome.html",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Palo Alto Unit 42",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Inside the Modern SOC: The Identity Front Door",
+      "link": "https://unit42.paloaltonetworks.com/soc-identity-front-door/",
       "date": "2026-08-07"
     },
     {
@@ -1197,10 +1204,31 @@
       "date": "2026-08-07"
     },
     {
-      "source": "Palo Alto Unit 42",
+      "source": "Cloudflare Blog",
       "category": "CLOUD_&_VENDOR",
-      "title": "How We Added WebAuthn to a Browser-Based RDP Client",
-      "link": "https://unit42.paloaltonetworks.com/webauthn-added-to-browser-based-rdp/",
+      "title": "Unveiling good and bad behaviors on the Agentic Internet",
+      "link": "https://blog.cloudflare.com/good-and-bad-agentic-behaviors/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Introducing Radar Researcher: An AI tool for exploring Internet data in plain language",
+      "link": "https://blog.cloudflare.com/introducing-radar-researcher/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Announcing Cloudflare Ambassadors, Community Engineers, and another $1M in open-source funding",
+      "link": "https://blog.cloudflare.com/community-program-refresh/",
+      "date": "2026-08-07"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Unifying Workers AI and AI Gateway into a single AI control plane",
+      "link": "https://blog.cloudflare.com/workers-ai-gateway-unification/",
       "date": "2026-08-07"
     },
     {
@@ -1313,34 +1341,6 @@
       "category": "CLOUD_&_VENDOR",
       "title": "How Cloudflare enforces engineering standards using AI",
       "link": "https://blog.cloudflare.com/engineering-standards-enforcement/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Cloudflare Blog",
-      "category": "CLOUD_&_VENDOR",
-      "title": "Introducing: Cloudflare Agents",
-      "link": "https://blog.cloudflare.com/agents-on-cloudflare/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Cloudflare Blog",
-      "category": "CLOUD_&_VENDOR",
-      "title": "Your agent can now debug Workers with local tracing",
-      "link": "https://blog.cloudflare.com/local-tracing/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Cloudflare Blog",
-      "category": "CLOUD_&_VENDOR",
-      "title": "How we built a software factory to drive Astro’s GitHub issue count to zero",
-      "link": "https://blog.cloudflare.com/astro-issue-triage/",
-      "date": "2026-08-07"
-    },
-    {
-      "source": "Cloudflare Blog",
-      "category": "CLOUD_&_VENDOR",
-      "title": "Your agent needs a computer, not a container — introducing @cloudflare/computer",
-      "link": "https://blog.cloudflare.com/cloudflare-computer/",
       "date": "2026-08-07"
     },
     {
@@ -1521,72 +1521,72 @@
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "[부고] 양진석 이노비즈 부사장 부친상",
-      "link": "http://www.boannews.com/media/view.asp?idx=145061&kind=&sub_kind=",
-      "date": "Fri, 7 Aug 2026 10:28:00 +0900"
+      "title": "비에스아이시스템·남양주시, 방범·환경 통합형 CCTV 운영 확대",
+      "link": "http://www.boannews.com/media/view.asp?idx=145074&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 21:47:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "[ISEC 2026 키노트] AI·클라우드 시대 자율 방어와 통합 보안... MS·위즈·LG유플러스가 제시한 미래 보안 전략",
-      "link": "http://www.boannews.com/media/view.asp?idx=145056&kind=&sub_kind=",
-      "date": "Fri, 7 Aug 2026 08:58:00 +0900"
+      "title": "명지대 ‘드론봇·대드론 센터’ 출범... 산학군 협력 안보 네트워크 강화",
+      "link": "http://www.boannews.com/media/view.asp?idx=145072&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 17:29:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "[ISEC 2026 미리보기] LG유플러스, 제로트러스트 기반 통신사 네이티브 보안 서비스 지속 확대",
-      "link": "http://www.boannews.com/media/view.asp?idx=144951&kind=&sub_kind=",
-      "date": "Fri, 7 Aug 2026 08:33:00 +0900"
+      "title": "[카드뉴스] 무료 선물 링크의 덫… 방화벽 뚫고 들어오는 사이버 공격 실체",
+      "link": "http://www.boannews.com/media/view.asp?idx=145071&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 17:19:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "[DEF CON 34] 에이전트들만의 해킹대회 열린다... AI로 물드는 데프콘",
-      "link": "http://www.boannews.com/media/view.asp?idx=145058&kind=&sub_kind=",
-      "date": "Fri, 7 Aug 2026 08:29:00 +0900"
+      "title": "[DEF CON 34] 이상중 KISA 원장 “K-해커들 든든하게 뒷받침할 것”",
+      "link": "http://www.boannews.com/media/view.asp?idx=145069&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 15:55:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "[양자와 보안] 탈레스, 양자 내성 HSM ‘루나 8’ 출시... AI 및 포스트 양자 컴퓨팅 시대 대비",
-      "link": "http://www.boannews.com/media/view.asp?idx=145059&kind=&sub_kind=",
-      "date": "Thu, 6 Aug 2026 19:04:00 +0900"
+      "title": "[ISEC 2026] 대미를 장식할 컨퍼런스 주제는 무엇?",
+      "link": "http://www.boannews.com/media/view.asp?idx=144988&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 13:56:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "[롯데카드 CISO 제재 파문-①] 총알받이 전락한 CISO... 금융권 보안 인재 엑소더스 시작되나?",
-      "link": "http://www.boannews.com/media/view.asp?idx=145052&kind=&sub_kind=",
-      "date": "Thu, 6 Aug 2026 17:32:00 +0900"
+      "title": "앤트로픽·오픈AI, 사이버보안 테스트서 가짜 신원 만들어 공격 시도",
+      "link": "http://www.boannews.com/media/view.asp?idx=145066&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 13:54:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "[ISEC 2026] 최신 보안 이슈 발표 이어져... AI 시대 보안 과제 총망라",
-      "link": "http://www.boannews.com/media/view.asp?idx=145046&kind=&sub_kind=",
-      "date": "Thu, 6 Aug 2026 17:22:00 +0900"
+      "title": "오마다, AI 네트워크 설계 플랫폼 ‘Omada 디자인 허브’ 무료 웨비나 개최",
+      "link": "http://www.boannews.com/media/view.asp?idx=145065&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 13:52:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "광진구, 무더위 식혀줄 스마트쉼터 확대 주민 안전 강화",
-      "link": "http://www.boannews.com/media/view.asp?idx=145054&kind=&sub_kind=",
-      "date": "Thu, 6 Aug 2026 17:16:00 +0900"
+      "title": "이스트시큐리티-퓨리오사AI ‘맞손’... NPU 품은 K-보안 솔루션 뜬다",
+      "link": "http://www.boannews.com/media/view.asp?idx=145064&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 13:51:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "서울시, 200억 투입해 AI 행정 지원 데이터센터 전면 고도화",
-      "link": "http://www.boannews.com/media/view.asp?idx=145053&kind=&sub_kind=",
-      "date": "Thu, 6 Aug 2026 17:16:00 +0900"
+      "title": "“조사도 안 끝났는데 보고부터?” 불투명한 팩트에 발목 잡힌 보안 거버넌스",
+      "link": "http://www.boannews.com/media/view.asp?idx=145062&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 13:48:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "블랙햇 USA 2026... 보안 업계, ‘AI 자율 방어’ 솔루션 대거 선봬",
-      "link": "http://www.boannews.com/media/view.asp?idx=145036&kind=&sub_kind=",
-      "date": "Thu, 6 Aug 2026 17:11:00 +0900"
+      "title": "모빌린트, 온디바이스 AI USB ‘MLD-R1’ 정식 출시... REGULUS 기반 첫 상용 AI 가속기",
+      "link": "http://www.boannews.com/media/view.asp?idx=145060&kind=&sub_kind=",
+      "date": "Fri, 7 Aug 2026 13:45:00 +0900"
     },
     {
       "source": "AhnLab ASEC",
@@ -1612,15 +1612,15 @@
     {
       "source": "AhnLab ASEC",
       "category": "KOREA_OFFICIAL",
-      "title": "Ransom & Dark Web Issues 2026년 7월 5주차",
-      "link": "https://asec.ahnlab.com/ko/94706/",
+      "title": "[합동 사이버 보안 권고문] Operation Double Barrel (국가배후 해킹조직과 Gunra 랜섬웨어 그룹의 관계)",
+      "link": "https://asec.ahnlab.com/ko/94695/",
       "date": "2026-08-07"
     },
     {
       "source": "AhnLab ASEC",
       "category": "KOREA_OFFICIAL",
-      "title": "[합동 사이버 보안 권고문] Operation Double Barrel (국가배후 해킹조직과 Gunra 랜섬웨어 그룹의 관계)",
-      "link": "https://asec.ahnlab.com/ko/94695/",
+      "title": "Ransom & Dark Web Issues 2026년 7월 5주차",
+      "link": "https://asec.ahnlab.com/ko/94706/",
       "date": "2026-08-07"
     },
     {
@@ -1731,141 +1731,141 @@
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "전북콘텐츠진흥원, '2026 JB-NEXCON' 본격 가동…교육생 30명 선발",
-      "link": "https://www.etnews.com/20260807000137",
+      "title": "트럼프 “중국이 AI·가상자산 추월하는 꼴 못봐…내달 시진핑과 담판”",
+      "link": "https://www.etnews.com/20260808000003",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "쿠첸 “지난달 음식물 처리기 매출 전월比 356% 증가”",
-      "link": "https://www.etnews.com/20260807000136",
+      "title": "“ETF로 퇴직연금·휴가비 다 날렸다”…7월에만 78% 하락·78조 증발",
+      "link": "https://www.etnews.com/20260808000002",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "마곡, 문화예술의 새로운 거점이 되다… '언노운바이브 아트센터'가 여는 도시의 새로운 가능성",
-      "link": "https://www.etnews.com/20260807000135",
+      "title": "[오늘의 운세] 2026년 8월 8일 띠별 운세",
+      "link": "https://www.etnews.com/20260808000001",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "LG 엑사원, 표·시계열 데이터 예측서 구글·알리바바 제쳐",
-      "link": "https://www.etnews.com/20260807000134",
+      "title": "운전도 못하고, 삶이 지루해서?…97세 英 할머니, 비행기 날개에 매달렸다",
+      "link": "https://www.etnews.com/20260807000289",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "박상현 경기도의원 “융기원, 독자적 연구혁신 모델 구축해야”",
-      "link": "https://www.etnews.com/20260807000133",
+      "title": "[무엇이든 리뷰] 볶음밥까지 멈출 수 없다…하림 '별미요리 닭갈비' 한 끼 실험",
+      "link": "https://www.etnews.com/20260807000189",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "AI 시대 마케팅의 뉴 패러다임...이근환 비즈니스 아키텍트, '키텍처' 제시",
-      "link": "https://www.etnews.com/20260807000132",
+      "title": "35년 전 아기 납치한 中 가정부…법원 “인신매매가 아니다?” 징역 고작 3년 판결",
+      "link": "https://www.etnews.com/20260806000373",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "'타임 트래블 프로젝트' 앳하트, '3! 4!' 아트워크…설렘 증폭",
-      "link": "https://www.etnews.com/20260807000131",
+      "title": "[테크 차이나] 中 상업우주 산업, 발사 성공 잇따라…저궤도 위성 생태계 확대 속 투자도 가속",
+      "link": "https://www.etnews.com/20260807000163",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "벤츠코리아, 서비스품질지수 수입자동차판매점 12년 1위",
-      "link": "https://www.etnews.com/20260807000130",
+      "title": "“큰 사고 당해, 기아차가 살렸다”…'굿 윌 헌팅' 여배우, “360도 에어백 굿”",
+      "link": "https://www.etnews.com/20260807000283",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "전주시에너지센터, '전력수요최적화 컨설팅' 제공",
-      "link": "https://www.etnews.com/20260807000129",
+      "title": "SK하이닉스, 주당 375원 분기배당…“3분기 중 추가 주주환원 방안 발표”",
+      "link": "https://www.etnews.com/20260807000333",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "온유, 캐릭터 팝업 'JJING-NYANG PAJAMA PARTY' 개최",
-      "link": "https://www.etnews.com/20260807000127",
+      "title": "“1인당 평균 935만원” “건설업은 1816만원”…日 대기업 여름 보너스 사상 최대",
+      "link": "https://www.etnews.com/20260807000332",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "국립목포대, '2026 스마트 전력시스템 오픈 랩' 성료…전력·에너지 미래 인재 양성",
-      "link": "https://www.etnews.com/20260807000126",
+      "title": "삼전닉스 앞세운 한국, '1119억달러' 처음으로 일본 앞섰다",
+      "link": "https://www.etnews.com/20260807000307",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "경기 중 '날벼락'… 태국 축구선수, 낙뢰로 사망",
-      "link": "https://www.etnews.com/20260807000125",
+      "title": "[도산아카데미] 김승주 고려대 교수 “AI 해킹은 AI로 막아야…망분리 정책 바꿔야”",
+      "link": "https://www.etnews.com/20260807000331",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "인하대 GTEP, 싱가포르 펫페스티벌서 고로롱 수출 지원",
-      "link": "https://www.etnews.com/20260807000123",
+      "title": "[ET포토] 김희애, '강렬한 아우라'",
+      "link": "https://www.etnews.com/20260807000330",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "와이즈버즈, 상반기 영업이익 57.7억원… 창사 이래 최대 반기 실적",
-      "link": "https://www.etnews.com/20260807000122",
+      "title": "[ET포토] 김희애, '분위기 있는 미소'",
+      "link": "https://www.etnews.com/20260807000329",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "[ET특징주]상상인증권, Sh수협은행 인수 추진 기대감에 상승세",
-      "link": "https://www.etnews.com/20260807000121",
+      "title": "[ET포토] 김희애, '럭셔리한 우아함'",
+      "link": "https://www.etnews.com/20260807000328",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "[ET특징주]포스코퓨처엠, 리튬인산철 양극재 장기공급 소식에 상승세",
-      "link": "https://www.etnews.com/20260807000120",
+      "title": "[ET포토] 김희애, '미리 선보이는 가을 패션'",
+      "link": "https://www.etnews.com/20260807000327",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "스템엑소원, 30억 규모 '스케일업 팁스' 중기부 과제 선정...엑소좀 플랫폼 R&D 가속화",
-      "link": "https://www.etnews.com/20260807000119",
+      "title": "[ET포토] 김희애, '더위에도 돋보이는 밝음'",
+      "link": "https://www.etnews.com/20260807000326",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "에트리홀딩스, 공공기술 사업화·창업 지원 프로그램 본격 운영",
-      "link": "https://www.etnews.com/20260807000117",
+      "title": "[ET포토] 김무열-윤승아, '멋짐과 아름다움이 교차하는 부부'",
+      "link": "https://www.etnews.com/20260807000325",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "KTis, 고령층 위한 '택시 대신 불러주기' 운영",
-      "link": "https://www.etnews.com/20260807000116",
+      "title": "[ET포토] 김무열-윤승아, '별과 달같은 부부'",
+      "link": "https://www.etnews.com/20260807000324",
       "date": "2026-08-07"
     },
     {
       "source": "ETNews Security",
       "category": "KOREA_OFFICIAL",
-      "title": "신세계V, 최대 20% 페이백 '뷰티 빅세일' 실시",
-      "link": "https://www.etnews.com/20260807000115",
+      "title": "[ET포토] 김무열-윤승아, '영화같은 부부의 투샷'",
+      "link": "https://www.etnews.com/20260807000323",
       "date": "2026-08-07"
     }
   ]
