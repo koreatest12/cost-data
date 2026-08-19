@@ -1,18 +1,95 @@
 {
   "meta": {
     "date": "2026-08-19",
-    "timestamp": "2026-08-19 00:32:43",
+    "timestamp": "2026-08-19 23:46:02",
     "stats": {
-      "total": 245,
+      "total": 265,
       "categories": {
         "PORTAL_KEYWORD": 0,
         "GLOBAL_TIER_1": 105,
         "CLOUD_&_VENDOR": 110,
-        "KOREA_OFFICIAL": 30
+        "KOREA_OFFICIAL": 50
       }
     }
   },
   "articles": [
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Rogue ransomware affiliate poses as recovery firm to steal payments",
+      "link": "https://www.bleepingcomputer.com/news/security/rogue-ransomware-affiliate-ransom-busters-poses-as-recovery-firm/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Sakura Internet hack exposes data of up to 1.36 million accounts",
+      "link": "https://www.bleepingcomputer.com/news/security/sakura-internet-hack-exposes-data-of-up-to-136-million-accounts/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Healthtech firm CareCloud data breach impacts 3.7 million patients",
+      "link": "https://www.bleepingcomputer.com/news/security/healthtech-firm-carecloud-data-breach-impacts-37-million-patients/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Hackers compromise 14,500 Dahua web cameras in 35-day campaign",
+      "link": "https://www.bleepingcomputer.com/news/security/hackers-compromise-14-500-dahua-web-cameras-in-35-day-campaign/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "US warns of AI-powered attacks on Siemens PLCs in critical infrastructure",
+      "link": "https://www.bleepingcomputer.com/news/security/us-warns-of-ai-powered-attacks-on-siemens-plcs-in-critical-infrastructure/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "US charges Iranian hackers over $3.4 billion intellectual property theft",
+      "link": "https://www.bleepingcomputer.com/news/security/us-charges-iranian-hackers-over-34-billion-intellectual-property-theft/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Password spraying attacks surge 155x as hackers exploit MFA gaps",
+      "link": "https://www.bleepingcomputer.com/news/security/password-spraying-attacks-surge-155x-as-hackers-exploit-mfa-gaps/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Microsoft fixes known issue causing Windows Defender crashes",
+      "link": "https://www.bleepingcomputer.com/news/microsoft/microsoft-fixes-known-issue-causing-windows-defender-crashes/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Critical RCE flaw in Windows IKE Extension now actively exploited",
+      "link": "https://www.bleepingcomputer.com/news/security/cisa-critical-windows-ike-extension-flaw-now-exploited-in-attacks/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "Windows 11 24H2 Home and Pro reach end of support in 2 months",
+      "link": "https://www.bleepingcomputer.com/news/microsoft/windows-11-24h2-home-and-pro-reach-end-of-support-in-2-months/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "BleepingComputer",
+      "category": "GLOBAL_TIER_1",
+      "title": "CISA: Medusa ransomware hit over 500 critical infrastructure orgs",
+      "link": "https://www.bleepingcomputer.com/news/security/cisa-medusa-ransomware-hit-over-500-critical-infrastructure-orgs/",
+      "date": "2026-08-19"
+    },
     {
       "source": "BleepingComputer",
       "category": "GLOBAL_TIER_1",
@@ -42,80 +119,66 @@
       "date": "2026-08-19"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "CISA: Windows Task Host flaw now exploited by ransomware gangs",
-      "link": "https://www.bleepingcomputer.com/news/security/cisa-windows-task-host-flaw-now-exploited-by-ransomware-gangs/",
+      "title": "Cloudflare Workers Spectre Attack Leaks JWT From Co-Located Worker at 12 Bits/Second",
+      "link": "https://thehackernews.com/2026/08/cloudflare-workers-spectre-attack-leaks.html",
       "date": "2026-08-19"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Microsoft confirms outage affecting search in Microsoft 365 apps",
-      "link": "https://www.bleepingcomputer.com/news/microsoft/microsoft-working-to-fix-bug-behind-microsoft-365-search-issues/",
+      "title": "OpenAI Pauses Frontier RL Training as It Tightens Defenses Against Unsafe AI Behavior",
+      "link": "https://thehackernews.com/2026/08/openai-pauses-frontier-rl-training-as.html",
       "date": "2026-08-19"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Microsoft starts removing WMIC tool used by cybercriminals",
-      "link": "https://www.bleepingcomputer.com/news/microsoft/microsoft-removes-wmic-lolbin-tool-in-windows-11-beta-builds/",
+      "title": "SilkParasite Espionage Campaign Targets Central Asian Governments with Five New RATs",
+      "link": "https://thehackernews.com/2026/08/silkparasite-espionage-campaign-targets.html",
       "date": "2026-08-19"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Hacker claims 3.6 million Azure account records stolen from major companies",
-      "link": "https://www.bleepingcomputer.com/news/security/hacker-claims-36-million-azure-account-records-stolen-from-major-companies/",
+      "title": "Hackers Compromised 14,500+ Dahua Devices Using Credential Attacks, Auth Bypasses, and P2P",
+      "link": "https://thehackernews.com/2026/08/hackers-compromised-14500-dahua-devices.html",
       "date": "2026-08-19"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Pokémon Center data breach exposes customer info, cancels some orders",
-      "link": "https://www.bleepingcomputer.com/news/security/pokemon-center-data-breach-exposes-customer-info-cancels-some-orders/",
+      "title": "Phishing 3.0: The Fight Moves to Agent Versus Agent",
+      "link": "https://thehackernews.com/2026/08/phishing-30-fight-moves-to-agent-versus.html",
       "date": "2026-08-19"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Microsoft confirms GitHub is down worldwide",
-      "link": "https://www.bleepingcomputer.com/news/microsoft/microsoft-confirms-github-is-down-worldwide/",
+      "title": "StopAndProtect Uses Nearly 2,000 Hacked WordPress Sites to Spread Malware and Steal Data",
+      "link": "https://thehackernews.com/2026/08/stopandprotect-uses-nearly-2000-hacked.html",
       "date": "2026-08-19"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Certighost and the Privilege Hiding in Your Certificate Authority",
-      "link": "https://www.bleepingcomputer.com/news/security/certighost-and-the-privilege-hiding-in-your-certificate-authority/",
+      "title": "Critical macOS, SharePoint, vCenter, and Microsoft IKE Flaws Under Active Exploitation",
+      "link": "https://thehackernews.com/2026/08/critical-macos-sharepoint-vcenter-and.html",
       "date": "2026-08-19"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Windows Server 2022 reaches end of mainstream support in 60 days",
-      "link": "https://www.bleepingcomputer.com/news/microsoft/windows-server-2022-reaches-end-of-mainstream-support-in-60-days/",
+      "title": "Microsoft Links 30+ Rotating Domains to MacSync Stealer Infrastructure",
+      "link": "https://thehackernews.com/2026/08/microsoft-links-30-rotating-domains-to.html",
       "date": "2026-08-19"
     },
     {
-      "source": "BleepingComputer",
+      "source": "The Hacker News",
       "category": "GLOBAL_TIER_1",
-      "title": "Philips and GE investigating Clop ransomware data theft claims",
-      "link": "https://www.bleepingcomputer.com/news/security/philips-and-ge-investigating-clop-ransomware-data-theft-claims/",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "BleepingComputer",
-      "category": "GLOBAL_TIER_1",
-      "title": "French tax authority data breach affects 678,000 individuals",
-      "link": "https://www.bleepingcomputer.com/news/security/french-tax-authority-data-breach-affects-678-000-individuals/",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "BleepingComputer",
-      "category": "GLOBAL_TIER_1",
-      "title": "Microsoft working on Defender patch for ShieldBreak zero-day",
-      "link": "https://www.bleepingcomputer.com/news/security/microsoft-working-on-defender-patch-for-shieldbreak-zero-day/",
+      "title": "Clop-Linked Windchill Web Shell Decrypts Credentials and Maps Engineering Data",
+      "link": "https://thehackernews.com/2026/08/clop-linked-windchill-web-shell.html",
       "date": "2026-08-19"
     },
     {
@@ -196,66 +259,24 @@
       "date": "2026-08-19"
     },
     {
-      "source": "The Hacker News",
+      "source": "Dark Reading",
       "category": "GLOBAL_TIER_1",
-      "title": "Forminator WordPress Flaw Can Enable Unauthenticated RCE via Malicious PHP Uploads",
-      "link": "https://thehackernews.com/2026/08/forminator-wordpress-flaw-can-enable.html",
+      "title": "No-Filter 'Kriminal' AI Platform Raises Cybercrime Concerns",
+      "link": "https://www.darkreading.com/application-security/no-filter-kriminal-ai-platform-cybercrime-concerns",
       "date": "2026-08-19"
     },
     {
-      "source": "The Hacker News",
+      "source": "Dark Reading",
       "category": "GLOBAL_TIER_1",
-      "title": "Cavern C2 Uses DNS and Google Apps Script to Blend Into Legitimate Traffic",
-      "link": "https://thehackernews.com/2026/08/cavern-c2-uses-dns-and-google-apps.html",
+      "title": "SilkParasite Threatens Central Asian Orgs With Flurry of RATs",
+      "link": "https://www.darkreading.com/threat-intelligence/silkparasite-central-asian-orgs-flurry-rats",
       "date": "2026-08-19"
     },
     {
-      "source": "The Hacker News",
+      "source": "Dark Reading",
       "category": "GLOBAL_TIER_1",
-      "title": "⚡ Weekly Recap: VMware Exploits, Windows 0-Day, MCP Attacks, Browser Hijacks and More",
-      "link": "https://thehackernews.com/2026/08/weekly-recap-vmware-exploits-windows-0.html",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "How MCP Servers Can Expose Enterprise Secrets",
-      "link": "https://thehackernews.com/2026/08/how-mcp-servers-can-expose-enterprise.html",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Unisoc VoLTE Video Call Exploit Chain Can Give Attackers Full Android Kernel Access",
-      "link": "https://thehackernews.com/2026/08/unisoc-volte-video-call-exploit-chain.html",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Evooo1Bot Linux Botnet Exploits Known Flaws to Turn Edge Devices Into SOCKS5 Proxies",
-      "link": "https://thehackernews.com/2026/08/evooo1bot-linux-botnet-exploits-known.html",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Suspected China-Nexus Actor Exploits VMware vCenter Flaw, Deploys Babuk-Derived Ransomware",
-      "link": "https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "SAP Commerce Cloud CVE-2026-58231 Targeted in Exploitation Attempts Days After Patch",
-      "link": "https://thehackernews.com/2026/08/sap-commerce-cloud-cve-2026-58231.html",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "The Hacker News",
-      "category": "GLOBAL_TIER_1",
-      "title": "Apple macOS Screen Sharing Flaw Exploited on Internet-Exposed Macs to Install Monero Miner",
-      "link": "https://thehackernews.com/2026/08/apple-macos-screen-sharing-flaw.html",
+      "title": "China-Linked Hacker Shows AI Capabilities in APAC Attack",
+      "link": "https://www.darkreading.com/cyberattacks-data-breaches/china-linked-hacker-ai-capabilities-apac-attack",
       "date": "2026-08-19"
     },
     {
@@ -268,8 +289,15 @@
     {
       "source": "Dark Reading",
       "category": "GLOBAL_TIER_1",
-      "title": "'CoSnitch' Attack Tricked Copilot into Mapping Out Architecture",
+      "title": "'CoSnitch' Attack Tricked Copilot Into Mapping Out Architecture",
       "link": "https://www.darkreading.com/vulnerabilities-threats/cosnitch-attack-copilot-mapping-out-architecture",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Dark Reading",
+      "category": "GLOBAL_TIER_1",
+      "title": "The 'Industrial Accidents' Behind Rogue AI Agent Attacks — and the Sandbox Failures Exposed",
+      "link": "https://www.darkreading.com/vulnerabilities-threats/industrial-accidents-rogue-ai-agent-attacks-sandbox-failures",
       "date": "2026-08-19"
     },
     {
@@ -282,15 +310,15 @@
     {
       "source": "Dark Reading",
       "category": "GLOBAL_TIER_1",
-      "title": "'Ransom Busters': Ransomware Actor Poses as Incident-Recovery Service",
-      "link": "https://www.darkreading.com/cyberattacks-data-breaches/ransom-busters-ransomware-actor-incident-recovery-service",
+      "title": "Silent 'TwinLoot' Cyber Threat Operates Entirely From Microsoft's Cloud",
+      "link": "https://www.darkreading.com/cloud-security/silent-twinloot-threat-operates-microsoft-cloud",
       "date": "2026-08-19"
     },
     {
       "source": "Dark Reading",
       "category": "GLOBAL_TIER_1",
-      "title": "Silent 'TwinLoot' Cyber Threat Operates Entirely From Microsoft's Cloud",
-      "link": "https://www.darkreading.com/cloud-security/silent-twinloot-threat-operates-microsoft-cloud",
+      "title": "'Ransom Busters': Ransomware Actor Poses as Incident-Recovery Service",
+      "link": "https://www.darkreading.com/cyberattacks-data-breaches/ransom-busters-ransomware-actor-incident-recovery-service",
       "date": "2026-08-19"
     },
     {
@@ -371,31 +399,59 @@
       "date": "2026-08-19"
     },
     {
-      "source": "Dark Reading",
+      "source": "SecurityWeek",
       "category": "GLOBAL_TIER_1",
-      "title": "Belgium's eID Authentication Opens Citizen Accounts to RCE",
-      "link": "https://www.darkreading.com/application-security/belgium-eid-authentication-citizen-accounts-rce",
+      "title": "Virtual Event Today: CodeSecCon – Secure Your Code and Applications",
+      "link": "https://www.securityweek.com/virtual-event-today-codeseccon-secure-your-code-and-applications/",
       "date": "2026-08-19"
     },
     {
-      "source": "Dark Reading",
+      "source": "SecurityWeek",
       "category": "GLOBAL_TIER_1",
-      "title": "Long-running Data Theft Campaign Targeting Salesforce, ServiceNow",
-      "link": "https://www.darkreading.com/cyberattacks-data-breaches/long-running-data-theft-campaign-salesforce-servicenow",
+      "title": "Prevalent AI Raises $22 Million to Expand Data Fabric Platform",
+      "link": "https://www.securityweek.com/prevalent-ai-raises-22-million-to-expand-data-fabric-platform/",
       "date": "2026-08-19"
     },
     {
-      "source": "Dark Reading",
+      "source": "SecurityWeek",
       "category": "GLOBAL_TIER_1",
-      "title": "Walmart Takes a 'Trusted Agent' Approach to Purple Teaming",
-      "link": "https://www.darkreading.com/cybersecurity-operations/walmart-trusted-agent-approach-purple-teaming",
+      "title": "US Charges 17 Iranian Hackers, Offers $10 Million Rewards for 5 of Them",
+      "link": "https://www.securityweek.com/us-charges-17-iranian-hackers-offers-10-million-rewards-for-5-of-them/",
       "date": "2026-08-19"
     },
     {
-      "source": "Dark Reading",
+      "source": "SecurityWeek",
       "category": "GLOBAL_TIER_1",
-      "title": "Ransomware Hits Colombian Justice Ministry Days Before Presidential Transition",
-      "link": "https://www.darkreading.com/cyberattacks-data-breaches/ransomware-hits-colombian-justice-ministry-presidential-transition",
+      "title": "Cl0p Ransomware Group Names Over 40 Victims of PTC Windchill Campaign",
+      "link": "https://www.securityweek.com/cl0p-ransomware-group-names-over-40-victims-of-ptc-windchill-campaign/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "CISA Urges Immediate Patching of Exploited Microsoft, VMware, Apple Vulnerabilities",
+      "link": "https://www.securityweek.com/cisa-urges-immediate-patching-of-exploited-microsoft-vmware-apple-vulnerabilities/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "943 Patches Rolled Out With Oracle’s August 2026 Security Update",
+      "link": "https://www.securityweek.com/943-patches-rolled-out-with-oracles-august-2026-security-update/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "Chrome, Firefox Updates Patch Dozens of Vulnerabilities",
+      "link": "https://www.securityweek.com/chrome-firefox-updates-patch-dozens-of-vulnerabilities/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "SecurityWeek",
+      "category": "GLOBAL_TIER_1",
+      "title": "CareCloud Data Breach Impact Grows to 3.7 Million Individuals",
+      "link": "https://www.securityweek.com/carecloud-data-breach-impact-grows-to-3-7-million-individuals/",
       "date": "2026-08-19"
     },
     {
@@ -413,59 +469,24 @@
       "date": "2026-08-19"
     },
     {
-      "source": "SecurityWeek",
+      "source": "TechCrunch Security",
       "category": "GLOBAL_TIER_1",
-      "title": "AI-Driven Vulnerability Surge Breaks the Traditional Patching Model",
-      "link": "https://www.securityweek.com/ai-driven-vulnerability-surge-breaks-the-traditional-patching-model/",
+      "title": "Researchers say OpenAI revoked their access to limited cyber program",
+      "link": "https://techcrunch.com/2026/08/19/researchers-complain-that-openai-revoked-their-access-to-limited-cyber-program/",
       "date": "2026-08-19"
     },
     {
-      "source": "SecurityWeek",
+      "source": "TechCrunch Security",
       "category": "GLOBAL_TIER_1",
-      "title": "Xpander Raises $7.5 Million for AI Management and Governance",
-      "link": "https://www.securityweek.com/xpander-raises-7-5-million-for-ai-management-and-governance/",
+      "title": "T-Mobile ‘chopped a cable’ to expel Chinese hackers from its network",
+      "link": "https://techcrunch.com/2026/08/19/t-mobile-chopped-a-cable-to-expel-chinese-hackers-from-its-network/",
       "date": "2026-08-19"
     },
     {
-      "source": "SecurityWeek",
+      "source": "TechCrunch Security",
       "category": "GLOBAL_TIER_1",
-      "title": "Fortinet Acquires AI Security Company Virtue AI",
-      "link": "https://www.securityweek.com/fortinet-acquires-ai-security-company-virtue-ai/",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "GLOBAL_TIER_1",
-      "title": "300,000 WordPress Sites Potentially Exposed to Hacking Due to Form Plugin Flaw",
-      "link": "https://www.securityweek.com/300000-wordpress-sites-potentially-exposed-to-hacking-due-to-form-plugin-flaw/",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "GLOBAL_TIER_1",
-      "title": "Heights Finance Data Breach Impacts at Least 1.2 Million Individuals",
-      "link": "https://www.securityweek.com/heights-finance-data-breach-impacts-at-least-1-2-million-individuals/",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "GLOBAL_TIER_1",
-      "title": "GitLab Patches Critical Code Injection Vulnerability",
-      "link": "https://www.securityweek.com/gitlab-patches-critical-code-injection-vulnerability/",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "GLOBAL_TIER_1",
-      "title": "Dozens of WebKit Vulnerabilities Patched With Fresh macOS, iOS Security Updates",
-      "link": "https://www.securityweek.com/dozens-of-webkit-vulnerabilities-patched-with-fresh-macos-ios-security-updates/",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "SecurityWeek",
-      "category": "GLOBAL_TIER_1",
-      "title": "680,000 Impacted by French Tax Authority Data Breach",
-      "link": "https://www.securityweek.com/680000-impacted-by-french-tax-authority-data-breach/",
+      "title": "CareCloud confirms 3.7M patients had their medical records stolen in data breach",
+      "link": "https://techcrunch.com/2026/08/19/carecloud-confirms-3-7m-patients-had-their-medical-records-stolen-in-data-breach/",
       "date": "2026-08-19"
     },
     {
@@ -588,24 +609,17 @@
       "date": "2026-08-19"
     },
     {
-      "source": "TechCrunch Security",
+      "source": "Wired Security",
       "category": "GLOBAL_TIER_1",
-      "title": "A data breach at shipping giant Ceva Logistics is rippling across banks, retailers, Steam gamers, and beyond",
-      "link": "https://techcrunch.com/2026/08/10/a-data-breach-at-shipping-giant-ceva-logistics-is-rippling-across-banks-retailers-steam-gamers-and-beyond/",
+      "title": "Reverse-Lookup Service Exposed Millions of Photos of People’s Faces",
+      "link": "https://www.wired.com/story/reverse-lookup-service-exposed-millions-of-photos-of-peoples-faces/",
       "date": "2026-08-19"
     },
     {
-      "source": "TechCrunch Security",
+      "source": "Wired Security",
       "category": "GLOBAL_TIER_1",
-      "title": "Signed up for Klaviyo? Dozens of advertisers may have seen your password",
-      "link": "https://techcrunch.com/2026/08/10/signed-up-for-klaviyo-dozens-of-advertisers-may-have-seen-your-password/",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "TechCrunch Security",
-      "category": "GLOBAL_TIER_1",
-      "title": "The AI safety test is becoming a safety risk",
-      "link": "https://techcrunch.com/2026/08/09/the-ai-safety-test-is-becoming-a-safety-risk/",
+      "title": "Flock Has a Powerful New AI Tool for Police. We Got Its Code",
+      "link": "https://www.wired.com/story/flock-safety-os-investigate/",
       "date": "2026-08-19"
     },
     {
@@ -735,17 +749,10 @@
       "date": "2026-08-19"
     },
     {
-      "source": "Wired Security",
-      "category": "GLOBAL_TIER_1",
-      "title": "Meta Ran Ads That Contained AI-Generated Child Sexual Abuse Imagery",
-      "link": "https://www.wired.com/story/meta-ran-ads-that-contained-ai-generated-child-sexual-abuse-imagery/",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Wired Security",
-      "category": "GLOBAL_TIER_1",
-      "title": "OK, Well, Rogue AI Agents Are Hacking Again",
-      "link": "https://www.wired.com/story/ok-well-there-are-even-more-ai-agent-hacking-incidents/",
+      "source": "AWS Security Blog",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Propagate user authorization context in AI agents with Amazon Bedrock AgentCore",
+      "link": "https://aws.amazon.com/blogs/security/propagate-user-authorization-context-in-ai-agents-with-amazon-bedrock-agentcore/",
       "date": "2026-08-19"
     },
     {
@@ -882,10 +889,108 @@
       "date": "2026-08-19"
     },
     {
-      "source": "AWS Security Blog",
+      "source": "Microsoft Security",
       "category": "CLOUD_&_VENDOR",
-      "title": "Extend Amazon Inspector SBOM Generator with Plugins",
-      "link": "https://aws.amazon.com/blogs/security/extend-amazon-inspector-sbom-generator-with-plugins/",
+      "title": "CVE-2026-70338 Microsoft PowerShell Security Feature Bypass Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-70338",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-62705 Microsoft Brokering File System Elevation of Privilege Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62705",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-69414 Microsoft Defender Elevation of Privilege Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-69414",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-65811 Power BI Remote Code Execution Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-65811",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-65675 CoPilot Chat Security Feature Bypass Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-65675",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2020-1173 Microsoft Power BI Report Server Spoofing Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2020-1173",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2021-26859 Microsoft Power BI Information Disclosure Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-26859",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2021-41372 Power BI Report Server Spoofing Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-41372",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2023-21806 Power BI Report Server Spoofing Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2023-21806",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2024-43612 Power BI Report Server Spoofing Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2024-43612",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2024-43481 Power BI Report Server Spoofing Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2024-43481",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-50383 Windows Print Spooler Information Disclosure Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50383",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-49798 Windows Kernel Elevation of Privilege Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-49798",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-58647 Microsoft PowerBI Report Server Spoofing Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-58647",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Microsoft Security",
+      "category": "CLOUD_&_VENDOR",
+      "title": "CVE-2026-42912 Windows Telephony Service Elevation of Privilege Vulnerability",
+      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42912",
       "date": "2026-08-19"
     },
     {
@@ -921,111 +1026,6 @@
       "category": "CLOUD_&_VENDOR",
       "title": "CVE-2026-47632 Azure Connected Machine Agent Elevation of Privilege Vulnerability",
       "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-47632",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-50419 Windows Kernel Information Disclosure Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50419",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-56642 Microsoft Fabric Data Warehouse Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-56642",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-40400 Windows PowerShell Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-40400",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-56188 Windows Server Network driver Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-56188",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-62722 Microsoft Brokering File System Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62722",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-66807 Microsoft Office Graphics Component Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-66807",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-63519 Microsoft Office Graphics Component Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-63519",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-63513 Microsoft Office Graphics Component Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-63513",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-70337 Microsoft PowerShell Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-70337",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-58612 PowerShell Information Disclosure Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-58612",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-62886 .NET Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62886",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-63518 Microsoft Office Word Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-63518",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-65768 Microsoft Teams Remote Code Execution Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-65768",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-65769 Microsoft Teams iOS Information Disclosure Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-65769",
-      "date": "2026-08-19"
-    },
-    {
-      "source": "Microsoft Security",
-      "category": "CLOUD_&_VENDOR",
-      "title": "CVE-2026-57104 Azure Storage Explorer Elevation of Privilege Vulnerability",
-      "link": "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-57104",
       "date": "2026-08-19"
     },
     {
@@ -1206,6 +1206,13 @@
     {
       "source": "Cloudflare Blog",
       "category": "CLOUD_&_VENDOR",
+      "title": "A revisit of remote Spectre attacks on Cloudflare Workers",
+      "link": "https://blog.cloudflare.com/revisiting-spectre-attacks-on-workers/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Cloudflare Blog",
+      "category": "CLOUD_&_VENDOR",
       "title": "BGP Role model: tracking the adoption of RFC 9234",
       "link": "https://blog.cloudflare.com/rfc9234-bgp-role-model/",
       "date": "2026-08-19"
@@ -1337,13 +1344,6 @@
       "date": "2026-08-19"
     },
     {
-      "source": "Cloudflare Blog",
-      "category": "CLOUD_&_VENDOR",
-      "title": "The Agent Access Model",
-      "link": "https://blog.cloudflare.com/the-agent-access-model/",
-      "date": "2026-08-19"
-    },
-    {
       "source": "Kaspersky Securelist",
       "category": "CLOUD_&_VENDOR",
       "title": "APT group HoneyMyte upgrades CoolClient: the backdoor gets a kernel-level Windows rootkit",
@@ -1411,6 +1411,13 @@
       "category": "CLOUD_&_VENDOR",
       "title": "OctLurk and SilkLurk: newly identified tailored backdoors in cyber-espionage campaign in Central Asia",
       "link": "https://securelist.com/octlurk-silklurk-backdoors-central-asia/120840/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "Cisco Talos",
+      "category": "CLOUD_&_VENDOR",
+      "title": "Describing attacks with crime script analysis",
+      "link": "https://blog.talosintelligence.com/describing-attacks-with-crime-script-analysis/",
       "date": "2026-08-19"
     },
     {
@@ -1512,81 +1519,74 @@
       "date": "2026-08-19"
     },
     {
-      "source": "Cisco Talos",
-      "category": "CLOUD_&_VENDOR",
-      "title": "UAT-11795 deploys novel Starland RAT and bespoke WLDR C2 implant in financially motivated campaign",
-      "link": "https://blog.talosintelligence.com/uat-11795-deploys-novel-starland-rat-and-bespoke-wldr-c2-implant-in-financially-motivated-campaign/",
-      "date": "2026-08-19"
+      "source": "BoanNews",
+      "category": "KOREA_OFFICIAL",
+      "title": "KT, 국산 반도체와 AI 모델 일체형 ‘소버린 AI 어플라이언스’  출시",
+      "link": "http://www.boannews.com/media/view.asp?idx=145213&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 18:20:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "유니뷰, AI 스포츠 Lite형 라이브 스트리밍 솔루션 ‘UniSport’ 축구 경기 자동 생중계",
-      "link": "http://www.boannews.com/media/view.asp?idx=145191&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 16:47:00 +0900"
+      "title": "한국요꼬가와전기-VNTG, 제조기업 AI 도입 지원 위한 MOU 체결",
+      "link": "http://www.boannews.com/media/view.asp?idx=145205&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 13:49:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "美 정부, 민간 기업에 해외 사이버 범죄조직 ‘역해킹’ 허용 추진",
-      "link": "http://www.boannews.com/media/view.asp?idx=145190&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 15:45:00 +0900"
+      "title": "에스에스알, ‘바다’ 사업부 인수... CCE 시장 점유율 70% 굳힌다",
+      "link": "http://www.boannews.com/media/view.asp?idx=145206&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 13:47:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "에스에스티랩, 1m급 대형 위탁수하물용 3D CT 보안검색장비 국산화 개발 착수",
-      "link": "http://www.boannews.com/media/view.asp?idx=145189&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 15:30:00 +0900"
+      "title": "“국방 시장 본격 확대” 모빌린트, 해군 차세대 AI 경계체계에 AI 반도체 공급",
+      "link": "http://www.boannews.com/media/view.asp?idx=145207&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 13:45:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "행안부·과기정통부, 재난안전통신망 연동 스마트워치 개발 착수",
-      "link": "http://www.boannews.com/media/view.asp?idx=145187&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 15:02:00 +0900"
+      "title": "K-보안 역량과 토종 LLM 만났다... 라온시큐어, 업스테이지 ‘독파모’ 합류",
+      "link": "http://www.boannews.com/media/view.asp?idx=145204&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 13:44:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "한국인 넷플릭스 아이디 5달러, 오피스365 계정 26달러... 식사 한 끼값에 신분 도용",
-      "link": "http://www.boannews.com/media/view.asp?idx=145188&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 13:49:00 +0900"
+      "title": "LG유플러스-연세대 맞손, AI-RAN 통신망 끊김 없는 전환 실증",
+      "link": "http://www.boannews.com/media/view.asp?idx=145203&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 11:48:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "조달청, 2026년 제3차 혁신제품 시범 구매 대상 선정",
-      "link": "http://www.boannews.com/media/view.asp?idx=145186&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 13:19:00 +0900"
+      "title": "쿠도커뮤니케이션, 구성원의 ‘경험을 잇(IT)다’... 사람 중심 성장문화 내재화",
+      "link": "http://www.boannews.com/media/view.asp?idx=145196&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 11:37:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "프랑스 국세청 해킹? 해커 “피해자 60만명” 주장",
-      "link": "http://www.boannews.com/media/view.asp?idx=145185&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 13:10:00 +0900"
+      "title": "“AI 해킹 방어, 핵심은 예측과 사람” 그룹아이비 반 데르 벨데CPO·바가트 CSO",
+      "link": "http://www.boannews.com/media/view.asp?idx=145199&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 11:27:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "카스퍼스키, AI 에이전트용 악성코드·백도어 탐지 기능 발표",
-      "link": "http://www.boannews.com/media/view.asp?idx=145184&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 11:35:00 +0900"
+      "title": "맥도날드·갭 등 포춘 500대 기업 겨냥... 해커 “MS 애저 계정 364만 건 탈취” 주장",
+      "link": "http://www.boannews.com/media/view.asp?idx=145202&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 11:19:00 +0900"
     },
     {
       "source": "BoanNews",
       "category": "KOREA_OFFICIAL",
-      "title": "[배종찬의 보안 빅데이터] 박근혜 전 대통령까지 뚫린 대학교 개인정보 유출",
-      "link": "http://www.boannews.com/media/view.asp?idx=145181&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 11:01:00 +0900"
-    },
-    {
-      "source": "BoanNews",
-      "category": "KOREA_OFFICIAL",
-      "title": "정보기관이 적대 세력 사이버 공격한다... 독일, 정보기관 ‘능동적 해킹’ 허용 법안 추진",
-      "link": "http://www.boannews.com/media/view.asp?idx=145183&kind=&sub_kind=",
-      "date": "Tue, 18 Aug 2026 10:59:00 +0900"
+      "title": "트루엔, 2년 연속 ‘한국거래소 코스닥 라이징 스타’ 선정",
+      "link": "http://www.boannews.com/media/view.asp?idx=145201&kind=&sub_kind=",
+      "date": "Wed, 19 Aug 2026 11:04:00 +0900"
     },
     {
       "source": "AhnLab ASEC",
@@ -1668,15 +1668,15 @@
     {
       "source": "AhnLab ASEC",
       "category": "KOREA_OFFICIAL",
-      "title": "[합동 사이버 보안 권고문] Operation Double Barrel (국가배후 해킹조직과 Gunra 랜섬웨어 그룹의 관계)",
-      "link": "https://asec.ahnlab.com/ko/94695/",
+      "title": "Ransom & Dark Web Issues 2026년 7월 5주차",
+      "link": "https://asec.ahnlab.com/ko/94706/",
       "date": "2026-08-19"
     },
     {
       "source": "AhnLab ASEC",
       "category": "KOREA_OFFICIAL",
-      "title": "Ransom & Dark Web Issues 2026년 7월 5주차",
-      "link": "https://asec.ahnlab.com/ko/94706/",
+      "title": "[합동 사이버 보안 권고문] Operation Double Barrel (국가배후 해킹조직과 Gunra 랜섬웨어 그룹의 관계)",
+      "link": "https://asec.ahnlab.com/ko/94695/",
       "date": "2026-08-19"
     },
     {
@@ -1726,6 +1726,146 @@
       "category": "KOREA_OFFICIAL",
       "title": "2026년 6월 국내외 금융권 관련 보안 이슈",
       "link": "https://asec.ahnlab.com/ko/94542/",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "강원혁신센터, 영동권 창업도전자 대상 '2026 모두의 해커톤' 개최",
+      "link": "https://www.etnews.com/20260820000008",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "IBM, 양자 칩 수백개 잇는 극저온 시스템 구축 첫발",
+      "link": "https://www.etnews.com/20260820000005",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "오픈AI CFO “내년 IPO 추진…앤트로픽보다 늦어도 문제없어”",
+      "link": "https://www.etnews.com/20260820000004",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "클라우데라, '애니웨어 클라우드' 출시...멀티클라우드·온프레미스 아우르는 AI 플랫폼",
+      "link": "https://www.etnews.com/20260820000003",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "“기린도 빠질 깊이”… 남아공 싱크홀 퍼포먼스에 “구하자” 오인 출동 소동",
+      "link": "https://www.etnews.com/20260819000306",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "美 관광객 성폭행·살해한 獨 남성, 32년만에 '덜미'… 81세에 들통난 중범죄, 형량은",
+      "link": "https://www.etnews.com/20260819000150",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "[테크 차이나] 논문 다음은 누가 맡나…중국 '전국중점실험실' 재편 속뜻",
+      "link": "https://www.etnews.com/20260812000040",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "李대통령 “연합 훈련 축소…한반도 평화 위한 트럼프 결단에 경의”",
+      "link": "https://www.etnews.com/20260820000002",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "李대통령, 金·宋·鄭과 만찬…與 갈등 봉합 수순",
+      "link": "https://www.etnews.com/20260820000001",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "IBM, 오류 내성 양자컴퓨터 위한 모듈형 극저온 시스템 첫 연결",
+      "link": "https://www.etnews.com/20260819000390",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "개발 3개월 만에 이 정도?…2m 점프하고 시속 45km 달리는 中 로봇",
+      "link": "https://www.etnews.com/20260819000226",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "이력서부터 직무분석까지…시흥시, 취업 준비 3일 압축",
+      "link": "https://www.etnews.com/20260819000389",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "조현 “한반도 비핵화·평화 실현”…왕이 “건설적 역할 하겠다”",
+      "link": "https://www.etnews.com/20260819000388",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "인천 쿠팡물류센터서 또 화재…950명 대피 소동",
+      "link": "https://www.etnews.com/20260819000387",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "로이터 “삼성전자, 수요 급증에 파운드리 가격 최대 15% 인상”",
+      "link": "https://www.etnews.com/20260819000386",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "삼성전자 “DX, 당분간 적자 이어질 것”…시장점유율 확대로 정면돌파",
+      "link": "https://www.etnews.com/20260819000385",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "국힘 정책위의장에 3선 임이자 내정…20일 의총 추인",
+      "link": "https://www.etnews.com/20260819000384",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "[인사]과학기술정보통신부",
+      "link": "https://www.etnews.com/20260819000382",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "국립한국해양대, 과기정통부 '정보보호특성화대학' 선정",
+      "link": "https://www.etnews.com/20260819000381",
+      "date": "2026-08-19"
+    },
+    {
+      "source": "ETNews Security",
+      "category": "KOREA_OFFICIAL",
+      "title": "인태연 소진공 이사장, 거제·통영 수해 현장 점검…“신속한 지원 총력”",
+      "link": "https://www.etnews.com/20260819000380",
       "date": "2026-08-19"
     }
   ]
