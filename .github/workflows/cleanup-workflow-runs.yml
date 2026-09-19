@@ -1,0 +1,39 @@
+name: 🧹 워크플로우 용량 정리
+
+on:
+  schedule:
+    # 매주 일요일 00:00 KST (15:00 UTC) 실행
+    - cron: '0 15 * * 0'
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: '보존 기간 (일)'
+        required: false
+        default: '7'
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+env:
+  TZ: 'Asia/Seoul'
+
+jobs:
+  cleanup:
+    name: 워크플로우 실행 기록 정리
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 🧹 워크플로우 용량 정리 실행
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RETENTION_DAYS: ${{ github.event.inputs.retention_days || '7' }}
+        run: python scripts/cleanup_workflow_runs.py
